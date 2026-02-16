@@ -28,7 +28,7 @@ func TestParseCorpusFile_Basic(t *testing.T) {
 	if tc.Name != "Arrays" {
 		t.Errorf("expected name 'Arrays', got %q", tc.Name)
 	}
-	if string(tc.Input) != "[1, 2, 3]" {
+	if string(tc.Input) != "[1, 2, 3]\n" {
 		t.Errorf("unexpected input: %q", string(tc.Input))
 	}
 	expected := "(document (array (number) (number) (number)))"
@@ -44,7 +44,7 @@ func TestParseCorpusFile_Basic(t *testing.T) {
 	if tc.Name != "Strings" {
 		t.Errorf("expected name 'Strings', got %q", tc.Name)
 	}
-	if string(tc.Input) != `["hello", "world"]` {
+	if string(tc.Input) != "[\"hello\", \"world\"]\n" {
 		t.Errorf("unexpected input: %q", string(tc.Input))
 	}
 	expected = "(document (array (string (string_content)) (string (string_content))))"
@@ -362,8 +362,8 @@ func TestParseCorpusFile_InputCopied(t *testing.T) {
 	if len(cases) != 1 {
 		t.Fatalf("expected 1 case, got %d", len(cases))
 	}
-	if string(cases[0].Input) != "foo" {
-		t.Fatalf("expected input 'foo', got %q", string(cases[0].Input))
+	if string(cases[0].Input) != "foo\n" {
+		t.Fatalf("expected input 'foo\\n', got %q", string(cases[0].Input))
 	}
 	// Modify the returned input.
 	cases[0].Input[0] = 'Z'

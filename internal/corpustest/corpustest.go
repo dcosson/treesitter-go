@@ -187,13 +187,22 @@ func parseContent(data []byte) ([]TestCase, error) {
 			continue
 		}
 
-		// Input is everything from header end to divider start, minus trailing newline.
+		// Input is everything from header end to divider start.
+		// The corpus file format has a blank line between the source code
+		// and the divider, so we strip trailing blank lines but preserve
+		// a final newline — tree-sitter parsers expect source to end with \n.
 		input := bytes.TrimRight(region[:bestStart], "\r\n")
 		// Also strip a single leading newline (the blank line after the header).
 		if len(input) > 0 && input[0] == '\n' {
 			input = input[1:]
 		} else if len(input) > 1 && input[0] == '\r' && input[1] == '\n' {
 			input = input[2:]
+		}
+		// Re-append a trailing newline. Source code in tree-sitter grammars
+		// is expected to end with a newline; the TrimRight above strips the
+		// blank separator line but also removes the source's final newline.
+		if len(input) > 0 && input[len(input)-1] != '\n' {
+			input = append(input, '\n')
 		}
 
 		// Output is everything from divider end to the next header (or EOF).
