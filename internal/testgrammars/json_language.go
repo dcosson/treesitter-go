@@ -350,7 +350,7 @@ func JSONLanguage() *ts.Language {
 	lexModes[19] = ts.LexMode{LexState: 1}
 
 	return &ts.Language{
-		Version:         14,
+		Version:         15,
 		SymbolCount:     symbolCount,
 		AliasCount:      0,
 		TokenCount:      15,

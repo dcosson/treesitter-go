@@ -361,8 +361,13 @@ func (a *SubtreeArena) TotalAllocated() int {
 // --- SubtreeID: unique identity for node comparison ---
 
 // SubtreeID uniquely identifies a subtree for Node identity comparison.
-// For inline subtrees, the ID is derived from the raw data bits.
-// For arena subtrees, it's the block+offset pair.
+// For arena subtrees, it's the block+offset pair (location-based identity).
+// For inline subtrees, the ID is derived from the raw data bits (value-based
+// identity). This means two distinct inline subtrees with identical data
+// (same symbol, state, padding, size, flags) will compare as equal. This
+// differs from C tree-sitter where identity is always pointer-based. In
+// practice this doesn't matter because inline subtrees are always leaves
+// and are reconstructed rather than shared.
 type SubtreeID struct {
 	Block  uint32
 	Offset uint32

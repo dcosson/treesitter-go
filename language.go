@@ -79,13 +79,6 @@ type ExternalScanner interface {
 // ExternalScannerFactory creates new ExternalScanner instances.
 type ExternalScannerFactory func() ExternalScanner
 
-// Lexer is a forward declaration. The full implementation lives in lexer.go (Phase 2).
-// We define a minimal stub here so Language and tests can reference the type.
-type Lexer struct {
-	// Stub — full implementation in Phase 2.
-	lookahead int32
-}
-
 // ExportLookup is an exported wrapper for lookup, used by tests in other packages.
 func (l *Language) ExportLookup(state StateID, symbol Symbol) uint16 {
 	return l.lookup(state, symbol)
@@ -101,8 +94,6 @@ func (l *Language) ExportTableEntry(state StateID, symbol Symbol) TableEntry {
 func (l *Language) lookup(state StateID, symbol Symbol) uint16 {
 	if uint32(state) < l.LargeStateCount {
 		idx := uint32(state)*l.SymbolCount + uint32(symbol)
-		// Bounds-check elimination hint.
-		_ = l.ParseTable[idx]
 		return l.ParseTable[idx]
 	}
 	mapIdx := uint32(state) - l.LargeStateCount
