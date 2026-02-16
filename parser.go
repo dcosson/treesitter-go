@@ -666,7 +666,22 @@ func (p *Parser) doReduce(version StackVersion, action ParseActionEntry) {
 		children[len(children)-1-i] = s
 	}
 
-	// Create the internal node.
+	// Remove trailing extras (e.g. comments) from children before creating
+	// the parent node. In C tree-sitter, ts_subtree_array_remove_trailing_extras
+	// strips extras from the end of the children array. They are then re-pushed
+	// onto the stack after the parent, so they become siblings of the parent
+	// rather than children - allowing them to float up to the correct level.
+	var trailingExtras []Subtree
+	for len(children) > 0 {
+		last := children[len(children)-1]
+		if !IsExtra(last, p.arena) {
+			break
+		}
+		trailingExtras = append(trailingExtras, last)
+		children = children[:len(children)-1]
+	}
+
+	// Create the internal node (without trailing extras).
 	node := NewNodeSubtree(p.arena, symbol, children, productionID, p.language)
 	SummarizeChildren(node, p.arena, p.language)
 
@@ -695,6 +710,18 @@ func (p *Parser) doReduce(version StackVersion, action ParseActionEntry) {
 	newPosition := LengthAdd(LengthAdd(position, nodePadding), nodeSize)
 
 	p.stack.Push(version, gotoState, node, false, newPosition)
+
+	// Re-push trailing extras onto the stack as siblings of the parent.
+	// Push in tree order (reverse of collection order) so that when the
+	// next pop collects them in stack order and reverses, they end up
+	// in the correct source order.
+	for i := len(trailingExtras) - 1; i >= 0; i-- {
+		extra := trailingExtras[i]
+		extraPadding := GetPadding(extra, p.arena)
+		extraSize := GetSize(extra, p.arena)
+		newPosition = LengthAdd(LengthAdd(newPosition, extraPadding), extraSize)
+		p.stack.Push(version, gotoState, extra, false, newPosition)
+	}
 
 	// Handle additional pop paths (GLR ambiguity).
 	// Each alt path may have a different base state (from merged stack DAG),
@@ -735,11 +762,18 @@ func (p *Parser) doReduce(version StackVersion, action ParseActionEntry) {
 }
 
 // doAccept marks a version as accepted and stores the finished tree.
+//
+// This matches C tree-sitter's ts_parser__accept: pop all subtrees from
+// the stack, find the root (non-extra) node, splice its children into the
+// full array (replacing the root entry), and create a new root from
+// everything - ensuring extras re-pushed by doReduce become children of
+// the final root node rather than being stranded on the stack.
+//
 // When multiple versions accept, the tree with lower error cost wins;
 // ties are broken by higher dynamic precedence. If both are equal,
 // the newer tree wins (later accepts are typically more complete).
 func (p *Parser) doAccept(version StackVersion) {
-	tree := p.stack.TopSubtree(version)
+	tree := p.acceptTree(version)
 	if !tree.IsZero() {
 		if p.finishedTree.IsZero() {
 			p.finishedTree = tree
@@ -759,6 +793,59 @@ func (p *Parser) doAccept(version StackVersion) {
 	}
 	p.acceptCount++
 	p.stack.Halt(version)
+}
+
+// acceptTree pops all subtrees from the stack and reconstructs the root node
+// with any extras (comments) that were re-pushed by doReduce trailing
+// extras handling. If there are no extras on the stack, it returns the root
+// node directly (fast path).
+func (p *Parser) acceptTree(version StackVersion) Subtree {
+	allSubtrees := p.stack.PopAll(version)
+	if len(allSubtrees) == 0 {
+		return SubtreeZero
+	}
+
+	// Fast path: if there is only one subtree (no re-pushed extras), use it directly.
+	if len(allSubtrees) == 1 {
+		return allSubtrees[0]
+	}
+
+	// Reverse to tree order (stack is top-first, tree is left-first in source).
+	for i, j := 0, len(allSubtrees)-1; i < j; i, j = i+1, j-1 {
+		allSubtrees[i], allSubtrees[j] = allSubtrees[j], allSubtrees[i]
+	}
+
+	// Find the root node (the non-extra subtree). Search backward from end,
+	// matching C tree-sitter ts_parser__accept.
+	rootIdx := -1
+	for j := len(allSubtrees) - 1; j >= 0; j-- {
+		if !IsExtra(allSubtrees[j], p.arena) {
+			rootIdx = j
+			break
+		}
+	}
+
+	if rootIdx < 0 {
+		// No non-extra subtree found. Should not happen in valid parses.
+		return allSubtrees[0]
+	}
+
+	root := allSubtrees[rootIdx]
+	rootSymbol := GetSymbol(root, p.arena)
+	rootProdID := GetProductionID(root, p.arena)
+
+	// Splice: replace the root node with its children in the full array.
+	rootChildren := GetChildren(root, p.arena)
+	newChildren := make([]Subtree, 0, len(allSubtrees)-1+len(rootChildren))
+	newChildren = append(newChildren, allSubtrees[:rootIdx]...)
+	newChildren = append(newChildren, rootChildren...)
+	newChildren = append(newChildren, allSubtrees[rootIdx+1:]...)
+
+	// Create new root from all subtrees (including extras).
+	newRoot := NewNodeSubtree(p.arena, rootSymbol, newChildren, rootProdID, p.language)
+	SummarizeChildren(newRoot, p.arena, p.language)
+
+	return newRoot
 }
 
 // handleError attempts error recovery for a version that encountered

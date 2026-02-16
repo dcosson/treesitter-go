@@ -338,6 +338,36 @@ func (s *Stack) Pop(version StackVersion, count uint32) []StackIterator {
 	return results
 }
 
+// PopAll pops all subtrees from the stack for the given version,
+// from the head down to the bottom. Returns subtrees in stack order
+// (most recently pushed first). For merged stacks, follows only the
+// primary (first) link at each node.
+//
+// This matches C tree-sitter's ts_stack_pop_all, used during accept
+// to collect all remaining subtrees including extras that were
+// re-pushed by doReduce's trailing extras handling.
+func (s *Stack) PopAll(version StackVersion) []Subtree {
+	if int(version) >= len(s.heads) {
+		return nil
+	}
+	head := &s.heads[version]
+	if head.node == nil {
+		return nil
+	}
+
+	var subtrees []Subtree
+	node := head.node
+	for node != nil && node.linkCount > 0 {
+		subtrees = append(subtrees, node.links[0].subtree)
+		node = node.links[0].node
+	}
+
+	// Update head to point to the bottom node (past all popped items).
+	head.node = node
+
+	return subtrees
+}
+
 // Split forks a version, creating a new version at the same position.
 // Returns the new version index.
 func (s *Stack) Split(version StackVersion) StackVersion {
