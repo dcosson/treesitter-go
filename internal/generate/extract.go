@@ -75,6 +75,9 @@ func ExtractGrammar(parserC string) (*Grammar, error) {
 		return nil, fmt.Errorf("extracting lex modes: %w", err)
 	}
 
+	// Extract character range sets (TSCharacterRange arrays) used by set_contains().
+	extractCharacterSets(g, parserC)
+
 	// Extract lex function DFA.
 	if err := extractLexFunction(g, parserC, false); err != nil {
 		return nil, fmt.Errorf("extracting lex function: %w", err)
@@ -82,6 +85,9 @@ func ExtractGrammar(parserC string) (*Grammar, error) {
 
 	// Extract keyword lex function if present.
 	extractLexFunction(g, parserC, true)
+
+	// Extract keyword capture token.
+	extractKeywordCaptureToken(g, parserC)
 
 	// Extract public symbol map.
 	extractPublicSymbolMap(g, parserC)
@@ -936,4 +942,83 @@ func (g *Grammar) parseTableToken(tok string) (uint16, bool) {
 		}
 	}
 	return 0, false
+}
+
+// extractKeywordCaptureToken extracts .keyword_capture_token from the
+// TSLanguage struct definition in parser.c.
+func extractKeywordCaptureToken(g *Grammar, src string) {
+	re := regexp.MustCompile(`\.keyword_capture_token\s*=\s*(\w+)`)
+	m := re.FindStringSubmatch(src)
+	if m == nil {
+		return // no keyword capture token (e.g., JSON)
+	}
+	token := m[1]
+	// Resolve: could be a symbol enum name like "sym_identifier" or a number.
+	g.KeywordCaptureToken = g.resolveSymbolValue(token)
+}
+
+// extractCharacterSets extracts TSCharacterRange arrays from parser.c.
+// These are used by set_contains() in lex functions for Unicode character
+// class matching (e.g., identifier characters).
+//
+// Format in parser.c:
+//
+//	static TSCharacterRange sym_identifier_character_set_1[] = {
+//	  {'$', '$'}, {'A', 'Z'}, {'_', '_'}, {'a', 'z'}, {0xaa, 0xaa}, ...
+//	};
+func extractCharacterSets(g *Grammar, src string) {
+	g.CharacterSets = make(map[string][]CharacterRange)
+
+	// Find all TSCharacterRange array definitions.
+	re := regexp.MustCompile(`static\s+(?:const\s+)?TSCharacterRange\s+(\w+)\[\]\s*=\s*\{`)
+	matches := re.FindAllStringSubmatchIndex(src, -1)
+
+	for _, m := range matches {
+		name := src[m[2]:m[3]]
+		// Find the closing "};".
+		bodyStart := m[1]
+		bodyEnd := strings.Index(src[bodyStart:], "};")
+		if bodyEnd < 0 {
+			continue
+		}
+		body := src[bodyStart : bodyStart+bodyEnd]
+
+		// Parse {low, high} pairs.
+		pairRe := regexp.MustCompile(`\{([^}]+)\}`)
+		pairs := pairRe.FindAllStringSubmatch(body, -1)
+
+		var ranges []CharacterRange
+		for _, p := range pairs {
+			parts := strings.SplitN(p[1], ",", 2)
+			if len(parts) != 2 {
+				continue
+			}
+			low := parseCCodepoint(strings.TrimSpace(parts[0]))
+			high := parseCCodepoint(strings.TrimSpace(parts[1]))
+			ranges = append(ranges, CharacterRange{Low: low, High: high})
+		}
+
+		if len(ranges) > 0 {
+			g.CharacterSets[name] = ranges
+		}
+	}
+}
+
+// parseCCodepoint parses a C character literal or hex constant into a rune.
+// Handles: 'x', '\n', 0xaa, 42, etc.
+func parseCCodepoint(s string) rune {
+	if len(s) >= 2 && s[0] == '\'' && s[len(s)-1] == '\'' {
+		return parseCChar(s)
+	}
+	if strings.HasPrefix(s, "0x") || strings.HasPrefix(s, "0X") {
+		v, err := strconv.ParseInt(s[2:], 16, 32)
+		if err == nil {
+			return rune(v)
+		}
+	}
+	v, err := strconv.ParseInt(s, 10, 32)
+	if err == nil {
+		return rune(v)
+	}
+	return 0
 }

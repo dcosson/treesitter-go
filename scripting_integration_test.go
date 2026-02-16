@@ -183,15 +183,40 @@ func TestHTMLParseVoidElement(t *testing.T) {
 // --- Java Integration Tests ---
 
 func TestJavaParseHelloWorld(t *testing.T) {
-	t.Skip("known bug: Java grammar parse timeout — needs investigation (bead pvl)")
 	p := ts.NewParser()
 	p.SetLanguage(javaLang())
 
+	// Full test
 	src := `public class Hello {
     public static void main(String[] args) {
         System.out.println("Hello, world!");
     }
 }`
+	// Try simpler variants first
+	for _, tc := range []struct{name, code string}{
+		{"empty_class", `class Hello {}`},
+		{"with_field", `class Hello { int x; }`},
+		{"with_method", `class Hello { void main() {} }`},
+		{"with_args", `class Hello { void main(String[] args) {} }`},
+		{"method_call", `class Hello { void main() { foo(); } }`},
+		{"field_access", `class Hello { void main() { System.out; } }`},
+		{"chained_call", `class Hello { void main() { System.out.println(); } }`},
+		{"string_arg", `class Hello { void main() { println("hi"); } }`},
+		{"full_call", `class Hello { void main() { System.out.println("Hello"); } }`},
+		{"full", src},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			pp := ts.NewParser()
+			pp.SetLanguage(javaLang())
+			ctx2, cancel2 := context.WithTimeout(context.Background(), 2*time.Second)
+			defer cancel2()
+			tree2 := pp.ParseString(ctx2, []byte(tc.code))
+			if tree2 == nil {
+				t.Fatalf("timeout parsing: %s", tc.code)
+			}
+			t.Logf("OK: %s", tree2.RootNode().String())
+		})
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), testTimeout())
 	defer cancel()
 	tree := p.ParseString(ctx, []byte(src))
@@ -209,7 +234,6 @@ func TestJavaParseHelloWorld(t *testing.T) {
 }
 
 func TestJavaParseInterface(t *testing.T) {
-	t.Skip("known bug: Java grammar parse timeout — needs investigation (bead pvl)")
 	p := ts.NewParser()
 	p.SetLanguage(javaLang())
 

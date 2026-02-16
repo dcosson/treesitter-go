@@ -69,9 +69,20 @@ type Grammar struct {
 	// Public symbol map: maps internal symbol -> public symbol.
 	PublicSymbolMap []uint16
 
+	// Character range sets for set_contains() calls in lex functions.
+	// Maps C variable name -> sorted array of {Low, High} codepoint ranges.
+	CharacterSets map[string][]CharacterRange
+
 	// Internal: enum maps built during extraction for resolving C identifiers.
 	symbolEnum map[string]int // C enum name -> integer value
 	fieldEnum  map[string]int // C field enum name -> integer value
+}
+
+// CharacterRange is a [Low, High] inclusive range of Unicode codepoints,
+// extracted from TSCharacterRange in parser.c.
+type CharacterRange struct {
+	Low  rune
+	High rune
 }
 
 // SymMeta holds visibility and naming info for a grammar symbol.
@@ -163,6 +174,10 @@ type LexTransition struct {
 	// When set with IsNegated=true, advance on anything NOT in this set.
 	// Char 0 in the set means "also exclude EOF".
 	CharExclusions []rune
+
+	// Character set match via set_contains().
+	// When non-empty, this transition matches if the lookahead is in the named set.
+	CharSetName string
 
 	// Target state (used with ADVANCE/SKIP)
 	Target int

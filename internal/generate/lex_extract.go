@@ -190,6 +190,14 @@ func parseCaseBlock(id int, body string, symbolEnum map[string]int) (LexState, e
 			continue
 		}
 
+		// set_contains() calls: if (set_contains(name, count, lookahead)) ADVANCE(N);
+		if strings.Contains(line, "set_contains(") {
+			if t := parseSetContains(line); t != nil {
+				state.Transitions = append(state.Transitions, *t)
+			}
+			continue
+		}
+
 		// Standard if-chain transitions.
 		if strings.HasPrefix(line, "if (") || strings.HasPrefix(line, "if(") {
 			transitions := parseIfTransitions(line, lines, &i)
@@ -435,6 +443,25 @@ func parseCChar(s string) rune {
 		return runes[0]
 	}
 	return 0
+}
+
+// parseSetContains parses a set_contains() call into a LexTransition.
+// Format: if (set_contains(sym_identifier_character_set_1, 669, lookahead)) ADVANCE(191);
+func parseSetContains(line string) *LexTransition {
+	re := regexp.MustCompile(`set_contains\((\w+),\s*\d+,\s*lookahead\)\)\s*(?:ADVANCE|SKIP)\((\d+)\)`)
+	m := re.FindStringSubmatch(line)
+	if m == nil {
+		return nil
+	}
+	setName := m[1]
+	target, _ := strconv.Atoi(m[2])
+	skip := strings.Contains(line, "SKIP(")
+
+	return &LexTransition{
+		CharSetName: setName,
+		Target:      target,
+		Skip:        skip,
+	}
 }
 
 // splitCSV splits a comma-separated string, respecting nested parens and

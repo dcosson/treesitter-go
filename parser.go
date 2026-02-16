@@ -287,7 +287,11 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 			case ParseActionTypeAccept:
 				p.doAccept(splitVersion)
 			case ParseActionTypeRecover:
-				p.doShift(splitVersion, extraAction, token)
+				if tokenSymbol == SymbolEnd {
+					p.stack.Halt(splitVersion)
+				} else {
+					p.doShift(splitVersion, extraAction, token)
+				}
 			}
 		}
 		// Execute the primary action.
@@ -307,6 +311,12 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 			p.doAccept(version)
 			return true
 		case ParseActionTypeRecover:
+			// At EOF, a RECOVER action cannot make progress (no more input
+			// to skip). Halt the version — it's stuck in error recovery.
+			if tokenSymbol == SymbolEnd {
+				p.stack.Halt(version)
+				return false
+			}
 			p.doShift(version, action, token)
 			return true
 		}
@@ -377,12 +387,13 @@ func (p *Parser) lexToken(version StackVersion, state StateID, position Length) 
 		}
 
 		// If the result is the keyword capture token, try keyword lex.
+		// Keyword lex always starts at state 0 (initial keyword DFA state).
 		if found && p.language.KeywordLexFn != nil && p.lexer.ResultSymbol == p.language.KeywordCaptureToken {
 			keywordEndPos := p.lexer.TokenEndPosition
 			origSymbol := p.lexer.ResultSymbol
 
 			p.lexer.Start(position)
-			if p.language.KeywordLexFn(p.lexer, StateID(lexMode.LexState)) {
+			if p.language.KeywordLexFn(p.lexer, 0) {
 				p.lexer.TokenEndPosition = keywordEndPos
 			} else {
 				p.lexer.ResultSymbol = origSymbol
@@ -672,9 +683,14 @@ func (p *Parser) handleError(version StackVersion, token Subtree) bool {
 	state := p.stack.State(version)
 
 	// At end-of-input, skipping won't advance position (zero-size token).
-	// Force-accept what we have rather than looping forever.
+	// If we already have a finished tree, just halt this error version.
+	// Otherwise, force-accept what we have.
 	tokenSymbol := GetSymbol(token, p.arena)
 	if tokenSymbol == SymbolEnd {
+		if !p.finishedTree.IsZero() {
+			p.stack.Halt(version)
+			return false
+		}
 		p.doAccept(version)
 		return true
 	}
@@ -711,23 +727,28 @@ func (p *Parser) handleError(version StackVersion, token Subtree) bool {
 	// Strategy 3: Try inserting missing tokens.
 	recovered = p.tryMissingTokens(version, token)
 
+	if recovered {
+		// Missing token recovery created split versions that supersede this one.
+		// Halt the original version — it has no valid action for the lookahead.
+		p.stack.Halt(version)
+		p.cachedTokenValid = false
+		return true
+	}
+
 	// If no recovery and multiple versions exist, halt this one.
-	if !recovered && p.stack.ActiveVersionCount() > 1 {
+	if p.stack.ActiveVersionCount() > 1 {
 		p.stack.Halt(version)
 		return false
 	}
 
-	// Last resort: skip the token on the current version.
-	if p.stack.ActiveVersionCount() <= 1 && !recovered {
-		position := p.stack.Position(version)
-		tokenPadding := GetPadding(token, p.arena)
-		newPosition := LengthAdd(LengthAdd(position, tokenPadding), tokenSize)
-		errNode := p.createErrorNode([]Subtree{token})
-		p.stack.Push(version, state, errNode, false, newPosition)
-		p.cachedTokenValid = false
-
-		p.stack.AddErrorCost(version, skipCost+ErrorCostPerRecovery)
-	}
+	// Last resort: skip the token on the current version (only version left).
+	position := p.stack.Position(version)
+	tokenPadding := GetPadding(token, p.arena)
+	newPosition := LengthAdd(LengthAdd(position, tokenPadding), tokenSize)
+	errNode := p.createErrorNode([]Subtree{token})
+	p.stack.Push(version, state, errNode, false, newPosition)
+	p.cachedTokenValid = false
+	p.stack.AddErrorCost(version, skipCost+ErrorCostPerRecovery)
 
 	return true
 }

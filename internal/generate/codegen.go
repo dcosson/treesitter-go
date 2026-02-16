@@ -119,6 +119,12 @@ func GenerateGo(g *Grammar, packageName string) string {
 	fmt.Fprintf(&b, "\t}\n")
 	fmt.Fprintf(&b, "}\n\n")
 
+	// Character range sets (for set_contains in lex functions).
+	if len(g.CharacterSets) > 0 {
+		writeCharacterSets(&b, g)
+		writeSetContainsFunc(&b)
+	}
+
 	// Lex function.
 	writeLexFunction(&b, g, false)
 
@@ -428,7 +434,9 @@ func writeLexFunction(b *strings.Builder, g *Grammar, isKeyword bool) {
 					advanceCall = "true"
 				}
 
-				if t.IsRange {
+				if t.CharSetName != "" {
+					fmt.Fprintf(b, "\t\t\tif setContains(%s, lookahead) {\n", t.CharSetName)
+				} else if t.IsRange {
 					fmt.Fprintf(b, "\t\t\tif lookahead >= %s && lookahead <= %s {\n",
 						goCharLit(t.Low), goCharLit(t.High))
 				} else if t.IsNegated && len(t.CharExclusions) > 0 {
@@ -488,6 +496,57 @@ func writeLexFunction(b *strings.Builder, g *Grammar, isKeyword bool) {
 	fmt.Fprintf(b, "\t\t}\n")
 	fmt.Fprintf(b, "\t}\n")
 	fmt.Fprintf(b, "}\n\n")
+}
+
+// writeCharacterSets generates Go variable declarations for character range sets.
+func writeCharacterSets(b *strings.Builder, g *Grammar) {
+	// Sort set names for deterministic output.
+	var names []string
+	for name := range g.CharacterSets {
+		names = append(names, name)
+	}
+	sortStrings(names)
+
+	for _, name := range names {
+		ranges := g.CharacterSets[name]
+		fmt.Fprintf(b, "var %s = []characterRange{\n", name)
+		for _, r := range ranges {
+			fmt.Fprintf(b, "\t{0x%x, 0x%x},\n", r.Low, r.High)
+		}
+		fmt.Fprintf(b, "}\n\n")
+	}
+}
+
+// writeSetContainsFunc generates the setContains helper function
+// that does binary search over sorted character range arrays.
+func writeSetContainsFunc(b *strings.Builder) {
+	fmt.Fprintf(b, "type characterRange struct {\n")
+	fmt.Fprintf(b, "\tlow  rune\n")
+	fmt.Fprintf(b, "\thigh rune\n")
+	fmt.Fprintf(b, "}\n\n")
+	fmt.Fprintf(b, "func setContains(ranges []characterRange, c rune) bool {\n")
+	fmt.Fprintf(b, "\tlo, hi := 0, len(ranges)\n")
+	fmt.Fprintf(b, "\tfor lo < hi {\n")
+	fmt.Fprintf(b, "\t\tmid := lo + (hi-lo)/2\n")
+	fmt.Fprintf(b, "\t\tif c < ranges[mid].low {\n")
+	fmt.Fprintf(b, "\t\t\thi = mid\n")
+	fmt.Fprintf(b, "\t\t} else if c > ranges[mid].high {\n")
+	fmt.Fprintf(b, "\t\t\tlo = mid + 1\n")
+	fmt.Fprintf(b, "\t\t} else {\n")
+	fmt.Fprintf(b, "\t\t\treturn true\n")
+	fmt.Fprintf(b, "\t\t}\n")
+	fmt.Fprintf(b, "\t}\n")
+	fmt.Fprintf(b, "\treturn false\n")
+	fmt.Fprintf(b, "}\n\n")
+}
+
+// sortStrings sorts a slice of strings in place.
+func sortStrings(s []string) {
+	for i := 1; i < len(s); i++ {
+		for j := i; j > 0 && s[j-1] > s[j]; j-- {
+			s[j-1], s[j] = s[j], s[j-1]
+		}
+	}
 }
 
 // --- Helpers ---
