@@ -300,7 +300,7 @@ func BenchmarkParseChunkedInput(b *testing.B) {
 			chunked := &chunkedInput{data: input, chunkSize: chunkSize}
 
 			// Verify parsing works.
-			tree := parser.Parse(context.Background(), chunked)
+			tree := parser.Parse(context.Background(), chunked, nil)
 			if tree == nil {
 				b.Fatal("chunked parse failed")
 			}
@@ -310,7 +310,7 @@ func BenchmarkParseChunkedInput(b *testing.B) {
 			b.ResetTimer()
 
 			for i := 0; i < b.N; i++ {
-				parser.Parse(context.Background(), chunked)
+				parser.Parse(context.Background(), chunked, nil)
 			}
 		})
 	}
