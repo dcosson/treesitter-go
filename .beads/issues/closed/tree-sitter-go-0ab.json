@@ -2,7 +2,7 @@
   "id": "tree-sitter-go-0ab",
   "title": "Port shell and scripting grammars: Zsh, Ruby, Perl, Java, HTML, CSS",
   "description": "Generate grammar packages and port external scanners for the remaining target languages.\n\nThese follow the established pattern from earlier grammar ports.\n\nLanguages:\n- Zsh: separate grammar from Bash, scanner extends Bash concepts (must be done after Bash)\n- Ruby: external scanner for heredocs, string interpolation\n- Perl: may have limited tree-sitter grammar maturity\n- Java: relatively straightforward grammar\n- HTML: exercises language injection (SetIncludedRanges) with embedded JS/CSS\n- CSS: commonly injected within HTML\n\nDeliverables per grammar:\n- Generated grammar package via tsgo-generate\n- External scanner ported to Go\n- Differential test passing against C tree-sitter\n- HTML/CSS: validate language injection with SetIncludedRanges\n\nTests:\n- Parse real-world files for each language\n- Differential test against C tree-sitter\n- HTML: test language injection with embedded JS and CSS blocks\n\nReference: docs/design.md §4, §5",
-  "status": "open",
+  "status": "closed",
   "priority": 2,
   "type": "task",
   "parent": "tree-sitter-go-wcu",
@@ -28,5 +28,7 @@
     "grammar-port"
   ],
   "created_at": "2026-02-15T21:26:13.192452-08:00",
-  "updated_at": "2026-02-15T21:26:13.192452-08:00"
+  "updated_at": "2026-02-16T11:43:43.677202-08:00",
+  "closed_at": "2026-02-16T11:43:43.677202-08:00",
+  "close_reason": "Closed"
 }

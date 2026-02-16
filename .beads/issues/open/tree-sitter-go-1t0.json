@@ -1,0 +1,16 @@
+{
+  "id": "tree-sitter-go-1t0",
+  "title": "Ruby scanner: squiggly heredoc (\u003c\u003c~) not supported",
+  "description": "The Ruby scanner does not handle squiggly heredoc syntax (\u003c\u003c~HEREDOC). TestRubyParseHeredoc is skipped with this note. The parser returns nil (not a timeout) suggesting the scanner doesn't recognize the ~. This is a scanner-level fix needed in scanners/ruby/scanner.go.",
+  "status": "open",
+  "priority": 2,
+  "type": "task",
+  "created_by": "Danny Cosson",
+  "owner": "dcosson@gmail.com",
+  "labels": [
+    "bug",
+    "ruby-scanner"
+  ],
+  "created_at": "2026-02-16T11:06:14.1289-08:00",
+  "updated_at": "2026-02-16T11:06:14.1289-08:00"
+}
