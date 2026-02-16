@@ -1,0 +1,16 @@
+[
+  {"name": "json",       "repo": "tree-sitter/tree-sitter-json",       "version": "v0.24.8"},
+  {"name": "go",         "repo": "tree-sitter/tree-sitter-go",         "version": "v0.25.0"},
+  {"name": "javascript", "repo": "tree-sitter/tree-sitter-javascript", "version": "v0.25.0"},
+  {"name": "python",     "repo": "tree-sitter/tree-sitter-python",     "version": "v0.23.6"},
+  {"name": "bash",       "repo": "tree-sitter/tree-sitter-bash",       "version": "v0.25.0"},
+  {"name": "rust",       "repo": "tree-sitter/tree-sitter-rust",       "version": "v0.24.0"},
+  {"name": "c",          "repo": "tree-sitter/tree-sitter-c",          "version": "v0.24.1"},
+  {"name": "cpp",        "repo": "tree-sitter/tree-sitter-cpp",        "version": "v0.23.4"},
+  {"name": "typescript",  "repo": "tree-sitter/tree-sitter-typescript", "version": "v0.23.2"},
+  {"name": "ruby",       "repo": "tree-sitter/tree-sitter-ruby",       "version": "v0.23.1"},
+  {"name": "java",       "repo": "tree-sitter/tree-sitter-java",       "version": "v0.23.5"},
+  {"name": "html",       "repo": "tree-sitter/tree-sitter-html",       "version": "v0.23.2"},
+  {"name": "css",        "repo": "tree-sitter/tree-sitter-css",        "version": "v0.23.2"},
+  {"name": "perl",       "repo": "tree-sitter-perl/tree-sitter-perl",  "version": "v1.1.0"}
+]
