@@ -30,6 +30,25 @@ with the existing tree-sitter grammar ecosystem (~300+ grammars).
 - **Syntax highlighting / tags**: Higher-level features built on top of queries.
   These can be added later as pure Go once the query system works.
 
+### Target Languages
+
+The top 10 languages to support with compiled grammar packages, in priority order:
+
+1. **JSON** — simplest grammar, no external scanner, ideal for bootstrapping
+2. **Go** — primary use case
+3. **JavaScript** — large user base, exercises external scanners (template literals)
+4. **TypeScript** — extends JavaScript, stress-tests large grammar tables (~4000 lex states)
+5. **Python** — indentation-sensitive (complex external scanner)
+6. **Rust** — popular systems language
+7. **C** — foundational, relatively simple grammar
+8. **C++** — complex external scanner (~2000 lines), stress-tests the port
+9. **HTML** — exercises language injection (embedded JS/CSS)
+10. **CSS** — commonly injected within HTML
+
+JSON is the MVP grammar (Phase 1). Go and JavaScript are the primary validation
+targets (Phase 4-5). The remaining grammars validate robustness and are
+prioritized by user demand.
+
 ### Target API
 
 The public API mirrors tree-sitter's C API (`api.h`) translated to idiomatic Go:
@@ -52,8 +71,8 @@ type InputEdit struct { StartByte, OldEndByte, NewEndByte uint32; StartPoint, Ol
 // Parser
 func NewParser() *Parser
 func (p *Parser) SetLanguage(lang *Language) error
-func (p *Parser) Parse(oldTree *Tree, input Input) *Tree
-func (p *Parser) ParseString(oldTree *Tree, source []byte) *Tree
+func (p *Parser) Parse(ctx context.Context, oldTree *Tree, input Input) *Tree
+func (p *Parser) ParseString(ctx context.Context, oldTree *Tree, source []byte) *Tree
 func (p *Parser) SetIncludedRanges(ranges []Range)
 func (p *Parser) Reset()
 
@@ -95,8 +114,11 @@ func (qc *QueryCursor) NextCapture() (*QueryMatch, uint32, bool)
 
 ### Compatibility Goals
 
-- **Grammar compatibility**: Any grammar compiled with tree-sitter generate (ABI
-  version 14-15) should work after compilation to Go.
+- **Grammar compatibility**: Any grammar compiled with tree-sitter generate should
+  work after compilation to Go. The C runtime supports ABI versions 13-15 (version
+  14 added primary state deduplication; version 15 added reserved words and
+  supertypes). We target **ABI version 15 only** — grammars compiled with older
+  tree-sitter versions can be recompiled.
 - **Parse tree compatibility**: Given the same input and grammar, the Go parser
   must produce the same concrete syntax tree (same node types, same structure,
   same byte ranges) as the C parser.
@@ -108,24 +130,25 @@ func (qc *QueryCursor) NextCapture() (*QueryMatch, uint32, bool)
 
 ### C Architecture Overview
 
-The C tree-sitter runtime (`lib/src/`, ~14 files, ~25K lines) implements a GLR
-(Generalized LR) parser based on Wagner & Graham's incremental parsing algorithm.
-The key architectural insight is that the parser is split into a **grammar-independent
-runtime** and **grammar-specific compiled tables + lexer functions**.
+The C tree-sitter runtime (`lib/src/`, 10 `.c` files, ~12.7K lines of core source;
+~15.9K including all headers) implements a GLR (Generalized LR) parser based on
+Wagner & Graham's incremental parsing algorithm. The key architectural insight is
+that the parser is split into a **grammar-independent runtime** and
+**grammar-specific compiled tables + lexer functions**.
 
 The C source files and their responsibilities:
 
 | File | Lines | Role |
 |------|-------|------|
-| `parser.c` | 2263 | Core GLR parsing engine, main loop, error recovery |
-| `query.c` | ~4800 | S-expression query compiler and cursor |
-| `subtree.c` | ~1100 | Tree node creation, ref counting, edit, serialization |
-| `stack.c` | ~900 | Graph-Structured Stack for GLR parsing |
+| `parser.c` | 2262 | Core GLR parsing engine, main loop, error recovery |
+| `query.c` | 4496 | S-expression query compiler and cursor |
+| `subtree.c` | 1034 | Tree node creation, ref counting, edit, serialization |
+| `stack.c` | 912 | Graph-Structured Stack for GLR parsing |
 | `node.c` | ~800 | Public Node API, child iteration |
 | `tree_cursor.c` | ~720 | Stack-based tree traversal cursor |
+| `get_changed_ranges.c` | 557 | Parallel tree walk for incremental change detection |
 | `lexer.c` | ~480 | Chunked input reader, Unicode decoding, token scanning |
-| `get_changed_ranges.c` | ~530 | Parallel tree walk for incremental change detection |
-| `language.c` | ~260 | Parse table lookup, symbol/field accessors |
+| `language.c` | 289 | Parse table lookup, symbol/field accessors |
 | `tree.c` | ~130 | Tree wrapper (root subtree + language + ranges) |
 
 ### Go Package Structure
@@ -188,13 +211,21 @@ Stack (GSS - Graph-Structured Stack)
     └── node graph: StackNode -> []StackLink -> StackNode
         Each StackLink carries a Subtree
 
-Subtree (parse tree node)
+Subtree (parse tree node — index into SubtreeArena, or inline 8-byte value)
     ├── symbol Symbol
     ├── padding, size Length      (byte offset + row/col)
-    ├── children []*Subtree      (nil for leaves)
+    ├── children []Subtree       (value type indices; nil for leaves)
     ├── parseState StateID
-    ├── flags (visible, named, extra, hasChanges, ...)
+    ├── childCount uint32
+    ├── visibleChildCount uint32
+    ├── namedChildCount uint32
+    ├── visibleDescendantCount uint32  (for efficient NamedChild(index))
+    ├── firstLeaf {Symbol, ParseState}  (incremental reuse lex mode check)
+    ├── repeatDepth uint16       (tree balancing for left-recursive repetitions)
+    ├── productionID uint16      (field map lookups, alias sequences)
+    ├── flags (visible, named, extra, hasChanges, fragileLeft, fragileRight, ...)
     ├── errorCost uint32
+    ├── dynamicPrecedence int32
     └── externalScannerState []byte  (for external token leaves)
 
 Tree (public handle)
@@ -225,26 +256,70 @@ QueryCursor (stateful matcher)
 The C runtime uses manual reference counting on `SubtreeHeapData` with atomic
 increment/decrement, a free-list pool (`SubtreePool`, max 32 entries), and a
 clever single-allocation trick where children are stored immediately before the
-parent node's metadata in memory.
+parent node's metadata in memory. It also uses an inline subtree optimization
+where leaf tokens that fit in 8 bytes are stored directly as values (no heap
+allocation) — this covers ~60-80% of leaf tokens.
 
-**Go approach**: Eliminate all ref counting. Go's garbage collector handles lifetime.
-Subtrees become regular Go structs with `children []*Subtree` slices. The
-`SubtreePool` and `ts_subtree_retain`/`ts_subtree_release` machinery is removed
-entirely.
+**Go approach**: Eliminate all ref counting. Go's garbage collector handles
+lifetime. The `ts_subtree_retain`/`ts_subtree_release` machinery is removed
+entirely. We address the resulting GC pressure through three complementary
+strategies:
 
-The C code's inline subtree optimization (8-byte leaf nodes stored in-place
-instead of heap-allocated) exists to reduce malloc pressure. In Go, we use a
-different strategy:
+**1. Arena allocation (primary strategy)**. Allocate subtree nodes from a
+per-parse `SubtreeArena` — a `[]SubtreeHeapData` backing array that the parser
+slices from. This reduces thousands of individual heap allocations to a handful
+of slice allocations, improving GC performance (GC sees one slice header per
+block instead of thousands of individual pointers) and cache locality (nodes
+created during one parse are contiguous in memory):
 
-- All subtrees are `*Subtree` pointers to heap-allocated structs.
-- For leaf-heavy workloads, we can use `sync.Pool` if profiling shows GC pressure.
-- The inline optimization may be revisited later if benchmarks warrant it, but
-  Go's generational GC makes it less critical than in C.
+```go
+type SubtreeArena struct {
+    blocks    [][]SubtreeHeapData
+    current   int
+    blockSize int
+}
 
-The copy-on-write pattern (`ts_subtree_make_mut`) simplifies to: if a subtree
-needs modification and might be shared, copy it. Since there's no ref count to
-check, we track mutability through the parse algorithm's control flow (the parser
-knows when it owns a subtree exclusively).
+func (a *SubtreeArena) alloc() *SubtreeHeapData { /* slice from current block */ }
+```
+
+When a tree is discarded, setting the arena slices to nil frees all nodes at
+once in the next GC cycle.
+
+**2. Inline subtree optimization (designed in from the start)**. The `Subtree`
+type is a small value type that discriminates between inline leaf data and a
+reference to heap-allocated `SubtreeHeapData`:
+
+```go
+type Subtree struct {
+    // If inline is true, leaf data is packed into these fields directly.
+    // If inline is false, index refers to a SubtreeHeapData in the arena.
+    inline     bool
+    // Inline fields (used when inline == true)
+    symbol     uint8
+    parseState uint16
+    // ... packed size/padding fields
+    // Arena reference (used when inline == false)
+    data       *SubtreeHeapData
+}
+```
+
+This preserves the C optimization's value: no pointer chase or heap allocation
+for the majority of leaf tokens. Children are stored as `[]Subtree` (values,
+not pointers), keeping children contiguous in memory with their parent's data
+and avoiding an extra level of indirection.
+
+**3. Immutable trees for copy-on-write**. Without ref counting, we cannot check
+"am I the only owner?" (`refcount == 1`) like C does in `ts_subtree_make_mut`.
+Instead, we treat all trees as immutable. `Tree.Edit()` creates a new tree
+sharing unchanged subtrees by cloning only nodes on the edit path (the spine
+from root to edited leaf). Since the edit path is O(depth) = O(log N), this
+is cheap — for a 10K-line file with ~15 tree depth, we clone ~15 nodes. Go's
+GC automatically keeps shared subtrees alive as long as either tree references
+them. This eliminates an entire class of bugs (mutation of shared data) and
+aligns with Go idioms.
+
+See `docs/addendum-hot-paths.md` for detailed analysis of memory allocation
+hot paths and optimization tiers.
 
 ---
 
@@ -435,25 +510,7 @@ C uses a union (`TSParseActionEntry`) where the same 8 bytes are either a header
 (`{count, reusable}`) or a `TSParseAction` (shift/reduce/accept/recover). In Go,
 we cannot use unions, so we have several options:
 
-**Chosen approach**: Preserve the flat `[]uint16` encoding and decode on access.
-The parse action array is the hottest data structure and its C layout is already
-compact. We store it as `[]uint64` (each entry is 8 bytes) and decode:
-
-```go
-type ParseActionEntry uint64
-
-func (e ParseActionEntry) IsHeader() bool {
-    // Header entries have type byte = 0 in the action position
-    return e.actionType() == 0
-}
-
-func (e ParseActionEntry) HeaderCount() uint8   { /* extract count field */ }
-func (e ParseActionEntry) HeaderReusable() bool  { /* extract reusable field */ }
-func (e ParseActionEntry) AsShift() ShiftAction  { /* decode shift fields */ }
-func (e ParseActionEntry) AsReduce() ReduceAction { /* decode reduce fields */ }
-```
-
-Alternatively, if the bit-packing complexity is not worth it, use a Go struct:
+**Chosen approach**: Use a Go struct for clarity and simplicity:
 
 ```go
 type ParseActionEntry struct {
@@ -473,8 +530,13 @@ type ParseActionEntry struct {
 }
 ```
 
-The struct approach wastes ~10 bytes per entry but is simpler and the total table
-size is still modest (typical grammars have 2K-20K entries = 20-200KB overhead).
+The struct approach wastes ~10 bytes per entry compared to the C union's 8 bytes,
+but is simpler and the total table size is still modest (typical grammars have
+2K-20K entries = 20-200KB overhead). The actual hot path is `tableEntry()`
+which returns a `TableEntry` (pointer + count + reusable flag) — the per-entry
+decoding happens once at lookup time, not in an inner loop. If profiling shows
+this overhead matters, a `uint64` bit-packed encoding can be substituted without
+changing the API.
 
 ---
 
@@ -579,9 +641,74 @@ The scanner porting effort is bounded: the interface is only 3 methods, the
 bytes. The hard part is understanding each scanner's semantics, not the
 mechanical translation.
 
+### WASM Code Paths
+
+The C parser has WASM-conditional code paths for calling external scanners
+via the WASM runtime. Since WASM grammar loading is out of scope, these code
+paths will be cleanly excised from the Go port — they should not appear as
+dead code or stub implementations.
+
 ---
 
-## 5. Incremental Parsing
+## 5. Input Model and Language Injection
+
+### Chunked Input (TSInput Callback)
+
+The C parser uses a callback-based input model (`TSInput.read`) that supports
+reading from ropes, gap buffers, and other non-contiguous data structures
+without requiring the entire source to be in a contiguous `[]byte`. The lexer
+manages this by maintaining a current "chunk" — a contiguous byte slice provided
+by the callback — and requesting new chunks when it crosses a chunk boundary.
+
+The Go `Input` interface mirrors this:
+
+```go
+type Input interface {
+    Read(byteOffset uint32, position Point) []byte
+}
+```
+
+The `Lexer` struct is responsible for:
+1. Calling `Input.Read()` when the current position crosses a chunk boundary
+2. Buffering the returned chunk and tracking the chunk's start offset
+3. Decoding UTF-8 characters from the current position within the chunk
+4. Handling the transition between chunks seamlessly (a multi-byte UTF-8
+   character may span a chunk boundary)
+
+For the common case of parsing a single `[]byte`, the `ParseString` convenience
+method wraps the slice in a trivial `Input` that returns the entire source on
+the first call and nil thereafter. In this case, there is only one chunk and
+no chunk-boundary overhead.
+
+### Included Ranges and Language Injection
+
+`Parser.SetIncludedRanges(ranges []Range)` restricts the parser to only
+consider specified byte ranges of the input, skipping everything in between.
+This enables **language injection** — parsing embedded languages within a host
+document (e.g., JavaScript inside HTML `<script>` tags, CSS inside `<style>`
+tags, SQL inside string literals).
+
+The mechanism affects multiple components:
+
+- **Lexer**: Must detect when the current position exits an included range and
+  jump to the start of the next included range. At range boundaries, the lexer
+  reports `is_at_included_range_start`, which allows the parser to handle
+  transitions between host and embedded language regions.
+- **Incremental parser**: When included ranges change between parses (because
+  the host document was re-parsed and the embedded regions shifted), the parser
+  computes `included_range_differences` and treats nodes overlapping those
+  differences as non-reusable, forcing re-parse of affected regions.
+- **Changed ranges**: The parallel tree walk must account for included range
+  differences when comparing old and new trees.
+
+For the MVP, included ranges with a single range covering the full input is the
+default. Multi-range support (for language injection) is deferred to Phase 5
+alongside external scanners, since language injection is typically used together
+with external scanners.
+
+---
+
+## 6. Incremental Parsing
 
 ### How C Tree-sitter Does It
 
@@ -689,7 +816,7 @@ iterator and the reusability checks in `ts_parser__advance`.
 
 ---
 
-## 6. Query System
+## 7. Query System
 
 ### Overview
 
@@ -809,7 +936,7 @@ func (q *Query) PredicatesForPattern(patternIndex uint32) [][]PredicateStep
 
 ---
 
-## 7. Performance
+## 8. Performance
 
 ### Performance Targets
 
@@ -829,10 +956,16 @@ benchmarks:
 **GC pressure**: The biggest concern. Tree-sitter creates many small objects
 (one `Subtree` per token). A 10KB file might have 2,000-5,000 subtree nodes.
 
-Mitigations:
-- Use `sync.Pool` for `Subtree` allocation if profiling shows GC pressure
+Mitigations (in priority order):
+- **Arena allocation** (primary): Allocate subtree nodes from per-parse
+  `SubtreeArena` backing arrays. Reduces thousands of individual allocations to
+  a handful of slice allocations. See §2 Memory Management.
+- **Inline subtrees**: Small leaf tokens stored as 8-byte values (no heap
+  allocation), eliminating ~60-80% of subtree allocations entirely.
 - Keep `Node` as a small value type (no allocation on tree traversal)
-- Pre-allocate slices with estimated capacity
+- `sync.Pool` for `StackNode` and other short-lived allocations where arena
+  allocation doesn't apply. Note: `sync.Pool` items can be collected at any
+  GC cycle, so it provides only best-effort pooling.
 
 **Bounds checking**: Go arrays have bounds checks. Parse table lookups are in
 the hot path.
@@ -845,6 +978,8 @@ Mitigations:
 state transitions. Go's `for/switch` loop has slightly more overhead.
 
 Mitigations:
+- Use concrete types (not interfaces) for the lexer on hot paths — `*Lexer`
+  directly, not through an interface
 - The Go compiler inlines small cases well
 - For very hot lex states (e.g., identifier scanning), consider loop unrolling
   in the code generator
@@ -856,26 +991,9 @@ Go is the same (slice index).
 Mitigations: None needed — Go slice access is essentially the same as C array
 access after bounds check elimination.
 
-**Object pooling**: C's `SubtreePool` avoids malloc/free overhead by reusing
-allocations. In Go:
-
-```go
-var subtreePool = sync.Pool{
-    New: func() interface{} { return new(Subtree) },
-}
-
-func newSubtree() *Subtree {
-    return subtreePool.Get().(*Subtree)
-}
-
-func releaseSubtree(s *Subtree) {
-    *s = Subtree{} // zero before returning
-    subtreePool.Put(s)
-}
-```
-
 **Stack (GSS) node allocation**: The GLR stack creates and discards nodes
-frequently during ambiguity resolution. Use a pool for `StackNode` as well.
+frequently during ambiguity resolution. Use a `sync.Pool` or manual free-list
+(matching C's 50-node pool) for `StackNode`.
 
 ### Profiling Strategy
 
@@ -889,7 +1007,7 @@ frequently during ambiguity resolution. Use a pool for `StackNode` as well.
 
 ---
 
-## 8. Implementation Phases
+## 9. Implementation Phases
 
 Each phase produces a working, testable artifact. Earlier phases are prerequisites
 for later ones.
@@ -961,7 +1079,12 @@ GLR algorithm.
 - `ReusableNode` iterator
 - Reusability checks in `parser.advance()`
 - `changed_ranges.go`: parallel tree walk for change detection
-- Tree balancing (`subtree.compress()` for left-recursive repetition depth)
+- Tree balancing (`subtree.compress()`): Left-recursive repetitions (e.g., a file
+  with 1000 top-level statements) produce degenerate left-leaning trees. The
+  `compress` function performs AVL-like rotations on repetition nodes (tracked by
+  `repeat_depth`) to keep depth O(log N). This is critical for incremental parsing
+  performance (the reusable node iterator traverses to depth) and for
+  `Node.Child(index)` performance on long lists.
 - Tests: edit-and-reparse cycles, verify results match from-scratch parse,
   benchmark incremental vs full parse
 
@@ -990,7 +1113,7 @@ GLR algorithm.
 
 ---
 
-## 9. Key Risks and Open Questions
+## 10. Key Risks and Open Questions
 
 ### Risk: GLR Stack Complexity
 
@@ -1049,9 +1172,10 @@ Parsing a 1MB file creates ~100K subtree objects. GC scanning this object graph
 could cause noticeable pauses.
 
 **Mitigation**:
-- Use `sync.Pool` for subtree allocation
-- Consider arena-style allocation: allocate subtrees from a `[]Subtree` backing
-  array, avoiding individual heap allocations
+- Arena allocation (primary) — reduces individual allocations to a handful of
+  slice allocations, directly reducing GC tracing work
+- Inline subtrees eliminate ~60-80% of heap allocations for leaf tokens
+- `sync.Pool` for `StackNode` and other non-arena allocations
 - If GC pauses are measured and problematic, explore `GOGC` tuning or
   `runtime.SetMemoryLimit`
 
@@ -1071,25 +1195,24 @@ repo and vendor the output.
 Recommendation: Start with Option C (users generate their own) for the MVP, then
 move to Option A (individual modules) for popular grammars.
 
-### Open Question: Concurrency Model
+### Decision: Concurrency Model
 
-Should a single `Parser` be safe for concurrent use?
+`Parser` is **not** goroutine-safe — a single `Parser` must not be used from
+multiple goroutines concurrently. This matches the C parser's threading model.
+`Tree`, `Node`, `Query`, and `Language` are safe for concurrent read access
+(they are immutable after creation). Users who need concurrent parsing should
+create separate `Parser` instances.
 
-The C parser is **not** thread-safe — a `TSParser` must not be used from multiple
-goroutines. We should match this: `Parser` is not goroutine-safe, but `Tree`,
-`Node`, `Query`, and `Language` are safe for concurrent read access (they are
-immutable after creation).
+### Decision: Cancellation via context.Context
 
-### Open Question: ABI Version Support
+The `Parser.Parse()` and `Parser.ParseString()` methods accept a
+`context.Context` parameter. The parser's main loop checks `ctx.Done()` at the
+same points where the C parser checks its cancellation flag
+(`ts_parser_set_timeout_micros` / `ts_parser_set_cancellation_flag`). This is
+the idiomatic Go approach and should be integrated from day one rather than
+retrofitted.
 
-The C runtime supports ABI versions 14 and 15 (with version 15 adding reserved
-word sets, supertypes, and language metadata). Should we support both?
-
-Recommendation: Target ABI version 15 only. Grammars compiled with older
-tree-sitter versions can be recompiled. This simplifies the runtime by avoiding
-version-dependent code paths.
-
-### Open Question: Error Recovery Fidelity
+### Error Recovery Fidelity
 
 Tree-sitter's error recovery explores multiple strategies (missing token insertion,
 speculative reductions, token skipping) as parallel stack versions, pruned by an

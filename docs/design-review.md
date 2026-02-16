@@ -1,5 +1,31 @@
 # Design Review: treesitter-go
 
+## Incorporation Status
+
+*Updated 2026-02-15. All actionable feedback from this review has been
+incorporated back into `design.md`. Summary of changes:*
+
+| Issue | Status | Notes |
+|-------|--------|-------|
+| ABI version range "14-15" | **Fixed** | Corrected to 13-15, targeting 15 only |
+| Source file line counts | **Fixed** | Updated to accurate counts |
+| Inline subtree optimization | **Incorporated** | Designed in from the start; `Subtree` is a value type with inline/heap discrimination |
+| Missing Subtree fields | **Incorporated** | Added `visibleDescendantCount`, `firstLeaf`, `fragileLeft/Right`, `repeatDepth`, `productionID` |
+| Copy-on-write under-specified | **Incorporated** | Decided: immutable trees, always clone edit path (O(depth)) |
+| Children `[]*Subtree` → `[]Subtree` | **Incorporated** | Children stored as `[]Subtree` values for cache locality |
+| Tree balancing not explained | **Incorporated** | Added explanation in Phase 6 deliverables |
+| TSInput callback model | **Incorporated** | New §5 covering chunked input and lexer buffering |
+| `included_ranges` / language injection | **Incorporated** | New §5 covering mechanism and component impact |
+| `context.Context` for cancellation | **Incorporated** | Added to API (`Parse`/`ParseString` accept `ctx`); new Decision section |
+| WASM code paths | **Incorporated** | Note added to §4 (External Scanners) |
+| ParseActionEntry bit-packing | **Incorporated** | Struct is now primary; bit-packing deferred to profiling |
+| `sync.Pool` caveats / arena allocation | **Incorporated** | Arena is now primary strategy; `sync.Pool` is secondary |
+| Concurrency "open question" | **Incorporated** | Converted to Decision: Parser not goroutine-safe, immutable objects safe for concurrent reads |
+| ABI version "open question" | **Incorporated** | Merged into Compatibility Goals (ABI 15 only) |
+| Phase 3 time estimate | **Noted** | Review suggested 4-5 weeks; not changed in design (estimates are guidance, not commitments) |
+
+---
+
 ## What's Good
 
 **Strong architectural direction.** The overall approach — a pure-Go port of the
