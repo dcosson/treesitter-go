@@ -179,7 +179,25 @@ type LexTransition struct {
 	// When non-empty, this transition matches if the lookahead is in the named set.
 	CharSetName string
 
+	// EOFGuard is true when the condition is guarded by "!eof &&".
+	// Used for compound conditions like "if (!eof && set_contains(...))".
+	EOFGuard bool
+
+	// LowBound is set when the condition includes "lookahead > X".
+	// The generated code will prepend "lookahead > X && " to the condition.
+	LowBound rune
+
+	// ExcludeRanges are ranges excluded via "(lookahead < Low || High < lookahead)".
+	// Each range generates "&& (lookahead < Low || lookahead > High)".
+	ExcludeRanges []RuneRange
+
 	// Target state (used with ADVANCE/SKIP)
 	Target int
 	Skip   bool // true for SKIP, false for ADVANCE
+}
+
+// RuneRange is a closed interval [Low, High] of runes.
+type RuneRange struct {
+	Low  rune
+	High rune
 }

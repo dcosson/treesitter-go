@@ -434,13 +434,14 @@ func writeLexFunction(b *strings.Builder, g *Grammar, isKeyword bool) {
 					advanceCall = "true"
 				}
 
+				// Build the condition string.
+				var cond string
 				if t.CharSetName != "" {
-					fmt.Fprintf(b, "\t\t\tif setContains(%s, lookahead) {\n", t.CharSetName)
+					cond = fmt.Sprintf("setContains(%s, lookahead)", t.CharSetName)
 				} else if t.IsRange {
-					fmt.Fprintf(b, "\t\t\tif lookahead >= %s && lookahead <= %s {\n",
+					cond = fmt.Sprintf("lookahead >= %s && lookahead <= %s",
 						goCharLit(t.Low), goCharLit(t.High))
 				} else if t.IsNegated && len(t.CharExclusions) > 0 {
-					// Compound negation: exclude multiple chars/EOF.
 					var conditions []string
 					for _, ex := range t.CharExclusions {
 						if ex == 0 {
@@ -449,16 +450,34 @@ func writeLexFunction(b *strings.Builder, g *Grammar, isKeyword bool) {
 							conditions = append(conditions, fmt.Sprintf("lookahead != %s", goCharLit(ex)))
 						}
 					}
-					fmt.Fprintf(b, "\t\t\tif %s {\n", strings.Join(conditions, " && "))
+					cond = strings.Join(conditions, " && ")
 				} else if t.IsNegated {
 					if t.Char == 0 {
-						fmt.Fprintf(b, "\t\t\tif !eof {\n")
+						cond = "!eof"
 					} else {
-						fmt.Fprintf(b, "\t\t\tif lookahead != %s {\n", goCharLit(t.Char))
+						cond = fmt.Sprintf("lookahead != %s", goCharLit(t.Char))
 					}
 				} else {
-					fmt.Fprintf(b, "\t\t\tif lookahead == %s {\n", goCharLit(t.Char))
+					cond = fmt.Sprintf("lookahead == %s", goCharLit(t.Char))
 				}
+
+				// Append exclusion range conditions.
+				for _, er := range t.ExcludeRanges {
+					cond += fmt.Sprintf(" && (lookahead < %s || lookahead > %s)",
+						goCharLit(er.Low), goCharLit(er.High))
+				}
+
+				// Prepend lower bound guard.
+				if t.LowBound != 0 {
+					cond = fmt.Sprintf("lookahead > %s && %s", goCharLit(t.LowBound), cond)
+				}
+
+				// Prepend EOF guard.
+				if t.EOFGuard {
+					cond = "!eof && " + cond
+				}
+
+				fmt.Fprintf(b, "\t\t\tif %s {\n", cond)
 				fmt.Fprintf(b, "\t\t\t\tstate = %d\n", t.Target)
 				fmt.Fprintf(b, "\t\t\t\tlexer.Advance(%s)\n", advanceCall)
 				fmt.Fprintf(b, "\t\t\t\tlookahead = lexer.Lookahead\n")

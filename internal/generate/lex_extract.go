@@ -173,28 +173,31 @@ func parseCaseBlock(id int, body string, symbolEnum map[string]int) (LexState, e
 			continue
 		}
 
-		// if (eof) ADVANCE(N)
-		if strings.Contains(line, "eof") && strings.Contains(line, "ADVANCE(") {
+		// set_contains() calls — check BEFORE eof to avoid misinterpreting
+		// "!eof && set_contains(...)" as a standalone "if (eof)" check.
+		if strings.Contains(line, "set_contains(") {
+			if t := parseSetContains(line); t != nil {
+				state.Transitions = append(state.Transitions, *t)
+			}
+			continue
+		}
+
+		// if (eof) ADVANCE(N) — standalone eof check only (not compound !eof).
+		if strings.Contains(line, "eof") && !strings.Contains(line, "!eof") &&
+			strings.Contains(line, "ADVANCE(") {
 			target := extractInt(line, `ADVANCE\((\d+)\)`)
 			state.HasEOFCheck = true
 			state.EOFTarget = target
 			continue
 		}
 
-		// if (eof) ACCEPT_TOKEN(sym)
-		if strings.Contains(line, "eof") && strings.Contains(line, "ACCEPT_TOKEN(") {
+		// if (eof) ACCEPT_TOKEN(sym) — standalone eof check only.
+		if strings.Contains(line, "eof") && !strings.Contains(line, "!eof") &&
+			strings.Contains(line, "ACCEPT_TOKEN(") {
 			sym := extractInt(line, `ACCEPT_TOKEN\((\w+)\)`)
 			state.HasEOFCheck = true
 			state.EOFAccept = true
 			state.EOFAcceptToken = uint16(sym)
-			continue
-		}
-
-		// set_contains() calls: if (set_contains(name, count, lookahead)) ADVANCE(N);
-		if strings.Contains(line, "set_contains(") {
-			if t := parseSetContains(line); t != nil {
-				state.Transitions = append(state.Transitions, *t)
-			}
 			continue
 		}
 
@@ -287,42 +290,59 @@ func parseIfTransitions(line string, lines []string, idx *int) []LexTransition {
 
 	base := LexTransition{Target: target, Skip: skip}
 
-	// Negated conditions: lookahead != X, possibly &&-chained.
-	// Examples:
-	//   if (lookahead != 0)                       → simple EOF exclusion (default)
-	//   if (lookahead != '<')                      → single char exclusion
-	//   if (lookahead != '<' && lookahead != 0)    → compound: exclude '<' and EOF
-	//   if (lookahead != 'a' && lookahead != 'b')  → compound: exclude 'a' and 'b'
-	if strings.Contains(fullLine, "lookahead !=") && !strings.Contains(fullLine, "||") &&
-		!strings.Contains(fullLine, "lookahead ==") {
+	// Parse compound conditions by splitting on top-level && (respecting parens),
+	// then classifying each sub-condition. This handles all patterns:
+	//   Pattern 1: lookahead != X, possibly &&-chained
+	//   Pattern 2: lookahead > X && lookahead != Y
+	//   Pattern 3: (lookahead < X || Y < lookahead) exclusion ranges
+	//   Pattern 4: lookahead > X && exclusion ranges
+	//   Pattern 5: != conditions mixed with exclusion ranges
+	if strings.Contains(fullLine, "lookahead !=") || strings.Contains(fullLine, "lookahead >") {
+		condRe := regexp.MustCompile(`if\s*\(\s*(.*?)\)\s*(?:ADVANCE|SKIP)\(`)
+		condMatch := condRe.FindStringSubmatch(fullLine)
+		if condMatch != nil {
+			condStr := condMatch[1]
+			subconds := splitTopLevelAnd(condStr)
 
-		// Extract all != conditions from the line.
-		neqCharRe := regexp.MustCompile(`lookahead\s*!=\s*'([^']*)'`)
-		neqZeroRe := regexp.MustCompile(`lookahead\s*!=\s*0[^x]|lookahead\s*!=\s*0\s*[)&]|lookahead\s*!=\s*0\s*$`)
-		charMatches := neqCharRe.FindAllStringSubmatch(fullLine, -1)
-		hasZeroExclusion := neqZeroRe.MatchString(fullLine)
+			var exclusions []rune
+			var lowBound rune
+			var excludeRanges []RuneRange
 
-		var exclusions []rune
-		for _, m := range charMatches {
-			exclusions = append(exclusions, parseCChar("'"+m[1]+"'"))
-		}
-		if hasZeroExclusion {
-			exclusions = append(exclusions, 0)
-		}
+			neqCharRe := regexp.MustCompile(`^\s*lookahead\s*!=\s*'([^']*)'`)
+			neqZeroRe := regexp.MustCompile(`^\s*lookahead\s*!=\s*0\s*$`)
+			gtCharRe := regexp.MustCompile(`^\s*lookahead\s*>\s*'([^']*)'`)
+			exclRangeRe := regexp.MustCompile(`^\s*\(?\s*lookahead\s*<\s*'([^']*)'\s*\|\|\s*'([^']*)'\s*<\s*lookahead\s*\)?\s*$`)
 
-		if len(exclusions) == 1 {
-			// Simple single negation.
-			t := base
-			t.IsNegated = true
-			t.Char = exclusions[0]
-			return []LexTransition{t}
-		}
-		if len(exclusions) > 1 {
-			// Compound negation: exclude all chars in the set.
-			t := base
-			t.IsNegated = true
-			t.CharExclusions = exclusions
-			return []LexTransition{t}
+			for _, sc := range subconds {
+				sc = strings.TrimSpace(sc)
+				if m := neqCharRe.FindStringSubmatch(sc); m != nil {
+					exclusions = append(exclusions, parseCChar("'"+m[1]+"'"))
+				} else if neqZeroRe.MatchString(sc) {
+					exclusions = append(exclusions, 0)
+				} else if m := gtCharRe.FindStringSubmatch(sc); m != nil {
+					lowBound = parseCChar("'" + m[1] + "'")
+				} else if m := exclRangeRe.FindStringSubmatch(sc); m != nil {
+					excludeRanges = append(excludeRanges, RuneRange{
+						Low:  parseCChar("'" + m[1] + "'"),
+						High: parseCChar("'" + m[2] + "'"),
+					})
+				}
+			}
+
+			exclusions = dedupeRunes(exclusions)
+
+			if len(exclusions) > 0 || lowBound != 0 || len(excludeRanges) > 0 {
+				t := base
+				t.IsNegated = true
+				t.LowBound = lowBound
+				t.ExcludeRanges = excludeRanges
+				if len(exclusions) == 1 {
+					t.Char = exclusions[0]
+				} else if len(exclusions) > 1 {
+					t.CharExclusions = exclusions
+				}
+				return []LexTransition{t}
+			}
 		}
 	}
 
@@ -446,9 +466,13 @@ func parseCChar(s string) rune {
 }
 
 // parseSetContains parses a set_contains() call into a LexTransition.
-// Format: if (set_contains(sym_identifier_character_set_1, 669, lookahead)) ADVANCE(191);
+// Handles both simple and compound forms:
+//
+//	if (set_contains(name, count, lookahead)) ADVANCE(N);
+//	if ((!eof && set_contains(name, count, lookahead))) ADVANCE(N);
 func parseSetContains(line string) *LexTransition {
-	re := regexp.MustCompile(`set_contains\((\w+),\s*\d+,\s*lookahead\)\)\s*(?:ADVANCE|SKIP)\((\d+)\)`)
+	// Use \)+ to handle variable numbers of closing parens (compound !eof forms have extra).
+	re := regexp.MustCompile(`set_contains\((\w+),\s*\d+,\s*lookahead\)\)+\s*(?:ADVANCE|SKIP)\((\d+)\)`)
 	m := re.FindStringSubmatch(line)
 	if m == nil {
 		return nil
@@ -456,11 +480,13 @@ func parseSetContains(line string) *LexTransition {
 	setName := m[1]
 	target, _ := strconv.Atoi(m[2])
 	skip := strings.Contains(line, "SKIP(")
+	hasEOFGuard := strings.Contains(line, "!eof")
 
 	return &LexTransition{
 		CharSetName: setName,
 		Target:      target,
 		Skip:        skip,
+		EOFGuard:    hasEOFGuard,
 	}
 }
 
@@ -510,4 +536,65 @@ func splitCSV(s string) []string {
 		parts = append(parts, current.String())
 	}
 	return parts
+}
+
+// splitTopLevelAnd splits a C condition string on top-level "&&" operators,
+// respecting parenthesized sub-expressions.
+func splitTopLevelAnd(s string) []string {
+	var parts []string
+	var current strings.Builder
+	depth := 0
+
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if c == '\'' {
+			current.WriteByte(c)
+			i++
+			for i < len(s) {
+				cc := s[i]
+				current.WriteByte(cc)
+				if cc == '\\' {
+					i++
+					if i < len(s) {
+						current.WriteByte(s[i])
+					}
+				} else if cc == '\'' {
+					break
+				}
+				i++
+			}
+		} else if c == '(' {
+			depth++
+			current.WriteByte(c)
+		} else if c == ')' {
+			depth--
+			current.WriteByte(c)
+		} else if depth == 0 && c == '&' && i+1 < len(s) && s[i+1] == '&' {
+			parts = append(parts, current.String())
+			current.Reset()
+			i++ // skip second '&'
+		} else {
+			current.WriteByte(c)
+		}
+	}
+	if current.Len() > 0 {
+		parts = append(parts, current.String())
+	}
+	return parts
+}
+
+// dedupeRunes removes duplicate runes from a slice while preserving order.
+func dedupeRunes(rs []rune) []rune {
+	if len(rs) <= 1 {
+		return rs
+	}
+	seen := make(map[rune]bool, len(rs))
+	var result []rune
+	for _, r := range rs {
+		if !seen[r] {
+			seen[r] = true
+			result = append(result, r)
+		}
+	}
+	return result
 }
