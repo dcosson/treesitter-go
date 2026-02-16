@@ -192,31 +192,15 @@ func (n Node) Child(index int) Node {
 	}
 
 	// Walk through structural children, counting visible ones.
+	// Hidden nodes are recursively descended to find their visible descendants.
 	visibleIndex := 0
 	childPos := Length{Bytes: n.context[0], Point: Point{Row: n.context[1], Column: n.context[2]}}
 	for _, child := range children {
-		childVisible := IsVisible(child, arena)
-		if childVisible {
-			if visibleIndex == index {
-				return n.tree.nodeFromChildSubtree(child, childPos, n.subtree, arena)
-			}
-			visibleIndex++
-			childPos = advancePosition(childPos, child, arena)
-		} else {
-			// Hidden node: its visible descendants count as this node's children.
-			grandchildren := GetChildren(child, arena)
-			subPos := childPos
-			for _, gc := range grandchildren {
-				if IsVisible(gc, arena) {
-					if visibleIndex == index {
-						return n.tree.nodeFromChildSubtree(gc, subPos, child, arena)
-					}
-					visibleIndex++
-				}
-				subPos = advancePosition(subPos, gc, arena)
-			}
-			childPos = advancePosition(childPos, child, arena)
+		found, result := n.tree.walkVisibleChildren(child, childPos, n.subtree, arena, index, &visibleIndex)
+		if found {
+			return result
 		}
+		childPos = advancePosition(childPos, child, arena)
 	}
 
 	return Node{}
@@ -237,32 +221,65 @@ func (n Node) NamedChild(index int) Node {
 	namedIndex := 0
 	childPos := Length{Bytes: n.context[0], Point: Point{Row: n.context[1], Column: n.context[2]}}
 	for _, child := range children {
-		childVisible := IsVisible(child, arena)
-		if childVisible {
-			if IsNamed(child, arena) && !IsExtra(child, arena) {
-				if namedIndex == index {
-					return n.tree.nodeFromChildSubtree(child, childPos, n.subtree, arena)
-				}
-				namedIndex++
-			}
-			childPos = advancePosition(childPos, child, arena)
-		} else {
-			grandchildren := GetChildren(child, arena)
-			subPos := childPos
-			for _, gc := range grandchildren {
-				if IsVisible(gc, arena) && IsNamed(gc, arena) && !IsExtra(gc, arena) {
-					if namedIndex == index {
-						return n.tree.nodeFromChildSubtree(gc, subPos, child, arena)
-					}
-					namedIndex++
-				}
-				subPos = advancePosition(subPos, gc, arena)
-			}
-			childPos = advancePosition(childPos, child, arena)
+		found, result := n.tree.walkNamedChildren(child, childPos, n.subtree, arena, index, &namedIndex)
+		if found {
+			return result
 		}
+		childPos = advancePosition(childPos, child, arena)
 	}
 
 	return Node{}
+}
+
+// walkVisibleChildren recursively searches for the visible child at the given
+// target index. Hidden nodes are descended into to find their visible children.
+// Returns (true, node) if found, (false, Node{}) otherwise.
+func (t *Tree) walkVisibleChildren(subtree Subtree, pos Length, parent Subtree, arena *SubtreeArena, targetIndex int, currentIndex *int) (bool, Node) {
+	if IsVisible(subtree, arena) {
+		if *currentIndex == targetIndex {
+			return true, t.nodeFromChildSubtree(subtree, pos, parent, arena)
+		}
+		*currentIndex++
+		return false, Node{}
+	}
+
+	// Hidden node: recurse into its children.
+	children := GetChildren(subtree, arena)
+	subPos := pos
+	for _, gc := range children {
+		found, result := t.walkVisibleChildren(gc, subPos, subtree, arena, targetIndex, currentIndex)
+		if found {
+			return true, result
+		}
+		subPos = advancePosition(subPos, gc, arena)
+	}
+	return false, Node{}
+}
+
+// walkNamedChildren recursively searches for the named child at the given
+// target index. Hidden nodes are descended into to find their named children.
+func (t *Tree) walkNamedChildren(subtree Subtree, pos Length, parent Subtree, arena *SubtreeArena, targetIndex int, currentIndex *int) (bool, Node) {
+	if IsVisible(subtree, arena) {
+		if IsNamed(subtree, arena) && !IsExtra(subtree, arena) {
+			if *currentIndex == targetIndex {
+				return true, t.nodeFromChildSubtree(subtree, pos, parent, arena)
+			}
+			*currentIndex++
+		}
+		return false, Node{}
+	}
+
+	// Hidden node: recurse into its children.
+	children := GetChildren(subtree, arena)
+	subPos := pos
+	for _, gc := range children {
+		found, result := t.walkNamedChildren(gc, subPos, subtree, arena, targetIndex, currentIndex)
+		if found {
+			return true, result
+		}
+		subPos = advancePosition(subPos, gc, arena)
+	}
+	return false, Node{}
 }
 
 // ChildByFieldName returns the first child associated with the given field name.

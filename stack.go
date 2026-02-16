@@ -341,6 +341,17 @@ func (s *Stack) Split(version StackVersion) StackVersion {
 	return newVersion
 }
 
+// ForkAtNode creates a new active version pointing at the given node.
+// Used during multi-path reduce to create versions for alt pop paths.
+func (s *Stack) ForkAtNode(node *StackNode) StackVersion {
+	newVersion := StackVersion(len(s.heads))
+	s.heads = append(s.heads, StackHead{
+		node:   node,
+		status: StackStatusActive,
+	})
+	return newVersion
+}
+
 // Merge combines two versions that have reached the same state.
 // The source version's top node is added as an additional link on the
 // target version's top node. The source version is halted.

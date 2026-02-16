@@ -6,16 +6,20 @@ import (
 
 // makeTestLanguage creates a minimal language for testing parse table lookup.
 // It has 5 symbols, 4 states (2 large, 2 small), and some parse actions.
+//
+// This follows the C tree-sitter encoding:
+//   - Terminals (symbols < TokenCount): table entries are action indices into ParseActions
+//   - Non-terminals (symbols >= TokenCount): table entries are raw state IDs (goto targets)
 func makeTestLanguage() *Language {
-	// Symbols: 0=end, 1='{', 2='}', 3=value, 4=document
+	// Symbols: 0=end, 1='{', 2='}' (terminals); 3=value, 4=document (non-terminals)
 	symbolCount := uint32(5)
+	tokenCount := uint32(3) // 0, 1, 2 are terminals
 
 	// Parse actions table (flat array):
 	// Index 0: empty (lookup returns 0 for no action)
 	// Index 1: header(count=1, reusable=false) + shift(state=2)
-	// Index 2: header(count=1, reusable=true) + reduce(symbol=4, children=1)
-	// Index 3: header(count=1, reusable=false) + accept
-	// Index 4: header(count=1, reusable=false) + shift(state=3)
+	// Index 3: header(count=1, reusable=true) + reduce(symbol=4, children=1)
+	// Index 5: header(count=1, reusable=false) + accept
 	parseActions := []ParseActionEntry{
 		// [0]: sentinel/empty
 		{Type: ParseActionTypeHeader, Count: 0},
@@ -28,21 +32,18 @@ func makeTestLanguage() *Language {
 		// [5]: accept
 		{Type: ParseActionTypeHeader, Count: 1, Reusable: false},
 		{Type: ParseActionTypeAccept},
-		// [7]: shift to state 3
-		{Type: ParseActionTypeHeader, Count: 1, Reusable: false},
-		{Type: ParseActionTypeShift, ShiftState: 3},
 	}
 
 	// Large state table (2 large states):
-	// State 0: symbol 1 ('{') -> action index 1
-	// State 1: symbol 4 (document) -> action index 5 (accept), symbol 3 (value) -> action index 7
+	// For terminal symbols (0-2): entries are action indices.
+	// For non-terminal symbols (3-4): entries are raw state IDs (goto targets).
 	parseTable := make([]uint16, 2*symbolCount)
-	// State 0, symbol 1 -> action 1
+	// State 0, symbol 1 ('{', terminal) -> action index 1
 	parseTable[0*symbolCount+1] = 1
-	// State 1, symbol 4 -> action 5
-	parseTable[1*symbolCount+4] = 5
-	// State 1, symbol 3 -> action 7
-	parseTable[1*symbolCount+3] = 7
+	// State 1, symbol 0 (end, terminal) -> action index 5 (accept)
+	parseTable[1*symbolCount+0] = 5
+	// State 1, symbol 3 (value, non-terminal) -> goto state 3 (raw state ID)
+	parseTable[1*symbolCount+3] = 3
 
 	// Small state table (2 small states mapped at state 2 and state 3):
 	// State 2 (small index 0): symbol 2 ('}') -> action index 3
@@ -61,6 +62,7 @@ func makeTestLanguage() *Language {
 
 	return &Language{
 		SymbolCount:     symbolCount,
+		TokenCount:      tokenCount,
 		StateCount:      4,
 		LargeStateCount: 2,
 		ParseTable:      parseTable,
@@ -81,7 +83,7 @@ func makeTestLanguage() *Language {
 func TestLanguageLookupLargeState(t *testing.T) {
 	lang := makeTestLanguage()
 
-	// State 0 (large), symbol 1 -> action index 1.
+	// State 0 (large), symbol 1 (terminal) -> action index 1.
 	got := lang.lookup(0, 1)
 	if got != 1 {
 		t.Errorf("lookup(0, 1) = %d, want 1", got)
@@ -93,16 +95,16 @@ func TestLanguageLookupLargeState(t *testing.T) {
 		t.Errorf("lookup(0, 0) = %d, want 0", got)
 	}
 
-	// State 1 (large), symbol 4 -> action index 5.
-	got = lang.lookup(1, 4)
+	// State 1 (large), symbol 0 (terminal) -> action index 5 (accept).
+	got = lang.lookup(1, 0)
 	if got != 5 {
-		t.Errorf("lookup(1, 4) = %d, want 5", got)
+		t.Errorf("lookup(1, 0) = %d, want 5", got)
 	}
 
-	// State 1 (large), symbol 3 -> action index 7.
+	// State 1 (large), symbol 3 (non-terminal) -> raw state ID 3 (goto target).
 	got = lang.lookup(1, 3)
-	if got != 7 {
-		t.Errorf("lookup(1, 3) = %d, want 7", got)
+	if got != 3 {
+		t.Errorf("lookup(1, 3) = %d, want 3", got)
 	}
 }
 
@@ -167,13 +169,13 @@ func TestLanguageTableEntry(t *testing.T) {
 		t.Errorf("tableEntry(2,2) reduce symbol = %d, want 4", entry.Actions[0].ReduceSymbol)
 	}
 
-	// Accept action.
-	entry = lang.tableEntry(1, 4)
+	// Accept action (terminal symbol 0 = end).
+	entry = lang.tableEntry(1, 0)
 	if entry.ActionCount != 1 {
-		t.Fatalf("tableEntry(1,4).ActionCount = %d, want 1", entry.ActionCount)
+		t.Fatalf("tableEntry(1,0).ActionCount = %d, want 1", entry.ActionCount)
 	}
 	if entry.Actions[0].Type != ParseActionTypeAccept {
-		t.Errorf("tableEntry(1,4) action type = %d, want accept", entry.Actions[0].Type)
+		t.Errorf("tableEntry(1,0) action type = %d, want accept", entry.Actions[0].Type)
 	}
 
 	// No action.
@@ -196,13 +198,13 @@ func TestLanguageTableEntry(t *testing.T) {
 func TestLanguageNextState(t *testing.T) {
 	lang := makeTestLanguage()
 
-	// State 0, symbol 1 -> shift to state 2.
+	// State 0, symbol 1 (terminal '{') -> shift to state 2 (via action table).
 	got := lang.nextState(0, 1)
 	if got != 2 {
 		t.Errorf("nextState(0, 1) = %d, want 2", got)
 	}
 
-	// State 1, symbol 3 -> shift to state 3.
+	// State 1, symbol 3 (non-terminal 'value') -> goto state 3 (raw state ID).
 	got = lang.nextState(1, 3)
 	if got != 3 {
 		t.Errorf("nextState(1, 3) = %d, want 3", got)
