@@ -1,0 +1,16 @@
+{
+  "id": "tree-sitter-go-0iy",
+  "title": "Fix Ruby scanner P2 bugs: unicode truncation in heredoc + missing MarkEnd() + test gaps",
+  "description": "P2 bugs in scanners/ruby/scanner.go:\n\n1. P2.3: scanHeredocWord truncates non-ASCII to byte via byte(lexer.Lookahead). Fix: use utf8.EncodeRune (same fix already applied to Bash scanner). Affects both quoted (line ~648) and unquoted (lines ~654, ~657) heredoc word loops.\n\n2. P2.6: Serialize stores openDelimiter/closeDelimiter as single byte, truncating int32 values above 0xFF. Should use multi-byte encoding.\n\n3. P2.2: Dead advance() call at EOF in scanLiteralContent — harmless but confusing.\n\n4. P2.4: Missing EOF guard in scanShortInterpolation before ContainsRune check.\n\n5. P3.1: Missing MarkEnd() before return true in operator disambiguation paths (BlockAmpersand, all star/minus variants, ElementReferenceBracket). Consistent with other scanners but not robust.\n\n6. TEST GAP: Zero tests for scanHeredocContent (most complex function in the scanner). Also no nested delimiter tests, no EOF-during-literal tests.",
+  "status": "open",
+  "priority": 2,
+  "type": "task",
+  "created_by": "Danny Cosson",
+  "owner": "dcosson@gmail.com",
+  "labels": [
+    "bug",
+    "scanner"
+  ],
+  "created_at": "2026-02-16T07:26:50.429939-08:00",
+  "updated_at": "2026-02-16T07:26:50.429939-08:00"
+}
