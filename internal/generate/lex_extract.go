@@ -299,6 +299,12 @@ func parseIfTransitions(line string, lines []string, idx *int) []LexTransition {
 
 	base := LexTransition{Target: target, Skip: skip}
 
+	// Detect !eof guard — applies to all transitions from this line.
+	// In C, !eof guards lookahead checks against matching EOF (lookahead == 0).
+	if strings.Contains(fullLine, "!eof") {
+		base.EOFGuard = true
+	}
+
 	// Parse compound conditions by splitting on top-level && (respecting parens),
 	// then classifying each sub-condition. This handles all patterns:
 	//   Pattern 1: lookahead != X, possibly &&-chained
@@ -318,6 +324,7 @@ func parseIfTransitions(line string, lines []string, idx *int) []LexTransition {
 			var excludeRanges []RuneRange
 
 			neqCharRe := regexp.MustCompile(`^\s*lookahead\s*!=\s*'((?:[^'\\]|\\.)*)'`)
+			neqHexRe := regexp.MustCompile(`^\s*lookahead\s*!=\s*(0x[0-9a-fA-F]+)\s*$`)
 			neqZeroRe := regexp.MustCompile(`^\s*lookahead\s*!=\s*0\s*$`)
 			gtCharRe := regexp.MustCompile(`^\s*lookahead\s*>\s*'((?:[^'\\]|\\.)*)'`)
 			exclRangeRe := regexp.MustCompile(`^\s*\(?\s*lookahead\s*<\s*'((?:[^'\\]|\\.)*)'\s*\|\|\s*'((?:[^'\\]|\\.)*)'\s*<\s*lookahead\s*\)?\s*$`)
@@ -326,6 +333,9 @@ func parseIfTransitions(line string, lines []string, idx *int) []LexTransition {
 				sc = strings.TrimSpace(sc)
 				if m := neqCharRe.FindStringSubmatch(sc); m != nil {
 					exclusions = append(exclusions, parseCChar("'"+m[1]+"'"))
+				} else if m := neqHexRe.FindStringSubmatch(sc); m != nil {
+					v, _ := strconv.ParseInt(m[1], 0, 32)
+					exclusions = append(exclusions, rune(v))
 				} else if neqZeroRe.MatchString(sc) {
 					exclusions = append(exclusions, 0)
 				} else if m := gtCharRe.FindStringSubmatch(sc); m != nil {
@@ -359,6 +369,7 @@ func parseIfTransitions(line string, lines []string, idx *int) []LexTransition {
 	rangeRe := regexp.MustCompile(`'((?:[^'\\]|\\.)*)'\s*<=\s*lookahead\s*&&\s*lookahead\s*<=\s*'((?:[^'\\]|\\.)*)'`)
 	hexRangeRe := regexp.MustCompile(`(0x[0-9a-fA-F]+)\s*<=\s*lookahead\s*&&\s*lookahead\s*<=\s*(?:'((?:[^'\\]|\\.)*)'|(0x[0-9a-fA-F]+))`)
 	charRe := regexp.MustCompile(`lookahead\s*==\s*'((?:[^'\\]|\\.)*)'`)
+	hexEqRe := regexp.MustCompile(`lookahead\s*==\s*(0x[0-9a-fA-F]+)`)
 
 	var result []LexTransition
 
@@ -390,6 +401,33 @@ func parseIfTransitions(line string, lines []string, idx *int) []LexTransition {
 	for _, m := range charRe.FindAllStringSubmatch(fullLine, -1) {
 		t := base
 		t.Char = parseCChar("'" + m[1] + "'")
+		result = append(result, t)
+	}
+
+	// Find all hex equality matches: lookahead == 0xNNNN
+	for _, m := range hexEqRe.FindAllStringSubmatch(fullLine, -1) {
+		t := base
+		v, _ := strconv.ParseInt(m[1], 0, 32)
+		t.Char = rune(v)
+		result = append(result, t)
+	}
+
+	// Find bare integer equality matches: lookahead == 00
+	// These appear in Python for null byte checks (with !eof guard).
+	// Must run AFTER charRe and hexEqRe to avoid double-matching.
+	bareIntEqRe := regexp.MustCompile(`lookahead\s*==\s*(\d+)`)
+	for _, m := range bareIntEqRe.FindAllStringSubmatchIndex(fullLine, -1) {
+		matchEnd := m[1]
+		digitStart := m[2]
+		digitEnd := m[3]
+		// Skip if followed by 'x'/'X' (part of hex literal like 0x200b).
+		if matchEnd < len(fullLine) && (fullLine[matchEnd] == 'x' || fullLine[matchEnd] == 'X') {
+			continue
+		}
+		digitStr := fullLine[digitStart:digitEnd]
+		v, _ := strconv.ParseInt(digitStr, 0, 32)
+		t := base
+		t.Char = rune(v)
 		result = append(result, t)
 	}
 

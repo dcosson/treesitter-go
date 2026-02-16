@@ -20311,6 +20311,27 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
+			if lookahead == 0x200b {
+				state = 51
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
+			if lookahead == 0x2060 {
+				state = 51
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
+			if lookahead == 0xfeff {
+				state = 51
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
 			if lookahead >= '1' && lookahead <= '9' {
 				state = 140
 				lexer.Advance(false)
@@ -20395,6 +20416,27 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				continue
 			}
 			if lookahead == ' ' {
+				state = 135
+				lexer.Advance(false)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
+			if lookahead == 0x200b {
+				state = 135
+				lexer.Advance(false)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
+			if lookahead == 0x2060 {
+				state = 135
+				lexer.Advance(false)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
+			if lookahead == 0xfeff {
 				state = 135
 				lexer.Advance(false)
 				lookahead = lexer.Lookahead
@@ -20593,6 +20635,27 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				continue
 			}
 			if lookahead == ' ' {
+				state = 4
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
+			if lookahead == 0x200b {
+				state = 4
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
+			if lookahead == 0x2060 {
+				state = 4
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
+			if lookahead == 0xfeff {
 				state = 4
 				lexer.Advance(true)
 				lookahead = lexer.Lookahead
@@ -20825,6 +20888,27 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
+			if lookahead == 0x200b {
+				state = 5
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
+			if lookahead == 0x2060 {
+				state = 5
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
+			if lookahead == 0xfeff {
+				state = 5
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
 			if lookahead >= '1' && lookahead <= '9' {
 				state = 140
 				lexer.Advance(false)
@@ -21010,6 +21094,27 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				continue
 			}
 			if lookahead == ' ' {
+				state = 6
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
+			if lookahead == 0x200b {
+				state = 6
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
+			if lookahead == 0x2060 {
+				state = 6
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
+			if lookahead == 0xfeff {
 				state = 6
 				lexer.Advance(true)
 				lookahead = lexer.Lookahead
@@ -21221,6 +21326,27 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
+			if lookahead == 0x200b {
+				state = 7
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
+			if lookahead == 0x2060 {
+				state = 7
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
+			if lookahead == 0xfeff {
+				state = 7
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
 			if setContains(sym_identifier_character_set_1, lookahead) {
 				state = 166
 				lexer.Advance(false)
@@ -21412,6 +21538,27 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
+			if lookahead == 0x200b {
+				state = 8
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
+			if lookahead == 0x2060 {
+				state = 8
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
+			if lookahead == 0xfeff {
+				state = 8
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
 			if setContains(sym_identifier_character_set_1, lookahead) {
 				state = 166
 				lexer.Advance(false)
@@ -21477,6 +21624,27 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
+			if lookahead == 0x200b {
+				state = 9
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
+			if lookahead == 0x2060 {
+				state = 9
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
+			if lookahead == 0xfeff {
+				state = 9
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
 			if setContains(sym_identifier_character_set_1, lookahead) {
 				state = 166
 				lexer.Advance(false)
@@ -21493,7 +21661,14 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			if lookahead == '\n' {
+			if !eof && lookahead == '\n' {
+				state = 168
+				lexer.Advance(false)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
+			if !eof && lookahead == 0 {
 				state = 168
 				lexer.Advance(false)
 				lookahead = lexer.Lookahead
@@ -21685,6 +21860,27 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				continue
 			}
 			if lookahead == ' ' {
+				state = 11
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
+			if lookahead == 0x200b {
+				state = 11
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
+			if lookahead == 0x2060 {
+				state = 11
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
+			if lookahead == 0xfeff {
 				state = 11
 				lexer.Advance(true)
 				lookahead = lexer.Lookahead
@@ -21917,6 +22113,27 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
+			if lookahead == 0x200b {
+				state = 12
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
+			if lookahead == 0x2060 {
+				state = 12
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
+			if lookahead == 0xfeff {
+				state = 12
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
 			if lookahead >= '1' && lookahead <= '9' {
 				state = 140
 				lexer.Advance(false)
@@ -22122,6 +22339,27 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
+			if lookahead == 0x200b {
+				state = 13
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
+			if lookahead == 0x2060 {
+				state = 13
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
+			if lookahead == 0xfeff {
+				state = 13
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
 			if setContains(sym_identifier_character_set_1, lookahead) {
 				state = 166
 				lexer.Advance(false)
@@ -22314,6 +22552,27 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				continue
 			}
 			if lookahead == ' ' {
+				state = 14
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
+			if lookahead == 0x200b {
+				state = 14
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
+			if lookahead == 0x2060 {
+				state = 14
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
+			if lookahead == 0xfeff {
 				state = 14
 				lexer.Advance(true)
 				lookahead = lexer.Lookahead
@@ -23094,6 +23353,27 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
+			if lookahead == 0x200b {
+				state = 51
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
+			if lookahead == 0x2060 {
+				state = 51
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
+			if lookahead == 0xfeff {
+				state = 51
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
 			if lookahead >= '1' && lookahead <= '9' {
 				state = 140
 				lexer.Advance(false)
@@ -23299,6 +23579,27 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
+			if lookahead == 0x200b {
+				state = 52
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
+			if lookahead == 0x2060 {
+				state = 52
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
+			if lookahead == 0xfeff {
+				state = 52
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
 			if lookahead >= '1' && lookahead <= '9' {
 				state = 140
 				lexer.Advance(false)
@@ -23434,6 +23735,27 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
+			if lookahead == 0x200b {
+				state = 53
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
+			if lookahead == 0x2060 {
+				state = 53
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
+			if lookahead == 0xfeff {
+				state = 53
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
 			if lookahead >= '1' && lookahead <= '9' {
 				state = 140
 				lexer.Advance(false)
@@ -23563,6 +23885,27 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				continue
 			}
 			if lookahead == ' ' {
+				state = 54
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
+			if lookahead == 0x200b {
+				state = 54
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
+			if lookahead == 0x2060 {
+				state = 54
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
+			if lookahead == 0xfeff {
 				state = 54
 				lexer.Advance(true)
 				lookahead = lexer.Lookahead
@@ -24328,7 +24671,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 		case 134:
 			lexer.MarkEnd()
 			lexer.AcceptToken(91)
-			if lookahead == 0 {
+			if !eof && lookahead == 0 {
 				state = 136
 				lexer.Advance(false)
 				lookahead = lexer.Lookahead
@@ -25439,6 +25782,27 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				continue
 			}
 			if lookahead == ' ' {
+				state = 0
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
+			if lookahead == 0x200b {
+				state = 0
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
+			if lookahead == 0x2060 {
+				state = 0
+				lexer.Advance(true)
+				lookahead = lexer.Lookahead
+				eof = lexer.EOF()
+				continue
+			}
+			if lookahead == 0xfeff {
 				state = 0
 				lexer.Advance(true)
 				lookahead = lexer.Lookahead

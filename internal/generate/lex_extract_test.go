@@ -260,3 +260,121 @@ func TestParseCaseBlockEOFOrdering(t *testing.T) {
 		t.Errorf("Target = %d, want 961", tr.Target)
 	}
 }
+
+// TestParseIfTransitionsHexEquality tests hex literal matching in || chains.
+func TestParseIfTransitionsHexEquality(t *testing.T) {
+	// Pattern D: lookahead == 0xNNNN in || chain (from Python parser.c).
+	line := `if (('\t' <= lookahead && lookahead <= '\f') || lookahead == ' ' || lookahead == 0x200b || lookahead == 0x2060 || lookahead == 0xfeff) SKIP(51);`
+	lines := []string{line}
+	idx := 0
+	transitions := parseIfTransitions(line, lines, &idx)
+
+	// Should produce: 1 range + 1 char + 3 hex chars = 5 transitions.
+	if len(transitions) != 5 {
+		t.Fatalf("got %d transitions, want 5", len(transitions))
+	}
+
+	// Check the range transition.
+	if !transitions[0].IsRange || transitions[0].Low != '\t' || transitions[0].High != '\f' {
+		t.Errorf("transition 0: expected range [\\t, \\f], got IsRange=%v Low=%d High=%d",
+			transitions[0].IsRange, transitions[0].Low, transitions[0].High)
+	}
+	// Check ' '.
+	if transitions[1].Char != ' ' {
+		t.Errorf("transition 1: Char = %d, want %d (' ')", transitions[1].Char, ' ')
+	}
+	// Check hex values.
+	if transitions[2].Char != 0x200b {
+		t.Errorf("transition 2: Char = 0x%x, want 0x200b", transitions[2].Char)
+	}
+	if transitions[3].Char != 0x2060 {
+		t.Errorf("transition 3: Char = 0x%x, want 0x2060", transitions[3].Char)
+	}
+	if transitions[4].Char != 0xfeff {
+		t.Errorf("transition 4: Char = 0x%x, want 0xfeff", transitions[4].Char)
+	}
+	// All should be SKIP.
+	for i, tr := range transitions {
+		if !tr.Skip {
+			t.Errorf("transition %d: Skip = false, want true", i)
+		}
+		if tr.Target != 51 {
+			t.Errorf("transition %d: Target = %d, want 51", i, tr.Target)
+		}
+	}
+}
+
+// TestParseIfTransitionsHexNegation tests hex literal matching in && chains.
+func TestParseIfTransitionsHexNegation(t *testing.T) {
+	// Pattern E: lookahead != 0xNNNN in && chain (from JavaScript parser.c).
+	line := `if (lookahead != 0 && lookahead != '\n' && lookahead != '\r' && lookahead != 0x2028 && lookahead != 0x2029) ADVANCE(250);`
+	lines := []string{line}
+	idx := 0
+	transitions := parseIfTransitions(line, lines, &idx)
+
+	if len(transitions) != 1 {
+		t.Fatalf("got %d transitions, want 1", len(transitions))
+	}
+	tr := transitions[0]
+	if !tr.IsNegated {
+		t.Error("IsNegated = false, want true")
+	}
+	// Should have 5 exclusions: 0, '\n', '\r', 0x2028, 0x2029.
+	want := []rune{0, '\n', '\r', 0x2028, 0x2029}
+	if len(tr.CharExclusions) != len(want) {
+		t.Fatalf("CharExclusions has %d entries, want %d: %v", len(tr.CharExclusions), len(want), tr.CharExclusions)
+	}
+	for i, ex := range tr.CharExclusions {
+		if ex != want[i] {
+			t.Errorf("CharExclusions[%d] = 0x%x, want 0x%x", i, ex, want[i])
+		}
+	}
+}
+
+// TestParseIfTransitionsEOFGuardWithBareInt tests !eof && lookahead == 00 (Pattern F).
+func TestParseIfTransitionsEOFGuardWithBareInt(t *testing.T) {
+	// Pattern F from Python parser.c: (!eof && lookahead == 00) || lookahead == '\n'
+	line := `if ((!eof && lookahead == 00) || lookahead == '\n') ADVANCE(168);`
+	lines := []string{line}
+	idx := 0
+	transitions := parseIfTransitions(line, lines, &idx)
+
+	// Should produce 2 transitions: '\n' (from charRe) and bare int 0 (from bareIntEqRe).
+	if len(transitions) != 2 {
+		t.Fatalf("got %d transitions, want 2", len(transitions))
+	}
+	// Both should have EOFGuard since the line contains !eof.
+	if !transitions[0].EOFGuard {
+		t.Error("transition 0: EOFGuard = false, want true")
+	}
+	// charRe matches '\n' first, then bareIntEqRe matches 00.
+	if transitions[0].Char != '\n' {
+		t.Errorf("transition 0: Char = %d, want '\\n' (%d)", transitions[0].Char, '\n')
+	}
+	if transitions[1].Char != 0 {
+		t.Errorf("transition 1: Char = %d, want 0", transitions[1].Char)
+	}
+}
+
+// TestParseIfTransitionsEOFGuardStandalone tests !eof && lookahead == 00 standalone.
+func TestParseIfTransitionsEOFGuardStandalone(t *testing.T) {
+	// Pattern F standalone from Python parser.c.
+	line := `if ((!eof && lookahead == 00)) ADVANCE(136);`
+	lines := []string{line}
+	idx := 0
+	transitions := parseIfTransitions(line, lines, &idx)
+
+	if len(transitions) != 1 {
+		t.Fatalf("got %d transitions, want 1", len(transitions))
+	}
+	tr := transitions[0]
+	if !tr.EOFGuard {
+		t.Error("EOFGuard = false, want true")
+	}
+	if tr.Char != 0 {
+		t.Errorf("Char = %d, want 0", tr.Char)
+	}
+	if tr.Target != 136 {
+		t.Errorf("Target = %d, want 136", tr.Target)
+	}
+}
