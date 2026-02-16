@@ -1,0 +1,6 @@
+{"a": 1,
+// line comment
+"b": "2",
+/* block comment */
+"c": 3
+}

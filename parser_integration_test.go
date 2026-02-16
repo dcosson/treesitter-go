@@ -674,3 +674,27 @@ func TestIntegrationExternalScannerMultipleParses(t *testing.T) {
 		}
 	}
 }
+
+func TestIntegrationParseComments(t *testing.T) {
+	p := ts.NewParser()
+	p.SetLanguage(jsonLanguageWithLex())
+	input := "{\"a\": 1,\n/*c1*/\n/*c2*/\n\"b\": 2\n}"
+	tree := p.ParseString(context.Background(), []byte(input))
+	if tree == nil {
+		t.Fatal("expected tree")
+	}
+	root := tree.RootNode()
+	sexpr := root.String()
+	if !strings.Contains(sexpr, "comment") {
+		t.Errorf("expected 'comment' in S-expression, got %q", sexpr)
+	}
+	// Both pairs must be present.
+	pairCount := strings.Count(sexpr, "pair")
+	if pairCount != 2 {
+		t.Errorf("expected 2 pairs, got %d in %q", pairCount, sexpr)
+	}
+	commentCount := strings.Count(sexpr, "comment")
+	if commentCount != 2 {
+		t.Errorf("expected 2 comments, got %d in %q", commentCount, sexpr)
+	}
+}

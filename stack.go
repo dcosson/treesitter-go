@@ -283,6 +283,9 @@ func (s *Stack) Pop(version StackVersion, count uint32) []StackIterator {
 	}
 
 	// BFS/DFS through the DAG of links.
+	// Extra subtrees (e.g. comments) are collected but do NOT count toward
+	// the pop depth — matching C tree-sitter's stack__iter which skips extras
+	// when incrementing subtree_count.
 	queue := []popFrame{{
 		node:     head.node,
 		subtrees: make([]Subtree, 0, count),
@@ -313,10 +316,16 @@ func (s *Stack) Pop(version StackVersion, count uint32) []StackIterator {
 			copy(newSubtrees, frame.subtrees)
 			newSubtrees[len(frame.subtrees)] = link.subtree
 
+			// Extra subtrees don't count toward the pop depth.
+			newDepth := frame.depth
+			if !IsExtra(link.subtree, s.arena) {
+				newDepth++
+			}
+
 			queue = append(queue, popFrame{
 				node:     link.node,
 				subtrees: newSubtrees,
-				depth:    frame.depth + 1,
+				depth:    newDepth,
 			})
 		}
 	}

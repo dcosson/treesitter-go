@@ -741,13 +741,13 @@ func SummarizeChildren(s Subtree, arena *SubtreeArena, lang *Language) {
 		childNamed := IsNamed(child, arena)
 		childExtra := IsExtra(child, arena)
 
-		if childVisible && !childExtra {
+		if childVisible {
 			visibleChildCount++
 			if childNamed {
 				namedChildCount++
 			}
-		} else if !childVisible {
-			// Hidden node: its visible children bubble up as this node's children.
+		} else if !childExtra {
+			// Hidden non-extra node: its visible children bubble up as this node's children.
 			visibleChildCount += GetVisibleChildCount(child, arena)
 			namedChildCount += GetNamedChildCount(child, arena)
 		}
@@ -862,11 +862,13 @@ func computeSizeFromChildren(children []Subtree, arena *SubtreeArena, firstChild
 
 // SetExtra marks a subtree as extra (e.g., comments, whitespace).
 // Only works on heap-allocated subtrees.
-func SetExtra(s Subtree, arena *SubtreeArena) {
+func SetExtra(s Subtree, arena *SubtreeArena) Subtree {
 	if s.IsInline() {
-		return
+		s.data |= inlineExtraBit
+		return s
 	}
 	arena.Get(s).SetFlag(SubtreeFlagExtra, true)
+	return s
 }
 
 // SetParseState sets the parse state on a heap-allocated subtree.

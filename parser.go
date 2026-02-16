@@ -208,6 +208,11 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 		// Handle additional actions (GLR ambiguity) by splitting.
 		for i := 1; i < int(entry.ActionCount); i++ {
 			extraAction := entry.Actions[i]
+			// Skip repetition shifts — these are markers for the parser's
+			// repeat optimization and should not be executed as actual shifts.
+			if extraAction.Type == ParseActionTypeShift && extraAction.ShiftRepetition {
+				continue
+			}
 			splitVersion := p.stack.Split(version)
 			if splitVersion < 0 {
 				continue
@@ -223,8 +228,11 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 				p.doShift(splitVersion, extraAction, token)
 			}
 		}
-
 		// Execute the primary action.
+		// Skip repetition shifts in primary action too.
+		if action.Type == ParseActionTypeShift && action.ShiftRepetition {
+			continue
+		}
 		switch action.Type {
 		case ParseActionTypeShift:
 			p.doShift(version, action, token)
@@ -383,9 +391,10 @@ func (p *Parser) lexToken(version StackVersion, state StateID, position Length) 
 func (p *Parser) doShift(version StackVersion, action ParseActionEntry, token Subtree) {
 	state := action.ShiftState
 
-	// Mark extra tokens.
+	// Mark extra tokens. For SHIFT_EXTRA, stay in the current state.
 	if action.ShiftExtra {
-		SetExtra(token, p.arena)
+		token = SetExtra(token, p.arena)
+		state = p.stack.State(version)
 	}
 
 	position := p.stack.Position(version)
