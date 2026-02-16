@@ -3345,6 +3345,20 @@ func CssLanguage() *ts.Language {
 		"class_name_repeat1", // 134
 	}
 
+	// External scanner states: [extLexState * 3 + tokenIdx] -> bool
+	// State 0: no external tokens; State 1: all; State 2: pseudo_class_colon;
+	// State 3: descendant_op + pseudo_class_colon
+	externalScannerStates := []bool{
+		false, false, false, // state 0
+		true, true, true, // state 1: descendant_op, pseudo_class_colon, error_recovery
+		false, true, false, // state 2: pseudo_class_colon only
+		true, true, false, // state 3: descendant_op + pseudo_class_colon
+	}
+
+	// External symbol map: external token index -> grammar symbol
+	// 0: _descendant_operator -> 69, 1: pseudo_class_selector_colon -> 70, 2: __error_recovery -> 71
+	externalSymbolMap := []ts.Symbol{69, 70, 71}
+
 	return &ts.Language{
 		Version:                14,
 		SymbolCount:            135,
@@ -3366,6 +3380,8 @@ func CssLanguage() *ts.Language {
 		SymbolNames:            symbolNames,
 		SymbolMetadata:          symbolMetadata,
 		AliasSequences:         aliasSequences,
+		ExternalScannerStates:  externalScannerStates,
+		ExternalSymbolMap:      externalSymbolMap,
 	}
 }
 

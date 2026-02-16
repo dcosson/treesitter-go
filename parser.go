@@ -671,9 +671,22 @@ func (p *Parser) doAccept(version StackVersion) {
 func (p *Parser) handleError(version StackVersion, token Subtree) bool {
 	state := p.stack.State(version)
 
+	// At end-of-input, skipping won't advance position (zero-size token).
+	// Force-accept what we have rather than looping forever.
+	tokenSymbol := GetSymbol(token, p.arena)
+	if tokenSymbol == SymbolEnd {
+		p.doAccept(version)
+		return true
+	}
+
 	// Strategy 1: Try all possible reductions from current state.
+	// This creates split versions with reductions applied. If any split can
+	// shift the lookahead, we halt the original version (it's superseded by
+	// the splits) and invalidate the token cache so the splits re-lex fresh.
 	recovered := p.doAllPotentialReductions(version, token)
 	if recovered {
+		p.stack.Halt(version)
+		p.cachedTokenValid = false
 		return true
 	}
 

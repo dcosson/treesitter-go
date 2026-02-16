@@ -4,25 +4,33 @@ import (
 	"context"
 	"strings"
 	"testing"
+	"time"
 
 	ts "github.com/treesitter-go/treesitter"
 	cssgrammar "github.com/treesitter-go/treesitter/internal/testgrammars/css"
+	htmlgrammar "github.com/treesitter-go/treesitter/internal/testgrammars/html"
+	javagrammar "github.com/treesitter-go/treesitter/internal/testgrammars/java"
 	cssscanner "github.com/treesitter-go/treesitter/scanners/css"
 	htmlscanner "github.com/treesitter-go/treesitter/scanners/html"
-	_ "github.com/treesitter-go/treesitter/internal/testgrammars/html"
-	_ "github.com/treesitter-go/treesitter/internal/testgrammars/java"
-	_ "github.com/treesitter-go/treesitter/scanners/html"
 )
-
-// Verify scanner packages compile.
-var _ = htmlscanner.New
-var _ = cssscanner.New
 
 func cssLang() *ts.Language {
 	lang := cssgrammar.CssLanguage()
 	lang.NewExternalScanner = cssscanner.New
 	return lang
 }
+
+func htmlLang() *ts.Language {
+	lang := htmlgrammar.HtmlLanguage()
+	lang.NewExternalScanner = htmlscanner.New
+	return lang
+}
+
+func javaLang() *ts.Language {
+	return javagrammar.JavaLanguage()
+}
+
+// --- CSS Integration Tests ---
 
 func TestCSSParseSimpleRule(t *testing.T) {
 	p := ts.NewParser()
@@ -43,9 +51,189 @@ func TestCSSParseSimpleRule(t *testing.T) {
 	}
 }
 
-// TODO(0ab): Enable once parser handleError/external-scanner interaction
-// is fixed — currently the parser enters an infinite loop in error recovery
-// for inputs requiring external scanner tokens (descendant_op, implicit_end_tag).
-// Tests for: CSS descendant selector, pseudo-class, media queries;
-// HTML elements, self-closing tags, script/style, void elements;
-// Java hello world, interface, enum, generics.
+func TestCSSParseDescendantSelector(t *testing.T) {
+	p := ts.NewParser()
+	p.SetLanguage(cssLang())
+
+	src := "div p { color: blue; }"
+	ctx, cancel := context.WithTimeout(context.Background(), testTimeout())
+	defer cancel()
+	tree := p.ParseString(ctx, []byte(src))
+	if tree == nil {
+		t.Fatal("expected tree, got nil (possible timeout — parser may be looping)")
+	}
+	root := tree.RootNode()
+	sexp := root.String()
+	if !strings.Contains(sexp, "descendant_selector") {
+		t.Errorf("expected descendant_selector in: %s", sexp)
+	}
+}
+
+func TestCSSParsePseudoClass(t *testing.T) {
+	p := ts.NewParser()
+	p.SetLanguage(cssLang())
+
+	src := "a:hover { text-decoration: underline; }"
+	ctx, cancel := context.WithTimeout(context.Background(), testTimeout())
+	defer cancel()
+	tree := p.ParseString(ctx, []byte(src))
+	if tree == nil {
+		t.Fatal("expected tree, got nil")
+	}
+	root := tree.RootNode()
+	sexp := root.String()
+	if !strings.Contains(sexp, "pseudo_class_selector") {
+		t.Errorf("expected pseudo_class_selector in: %s", sexp)
+	}
+}
+
+func TestCSSParseMediaQuery(t *testing.T) {
+	p := ts.NewParser()
+	p.SetLanguage(cssLang())
+
+	src := "@media (max-width: 600px) { body { font-size: 14px; } }"
+	ctx, cancel := context.WithTimeout(context.Background(), testTimeout())
+	defer cancel()
+	tree := p.ParseString(ctx, []byte(src))
+	if tree == nil {
+		t.Fatal("expected tree, got nil")
+	}
+	root := tree.RootNode()
+	sexp := root.String()
+	if !strings.Contains(sexp, "media_statement") && !strings.Contains(sexp, "@media") {
+		t.Errorf("expected media statement in: %s", sexp)
+	}
+}
+
+// --- HTML Integration Tests ---
+
+func TestHTMLParseSimpleElement(t *testing.T) {
+	t.Skip("known bug: HTML lex DFA state 76 doesn't stop at '<', consuming closing tags as text (bead st1)")
+	p := ts.NewParser()
+	p.SetLanguage(htmlLang())
+
+	src := "<div>hello</div>"
+	ctx, cancel := context.WithTimeout(context.Background(), testTimeout())
+	defer cancel()
+	tree := p.ParseString(ctx, []byte(src))
+	if tree == nil {
+		t.Fatal("expected tree, got nil")
+	}
+	root := tree.RootNode()
+	sexp := root.String()
+	if !strings.Contains(sexp, "element") {
+		t.Errorf("expected element in: %s", sexp)
+	}
+}
+
+func TestHTMLParseNestedElements(t *testing.T) {
+	t.Skip("known bug: HTML lex DFA state 76 doesn't stop at '<', consuming closing tags as text (bead st1)")
+	p := ts.NewParser()
+	p.SetLanguage(htmlLang())
+
+	src := "<div><p>text</p></div>"
+	ctx, cancel := context.WithTimeout(context.Background(), testTimeout())
+	defer cancel()
+	tree := p.ParseString(ctx, []byte(src))
+	if tree == nil {
+		t.Fatal("expected tree, got nil")
+	}
+	root := tree.RootNode()
+	sexp := root.String()
+	if !strings.Contains(sexp, "element") {
+		t.Errorf("expected element in: %s", sexp)
+	}
+}
+
+func TestHTMLParseSelfClosingTag(t *testing.T) {
+	t.Skip("known bug: HTML lex DFA extraction issue (bead st1)")
+	p := ts.NewParser()
+	p.SetLanguage(htmlLang())
+
+	src := "<br/>"
+	ctx, cancel := context.WithTimeout(context.Background(), testTimeout())
+	defer cancel()
+	tree := p.ParseString(ctx, []byte(src))
+	if tree == nil {
+		t.Fatal("expected tree, got nil")
+	}
+	root := tree.RootNode()
+	sexp := root.String()
+	if !strings.Contains(sexp, "element") && !strings.Contains(sexp, "self_closing") {
+		t.Errorf("expected element or self_closing in: %s", sexp)
+	}
+}
+
+func TestHTMLParseVoidElement(t *testing.T) {
+	t.Skip("known bug: HTML lex DFA extraction issue (bead st1)")
+	p := ts.NewParser()
+	p.SetLanguage(htmlLang())
+
+	src := "<img src=\"test.png\">"
+	ctx, cancel := context.WithTimeout(context.Background(), testTimeout())
+	defer cancel()
+	tree := p.ParseString(ctx, []byte(src))
+	if tree == nil {
+		t.Fatal("expected tree, got nil")
+	}
+	root := tree.RootNode()
+	sexp := root.String()
+	if !strings.Contains(sexp, "element") {
+		t.Errorf("expected element in: %s", sexp)
+	}
+}
+
+// --- Java Integration Tests ---
+
+func TestJavaParseHelloWorld(t *testing.T) {
+	t.Skip("known bug: Java grammar parse timeout — needs investigation (bead pvl)")
+	p := ts.NewParser()
+	p.SetLanguage(javaLang())
+
+	src := `public class Hello {
+    public static void main(String[] args) {
+        System.out.println("Hello, world!");
+    }
+}`
+	ctx, cancel := context.WithTimeout(context.Background(), testTimeout())
+	defer cancel()
+	tree := p.ParseString(ctx, []byte(src))
+	if tree == nil {
+		t.Fatal("expected tree, got nil")
+	}
+	root := tree.RootNode()
+	if root.Type() != "program" {
+		t.Errorf("root type = %q, want %q", root.Type(), "program")
+	}
+	sexp := root.String()
+	if !strings.Contains(sexp, "class_declaration") {
+		t.Errorf("expected class_declaration in: %s", sexp)
+	}
+}
+
+func TestJavaParseInterface(t *testing.T) {
+	t.Skip("known bug: Java grammar parse timeout — needs investigation (bead pvl)")
+	p := ts.NewParser()
+	p.SetLanguage(javaLang())
+
+	src := `interface Readable {
+    String read();
+}`
+	ctx, cancel := context.WithTimeout(context.Background(), testTimeout())
+	defer cancel()
+	tree := p.ParseString(ctx, []byte(src))
+	if tree == nil {
+		t.Fatal("expected tree, got nil")
+	}
+	root := tree.RootNode()
+	sexp := root.String()
+	if !strings.Contains(sexp, "interface_declaration") {
+		t.Errorf("expected interface_declaration in: %s", sexp)
+	}
+}
+
+// --- Helpers ---
+
+func testTimeout() time.Duration {
+	return 5 * time.Second
+}

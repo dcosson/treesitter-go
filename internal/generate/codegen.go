@@ -65,6 +65,9 @@ func GenerateGo(g *Grammar, packageName string) string {
 	// Supertype symbols.
 	writeSuperTypes(&b, g)
 
+	// External scanner data.
+	writeExternalScannerData(&b, g)
+
 	// Build the Language struct.
 	fmt.Fprintf(&b, "\treturn &ts.Language{\n")
 	fmt.Fprintf(&b, "\t\tVersion:                14,\n")
@@ -106,6 +109,12 @@ func GenerateGo(g *Grammar, packageName string) string {
 	}
 	if hasSupertypes {
 		fmt.Fprintf(&b, "\t\tSupertypeSymbols:       supertypeSymbols,\n")
+	}
+	if len(g.ExternalScannerStates) > 0 {
+		fmt.Fprintf(&b, "\t\tExternalScannerStates:  externalScannerStates,\n")
+	}
+	if len(g.ExternalSymbolMap) > 0 {
+		fmt.Fprintf(&b, "\t\tExternalSymbolMap:      externalSymbolMap,\n")
 	}
 	fmt.Fprintf(&b, "\t}\n")
 	fmt.Fprintf(&b, "}\n\n")
@@ -336,6 +345,32 @@ func writeSuperTypes(b *strings.Builder, g *Grammar) {
 		fmt.Fprintf(b, "%d, ", s)
 	}
 	fmt.Fprintf(b, "}\n\n")
+}
+
+// writeExternalScannerData writes external scanner states and symbol map.
+func writeExternalScannerData(b *strings.Builder, g *Grammar) {
+	if len(g.ExternalScannerStates) > 0 {
+		fmt.Fprintf(b, "\texternalScannerStates := []bool{")
+		for i, v := range g.ExternalScannerStates {
+			if i%20 == 0 {
+				fmt.Fprintf(b, "\n\t\t")
+			}
+			if v {
+				fmt.Fprintf(b, "true, ")
+			} else {
+				fmt.Fprintf(b, "false, ")
+			}
+		}
+		fmt.Fprintf(b, "\n\t}\n\n")
+	}
+
+	if len(g.ExternalSymbolMap) > 0 {
+		fmt.Fprintf(b, "\texternalSymbolMap := []ts.Symbol{")
+		for _, s := range g.ExternalSymbolMap {
+			fmt.Fprintf(b, "%d, ", s)
+		}
+		fmt.Fprintf(b, "}\n\n")
+	}
 }
 
 // writeLexFunction generates the Go lex function from DFA states.

@@ -1,0 +1,16 @@
+{
+  "id": "tree-sitter-go-pvl",
+  "title": "Java grammar parse timeout",
+  "description": "Java integration tests (TestJavaParseHelloWorld, TestJavaParseInterface) time out after 5 seconds. The Java grammar has no external scanner, so this is purely a parser/lex issue. Needs investigation - could be a similar lex DFA extraction bug, a parser infinite loop in error recovery, or incorrect parse table data.",
+  "status": "open",
+  "priority": 2,
+  "type": "task",
+  "created_by": "Danny Cosson",
+  "owner": "dcosson@gmail.com",
+  "labels": [
+    "bug",
+    "java"
+  ],
+  "created_at": "2026-02-16T03:27:30.136708-08:00",
+  "updated_at": "2026-02-16T03:27:30.136708-08:00"
+}

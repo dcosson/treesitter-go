@@ -719,6 +719,36 @@ func HtmlLanguage() *ts.Language {
 		"start_tag_repeat1", // 40
 	}
 
+	// External scanner states: 10 states x 9 tokens.
+	// Token order: 0=start_tag_name, 1=script_start_tag_name, 2=style_start_tag_name,
+	//   3=end_tag_name, 4=erroneous_end_tag_name, 5=self_closing_tag_delimiter,
+	//   6=implicit_end_tag, 7=raw_text, 8=comment
+	externalScannerStates := []bool{
+		// State 0: no external tokens
+		false, false, false, false, false, false, false, false, false,
+		// State 1: all tokens enabled
+		true, true, true, true, true, true, true, true, true,
+		// State 2: comment only
+		false, false, false, false, false, false, false, false, true,
+		// State 3: implicit_end_tag + comment
+		false, false, false, false, false, false, true, false, true,
+		// State 4: self_closing + comment
+		false, false, false, false, false, true, false, false, true,
+		// State 5: raw_text + comment
+		false, false, false, false, false, false, false, true, true,
+		// State 6: start tags + comment
+		true, true, true, false, false, false, false, false, true,
+		// State 7: end_tag + erroneous_end_tag + comment
+		false, false, false, true, true, false, false, false, true,
+		// State 8: erroneous_end_tag + comment
+		false, false, false, false, true, false, false, false, true,
+		// State 9: end_tag + comment
+		false, false, false, true, false, false, false, false, true,
+	}
+
+	// External symbol map: token index -> grammar symbol
+	externalSymbolMap := []ts.Symbol{17, 18, 19, 20, 21, 6, 22, 23, 24}
+
 	return &ts.Language{
 		Version:                14,
 		SymbolCount:            41,
@@ -740,6 +770,8 @@ func HtmlLanguage() *ts.Language {
 		SymbolNames:            symbolNames,
 		SymbolMetadata:          symbolMetadata,
 		AliasSequences:         aliasSequences,
+		ExternalScannerStates:  externalScannerStates,
+		ExternalSymbolMap:      externalSymbolMap,
 	}
 }
 

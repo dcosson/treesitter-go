@@ -87,6 +87,7 @@ func ExtractGrammar(parserC string) (*Grammar, error) {
 	extractPublicSymbolMap(g, parserC)
 
 	// Extract external scanner data.
+	extractExternalScannerSymbolMap(g, parserC)
 	extractExternalScannerStates(g, parserC)
 
 	return g, nil
@@ -621,17 +622,52 @@ func extractPublicSymbolMap(g *Grammar, src string) {
 	g.PublicSymbolMap = mapping
 }
 
-// extractExternalScannerStates extracts ts_external_scanner_states[].
+// extractExternalScannerSymbolMap extracts ts_external_scanner_symbol_map[].
+// Maps external token index → grammar symbol.
+func extractExternalScannerSymbolMap(g *Grammar, src string) {
+	if g.ExternalTokenCount == 0 {
+		return
+	}
+
+	// Build the external token enum for resolving names like ts_external_token__descendant_operator.
+	extTokenEnum := extractEnum(src, "ts_external_scanner_symbol_identifiers")
+
+	block := extractArrayBlock(src, "ts_external_scanner_symbol_map")
+	if block == "" {
+		return
+	}
+
+	symbolMap := make([]uint16, g.ExternalTokenCount)
+
+	// Match entries: [ts_external_token_name] = sym_name  OR  [0] = sym_name
+	re := regexp.MustCompile(`\[(\w+)\]\s*=\s*(\w+)`)
+	for _, m := range re.FindAllStringSubmatch(block, -1) {
+		tokenIdx := resolveEnumOrInt(m[1], extTokenEnum)
+		symVal := g.resolveSymbolValue(m[2])
+		if tokenIdx >= 0 && tokenIdx < g.ExternalTokenCount {
+			symbolMap[tokenIdx] = symVal
+		}
+	}
+
+	g.ExternalSymbolMap = symbolMap
+}
+
+// extractExternalScannerStates extracts ts_external_scanner_states[][].
+// The flat bool array has layout: [extLexState * extTokenCount + tokenIdx].
 func extractExternalScannerStates(g *Grammar, src string) {
 	if g.ExternalTokenCount == 0 {
 		return
 	}
+
+	// Build the external token enum for resolving named indices.
+	extTokenEnum := extractEnum(src, "ts_external_scanner_symbol_identifiers")
 
 	block := extractArrayBlock(src, "ts_external_scanner_states")
 	if block == "" {
 		return
 	}
 
+	// Match state entries: [N] = { ... } where N is a number.
 	re := regexp.MustCompile(`\[(\d+)\]\s*=\s*\{([^}]*)\}`)
 	var maxState int
 	for _, m := range re.FindAllStringSubmatch(block, -1) {
@@ -645,16 +681,31 @@ func extractExternalScannerStates(g *Grammar, src string) {
 	for _, m := range re.FindAllStringSubmatch(block, -1) {
 		stateIdx, _ := strconv.Atoi(m[1])
 		body := m[2]
-		tokenRe := regexp.MustCompile(`\[(\d+)\]\s*=\s*true`)
+		// Match token entries: [token_name_or_number] = true
+		tokenRe := regexp.MustCompile(`\[(\w+)\]\s*=\s*true`)
 		for _, tm := range tokenRe.FindAllStringSubmatch(body, -1) {
-			tokenIdx, _ := strconv.Atoi(tm[1])
-			idx := stateIdx*g.ExternalTokenCount + tokenIdx
-			if idx < len(states) {
-				states[idx] = true
+			tokenIdx := resolveEnumOrInt(tm[1], extTokenEnum)
+			if tokenIdx >= 0 {
+				idx := stateIdx*g.ExternalTokenCount + tokenIdx
+				if idx < len(states) {
+					states[idx] = true
+				}
 			}
 		}
 	}
 	g.ExternalScannerStates = states
+}
+
+// resolveEnumOrInt resolves a C identifier to an integer, trying numeric
+// parsing first, then looking up in the enum map.
+func resolveEnumOrInt(name string, enumMap map[string]int) int {
+	if v, err := strconv.Atoi(name); err == nil {
+		return v
+	}
+	if v, ok := enumMap[name]; ok {
+		return v
+	}
+	return -1
 }
 
 // --- Enum parsing ---

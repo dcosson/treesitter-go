@@ -1,0 +1,17 @@
+{
+  "id": "tree-sitter-go-st1",
+  "title": "HTML lex DFA extraction bug: state 76 doesn't stop at '\u003c'",
+  "description": "The generated HTML lex function has a bug in state 76 (and possibly others). State 76 loops on ALL non-EOF, non-whitespace characters without checking for '\u003c'. It should stop at '\u003c' but instead consumes closing tags like '\u003c/div\u003e' as part of the text content. This produces wrong parse trees (text instead of element nodes). This is a lex DFA extraction/generation bug in internal/generate/extract.go - the C parser.c lex function correctly handles '\u003c' transitions but the Go extraction misses them. Root cause is likely in how the extractLex function translates the C switch/case DFA into Go.",
+  "status": "open",
+  "priority": 2,
+  "type": "task",
+  "created_by": "Danny Cosson",
+  "owner": "dcosson@gmail.com",
+  "labels": [
+    "bug",
+    "codegen",
+    "html"
+  ],
+  "created_at": "2026-02-16T03:27:26.132425-08:00",
+  "updated_at": "2026-02-16T03:27:26.132425-08:00"
+}
