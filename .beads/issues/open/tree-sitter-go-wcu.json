@@ -97,6 +97,18 @@
     {
       "id": "tree-sitter-go-cmn",
       "type": "parent-child"
+    },
+    {
+      "id": "tree-sitter-go-vuv",
+      "type": "parent-child"
+    },
+    {
+      "id": "tree-sitter-go-4cw",
+      "type": "parent-child"
+    },
+    {
+      "id": "tree-sitter-go-w3k",
+      "type": "parent-child"
     }
   ],
   "created_by": "Danny Cosson",

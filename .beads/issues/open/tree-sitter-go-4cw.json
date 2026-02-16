@@ -1,0 +1,23 @@
+{
+  "id": "tree-sitter-go-4cw",
+  "title": "Fix alias-based child visibility in tree traversal (string_content)",
+  "description": "The runtime never consults alias sequences when determining child visibility. Hidden symbols aliased to visible names (e.g. _doublequote_string_content → string_content) are treated as hidden and skipped. Fix needed at 4 locations: subtree.go:744 (SummarizeChildren), tree.go:245 (findVisibleChildByIndex), tree.go:301 (findNamedChildByIndex), tree_cursor.go:118 (findFirstVisibleChild). At each location, resolve alias from parent production ID + structural child index; if alias != 0, treat child as visible. Impact: ~67 tests (Perl 57 + Lua 10), plus potential improvements for Ruby and other languages with hidden-aliased nodes.",
+  "status": "open",
+  "priority": 1,
+  "type": "task",
+  "parent": "tree-sitter-go-wcu",
+  "dependencies": [
+    {
+      "id": "tree-sitter-go-wcu",
+      "type": "parent-child"
+    }
+  ],
+  "created_by": "Danny Cosson",
+  "owner": "dcosson@gmail.com",
+  "labels": [
+    "parser",
+    "high-impact"
+  ],
+  "created_at": "2026-02-16T15:16:43.104483-08:00",
+  "updated_at": "2026-02-16T15:16:52.122034-08:00"
+}

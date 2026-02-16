@@ -1,0 +1,17 @@
+{
+  "id": "tree-sitter-go-ohm",
+  "title": "Corpus test: trailing newline fix (Go grouped declarations root cause)",
+  "description": "Root cause of 'Go grouped declarations' failures and ~120 other corpus failures across all languages. The corpus test infrastructure (corpustest.go ParseCorpusFile) was stripping ALL trailing newlines from test input via bytes.TrimRight, but tree-sitter parsers (especially Go, which uses newlines for semicolon insertion) require a trailing newline to parse correctly. Fix: re-append a single \\n after TrimRight. Impact: Go 25→55/67, Python ~72→92/116, JS ~46→98/117, TS ~15→104/113, Lua 7→26/38. Committed 46224f8 on fix/go-grouped-declarations.",
+  "status": "closed",
+  "priority": 2,
+  "type": "bug",
+  "created_by": "Danny Cosson",
+  "owner": "dcosson@gmail.com",
+  "labels": [
+    "fix"
+  ],
+  "created_at": "2026-02-16T15:06:38.302028-08:00",
+  "updated_at": "2026-02-16T15:06:53.673198-08:00",
+  "closed_at": "2026-02-16T15:06:53.673198-08:00",
+  "close_reason": "Closed"
+}

@@ -1,0 +1,18 @@
+{
+  "id": "tree-sitter-go-gwm",
+  "title": "Fix Go grouped declaration parsing (const/var/type blocks)",
+  "description": "Go grouped declarations with parentheses (const (...), var (...), type (...)) produce wrong or empty output in corpus tests. About 14 failures in Go corpus tests stem from this. The parser outputs just ')' or '}' instead of proper AST nodes.",
+  "status": "closed",
+  "priority": 2,
+  "type": "task",
+  "created_by": "Danny Cosson",
+  "owner": "dcosson@gmail.com",
+  "labels": [
+    "P2",
+    "bug"
+  ],
+  "created_at": "2026-02-16T14:47:15.504313-08:00",
+  "updated_at": "2026-02-16T15:06:45.563477-08:00",
+  "closed_at": "2026-02-16T15:06:45.563477-08:00",
+  "close_reason": "Closed"
+}

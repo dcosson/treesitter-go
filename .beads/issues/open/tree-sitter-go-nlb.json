@@ -1,0 +1,15 @@
+{
+  "id": "tree-sitter-go-nlb",
+  "title": "Parser: call_expression vs type_conversion_expression ambiguity (Go + possibly others)",
+  "description": "After the trailing newline fix, 7 of Go's remaining 12 corpus failures are caused by the parser resolving f(x) as type_conversion_expression instead of call_expression. Examples: println(x) → type_conversion_expression(type_identifier, identifier), time.After(1) → type_conversion_expression(qualified_type, int_literal), c(d) → type_conversion_expression(type_identifier, identifier). Affected tests: Nested_call_expressions, Type_assertion_expressions, Type_conversion_expressions, For_statements, Nested_statement_blocks, Type_switch_statements, Select_statements. The Go grammar uses dynamic precedence to prefer call_expression. Root cause is likely in how we generate or handle precedence values in the grammar generator / parser. Investigation pending.",
+  "status": "open",
+  "priority": 2,
+  "type": "bug",
+  "created_by": "Danny Cosson",
+  "owner": "dcosson@gmail.com",
+  "labels": [
+    "parser"
+  ],
+  "created_at": "2026-02-16T15:07:06.506216-08:00",
+  "updated_at": "2026-02-16T15:07:06.506216-08:00"
+}
