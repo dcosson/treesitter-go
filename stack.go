@@ -370,6 +370,10 @@ func (s *Stack) ForkAtNode(node *StackNode) StackVersion {
 // The source version's top node is added as an additional link on the
 // target version's top node. The source version is halted.
 //
+// When the source has higher dynamic precedence than the target's first
+// link, the links are swapped so that links[0] (the default path) has
+// the best dynamic precedence. This matches C tree-sitter behavior.
+//
 // Returns true if the merge was successful.
 func (s *Stack) Merge(target, source StackVersion) bool {
 	if int(target) >= len(s.heads) || int(source) >= len(s.heads) {
@@ -396,6 +400,22 @@ func (s *Stack) Merge(target, source StackVersion) bool {
 		}
 		targetNode.links[targetNode.linkCount] = sourceNode.links[i]
 		targetNode.linkCount++
+
+		// If the newly added link has higher dynamic precedence than
+		// the first link, swap them so links[0] is always the best path.
+		// This matches C tree-sitter's ts_stack__merge behavior.
+		newIdx := targetNode.linkCount - 1
+		if newIdx > 0 {
+			newLink := &targetNode.links[newIdx]
+			firstLink := &targetNode.links[0]
+			if !newLink.subtree.IsZero() && !firstLink.subtree.IsZero() {
+				newPrec := GetDynamicPrecedence(newLink.subtree, s.arena)
+				firstPrec := GetDynamicPrecedence(firstLink.subtree, s.arena)
+				if newPrec > firstPrec {
+					targetNode.links[0], targetNode.links[newIdx] = targetNode.links[newIdx], targetNode.links[0]
+				}
+			}
+		}
 	}
 
 	// Halt the source version.

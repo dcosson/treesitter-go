@@ -709,6 +709,12 @@ func (p *Parser) doReduce(version StackVersion, action ParseActionEntry) {
 		altNode := NewNodeSubtree(p.arena, symbol, altChildren, productionID, p.language)
 		SummarizeChildren(altNode, p.arena, p.language)
 
+		// Apply dynamic precedence to alternate paths too.
+		if dynPrec != 0 && !altNode.IsInline() {
+			altData := p.arena.Get(altNode)
+			altData.DynamicPrecedence += int32(dynPrec)
+		}
+
 		// Compute goto state from this path's base state.
 		altBaseState := path.node.state
 		altGotoState := p.language.nextState(altBaseState, symbol)
@@ -729,10 +735,27 @@ func (p *Parser) doReduce(version StackVersion, action ParseActionEntry) {
 }
 
 // doAccept marks a version as accepted and stores the finished tree.
+// When multiple versions accept, the tree with lower error cost wins;
+// ties are broken by higher dynamic precedence. If both are equal,
+// the newer tree wins (later accepts are typically more complete).
 func (p *Parser) doAccept(version StackVersion) {
 	tree := p.stack.TopSubtree(version)
 	if !tree.IsZero() {
-		p.finishedTree = tree
+		if p.finishedTree.IsZero() {
+			p.finishedTree = tree
+		} else {
+			oldCost := GetErrorCost(p.finishedTree, p.arena)
+			newCost := GetErrorCost(tree, p.arena)
+			if newCost < oldCost {
+				p.finishedTree = tree
+			} else if newCost == oldCost {
+				oldPrec := GetDynamicPrecedence(p.finishedTree, p.arena)
+				newPrec := GetDynamicPrecedence(tree, p.arena)
+				if newPrec >= oldPrec {
+					p.finishedTree = tree
+				}
+			}
+		}
 	}
 	p.acceptCount++
 	p.stack.Halt(version)
@@ -986,16 +1009,38 @@ func (p *Parser) condenseStack() {
 		}
 	}
 
-	// Enforce max version count.
+	// Enforce max version count. When too many active versions exist,
+	// halt the ones with the worst scores (highest error cost, then
+	// lowest dynamic precedence). This prevents version explosion in
+	// grammars with many GLR ambiguities while preserving the best paths.
 	activeCount := p.stack.ActiveVersionCount()
 	if activeCount > MaxVersionCount {
+		toHalt := activeCount - MaxVersionCount
 		halted := 0
-		for i := p.stack.VersionCount() - 1; i >= 0 && halted < activeCount-MaxVersionCount; i-- {
-			v := StackVersion(i)
-			if p.stack.IsActive(v) {
-				p.stack.Halt(v)
-				halted++
+		for halted < toHalt {
+			worstIdx := -1
+			var worstCost uint32
+			var worstPrec int32
+			for i := 0; i < p.stack.VersionCount(); i++ {
+				v := StackVersion(i)
+				if !p.stack.IsActive(v) {
+					continue
+				}
+				cost := p.stack.ErrorCost(v)
+				prec := p.stack.DynamicPrecedence(v)
+				if worstIdx < 0 || cost > worstCost ||
+					(cost == worstCost && prec < worstPrec) ||
+					(cost == worstCost && prec == worstPrec && i > worstIdx) {
+					worstIdx = i
+					worstCost = cost
+					worstPrec = prec
+				}
 			}
+			if worstIdx < 0 {
+				break
+			}
+			p.stack.Halt(StackVersion(worstIdx))
+			halted++
 		}
 	}
 
