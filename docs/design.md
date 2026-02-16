@@ -47,12 +47,12 @@ The top 15 languages to support with compiled grammar packages, in priority orde
 11. **Java** — enterprise lingua franca
 12. **HTML** — exercises language injection (embedded JS/CSS)
 13. **CSS** — commonly injected within HTML
-14. **Zsh** — shell use case (separate grammar from Bash; external scanner extends Bash's)
-15. **Perl** — scripting language
+14. **Perl** — scripting language
+15. **Lua** — lightweight scripting language, exercises block comment/string scanner
 
 JSON is the MVP grammar (Phase 1). Go and JavaScript are the primary validation
-targets (Phase 4-5). Bash and Zsh are key for shell tooling. The remaining
-grammars validate robustness and are prioritized by user demand.
+targets (Phase 4-5). Bash is key for shell tooling. The remaining grammars
+validate robustness and are prioritized by user demand.
 
 ### Go Module Path
 
@@ -1138,6 +1138,77 @@ GLR algorithm.
 - API documentation
 - Pre-compiled grammar packages for popular languages
 - CI pipeline for grammar generation
+
+---
+
+## 9a. Implementation Status (as of 2026-02-16)
+
+This section tracks the actual implementation progress against the phased plan.
+
+### Completed
+
+- **Phases 1-5**: Core types, lexer, GLR parser, grammar code generator, and
+  external scanners are all implemented and working.
+- **Grammar code generator** (`cmd/tsgo-generate/`): Reads C `parser.c` files
+  (not the JSON intermediate format as originally planned). Extracts parse tables,
+  lex DFA, symbol metadata, field maps, alias sequences, and reserved words.
+  Generates Go source files.
+- **15 grammar packages**: All 15 target languages are generated and working:
+  JSON, Go, JavaScript, TypeScript, Python, Bash, Rust, C, C++, Ruby, Java,
+  HTML, CSS, Perl, Lua.
+- **14 external scanner ports**: Hand-ported Go implementations for all languages
+  except JSON (no scanner) and C/Java (no scanner needed). Scanners live in
+  `scanners/<language>/`.
+- **Integration tests**: 79 hand-written integration tests across all 15
+  languages, all passing with zero skips.
+- **Corpus tests**: Upstream tree-sitter `test/corpus/` tests for all 15
+  languages. Current pass rates vary (Bash 88%, Java 89%, Rust 82%, CSS 82%,
+  Ruby 82%, C 73%, C++ 68%, Perl 58%, HTML 33%).
+- **CI pipeline**: GitHub Actions with multi-platform unit tests (Linux x86-64/
+  ARM64, macOS ARM64, Windows x86-64), separate corpus test job, and PR
+  benchmark job.
+- **Reserved word support**: ABI v15 reserved word tables extracted and used at
+  runtime for keyword accept/reject decisions.
+- **Race condition testing**: Full -race -count=3 pass with zero data races.
+
+### Key Design Deviations from Original Plan
+
+1. **Grammar input**: The code generator reads C `parser.c` directly instead of
+   the JSON intermediate format. This was pragmatic — it avoids needing the
+   tree-sitter CLI and works with any grammar that has a compiled `parser.c`.
+   The tradeoff is fragile C parsing via regex.
+
+2. **Lex DFA extraction**: Instead of generating from the JSON grammar's DFA
+   tables, we extract the lex function by pattern-matching the C code's
+   `switch/case` structure and translating it to Go `for/switch`. This required
+   handling many C patterns: `ADVANCE_MAP`, hex literals, character escapes,
+   `eof` checks, negated conditions, etc.
+
+3. **Grammar packages as internal test grammars**: Currently all 15 grammar
+   packages live in `internal/testgrammars/<language>/`. These are not yet
+   published as separate Go modules (the original Option A distribution plan).
+
+4. **No incremental parsing yet**: Phases 6-7 (incremental parsing and query
+   system) have not been started.
+
+### In Progress
+
+- **Corpus test pass rate improvements**: Major fixes landed for alias sequence
+  extraction, reserved words, hex lex patterns, and escaped quote handling.
+  Remaining gaps are field annotations in S-expression output (~92 test
+  failures), Go grouped declaration parsing (~14 failures), and keyword-as-
+  identifier handling (~15 failures).
+- **Field annotation emission**: Parser does not yet emit field labels in
+  S-expression output (`name:`, `body:`, `condition:`, etc.).
+
+### Not Started
+
+- **Phase 6**: Incremental parsing
+- **Phase 7**: Query system
+- **Real-world corpus differential testing** against C tree-sitter
+- **SIMD optimizations** (AA-1) — design doc describes these but they are
+  post-v1.0 optimization targets
+- **Published grammar module distribution**
 
 ---
 
