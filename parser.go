@@ -23,10 +23,11 @@ type Parser struct {
 
 	// Token cache: avoids re-lexing when the parser inspects the
 	// current token multiple times (e.g. across versions).
-	cachedToken         Subtree
-	cachedTokenState    StateID
-	cachedTokenPosition Length
-	cachedTokenValid    bool
+	cachedToken            Subtree
+	cachedTokenState       StateID
+	cachedTokenExtState    uint16
+	cachedTokenPosition    Length
+	cachedTokenValid       bool
 
 	// External scanner support.
 	externalScanner      ExternalScanner
@@ -101,6 +102,7 @@ func (p *Parser) Reset() {
 	p.cachedToken = SubtreeZero
 	p.cachedTokenPosition = LengthZero
 	p.cachedTokenState = 0
+	p.cachedTokenExtState = 0
 	p.cachedTokenValid = false
 	p.acceptCount = 0
 	p.operationCount = 0
@@ -333,9 +335,10 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 func (p *Parser) lexToken(version StackVersion, state StateID, position Length) Subtree {
 	lexMode := p.language.LexModes[state]
 
-	// Check cache: only valid if same lex state and position.
+	// Check cache: only valid if same lex state, external lex state, and position.
 	if p.cachedTokenValid &&
 		p.cachedTokenState == StateID(lexMode.LexState) &&
+		p.cachedTokenExtState == lexMode.ExternalLexState &&
 		p.cachedTokenPosition.Bytes == position.Bytes {
 		return p.cachedToken
 	}
@@ -485,6 +488,7 @@ func (p *Parser) lexToken(version StackVersion, state StateID, position Length) 
 	p.cachedToken = token
 	p.cachedTokenPosition = position
 	p.cachedTokenState = StateID(lexMode.LexState)
+	p.cachedTokenExtState = lexMode.ExternalLexState
 	p.cachedTokenValid = true
 
 	return token

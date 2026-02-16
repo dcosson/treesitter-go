@@ -348,7 +348,6 @@ func TestJSParseArrowFunction(t *testing.T) {
 }
 
 func TestJSParseClass(t *testing.T) {
-	t.Skip("parser returns nil tree for multi-line class with methods — likely DFA gap")
 	p := ts.NewParser()
 	p.SetLanguage(jsLang())
 
