@@ -339,17 +339,6 @@ func normalizeSExpression(s string) (string, bool) {
 	return s, hasFields
 }
 
-// trimTrailingNewline removes a trailing \n or \r\n from a byte slice.
-func trimTrailingNewline(b []byte) []byte {
-	if len(b) > 0 && b[len(b)-1] == '\n' {
-		b = b[:len(b)-1]
-	}
-	if len(b) > 0 && b[len(b)-1] == '\r' {
-		b = b[:len(b)-1]
-	}
-	return b
-}
-
 // StripFields removes field annotations from an S-expression.
 // " name: (" becomes " (" — used when the expected output has no fields.
 func StripFields(s string) string {

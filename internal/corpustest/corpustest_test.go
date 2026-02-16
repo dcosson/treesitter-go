@@ -536,9 +536,199 @@ func TestParseCorpusDir_FetchedJSONGrammar(t *testing.T) {
 	t.Logf("parsed %d test cases from real JSON corpus", len(cases))
 }
 
-func min(a, b int) int {
-	if a < b {
-		return a
+func TestParseCorpusFile_MinimalHeader(t *testing.T) {
+	// Minimum valid header: exactly 3 equals signs.
+	data := []byte("===\nTest\n===\n\ninput\n\n---\n\n(output)\n")
+	cases, err := ParseCorpusFile(data)
+	if err != nil {
+		t.Fatal(err)
 	}
-	return b
+	if len(cases) != 1 {
+		t.Fatalf("expected 1 case, got %d", len(cases))
+	}
+	if cases[0].Name != "Test" {
+		t.Errorf("expected name 'Test', got %q", cases[0].Name)
+	}
 }
+
+func TestParseCorpusFile_EqualsInSource(t *testing.T) {
+	// Source code containing == should not be confused with a header delimiter.
+	data := []byte(`================================================================================
+Equals in source
+================================================================================
+
+if x == y {
+  return
+}
+
+--------------------------------------------------------------------------------
+
+(program (if_statement))
+`)
+	cases, err := ParseCorpusFile(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(cases) != 1 {
+		t.Fatalf("expected 1 case, got %d", len(cases))
+	}
+	if !strings.Contains(string(cases[0].Input), "==") {
+		t.Error("input should contain ==")
+	}
+}
+
+func TestParseCorpusFile_MultiLineTestName(t *testing.T) {
+	// Test names can span multiple lines before markers.
+	data := []byte(`===
+Multi
+Line Name
+===
+
+input
+
+---
+
+(output)
+`)
+	cases, err := ParseCorpusFile(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(cases) != 1 {
+		t.Fatalf("expected 1 case, got %d", len(cases))
+	}
+	if cases[0].Name != "Multi\nLine Name" {
+		t.Errorf("expected multi-line name, got %q", cases[0].Name)
+	}
+}
+
+func TestParseCorpusFile_CRLFLineEndings(t *testing.T) {
+	// Corpus files may have Windows line endings.
+	data := []byte("===\r\nTest\r\n===\r\n\r\ninput\r\n\r\n---\r\n\r\n(output)\r\n")
+	cases, err := ParseCorpusFile(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(cases) != 1 {
+		t.Fatalf("expected 1 case, got %d", len(cases))
+	}
+	if cases[0].Name != "Test" {
+		t.Errorf("expected name 'Test', got %q", cases[0].Name)
+	}
+	if cases[0].Expected != "(output)" {
+		t.Errorf("expected '(output)', got %q", cases[0].Expected)
+	}
+}
+
+func TestParseCorpusFile_EmptyInput(t *testing.T) {
+	// Test with empty input (nothing between header and divider).
+	data := []byte(`===
+Empty input
+===
+
+---
+
+(empty)
+`)
+	cases, err := ParseCorpusFile(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(cases) != 1 {
+		t.Fatalf("expected 1 case, got %d", len(cases))
+	}
+	if len(cases[0].Input) != 0 {
+		t.Errorf("expected empty input, got %q", string(cases[0].Input))
+	}
+}
+
+func TestParseCorpusFile_ManyDividersPickLongest(t *testing.T) {
+	// Multiple divider-like lines in source; only the longest counts.
+	data := []byte(`===
+Many dividers
+===
+
+---
+code here
+-----
+more code
+---
+
+-----------
+
+(result)
+`)
+	cases, err := ParseCorpusFile(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(cases) != 1 {
+		t.Fatalf("expected 1 case, got %d", len(cases))
+	}
+	// The longest divider is ----------- (11 chars), so everything before it is input.
+	if !strings.Contains(string(cases[0].Input), "code here") {
+		t.Error("input should contain 'code here'")
+	}
+	if !strings.Contains(string(cases[0].Input), "more code") {
+		t.Error("input should contain 'more code'")
+	}
+}
+
+func TestParseCorpusFile_MultipleAttributes(t *testing.T) {
+	// Multiple attributes on a single test.
+	data := []byte(`===
+Multi attr
+:error
+:fail-fast
+===
+
+bad input
+
+---
+
+(ERROR)
+`)
+	cases, err := ParseCorpusFile(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(cases) != 1 {
+		t.Fatalf("expected 1 case, got %d", len(cases))
+	}
+	if !cases[0].Attributes.Error {
+		t.Error("expected error=true")
+	}
+	if !cases[0].Attributes.FailFast {
+		t.Error("expected fail-fast=true")
+	}
+}
+
+func TestParseCorpusFile_SkipSuppressesError(t *testing.T) {
+	// :skip and :error together — skip takes precedence.
+	data := []byte(`===
+Skip wins
+:skip
+:error
+===
+
+input
+
+---
+
+(output)
+`)
+	cases, err := ParseCorpusFile(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(cases) != 1 {
+		t.Fatalf("expected 1 case, got %d", len(cases))
+	}
+	if !cases[0].Attributes.Skip {
+		t.Error("expected skip=true")
+	}
+	if cases[0].Attributes.Error {
+		t.Error("skip should suppress error")
+	}
+}
+
