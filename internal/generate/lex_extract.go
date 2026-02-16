@@ -69,21 +69,12 @@ func extractFunctionBody(src, funcName string) string {
 		return ""
 	}
 
-	// Match braces to find the end.
 	start := idx + braceIdx
-	depth := 0
-	for i := start; i < len(src); i++ {
-		switch src[i] {
-		case '{':
-			depth++
-		case '}':
-			depth--
-			if depth == 0 {
-				return src[start+1 : i]
-			}
-		}
+	end := findMatchingBrace(src, start)
+	if end < 0 {
+		return ""
 	}
-	return ""
+	return src[start+1 : end]
 }
 
 // parseLexDFA parses the DFA states from a lex function body.

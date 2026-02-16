@@ -455,12 +455,8 @@ func writeSymbolConstants(b *strings.Builder, g *Grammar) {
 	for i, name := range g.SymbolNames {
 		constName := symbolConstNameBase(name, i)
 		if seen[constName] {
-			// Collision: add "Aux" prefix for hidden/aux symbols.
-			constName = "SymAux" + exportedName(strings.TrimPrefix(name, "_"))
-			if seen[constName] {
-				// Still collides: add index suffix.
-				constName = fmt.Sprintf("%s%d", constName, i)
-			}
+			// Collision: add index suffix to disambiguate.
+			constName = fmt.Sprintf("%s%d", constName, i)
 		}
 		seen[constName] = true
 		names[i] = constName
@@ -498,10 +494,12 @@ func symbolConstNameBase(name string, index int) string {
 	cleanName := name
 	if strings.HasPrefix(name, "_") {
 		cleanName = name[1:]
-		// Aux symbols (repeat, token, etc.) get SymAux prefix.
-		if strings.Contains(name, "repeat") || strings.Contains(name, "token") {
-			prefix = "SymAux"
-		}
+		prefix = "SymAux"
+	}
+
+	// After stripping prefix, the clean name might be punctuation.
+	if isPunctuation(cleanName) {
+		return prefix + punctuationName(cleanName)
 	}
 
 	return prefix + exportedName(cleanName)
@@ -513,16 +511,25 @@ func exportedName(name string) string {
 		return ""
 	}
 	parts := strings.FieldsFunc(name, func(r rune) bool {
-		return r == '_' || r == '-' || r == '.'
+		return r == '_' || r == '-' || r == '.' || r == ' '
 	})
 	var result strings.Builder
 	for _, p := range parts {
 		if p == "" {
 			continue
 		}
-		runes := []rune(p)
-		runes[0] = unicode.ToUpper(runes[0])
-		result.WriteString(string(runes))
+		// Strip non-identifier characters from each part.
+		var clean []rune
+		for _, r := range p {
+			if unicode.IsLetter(r) || unicode.IsDigit(r) {
+				clean = append(clean, r)
+			}
+		}
+		if len(clean) == 0 {
+			continue
+		}
+		clean[0] = unicode.ToUpper(clean[0])
+		result.WriteString(string(clean))
 	}
 	return result.String()
 }
@@ -552,6 +559,7 @@ func punctuationName(name string) string {
 		".":  "Dot",
 		"\"": "DQuote",
 		"'":  "SQuote",
+		"`":  "Backtick",
 		"=":  "Eq",
 		"!":  "Bang",
 		"<":  "Lt",
@@ -594,8 +602,11 @@ func punctuationName(name string) string {
 	for _, r := range name {
 		if n, ok := mapping[string(r)]; ok {
 			result.WriteString(n)
-		} else {
+		} else if unicode.IsLetter(r) || unicode.IsDigit(r) {
 			result.WriteRune(r)
+		} else {
+			// Non-letter, non-mapped: use Unicode code point.
+			fmt.Fprintf(&result, "U%04X", r)
 		}
 	}
 	return result.String()

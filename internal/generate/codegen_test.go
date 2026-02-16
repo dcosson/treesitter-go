@@ -207,6 +207,215 @@ func TestGenerateGoMatchesHandCompiled(t *testing.T) {
 	}
 }
 
+// TestExtractGoGrammar tests that the Go grammar parser.c can be fully extracted.
+// This exercises the large (61K line) parser.c with complex character literals,
+// keyword lex function, and many DFA states.
+func TestExtractGoGrammar(t *testing.T) {
+	src := testGoParserC(t)
+	g, err := ExtractGrammar(src)
+	if err != nil {
+		t.Fatalf("ExtractGrammar: %v", err)
+	}
+
+	if g.Name != "go" {
+		t.Errorf("Name = %q, want %q", g.Name, "go")
+	}
+
+	// Go grammar has many symbols and states.
+	if g.SymbolCount < 100 {
+		t.Errorf("SymbolCount = %d, want >= 100", g.SymbolCount)
+	}
+	if g.StateCount < 500 {
+		t.Errorf("StateCount = %d, want >= 500", g.StateCount)
+	}
+	if len(g.SymbolNames) != g.SymbolCount {
+		t.Errorf("SymbolNames length = %d, want %d", len(g.SymbolNames), g.SymbolCount)
+	}
+	if len(g.SymbolMetadata) != g.SymbolCount {
+		t.Errorf("SymbolMetadata length = %d, want %d", len(g.SymbolMetadata), g.SymbolCount)
+	}
+
+	// Should have lex states.
+	if len(g.LexStates) < 100 {
+		t.Errorf("LexStates = %d, want >= 100", len(g.LexStates))
+	}
+
+	// Should have keyword lex states.
+	if len(g.KeywordLexStates) == 0 {
+		t.Error("KeywordLexStates is empty; Go grammar should have keyword lex")
+	}
+
+	// Should have parse actions.
+	if len(g.ParseActions) < 100 {
+		t.Errorf("ParseActions = %d, want >= 100", len(g.ParseActions))
+	}
+
+	// Should have field names.
+	if g.FieldCount < 10 {
+		t.Errorf("FieldCount = %d, want >= 10", g.FieldCount)
+	}
+	if len(g.FieldNames) < 10 {
+		t.Errorf("FieldNames = %d, want >= 10", len(g.FieldNames))
+	}
+
+	t.Logf("Go grammar: %d symbols, %d states (%d large), %d lex states, %d keyword lex states, %d fields, %d parse actions",
+		g.SymbolCount, g.StateCount, g.LargeStateCount,
+		len(g.LexStates), len(g.KeywordLexStates),
+		g.FieldCount, len(g.ParseActions))
+}
+
+// TestGenerateGoGrammarCompiles tests that the generated Go grammar compiles.
+func TestGenerateGoGrammarCompiles(t *testing.T) {
+	src := testGoParserC(t)
+	g, err := ExtractGrammar(src)
+	if err != nil {
+		t.Fatalf("ExtractGrammar: %v", err)
+	}
+
+	goSrc := GenerateGo(g, "golang")
+
+	// Write to a temp directory and try to compile.
+	tmpDir := t.TempDir()
+	pkgDir := filepath.Join(tmpDir, "golang")
+	if err := os.MkdirAll(pkgDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	goMod := `module testmod
+
+go 1.24.4
+
+require github.com/treesitter-go/treesitter v0.0.0
+
+replace github.com/treesitter-go/treesitter => ` + findRepoRoot(t) + "\n"
+	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte(goMod), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.WriteFile(filepath.Join(pkgDir, "go_language.go"), []byte(goSrc), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := exec.Command("go", "build", "./golang/")
+	cmd.Dir = tmpDir
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		// Log first 2000 chars of generated source on failure for debugging.
+		snippet := goSrc
+		if len(snippet) > 2000 {
+			snippet = snippet[:2000]
+		}
+		t.Fatalf("generated Go grammar does not compile: %v\n%s\nGenerated source (first 2000 chars):\n%s", err, output, snippet)
+	}
+	t.Logf("Go grammar generated %d bytes of Go source, compiles OK", len(goSrc))
+}
+
+// TestExtractJavaScriptGrammar tests extraction of the JavaScript grammar (94K lines).
+func TestExtractJavaScriptGrammar(t *testing.T) {
+	src := testJSParserC(t)
+	g, err := ExtractGrammar(src)
+	if err != nil {
+		t.Fatalf("ExtractGrammar: %v", err)
+	}
+
+	if g.Name != "javascript" {
+		t.Errorf("Name = %q, want %q", g.Name, "javascript")
+	}
+	if g.SymbolCount < 200 {
+		t.Errorf("SymbolCount = %d, want >= 200", g.SymbolCount)
+	}
+	if g.StateCount < 1000 {
+		t.Errorf("StateCount = %d, want >= 1000", g.StateCount)
+	}
+	if len(g.LexStates) < 100 {
+		t.Errorf("LexStates = %d, want >= 100", len(g.LexStates))
+	}
+
+	t.Logf("JavaScript grammar: %d symbols, %d states (%d large), %d lex states, %d keyword lex states, %d fields, %d parse actions",
+		g.SymbolCount, g.StateCount, g.LargeStateCount,
+		len(g.LexStates), len(g.KeywordLexStates),
+		g.FieldCount, len(g.ParseActions))
+}
+
+// TestGenerateJSGrammarCompiles tests that the generated JavaScript grammar compiles.
+func TestGenerateJSGrammarCompiles(t *testing.T) {
+	src := testJSParserC(t)
+	g, err := ExtractGrammar(src)
+	if err != nil {
+		t.Fatalf("ExtractGrammar: %v", err)
+	}
+
+	goSrc := GenerateGo(g, "javascript")
+
+	tmpDir := t.TempDir()
+	pkgDir := filepath.Join(tmpDir, "javascript")
+	if err := os.MkdirAll(pkgDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	goMod := `module testmod
+
+go 1.24.4
+
+require github.com/treesitter-go/treesitter v0.0.0
+
+replace github.com/treesitter-go/treesitter => ` + findRepoRoot(t) + "\n"
+	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte(goMod), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := os.WriteFile(filepath.Join(pkgDir, "js_language.go"), []byte(goSrc), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := exec.Command("go", "build", "./javascript/")
+	cmd.Dir = tmpDir
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		snippet := goSrc
+		if len(snippet) > 2000 {
+			snippet = snippet[:2000]
+		}
+		t.Fatalf("generated JS grammar does not compile: %v\n%s\nGenerated source (first 2000 chars):\n%s", err, output, snippet)
+	}
+	t.Logf("JavaScript grammar generated %d bytes of Go source, compiles OK", len(goSrc))
+}
+
+// testJSParserC returns the JavaScript grammar parser.c content for testing.
+func testJSParserC(t *testing.T) string {
+	t.Helper()
+	paths := []string{
+		filepath.Join("..", "..", "testdata", "grammars", "javascript", "src", "parser.c"),
+		"/tmp/tree-sitter-javascript-ref/src/parser.c",
+		"/tmp/tree-sitter-javascript/src/parser.c",
+	}
+	for _, p := range paths {
+		data, err := os.ReadFile(p)
+		if err == nil {
+			return string(data)
+		}
+	}
+	t.Skip("JavaScript grammar parser.c not found")
+	return ""
+}
+
+// testGoParserC returns the Go grammar parser.c content for testing.
+func testGoParserC(t *testing.T) string {
+	t.Helper()
+	paths := []string{
+		filepath.Join("..", "..", "testdata", "grammars", "go", "src", "parser.c"),
+		"/tmp/tree-sitter-go-grammar/src/parser.c",
+	}
+	for _, p := range paths {
+		data, err := os.ReadFile(p)
+		if err == nil {
+			return string(data)
+		}
+	}
+	t.Skip("Go grammar parser.c not found; place it at /tmp/tree-sitter-go-grammar/src/parser.c")
+	return ""
+}
+
 // findRepoRoot finds the repository root (the worktree root).
 func findRepoRoot(t *testing.T) string {
 	t.Helper()

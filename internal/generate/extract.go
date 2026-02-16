@@ -94,7 +94,9 @@ func ExtractGrammar(parserC string) (*Grammar, error) {
 
 // extractName finds the grammar name from tree_sitter_<name>().
 func extractName(g *Grammar, src string) error {
-	re := regexp.MustCompile(`tree_sitter_(\w+)\s*\(void\)`)
+	// Match the language function: const TSLanguage *tree_sitter_<name>(void)
+	// This avoids matching external scanner functions like tree_sitter_<name>_external_scanner_create.
+	re := regexp.MustCompile(`TSLanguage\s*\*\s*tree_sitter_(\w+)\s*\(void\)`)
 	m := re.FindStringSubmatch(src)
 	if m == nil {
 		return fmt.Errorf("could not find tree_sitter_<name>(void) function")
@@ -720,20 +722,59 @@ func extractArrayBlock(src, name string) string {
 	}
 	start += idx
 
-	// Find the matching closing brace (handle nesting).
+	end := findMatchingBrace(src, start)
+	if end < 0 {
+		return ""
+	}
+	return src[start+1 : end]
+}
+
+// findMatchingBrace finds the closing brace that matches the opening brace
+// at position start. Handles character literals ('x'), string literals ("x"),
+// and nested braces correctly.
+func findMatchingBrace(src string, start int) int {
 	depth := 0
-	for i := start; i < len(src); i++ {
-		switch src[i] {
+	i := start
+	for i < len(src) {
+		ch := src[i]
+		switch ch {
+		case '\'':
+			// Skip character literal: 'x', '\x', '\'' etc.
+			// A C char literal is: ' <char-or-escape> '
+			// We need to find the matching closing quote.
+			i++ // past opening quote
+			if i < len(src) && src[i] == '\\' {
+				i += 2 // skip backslash AND the escaped character (handles '\'' etc.)
+			} else {
+				i++ // skip the literal character
+			}
+			// i should now point at the closing quote; if not, scan for it
+			// (handles multi-char escape sequences like '\x1F')
+			for i < len(src) && src[i] != '\'' {
+				i++
+			}
+		case '"':
+			// Skip string literal.
+			i++
+			for i < len(src) {
+				if src[i] == '\\' {
+					i++ // skip escaped char
+				} else if src[i] == '"' {
+					break
+				}
+				i++
+			}
 		case '{':
 			depth++
 		case '}':
 			depth--
 			if depth == 0 {
-				return src[start+1 : i]
+				return i
 			}
 		}
+		i++
 	}
-	return ""
+	return -1
 }
 
 // resolveSymbolIndex converts a symbol name (like "ts_builtin_sym_end" or
