@@ -368,30 +368,45 @@ func (p *Parser) lexToken(version StackVersion, state StateID, position Length) 
 				p.lexer.TokenEndPosition = p.lexer.currentPosition
 			}
 
-			// Reject zero-width external tokens where the scanner didn't
-			// call MarkEnd and didn't advance. These indicate the scanner
-			// matched a default/fallback rule (e.g. EmptyValue on whitespace)
-			// without actually consuming input. Accepting them causes infinite
-			// loops because zero-width tokens don't advance position.
-			if !p.lexer.markEndCalled && p.lexer.currentPosition.Bytes == position.Bytes {
-				// Fall through to internal lex.
+			// Serialize the scanner state to check if it changed.
+			externalScannerStateLen = p.externalScannerSerialize()
+			externalScannerStateChanged = !ExternalScannerStateEqual(
+				lastExtToken, p.arena,
+				p.serializationBuffer[:externalScannerStateLen],
+				externalScannerStateLen,
+			)
+
+			// Reject empty external tokens that would cause infinite loops.
+			// Matches C tree-sitter logic: empty tokens (tokenEnd <= position)
+			// with no scanner state change are rejected when the parser is in
+			// error recovery (state 0) or the token is "extra" (doesn't change
+			// parse state). Tokens WITH scanner state changes are always
+			// accepted, even if zero-width (e.g. Ruby HeredocBodyStart,
+			// Python indent/dedent).
+			if p.lexer.TokenEndPosition.Bytes <= position.Bytes && !externalScannerStateChanged {
+				extTokenIndex := p.lexer.ResultSymbol
+				var grammarSymbol Symbol
+				if int(extTokenIndex) < len(p.language.ExternalSymbolMap) {
+					grammarSymbol = p.language.ExternalSymbolMap[extTokenIndex]
+				}
+				nextParseState := p.language.nextState(state, grammarSymbol)
+				tokenIsExtra := nextParseState == state
+
+				if state == 0 || tokenIsExtra {
+					// Fall through to internal lex — reject this empty token.
+				} else {
+					// Accept: not in error recovery and not extra.
+					if int(extTokenIndex) < len(p.language.ExternalSymbolMap) {
+						p.lexer.ResultSymbol = grammarSymbol
+					}
+					foundExternalToken = true
+				}
 			} else {
-				// Scanner recognized a token. Serialize the new state.
-				externalScannerStateLen = p.externalScannerSerialize()
-
-				// Check if state changed from previous external token.
-				externalScannerStateChanged = !ExternalScannerStateEqual(
-					lastExtToken, p.arena,
-					p.serializationBuffer[:externalScannerStateLen],
-					externalScannerStateLen,
-				)
-
-				// Map the external token index to a grammar symbol.
+				// Non-empty token or scanner state changed — always accept.
 				extTokenIndex := p.lexer.ResultSymbol
 				if int(extTokenIndex) < len(p.language.ExternalSymbolMap) {
 					p.lexer.ResultSymbol = p.language.ExternalSymbolMap[extTokenIndex]
 				}
-
 				foundExternalToken = true
 			}
 		}
@@ -664,6 +679,14 @@ func (p *Parser) doReduce(version StackVersion, action ParseActionEntry) {
 	// Look up the goto state.
 	baseState := p.stack.State(version)
 	gotoState := p.language.nextState(baseState, symbol)
+
+	// If the goto state equals the base state, this reduced node is an "extra"
+	// (like comments, whitespace, or heredoc_body in Ruby). Extra nodes don't
+	// change the parser state and are skipped during pop operations.
+	// This matches C tree-sitter's ts_parser__reduce behavior.
+	if gotoState == baseState {
+		node = SetExtra(node, p.arena)
+	}
 
 	// Compute new position.
 	position := p.stack.Position(version)

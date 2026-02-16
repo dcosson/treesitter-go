@@ -167,7 +167,6 @@ end`
 }
 
 func TestRubyParseHeredoc(t *testing.T) {
-	t.Skip("ruby scanner bug — squiggly heredoc (<<~) not supported in scanner")
 	p := ts.NewParser()
 	p.SetLanguage(newRubyLang())
 
