@@ -1,0 +1,30 @@
+{
+  "id": "tree-sitter-go-l69",
+  "title": "Differential testing framework and benchmark suite",
+  "description": "Build the testing infrastructure to validate correctness against C tree-sitter and measure performance.\n\nDeliverables:\n- Differential testing harness: for each grammar, parse a corpus with both C tree-sitter (via CLI or CGo test helper) and Go implementation. Compare S-expression output, node byte ranges, and query match results.\n- Use tree-sitter test corpus (test/corpus/ in each grammar repo) as primary validation set.\n- Benchmark suite: parse corpus of files at various sizes (1KB, 10KB, 100KB, 1MB) across JSON, Go, JavaScript, Python.\n- Incremental parse benchmarks: single char edit, line insert, multi-line edit at various file sizes.\n- Memory profiling integration: report allocations per parse, GC pause times.\n- Comparison benchmarks: same files through C tree-sitter and Go, report ratio with confidence intervals.\n- CI integration: run differential tests and benchmarks on every commit.\n\nTests:\n- The framework itself is the test — validate against C tree-sitter across all supported grammars\n- Benchmark reproducibility (low coefficient of variation)\n\nReference: docs/design.md §8 Profiling Strategy, §10 Risk: Parse Tree Compatibility, docs/testing-strategy.md",
+  "status": "open",
+  "priority": 2,
+  "type": "task",
+  "parent": "tree-sitter-go-wcu",
+  "dependencies": [
+    {
+      "id": "tree-sitter-go-wcu",
+      "type": "parent-child"
+    },
+    {
+      "id": "tree-sitter-go-agm",
+      "type": "blocks"
+    },
+    {
+      "id": "tree-sitter-go-kmx",
+      "type": "blocks"
+    }
+  ],
+  "created_by": "Danny Cosson",
+  "owner": "dcosson@gmail.com",
+  "labels": [
+    "phase-8"
+  ],
+  "created_at": "2026-02-15T21:25:23.288675-08:00",
+  "updated_at": "2026-02-15T21:25:23.288675-08:00"
+}

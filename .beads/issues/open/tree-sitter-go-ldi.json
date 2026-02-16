@@ -1,0 +1,26 @@
+{
+  "id": "tree-sitter-go-ldi",
+  "title": "Incremental parsing and changed range detection",
+  "description": "Implement incremental re-parsing so that edits to already-parsed files reuse unchanged subtrees.\n\nDeliverables:\n- Tree.Edit() with immutable tree / structural sharing: clone only nodes on the edit path (O(depth) = O(log N)). Propagate has_changes flag, adjust padding/size, handle depends_on_column invalidation.\n- ReusableNode iterator: stack-based DFS over old tree with (tree, childIndex, byteOffset) entries. lastExternalToken tracking.\n- Reusability checks in parser.advance(): has_changes, error node, missing node, fragile (fragileLeft/fragileRight), external scanner state match, included_range_difference overlap, first leaf lex mode compatibility, is_reusable table flag.\n- changed_ranges.go: parallel tree walk for change detection. Two Iterator structs walking old and new trees. Compare by symbol, size, parse state, error cost, external scanner state. Merge adjacent changed ranges.\n- Tree balancing: subtree.compress() with AVL-like rotations on repetition nodes (tracked by repeatDepth). Keep depth O(log N) for left-recursive repetitions.\n\nTests:\n- Edit-and-reparse cycles: single char insert/delete, line insert/delete, multi-line edit\n- Verify incremental parse produces identical tree to from-scratch parse\n- Benchmark incremental vs full parse (expect \u003e99% subtree reuse for single-char edits)\n- ChangedRanges correctness (ranges match expectations for various edit patterns)\n- Tree balancing: parse file with 1000+ top-level statements, verify balanced depth\n- Column-dependent invalidation (Python-style indentation scenarios)\n\nReference: docs/design.md §6, docs/addendum-incremental-parsing.md §1-2, C source: subtree.c (ts_subtree_edit), parser.c (ts_parser__reuse_node), get_changed_ranges.c, reusable_node.h",
+  "status": "open",
+  "priority": 2,
+  "type": "task",
+  "parent": "tree-sitter-go-wcu",
+  "dependencies": [
+    {
+      "id": "tree-sitter-go-wcu",
+      "type": "parent-child"
+    },
+    {
+      "id": "tree-sitter-go-kmx",
+      "type": "blocks"
+    }
+  ],
+  "created_by": "Danny Cosson",
+  "owner": "dcosson@gmail.com",
+  "labels": [
+    "phase-6"
+  ],
+  "created_at": "2026-02-15T21:24:44.686439-08:00",
+  "updated_at": "2026-02-15T21:24:44.686439-08:00"
+}
