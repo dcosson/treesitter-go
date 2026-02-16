@@ -1,0 +1,27 @@
+{
+  "id": "tree-sitter-go-wcu.8",
+  "title": "SIMD lexer optimizations (post-v1.0)",
+  "description": "POST-V1.0: SIMD acceleration for lexer hot paths. This bead should NOT be started until the core implementation is complete, benchmarked, and profiling confirms where the bottlenecks are.\n\nThis covers the Alien Artifacts from docs/design.md §11 (AA-1: SIMD nibble-based character classification) and optimization tiers from docs/addendum-lexer-performance.md and docs/addendum-hot-paths.md.\n\nPotential deliverables (guided by profiling):\n- SIMD whitespace scanning (AVX2 VPCMPEQB + VPMOVMSKB + TZCNT on x86-64, NEON CMEQ on ARM64)\n- SIMD identifier scanning (SSE4.2 PCMPISTRI or nibble-based classification)\n- SIMD string literal scanning (find next \" or \\ in 32-byte blocks)\n- Full SIMD character classification via nibble lookup (VPSHUFB dual-table technique from simdjson)\n- SIMD ASCII detection (VPMOVMSKB for 32-byte all-ASCII fast path, skip UTF-8 decode entirely)\n- Plan9 assembly via Avo code generator (Go -\u003e Plan9 ASM) for x86-64, hand-written for ARM64\n- Pure-Go scalar fallback for all SIMD paths (always available)\n\nArchitecture support:\n- x86-64: AVX2 (VPSHUFB, VPCMPEQB, VPMOVMSKB)\n- ARM64: NEON (TBL, CMEQ, bitmask extraction)\n- Fallback: Pure Go (always works)\n\nIMPORTANT: Do NOT implement any of this during core parser development (phases 1-7). These are optimizations to be applied after the parser is correct, tested, and baselined. See addendum docs for full details.\n\nReference: docs/addendum-lexer-performance.md, docs/addendum-hot-paths.md §3",
+  "status": "open",
+  "priority": 3,
+  "type": "task",
+  "parent": "tree-sitter-go-wcu",
+  "dependencies": [
+    {
+      "id": "tree-sitter-go-wcu",
+      "type": "parent-child"
+    },
+    {
+      "id": "tree-sitter-go-wcu.5",
+      "type": "blocks"
+    }
+  ],
+  "created_by": "Danny Cosson",
+  "owner": "dcosson@gmail.com",
+  "labels": [
+    "post-v1",
+    "optimization"
+  ],
+  "created_at": "2026-02-15T22:23:56.275318-08:00",
+  "updated_at": "2026-02-15T22:23:56.275318-08:00"
+}

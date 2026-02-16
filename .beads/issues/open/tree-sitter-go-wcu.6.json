@@ -1,0 +1,26 @@
+{
+  "id": "tree-sitter-go-wcu.6",
+  "title": "Port grammar scanners: Python, TypeScript, Rust, C",
+  "description": "Generate grammar packages and port external scanners for the high-priority languages (excluding C++ which is a separate bead due to scanner complexity).\n\nThis task covers multiple grammars that follow the same pattern established by Go, JavaScript, and Bash scanner ports. Each grammar needs: tsgo-generate output, external scanner port (if any), and differential testing.\n\nLanguages and scanner complexity:\n- Python: indentation-sensitive scanner (indent/dedent/newline tracking, ~300 lines) — the classic external scanner case\n- TypeScript: extends JavaScript scanner, ~1000 lines — large but follows established JS patterns\n- Rust: relatively simple scanner (raw strings, block comments)\n- C: minimal scanner (if any)\n\nDeliverables per grammar:\n- Generated grammar package via tsgo-generate\n- External scanner ported to Go\n- Differential test passing against C tree-sitter on representative corpus\n\nTests:\n- Parse real-world files from popular repos for each language\n- Differential test against C tree-sitter\n- Python: indentation edge cases (mixed tabs/spaces, nested blocks, empty bodies)\n- TypeScript: stress test with large grammar tables (~4000 lex states)\n\nReference: docs/design.md §4 External Scanners",
+  "status": "open",
+  "priority": 2,
+  "type": "task",
+  "parent": "tree-sitter-go-wcu",
+  "dependencies": [
+    {
+      "id": "tree-sitter-go-wcu",
+      "type": "parent-child"
+    },
+    {
+      "id": "tree-sitter-go-sou",
+      "type": "blocks"
+    }
+  ],
+  "created_by": "Danny Cosson",
+  "owner": "dcosson@gmail.com",
+  "labels": [
+    "grammar-port"
+  ],
+  "created_at": "2026-02-15T22:23:11.045283-08:00",
+  "updated_at": "2026-02-15T22:23:11.045283-08:00"
+}

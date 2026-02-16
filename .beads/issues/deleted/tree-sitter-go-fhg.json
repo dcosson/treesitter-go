@@ -2,39 +2,18 @@
   "id": "tree-sitter-go-fhg",
   "title": "GLR parser engine: stack, parse loop, and error recovery",
   "description": "Implement the core GLR parsing engine that can parse from scratch (no incremental reuse yet).\n\nThis is the largest and most complex task. It includes the Graph-Structured Stack, the main parse loop with shift/reduce/accept, and error recovery.\n\nDeliverables:\n- stack.go: Graph-Structured Stack (GSS) with StackNode (state, links[8], position, errorCost, nodeCount, dynamicPrecedence), StackLink (node, subtree, isPending). Operations: push, pop (fan out across merged links, bounded by MAX_ITERATOR_COUNT=64), split (fork version), merge (combine equivalent versions), pause/resume (error recovery), halt (discard version). Use sync.Pool or manual free-list for StackNode. Replace C callback pattern in stack_iter with direct loop + enum return.\n- parser.go: Parser struct (language, lexer, stack, reusableNode, oldTree, finishedTree, tokenCache). Main parse loop (ts_parser__advance equivalent). Shift, reduce, accept actions. Token caching. context.Context integration for cancellation (check ctx.Done() in main loop).\n- Error recovery: handle_error, recover, do_all_potential_reductions, condense_stack. Error cost constants (ERROR_COST_PER_RECOVERY=500, etc.). MAX_VERSION_COUNT=6, MAX_COST_DIFFERENCE=1800.\n- tree.go: Tree struct (root, language, includedRanges). Node value type (context [4]uint32, id, tree pointer). Node accessors: Type, Symbol, StartByte, EndByte, StartPoint, EndPoint, ChildCount, NamedChildCount, Child, NamedChild, ChildByFieldName, Parent, NextSibling, PrevSibling, String (S-expression).\n- tree_cursor.go: TreeCursor with stack-based traversal. TreeCursorEntry (subtree, position, childIndex, structuralChildIndex, descendantIndex). GotoFirstChild, GotoNextSibling, GotoParent, CurrentNode.\n- subtree.go additions: internal node creation (ts_subtree_new_node), ts_subtree_summarize_children (compute visibleChildCount, namedChildCount, visibleDescendantCount, firstLeaf, repeatDepth, etc).\n\nTests:\n- Parse JSON files, verify S-expression output matches C tree-sitter\n- Test error recovery on malformed JSON\n- Stack operations: push, pop with multiple paths, version merging, version halting\n- TreeCursor traversal correctness\n- Node accessor correctness (positions, child navigation, field names)\n- Parse with context cancellation\n\nReference: docs/design.md §6, §9 Phase 3, C source: parser.c, stack.c, node.c, tree_cursor.c, tree.c",
-  "status": "open",
+  "status": "tombstone",
   "priority": 2,
   "type": "task",
-  "parent": "tree-sitter-go-wcu",
-  "dependencies": [
-    {
-      "id": "tree-sitter-go-wcu",
-      "type": "parent-child"
-    },
-    {
-      "id": "tree-sitter-go-pso",
-      "type": "blocks"
-    }
-  ],
-  "dependents": [
-    {
-      "id": "tree-sitter-go-agm",
-      "type": "blocks"
-    },
-    {
-      "id": "tree-sitter-go-kmx",
-      "type": "blocks"
-    },
-    {
-      "id": "tree-sitter-go-6j5",
-      "type": "blocks"
-    }
-  ],
   "created_by": "Danny Cosson",
   "owner": "dcosson@gmail.com",
   "labels": [
     "phase-3"
   ],
   "created_at": "2026-02-15T21:23:48.29659-08:00",
-  "updated_at": "2026-02-15T21:23:48.29659-08:00"
+  "updated_at": "2026-02-15T22:20:59.694031-08:00",
+  "deleted_at": "2026-02-15T22:20:59.694031-08:00",
+  "deleted_by": "batch delete",
+  "delete_reason": "batch delete",
+  "original_type": "task"
 }

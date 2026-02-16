@@ -1,0 +1,36 @@
+{
+  "id": "tree-sitter-go-wcu.5",
+  "title": "Full benchmark suite and external scanner differential testing",
+  "description": "Build the full performance benchmark suite and extend differential testing to cover grammars with external scanners.\n\nThis builds on the earlier corpus testing bead, adding performance measurement and external scanner validation.\n\nDeliverables:\n- Benchmark suite: parse corpus of files at various sizes (1KB, 10KB, 100KB, 1MB) across JSON, Go, JavaScript, Python.\n- Incremental parse benchmarks: single char edit, line insert, multi-line edit at various file sizes.\n- Memory profiling: report allocations per parse, GC pause times via runtime.MemStats and GODEBUG=gctrace=1.\n- Comparison benchmarks: same files through C tree-sitter and Go, report ratio with confidence intervals. Alternate runs (C, Go, C, Go) to average thermal effects.\n- External scanner differential testing: parse files exercising external scanner tokens (template literals, indentation, heredocs) and compare with C tree-sitter.\n- External scanner serialization roundtrip tests: serialize state, deserialize into fresh scanner, verify continued parsing matches.\n- CI integration: benchmark-action/github-action-benchmark for regression detection (alert at 150% threshold).\n\nPerformance Targets:\n| Operation | C (typical) | Go target |\n|-----------|-------------|-----------|\n| Parse 1KB JSON | ~50 us | \u003c 200 us |\n| Parse 10KB Go source | ~500 us | \u003c 2 ms |\n| Incremental reparse (1 char edit, 10KB) | ~5 us | \u003c 50 us |\n| Query match (simple, 10KB) | \u003c 100 us | \u003c 500 us |\n\nTests:\n- Benchmark reproducibility (coefficient of variation \u003c 10%)\n- Differential testing passes for all grammars with external scanners\n\nReference: docs/testing-strategy.md §4-7, docs/design.md §8 Performance",
+  "status": "open",
+  "priority": 2,
+  "type": "task",
+  "parent": "tree-sitter-go-wcu",
+  "dependencies": [
+    {
+      "id": "tree-sitter-go-wcu",
+      "type": "parent-child"
+    },
+    {
+      "id": "tree-sitter-go-agm",
+      "type": "blocks"
+    },
+    {
+      "id": "tree-sitter-go-kmx",
+      "type": "blocks"
+    }
+  ],
+  "dependents": [
+    {
+      "id": "tree-sitter-go-wcu.8",
+      "type": "blocks"
+    }
+  ],
+  "created_by": "Danny Cosson",
+  "owner": "dcosson@gmail.com",
+  "labels": [
+    "phase-8b"
+  ],
+  "created_at": "2026-02-15T22:22:54.532027-08:00",
+  "updated_at": "2026-02-15T22:22:54.532027-08:00"
+}

@@ -1,0 +1,26 @@
+{
+  "id": "tree-sitter-go-wcu.7",
+  "title": "Port C++ external scanner and grammar",
+  "description": "Generate the C++ grammar package and port its external scanner to Go.\n\nThe C++ external scanner is ~2000 lines — the most complex scanner in the target language set. It handles raw string literals, template disambiguation, and other context-sensitive C++ syntax. This is separated from the other grammar ports because of its exceptional complexity.\n\nIf the manual port proves impractical, the CGo fallback escape hatch (wrapping the C scanner behind the Go ExternalScanner interface) is an acceptable outcome for v1.0. Document the decision either way.\n\nDeliverables:\n- Generate C++ grammar using tsgo-generate\n- Port scanner.cc (~2000 lines) to Go ExternalScanner implementation, OR document why CGo fallback is used\n- If CGo fallback: implement the adapter wrapping C scanner behind Go interface (test-only CGo dependency, not in the main runtime)\n\nTests:\n- Parse real C++ files from popular repos (LLVM, Chromium, etc.)\n- Differential test against C tree-sitter\n- Stress test complex C++ features (templates, raw strings, nested namespaces)\n\nReference: docs/design.md §4 Strategy 3: CGo fallback, tree-sitter-cpp src/scanner.cc",
+  "status": "open",
+  "priority": 2,
+  "type": "task",
+  "parent": "tree-sitter-go-wcu",
+  "dependencies": [
+    {
+      "id": "tree-sitter-go-wcu",
+      "type": "parent-child"
+    },
+    {
+      "id": "tree-sitter-go-sou",
+      "type": "blocks"
+    }
+  ],
+  "created_by": "Danny Cosson",
+  "owner": "dcosson@gmail.com",
+  "labels": [
+    "grammar-port"
+  ],
+  "created_at": "2026-02-15T22:23:25.811261-08:00",
+  "updated_at": "2026-02-15T22:23:25.811261-08:00"
+}

@@ -15,10 +15,6 @@
       "type": "parent-child"
     },
     {
-      "id": "tree-sitter-go-fhg",
-      "type": "parent-child"
-    },
-    {
       "id": "tree-sitter-go-agm",
       "type": "parent-child"
     },
@@ -35,19 +31,43 @@
       "type": "parent-child"
     },
     {
-      "id": "tree-sitter-go-l69",
-      "type": "parent-child"
-    },
-    {
       "id": "tree-sitter-go-sou",
       "type": "parent-child"
     },
     {
-      "id": "tree-sitter-go-fv5",
+      "id": "tree-sitter-go-0ab",
       "type": "parent-child"
     },
     {
-      "id": "tree-sitter-go-0ab",
+      "id": "tree-sitter-go-wcu.1",
+      "type": "parent-child"
+    },
+    {
+      "id": "tree-sitter-go-wcu.2",
+      "type": "parent-child"
+    },
+    {
+      "id": "tree-sitter-go-wcu.3",
+      "type": "parent-child"
+    },
+    {
+      "id": "tree-sitter-go-wcu.4",
+      "type": "parent-child"
+    },
+    {
+      "id": "tree-sitter-go-wcu.5",
+      "type": "parent-child"
+    },
+    {
+      "id": "tree-sitter-go-wcu.6",
+      "type": "parent-child"
+    },
+    {
+      "id": "tree-sitter-go-wcu.7",
+      "type": "parent-child"
+    },
+    {
+      "id": "tree-sitter-go-wcu.8",
       "type": "parent-child"
     }
   ],

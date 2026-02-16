@@ -18,7 +18,7 @@
   ],
   "dependents": [
     {
-      "id": "tree-sitter-go-fhg",
+      "id": "tree-sitter-go-wcu.1",
       "type": "blocks"
     }
   ],

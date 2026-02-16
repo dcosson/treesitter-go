@@ -1,0 +1,32 @@
+{
+  "id": "tree-sitter-go-wcu.2",
+  "title": "Corpus test runner infrastructure",
+  "description": "Build the corpus test runner so that parser development (next bead) can be test-driven against real grammar corpus expectations.\n\nEvery tree-sitter grammar has test/corpus/ directories with .txt files in a specific format: header delimiters (3+ equals signs), test name with optional attributes (:skip, :error, :platform, :language, :cst, :fail-fast), source code, divider (longest line of 3+ hyphens), and expected S-expression output.\n\nDeliverables:\n- internal/corpustest/ package (or test helper):\n  - ParseCorpusFile(data []byte) ([]TestCase, error) — parse a single corpus .txt file\n  - ParseCorpusDir(dir string) ([]TestCase, error) — parse all .txt files in a directory\n  - TestCase struct: Name, Input []byte, Expected string (normalized S-expression), Attributes\n  - TestAttributes struct: Skip, Error, Languages, CST booleans\n- Parsing implementation:\n  - Use the \"longest divider\" rule: scan all ---+ lines and use the longest as separator\n  - Normalize expected output: strip ; comments, collapse whitespace, remove space before )\n  - Handle :skip and :error attributes\n- Comparison logic:\n  - normalizeS expression(s string) string\n  - containsErrorNode(node Node) bool for :error tests\n- Test driver: TestCorpus(t *testing.T, lang *Language, cases []TestCase) function\n- Makefile targets: fetch-test-grammars, test-corpus, test-corpus-json\n- testdata/grammars.json listing grammar repos and pinned versions\n- Script or Go tool to fetch/update grammar repos to testdata/grammars/\n\nTests:\n- Parse sample corpus files (extract from tree-sitter-json test/corpus/)\n- Verify attribute parsing (:skip, :error, etc.)\n- Verify longest-divider rule with tricky inputs (hyphens in source code)\n- Verify S-expression normalization\n\nReference: docs/testing-strategy.md §2, tree-sitter crates/cli/src/test.rs (corpus format spec)",
+  "status": "open",
+  "priority": 2,
+  "type": "task",
+  "parent": "tree-sitter-go-wcu",
+  "dependencies": [
+    {
+      "id": "tree-sitter-go-wcu",
+      "type": "parent-child"
+    },
+    {
+      "id": "tree-sitter-go-4q9",
+      "type": "blocks"
+    }
+  ],
+  "dependents": [
+    {
+      "id": "tree-sitter-go-wcu.3",
+      "type": "blocks"
+    }
+  ],
+  "created_by": "Danny Cosson",
+  "owner": "dcosson@gmail.com",
+  "labels": [
+    "phase-3-testing"
+  ],
+  "created_at": "2026-02-15T22:21:44.532043-08:00",
+  "updated_at": "2026-02-15T22:21:44.532043-08:00"
+}

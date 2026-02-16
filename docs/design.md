@@ -54,6 +54,13 @@ JSON is the MVP grammar (Phase 1). Go and JavaScript are the primary validation
 targets (Phase 4-5). Bash and Zsh are key for shell tooling. The remaining
 grammars validate robustness and are prioritized by user demand.
 
+### Go Module Path
+
+The runtime package uses module path `github.com/treesitter-go/treesitter`.
+Grammar packages use `github.com/treesitter-go/tree-sitter-<language>` (e.g.,
+`github.com/treesitter-go/tree-sitter-go`). The code generator output imports
+the runtime as `import ts "github.com/treesitter-go/treesitter"`.
+
 ### Target API
 
 The public API mirrors tree-sitter's C API (`api.h`) translated to idiomatic Go:
@@ -79,7 +86,7 @@ func (p *Parser) SetLanguage(lang *Language) error
 func (p *Parser) Parse(ctx context.Context, oldTree *Tree, input Input) *Tree
 func (p *Parser) ParseString(ctx context.Context, oldTree *Tree, source []byte) *Tree
 func (p *Parser) SetIncludedRanges(ranges []Range)
-func (p *Parser) Reset()
+func (p *Parser) Reset()  // Clears stack, reusable node state, and token cache
 
 // Tree
 func (t *Tree) RootNode() Node
@@ -238,9 +245,9 @@ Tree (public handle)
     ├── language *Language
     └── includedRanges []Range
 
-Node (lightweight value type, 32 bytes)
+Node (lightweight value type, ~24 bytes)
     ├── context [4]uint32  // [startByte, startRow, startCol, aliasSymbol]
-    ├── id unsafe.Pointer  // -> Subtree (identity)
+    ├── id SubtreeID       // arena + index pair (identity, no unsafe.Pointer)
     └── tree *Tree
 
 Query (compiled pattern)
@@ -287,31 +294,47 @@ type SubtreeArena struct {
 func (a *SubtreeArena) alloc() *SubtreeHeapData { /* slice from current block */ }
 ```
 
-When a tree is discarded, setting the arena slices to nil frees all nodes at
-once in the next GC cycle.
+**Arena lifetime and incremental parsing**: Each parse operation allocates from
+a fresh arena. The resulting `Tree` holds a reference to all arenas it touches
+(its own arena plus arenas from the old tree whose subtrees were reused). When
+a tree is garbage collected, arenas with no remaining tree references are freed.
+Concretely, `Tree` holds a `[]*SubtreeArena` slice; during incremental parsing,
+the new tree inherits the old tree's arena references plus its own new arena.
+This ensures shared subtrees remain valid without reference counting.
 
 **2. Inline subtree optimization (designed in from the start)**. The `Subtree`
-type is a small value type that discriminates between inline leaf data and a
-reference to heap-allocated `SubtreeHeapData`:
+type is a compact 8-byte value type that discriminates between inline leaf data
+and a reference to heap-allocated `SubtreeHeapData` in an arena:
 
 ```go
+// Subtree is exactly 8 bytes — matches C's pointer-sized Subtree union.
+// This is critical because children are stored as []Subtree values, so
+// struct size directly impacts cache locality during tree traversal.
 type Subtree struct {
-    // If inline is true, leaf data is packed into these fields directly.
-    // If inline is false, index refers to a SubtreeHeapData in the arena.
-    inline     bool
-    // Inline fields (used when inline == true)
-    symbol     uint8
-    parseState uint16
-    // ... packed size/padding fields
-    // Arena reference (used when inline == false)
-    data       *SubtreeHeapData
+    // High bit: 1 = inline leaf data, 0 = arena reference
+    // When inline: remaining bits pack symbol (8), parseState (16),
+    //              padding/size (compact), visibility flags
+    // When arena ref: remaining bits are arena block index (16) +
+    //                 offset within block (15)
+    data uint64
+}
+
+func (s Subtree) isInline() bool { return s.data>>63 != 0 }
+
+// SubtreeID uniquely identifies a subtree for Node identity comparison.
+// Used instead of unsafe.Pointer — GC-safe, arena-compatible.
+type SubtreeID struct {
+    arenaBlock uint16
+    offset     uint16
 }
 ```
 
 This preserves the C optimization's value: no pointer chase or heap allocation
-for the majority of leaf tokens. Children are stored as `[]Subtree` (values,
-not pointers), keeping children contiguous in memory with their parent's data
-and avoiding an extra level of indirection.
+for the majority of leaf tokens, and the 8-byte size matches C's `Subtree`
+union, ensuring `[]Subtree` children arrays have identical cache footprint.
+Children are stored as `[]Subtree` (values, not pointers), keeping children
+contiguous in memory with their parent's data and avoiding an extra level of
+indirection.
 
 **3. Immutable trees for copy-on-write**. Without ref counting, we cannot check
 "am I the only owner?" (`refcount == 1`) like C does in `ts_subtree_make_mut`.
@@ -576,7 +599,7 @@ Define a Go interface:
 
 ```go
 // ExternalScanner handles context-sensitive lexing that the regular DFA cannot express.
-// Implementations must be safe for concurrent use if the Parser is used concurrently.
+// Each Parser gets its own scanner instance; no concurrent access occurs.
 type ExternalScanner interface {
     // Scan attempts to recognize a token. validSymbols[i] is true if external
     // token i is valid in the current parse state. Returns true if a token was
@@ -1236,3 +1259,92 @@ MAX_COST_DIFFERENCE        = 1800
 These constants are empirically tuned. We should use the same values to match
 the C parser's error recovery behavior, then re-evaluate if differential testing
 reveals cases where the Go parser recovers differently.
+
+### Decision: Parser.Reset() Semantics
+
+`Parser.Reset()` clears all internal state accumulated during parsing:
+
+- **Stack**: All stack versions are discarded (halted and cleared)
+- **Reusable node state**: The `ReusableNode` iterator is reset (old tree reference
+  cleared, traversal stack emptied)
+- **Token cache**: The lookahead token cache is invalidated
+- **Finished tree**: Any in-progress tree reference is cleared
+
+After `Reset()`, the parser is in the same state as a freshly created parser
+(with the same language). This is used when switching input documents or when
+the caller wants to discard any accumulated state from a cancelled parse.
+
+---
+
+## 11. Alien Artifacts
+
+This section labels advanced techniques from research papers and computer science
+literature that we employ for performance or correctness advantages. These are
+techniques that most implementations do not use but that agents can implement
+effectively.
+
+### AA-1: SIMD Nibble-Based Character Classification
+
+*Source: Langdale & Lemire, "Parsing Gigabytes of JSON per Second" (VLDB 2019);
+simdjson project.*
+
+The generated lexer uses SIMD instructions (AVX2 `VPSHUFB` on x86-64, NEON
+`TBL` on ARM64) to classify 32 bytes of input simultaneously into character
+equivalence classes. Each byte is decomposed into high and low nibbles, which
+index into two 16-entry lookup tables. The AND of both lookups produces a
+bitmask encoding up to 8 character classes per byte. This processes input at
+10-16 bytes per CPU cycle, compared to C tree-sitter's 1 byte per ~3-5 cycles
+for `ADVANCE_MAP`'s linear scan.
+
+**Where used**: Lexer character dispatch (post-v1.0 optimization), whitespace
+scanning, identifier scanning, string literal scanning.
+
+**Why it matters**: C tree-sitter's `ADVANCE_MAP` macro performs a linear scan
+through `(character, state)` pairs — O(N) per state transition for N transition
+pairs (typically 15-30). Our equivalence class table replaces this with O(1)
+lookup. Adding SIMD classification on top processes 32x more bytes per
+instruction.
+
+### AA-2: Structural Hashing for O(1) Change Detection
+
+*Source: Appel & Goncalves, "Hash-Consing Garbage Collection" (1993); Filliâtre
+& Conchon, "Type-Safe Modular Hash-Consing" (ML Workshop 2006).*
+
+During tree construction, each subtree computes a bottom-up structural hash
+over its symbol and children's hashes. After incremental re-parsing,
+`Tree.ChangedRanges()` first compares root hashes — if equal, the tree
+structure is unchanged and the method returns nil in O(1), avoiding the full
+O(N) parallel tree walk. For edits that change only whitespace, positions, or
+comments without affecting tree structure, this provides 10-100x speedup.
+
+**Where used**: `Tree.ChangedRanges()` fast path; future hash-consed subtree
+reuse during incremental parsing (detecting structurally identical subtrees at
+different positions after line insertion/deletion).
+
+### AA-3: Perfect Hash Keyword Recognition
+
+*Technique: GNU gperf-style minimal perfect hash functions.*
+
+C tree-sitter recognizes keywords by first scanning an identifier token, then
+re-scanning it through a keyword trie (a second DFA). This re-scans the entire
+token character by character — O(k) for a k-character keyword. We replace this
+with a compile-time-generated minimal perfect hash function that identifies
+keywords with a single hash computation + one string comparison — O(1)
+regardless of keyword count.
+
+**Where used**: Generated keyword lex function in each grammar package.
+
+### AA-4: Equivalence Class Table Dispatch (Replacing ADVANCE_MAP)
+
+*Technique: Character equivalence classes with O(1) lookup table.*
+
+This is the single most impactful algorithmic improvement over C tree-sitter.
+The C lexer's `ADVANCE_MAP` macro stores `(character, next_state)` pairs and
+performs a linear scan — O(N) for N pairs per lex state. We replace this with
+a 128-byte ASCII lookup table (computed at grammar compile time) that maps each
+character to an equivalence class, then use the class as an index into a flat
+transition table — O(1) per character. For lex states with 15-30 transition
+pairs, this is a 15-30x improvement on the character dispatch step.
+
+**Where used**: All generated lex functions, from Phase 0 (baseline code
+generation).

@@ -22,11 +22,15 @@
   ],
   "dependents": [
     {
-      "id": "tree-sitter-go-fv5",
+      "id": "tree-sitter-go-0ab",
       "type": "blocks"
     },
     {
-      "id": "tree-sitter-go-0ab",
+      "id": "tree-sitter-go-wcu.6",
+      "type": "blocks"
+    },
+    {
+      "id": "tree-sitter-go-wcu.7",
       "type": "blocks"
     }
   ],

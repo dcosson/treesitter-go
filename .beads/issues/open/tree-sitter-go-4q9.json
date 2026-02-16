@@ -1,7 +1,7 @@
 {
   "id": "tree-sitter-go-4q9",
   "title": "Core types, Language struct, and parse table lookup",
-  "description": "Define all foundational data types and implement parse table lookup. This is the foundation everything else builds on.\n\nDeliverables:\n- types.go: Symbol, StateID, FieldID, Point, Range, Length, InputEdit\n- language.go: Language struct with all table fields (parseTable, smallParseTable, smallParseTableMap, parseActions, lexModes, symbolMetadata, fieldMapSlices, fieldMapEntries, aliasSequences, reserved words, supertypes). Implement lookup(), tableEntry(), nextState().\n- subtree.go: SubtreeHeapData struct with ALL fields (symbol, parseState, padding, size, childCount, visibleChildCount, namedChildCount, visibleDescendantCount, firstLeaf, repeatDepth, productionID, flags including fragileLeft/fragileRight, errorCost, dynamicPrecedence, externalScannerState). SubtreeArena for batch allocation. Subtree value type with inline/heap discrimination. Leaf creation, accessors, size/padding arithmetic.\n- ParseActionEntry as Go struct (Type, Count, Reusable, ShiftState, ShiftExtra, ShiftRepetition, ReduceSymbol, ReduceChildCount, ReduceDynPrec, ReduceProdID).\n- Hand-compiled JSON grammar as testdata/json_language.go to validate the representation.\n\nTests:\n- Parse table lookup correctness (both large and small state paths)\n- Symbol metadata access\n- Subtree leaf creation and accessor correctness\n- SubtreeArena allocation and capacity growth\n- Inline vs heap subtree discrimination\n- JSON grammar table smoke tests\n\nReference: docs/design.md §1-3, C source: language.c, subtree.c, subtree.h",
+  "description": "Define all foundational data types and implement parse table lookup. This is the foundation everything else builds on.\n\nDeliverables:\n- types.go: Symbol, StateID, FieldID, Point, Range, Length, InputEdit\n- language.go: Language struct with all table fields (parseTable, smallParseTable, smallParseTableMap, parseActions, lexModes, symbolMetadata, fieldMapSlices, fieldMapEntries, aliasSequences, reserved words, supertypes). Implement lookup(), tableEntry(), nextState().\n- subtree.go: SubtreeHeapData struct with ALL fields (symbol, parseState, padding, size, childCount, visibleChildCount, namedChildCount, visibleDescendantCount, firstLeaf, repeatDepth, productionID, flags including fragileLeft/fragileRight, errorCost, dynamicPrecedence, externalScannerState, structuralHash for AA-2). SubtreeArena for batch allocation ([]SubtreeHeapData backing arrays). Subtree as compact 8-byte value type using uint64: high bit discriminates inline (leaf data packed into remaining bits) vs arena reference (block index + offset). SubtreeID for node identity (arena block + offset pair, no unsafe.Pointer).\n- ParseActionEntry as Go struct (Type, Count, Reusable, ShiftState, ShiftExtra, ShiftRepetition, ReduceSymbol, ReduceChildCount, ReduceDynPrec, ReduceProdID).\n- Hand-compiled JSON grammar as testdata/json_language.go to validate the representation.\n\nTests:\n- Parse table lookup correctness (both large and small state paths)\n- Symbol metadata access\n- Subtree leaf creation and accessor correctness\n- SubtreeArena allocation and capacity growth\n- Inline vs heap subtree discrimination (8-byte Subtree type)\n- SubtreeID equality for node identity\n- JSON grammar table smoke tests\n\nReference: docs/design.md §1-3 (note: Subtree is 8 bytes using uint64, see §2 Memory Management), C source: language.c, subtree.c, subtree.h",
   "status": "open",
   "priority": 2,
   "type": "task",
@@ -16,6 +16,10 @@
     {
       "id": "tree-sitter-go-pso",
       "type": "blocks"
+    },
+    {
+      "id": "tree-sitter-go-wcu.2",
+      "type": "blocks"
     }
   ],
   "created_by": "Danny Cosson",
@@ -24,5 +28,5 @@
     "phase-1"
   ],
   "created_at": "2026-02-15T21:22:01.914285-08:00",
-  "updated_at": "2026-02-15T21:22:01.914285-08:00"
+  "updated_at": "2026-02-15T22:25:38.539307-08:00"
 }

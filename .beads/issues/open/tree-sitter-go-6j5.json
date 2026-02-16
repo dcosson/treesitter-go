@@ -12,7 +12,11 @@
       "type": "parent-child"
     },
     {
-      "id": "tree-sitter-go-fhg",
+      "id": "tree-sitter-go-wcu.3",
+      "type": "blocks"
+    },
+    {
+      "id": "tree-sitter-go-agm",
       "type": "blocks"
     }
   ],
