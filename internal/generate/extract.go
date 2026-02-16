@@ -481,8 +481,8 @@ func extractParseTable(g *Grammar, src string) error {
 
 	table := make([]uint16, g.LargeStateCount*g.SymbolCount)
 
-	// Parse each state row.
-	stateRe := regexp.MustCompile(`\[(\d+)\]\s*=\s*\{([^}]+)\}`)
+	// Parse each state row. Some grammars use [N] and others use [STATE(N)].
+	stateRe := regexp.MustCompile(`\[(?:STATE\()?(\d+)\)?\]\s*=\s*\{([^}]+)\}`)
 	for _, m := range stateRe.FindAllStringSubmatch(block, -1) {
 		stateIdx, _ := strconv.Atoi(m[1])
 		body := m[2]
