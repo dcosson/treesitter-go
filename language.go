@@ -225,6 +225,21 @@ func (l *Language) AliasForProduction(prodID uint16, childIndex int) Symbol {
 	return l.AliasSequences[seqIdx]
 }
 
+// EnabledExternalTokens returns a bool slice indicating which external tokens
+// are valid in the given external lex state. Returns nil if externalLexState
+// is 0 (no external tokens enabled). This mirrors ts_language_enabled_external_tokens.
+func (l *Language) EnabledExternalTokens(externalLexState uint16) []bool {
+	if externalLexState == 0 || l.ExternalTokenCount == 0 {
+		return nil
+	}
+	start := uint32(externalLexState) * l.ExternalTokenCount
+	end := start + l.ExternalTokenCount
+	if end > uint32(len(l.ExternalScannerStates)) {
+		return nil
+	}
+	return l.ExternalScannerStates[start:end]
+}
+
 // IsReservedWord checks if a given token is a reserved word in the given
 // reserved word set (ABI v15).
 func (l *Language) IsReservedWord(setIndex uint32, tokenSymbol Symbol) bool {
