@@ -66,7 +66,9 @@ func ParseCorpusFile(data []byte) ([]TestCase, error) {
 	return parseContent(data)
 }
 
-// ParseCorpusDir parses all .txt files in a directory into test cases.
+// ParseCorpusDir parses corpus test files in a directory into test cases.
+// It accepts .txt files and extensionless files (some grammars like Perl
+// use extensionless corpus files in the standard format).
 func ParseCorpusDir(dir string) ([]TestCase, error) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {

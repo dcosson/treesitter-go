@@ -133,3 +133,28 @@ func TestCorpusJava(t *testing.T) {
 	lang := javagrammar.JavaLanguage()
 	runCorpusForLanguage(t, "tree-sitter-java", lang)
 }
+
+// TestCorpusGo runs the tree-sitter-go corpus tests.
+func TestCorpusGo(t *testing.T) {
+	runCorpusForLanguage(t, "tree-sitter-go", goLang())
+}
+
+// TestCorpusPython runs the tree-sitter-python corpus tests.
+func TestCorpusPython(t *testing.T) {
+	runCorpusForLanguage(t, "tree-sitter-python", pyLang())
+}
+
+// TestCorpusJavaScript runs the tree-sitter-javascript corpus tests.
+func TestCorpusJavaScript(t *testing.T) {
+	runCorpusForLanguage(t, "tree-sitter-javascript", jsLang())
+}
+
+// TestCorpusTypeScript runs the tree-sitter-typescript corpus tests.
+func TestCorpusTypeScript(t *testing.T) {
+	runCorpusForLanguage(t, "tree-sitter-typescript", newTSLang())
+}
+
+// TestCorpusLua runs the tree-sitter-lua corpus tests.
+func TestCorpusLua(t *testing.T) {
+	runCorpusForLanguage(t, "tree-sitter-lua", luaLang())
+}
