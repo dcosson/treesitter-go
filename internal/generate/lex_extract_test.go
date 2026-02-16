@@ -164,6 +164,18 @@ func TestParseIfTransitionsCompound(t *testing.T) {
 			wantExclusions: []rune{0, '"'},
 			wantExclRanges: []RuneRange{{Low: '\t', High: '\r'}},
 		},
+		{
+			name:           "escaped single quote in !=",
+			line:           `if (lookahead != 0 && lookahead != '&' && lookahead != '\'') ADVANCE(169);`,
+			wantNegated:    true,
+			wantExclusions: []rune{0, '&', '\''},
+		},
+		{
+			name:           "escaped single quote standalone",
+			line:           `if (lookahead != '\'') ADVANCE(160);`,
+			wantNegated:    true,
+			wantExclusions: []rune{'\''},
+		},
 	}
 
 	for _, tt := range tests {

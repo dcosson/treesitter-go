@@ -372,7 +372,6 @@ func TestJSParseClass(t *testing.T) {
 }
 
 func TestJSParseImportExport(t *testing.T) {
-	t.Skip("parser misparses import/export — likely external scanner ASI or DFA gap")
 	p := ts.NewParser()
 	p.SetLanguage(jsLang())
 
@@ -411,7 +410,6 @@ func TestJSParseTemplateLiteral(t *testing.T) {
 }
 
 func TestJSParseAsyncAwait(t *testing.T) {
-	t.Skip("parser returns empty tree for async function — likely DFA gap with await keyword")
 	p := ts.NewParser()
 	p.SetLanguage(jsLang())
 

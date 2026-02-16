@@ -317,10 +317,10 @@ func parseIfTransitions(line string, lines []string, idx *int) []LexTransition {
 			var lowBound rune
 			var excludeRanges []RuneRange
 
-			neqCharRe := regexp.MustCompile(`^\s*lookahead\s*!=\s*'([^']*)'`)
+			neqCharRe := regexp.MustCompile(`^\s*lookahead\s*!=\s*'((?:[^'\\]|\\.)*)'`)
 			neqZeroRe := regexp.MustCompile(`^\s*lookahead\s*!=\s*0\s*$`)
-			gtCharRe := regexp.MustCompile(`^\s*lookahead\s*>\s*'([^']*)'`)
-			exclRangeRe := regexp.MustCompile(`^\s*\(?\s*lookahead\s*<\s*'([^']*)'\s*\|\|\s*'([^']*)'\s*<\s*lookahead\s*\)?\s*$`)
+			gtCharRe := regexp.MustCompile(`^\s*lookahead\s*>\s*'((?:[^'\\]|\\.)*)'`)
+			exclRangeRe := regexp.MustCompile(`^\s*\(?\s*lookahead\s*<\s*'((?:[^'\\]|\\.)*)'\s*\|\|\s*'((?:[^'\\]|\\.)*)'\s*<\s*lookahead\s*\)?\s*$`)
 
 			for _, sc := range subconds {
 				sc = strings.TrimSpace(sc)
@@ -356,9 +356,9 @@ func parseIfTransitions(line string, lines []string, idx *int) []LexTransition {
 	}
 
 	// For || chains (or single conditions), extract all conditions as transitions.
-	rangeRe := regexp.MustCompile(`'([^']*)'\s*<=\s*lookahead\s*&&\s*lookahead\s*<=\s*'([^']*)'`)
-	hexRangeRe := regexp.MustCompile(`(0x[0-9a-fA-F]+)\s*<=\s*lookahead\s*&&\s*lookahead\s*<=\s*(?:'([^']*)'|(0x[0-9a-fA-F]+))`)
-	charRe := regexp.MustCompile(`lookahead\s*==\s*'([^']*)'`)
+	rangeRe := regexp.MustCompile(`'((?:[^'\\]|\\.)*)'\s*<=\s*lookahead\s*&&\s*lookahead\s*<=\s*'((?:[^'\\]|\\.)*)'`)
+	hexRangeRe := regexp.MustCompile(`(0x[0-9a-fA-F]+)\s*<=\s*lookahead\s*&&\s*lookahead\s*<=\s*(?:'((?:[^'\\]|\\.)*)'|(0x[0-9a-fA-F]+))`)
+	charRe := regexp.MustCompile(`lookahead\s*==\s*'((?:[^'\\]|\\.)*)'`)
 
 	var result []LexTransition
 
