@@ -1,0 +1,27 @@
+================================================================================
+Source with hyphens
+================================================================================
+
+{
+  "key": "some---value",
+  "other": "a-b-c"
+}
+
+---
+
+this is NOT the divider because the one below is longer
+
+--------------------------------------------------------------------------------
+
+(document
+  (object
+    (pair
+      (string
+        (string_content))
+      (string
+        (string_content)))
+    (pair
+      (string
+        (string_content))
+      (string
+        (string_content)))))
