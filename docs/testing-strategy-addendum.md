@@ -70,19 +70,53 @@ For CI:
 - `RunDifferentialFile` -- single file comparison
 - `Compare` -- low-level: returns `CompareResult` with both S-expressions and diff
 
-### Graceful Degradation
+### CLI Binary Path as Explicit Argument
 
-All differential tests call `exec.LookPath("tree-sitter")` and `t.Skip` when
-the CLI is not available. Corpus-only tests (Section 2) always run regardless.
-The CI pipeline should install the CLI so differential tests execute there even
-if developers skip them locally.
+The tree-sitter CLI binary path is passed as an explicit argument, not
+auto-discovered via `LookPath`. This makes the dependency explicit and
+avoids silent skips when the CLI isn't installed.
+
+- **Test code** accepts the path via a `-ts-cli` test flag or `TS_CLI_PATH`
+  environment variable. If neither is set, differential/benchmark tests skip.
+- **Makefile** passes the path from `$(which tree-sitter)`:
+
+```makefile
+TREE_SITTER_CLI := $(shell which tree-sitter 2>/dev/null)
+
+diff-test:
+ifdef TREE_SITTER_CLI
+	go test ./internal/difftest/... -ts-cli=$(TREE_SITTER_CLI) -v -timeout 15m
+else
+	@echo "tree-sitter CLI not found. Run 'make deps' to install."
+	@exit 1
+endif
+
+bench:
+ifdef TREE_SITTER_CLI
+	go test ./... -bench=. -benchmem -count=5 -timeout 10m \
+		-ts-cli=$(TREE_SITTER_CLI) | tee bench-results.txt
+else
+	go test ./... -bench=. -benchmem -count=5 -timeout 10m | tee bench-results.txt
+	@echo "Note: tree-sitter CLI not found, Go-vs-C comparison skipped."
+endif
+```
+
+- **CI** installs the CLI via `make deps` and passes the path automatically.
+
+This way, benchmarks always run (Go-only timing), and when the tree-sitter
+binary is available, the comparison sub-benchmarks run as well.
 
 ### Performance Comparison via CLI
 
 Time both implementations on the same input:
 
 ```go
+var tsCLIPath = flag.String("ts-cli", os.Getenv("TS_CLI_PATH"), "path to tree-sitter CLI binary")
+
 func BenchmarkDifferential(b *testing.B, filePath string, goParseFunc ParseFunc) {
+    if *tsCLIPath == "" {
+        b.Skip("tree-sitter CLI not available (pass -ts-cli=<path>)")
+    }
     input, _ := os.ReadFile(filePath)
     scope := difftest.Scope[filepath.Ext(filePath)]
 
@@ -96,7 +130,7 @@ func BenchmarkDifferential(b *testing.B, filePath string, goParseFunc ParseFunc)
     b.Run("cli", func(b *testing.B) {
         b.SetBytes(int64(len(input)))
         for i := 0; i < b.N; i++ {
-            difftest.ParseWithCLI(filePath, scope)
+            difftest.ParseWithCLI(*tsCLIPath, filePath, scope)
         }
     })
 }
