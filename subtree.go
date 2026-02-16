@@ -125,7 +125,7 @@ func newInlineSubtree(symbol Symbol, parseState StateID, padding, size Length, v
 // newArenaSubtree creates an arena-referenced Subtree from a block index and offset.
 func newArenaSubtree(blockIndex uint32, offset uint32) Subtree {
 	bits := uint64(blockIndex) << arenaBlockShift
-	bits |= uint64(offset)
+	bits |= uint64(offset + 1) // +1 so block=0,offset=0 produces data=1, not 0 (SubtreeZero)
 	// Bit 63 is 0 (heap/arena reference).
 	return Subtree{data: bits}
 }
@@ -146,8 +146,9 @@ func (s Subtree) arenaBlockIndex() uint32 {
 }
 
 // arenaOffset returns the offset within the block for an arena-referenced subtree.
+// The stored value is offset+1 (to avoid block=0,offset=0 colliding with SubtreeZero).
 func (s Subtree) arenaOffset() uint32 {
-	return uint32(s.data & arenaOffsetMask)
+	return uint32(s.data&arenaOffsetMask) - 1
 }
 
 // InlineSymbol returns the symbol for an inline subtree.
@@ -644,9 +645,12 @@ func GetProductionID(s Subtree, arena *SubtreeArena) uint16 {
 }
 
 // GetLookaheadBytes returns the lookahead bytes for a subtree.
+// Inline tokens always return 1 because the lexer peeks at least 1 byte
+// past the token boundary to confirm the token ended. This ensures that
+// edits at the exact boundary of inline tokens trigger re-lexing.
 func GetLookaheadBytes(s Subtree, arena *SubtreeArena) uint32 {
 	if s.IsInline() {
-		return 0
+		return 1
 	}
 	return arena.Get(s).LookaheadBytes
 }

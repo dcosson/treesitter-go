@@ -9,8 +9,6 @@ import (
 
 func TestExternalScannerStateSetGet(t *testing.T) {
 	arena := NewSubtreeArena(0)
-	// Skip first alloc (offset=0 has same bit pattern as SubtreeZero).
-	arena.Alloc()
 	st, _ := arena.Alloc()
 
 	// Initially no state.

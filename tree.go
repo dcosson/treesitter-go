@@ -52,6 +52,40 @@ func (t *Tree) Arena() *SubtreeArena {
 	return t.arenas[0]
 }
 
+// Edit propagates an edit through the tree using structural sharing.
+// Only nodes on the edit path are cloned; unaffected subtrees are shared.
+// Returns a new Tree — the original tree is not modified.
+//
+// The new tree's arena is a fork of the original arena, so old subtree
+// references remain valid. The returned tree can be passed to Parser.Parse
+// as the old tree for incremental re-parsing.
+func (t *Tree) Edit(edit *InputEdit) *Tree {
+	if t.root.IsZero() {
+		return t
+	}
+
+	forkedArena := t.Arena().Fork()
+	newRoot := editSubtree(t.root, edit, forkedArena)
+
+	return &Tree{
+		root:           newRoot,
+		language:       t.language,
+		includedRanges: t.includedRanges,
+		arenas:         []*SubtreeArena{forkedArena},
+	}
+}
+
+// Copy returns a shallow copy of the tree. The new tree shares the same
+// arena and subtree data.
+func (t *Tree) Copy() *Tree {
+	return &Tree{
+		root:           t.root,
+		language:       t.language,
+		includedRanges: t.includedRanges,
+		arenas:         t.arenas,
+	}
+}
+
 // nodeFromSubtree creates a Node value from a subtree, its position offset,
 // and an optional alias symbol.
 func (t *Tree) nodeFromSubtree(s Subtree, position Length, aliasSymbol Symbol) Node {
