@@ -48,8 +48,8 @@ func TestSerializeDeserializeEmpty(t *testing.T) {
 	s := New().(*Scanner)
 	buf := make([]byte, 1024)
 	n := s.Serialize(buf)
-	if n != 4 {
-		t.Fatalf("Serialize empty = %d bytes, want 4", n)
+	if n != 2 {
+		t.Fatalf("Serialize empty = %d bytes, want 2", n)
 	}
 
 	s2 := New().(*Scanner)
@@ -65,7 +65,6 @@ func TestSerializeDeserializeEmpty(t *testing.T) {
 func TestSerializeDeserializeWithHeredocs(t *testing.T) {
 	s := New().(*Scanner)
 	s.lastGlobParenDepth = 3
-	s.extWasInDoubleQuote = true
 	s.heredocs = []heredoc{
 		{isRaw: true, started: false, allowsIndent: true, delimiter: []byte("EOF")},
 		{isRaw: false, started: true, allowsIndent: false, delimiter: []byte("END")},
@@ -83,9 +82,6 @@ func TestSerializeDeserializeWithHeredocs(t *testing.T) {
 	if s2.lastGlobParenDepth != 3 {
 		t.Errorf("lastGlobParenDepth = %d, want 3", s2.lastGlobParenDepth)
 	}
-	if !s2.extWasInDoubleQuote {
-		t.Error("extWasInDoubleQuote = false, want true")
-	}
 	if len(s2.heredocs) != 2 {
 		t.Fatalf("heredocs = %d, want 2", len(s2.heredocs))
 	}
@@ -102,10 +98,14 @@ func TestSerializeDeserializeWithHeredocs(t *testing.T) {
 
 func TestDeserializeEmpty(t *testing.T) {
 	s := New().(*Scanner)
+	s.lastGlobParenDepth = 5
 	s.heredocs = []heredoc{{delimiter: []byte("X")}}
 	s.Deserialize(nil) // empty data should reset
-	if len(s.heredocs) != 0 || s.heredocs != nil {
-		// reset should work
+	if s.heredocs != nil {
+		t.Errorf("expected heredocs to be nil after reset, got %v", s.heredocs)
+	}
+	if s.lastGlobParenDepth != 0 {
+		t.Errorf("expected lastGlobParenDepth to be 0 after reset, got %d", s.lastGlobParenDepth)
 	}
 }
 

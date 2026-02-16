@@ -24,6 +24,7 @@ package bash
 import (
 	"encoding/binary"
 	"unicode"
+	"unicode/utf8"
 
 	ts "github.com/treesitter-go/treesitter"
 )
@@ -72,10 +73,8 @@ type heredoc struct {
 
 // Scanner implements ts.ExternalScanner for Bash.
 type Scanner struct {
-	lastGlobParenDepth    uint8
-	extWasInDoubleQuote   bool
-	extSawOutsideQuote    bool
-	heredocs              []heredoc
+	lastGlobParenDepth uint8
+	heredocs           []heredoc
 }
 
 // New creates a new Bash external scanner (ts.ExternalScannerFactory).
@@ -87,15 +86,11 @@ func New() ts.ExternalScanner {
 func (s *Scanner) Serialize(buf []byte) uint32 {
 	size := uint32(0)
 
-	if int(size)+4+len(buf) < 4 {
+	if len(buf) < 2 {
 		return 0
 	}
 
 	buf[size] = s.lastGlobParenDepth
-	size++
-	buf[size] = boolByte(s.extWasInDoubleQuote)
-	size++
-	buf[size] = boolByte(s.extSawOutsideQuote)
 	size++
 	buf[size] = byte(len(s.heredocs))
 	size++
@@ -103,7 +98,7 @@ func (s *Scanner) Serialize(buf []byte) uint32 {
 	for i := range s.heredocs {
 		h := &s.heredocs[i]
 		needed := 3 + 4 + len(h.delimiter)
-		if int(size)+needed >= len(buf) {
+		if int(size)+needed > len(buf) {
 			return 0
 		}
 
@@ -135,10 +130,6 @@ func (s *Scanner) Deserialize(data []byte) {
 
 	size := uint32(0)
 	s.lastGlobParenDepth = data[size]
-	size++
-	s.extWasInDoubleQuote = data[size] != 0
-	size++
-	s.extSawOutsideQuote = data[size] != 0
 	size++
 	heredocCount := int(data[size])
 	size++
@@ -176,9 +167,8 @@ func (s *Scanner) Scan(lexer *ts.Lexer, validSymbols []bool) bool {
 }
 
 func (s *Scanner) reset() {
-	for i := range s.heredocs {
-		s.heredocs[i] = heredoc{}
-	}
+	s.lastGlobParenDepth = 0
+	s.heredocs = nil
 }
 
 func (s *Scanner) resetHeredoc(h *heredoc) {
@@ -257,7 +247,9 @@ func advanceWord(lexer *ts.Lexer) ([]byte, bool) {
 		}
 		empty = false
 		if lexer.Lookahead >= 0 {
-			unquotedWord = append(unquotedWord, byte(lexer.Lookahead))
+			var encBuf [4]byte
+			n := utf8.EncodeRune(encBuf[:], rune(lexer.Lookahead))
+			unquotedWord = append(unquotedWord, encBuf[:n]...)
 		}
 		advance(lexer)
 	}
@@ -309,16 +301,19 @@ func (s *Scanner) scanHeredocEndIdentifier(h *heredoc, lexer *ts.Lexer) bool {
 	}
 
 	// Scan characters to see if they match the heredoc delimiter.
-	size := 0
-	for !lexer.EOF() && lexer.Lookahead != '\n' &&
-		size < len(h.delimiter) && int32(h.delimiter[size]) == lexer.Lookahead {
-		h.currentLeadingWord = append(h.currentLeadingWord, byte(lexer.Lookahead))
+	// Delimiter is stored as UTF-8 bytes; Lookahead is a Unicode codepoint.
+	// Decode runes from the delimiter to compare with the codepoint.
+	offset := 0
+	for !lexer.EOF() && lexer.Lookahead != '\n' && offset < len(h.delimiter) {
+		r, runeSize := utf8.DecodeRune(h.delimiter[offset:])
+		if r != rune(lexer.Lookahead) {
+			break
+		}
+		var encBuf [4]byte
+		n := utf8.EncodeRune(encBuf[:], rune(lexer.Lookahead))
+		h.currentLeadingWord = append(h.currentLeadingWord, encBuf[:n]...)
 		advance(lexer)
-		size++
-	}
-
-	if len(h.delimiter) == 0 {
-		return false
+		offset += runeSize
 	}
 
 	return string(h.currentLeadingWord) == string(h.delimiter)
@@ -835,20 +830,23 @@ regexLabel:
 				case ')':
 					if st.parenDepth == 0 {
 						st.done = true
+					} else {
+						st.parenDepth--
 					}
-					st.parenDepth--
 					st.lastWasEscape = false
 				case ']':
 					if st.bracketDepth == 0 {
 						st.done = true
+					} else {
+						st.bracketDepth--
 					}
-					st.bracketDepth--
 					st.lastWasEscape = false
 				case '}':
 					if st.braceDepth == 0 {
 						st.done = true
+					} else {
+						st.braceDepth--
 					}
-					st.braceDepth--
 					st.lastWasEscape = false
 				case '\'':
 					st.inSingleQuote = !st.inSingleQuote
@@ -1070,18 +1068,21 @@ extglobPattern:
 				case ')':
 					if est.parenDepth == 0 {
 						est.done = true
+					} else {
+						est.parenDepth--
 					}
-					est.parenDepth--
 				case ']':
 					if est.bracketDepth == 0 {
 						est.done = true
+					} else {
+						est.bracketDepth--
 					}
-					est.bracketDepth--
 				case '}':
 					if est.braceDepth == 0 {
 						est.done = true
+					} else {
+						est.braceDepth--
 					}
-					est.braceDepth--
 				}
 
 				if lexer.Lookahead == '|' {
