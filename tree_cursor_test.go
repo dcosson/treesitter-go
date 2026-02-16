@@ -236,6 +236,110 @@ func buildDeeplyNestedHiddenTree() (*Tree, *SubtreeArena) {
 	return tree, arena
 }
 
+// buildHiddenSiblingTree builds a tree where GotoNextSibling must traverse
+// through a hidden node to find the next visible sibling:
+//
+//	container -> string, _hidden(children: [number]), ";"
+//
+// After visiting string, GotoNextSibling should find number (through _hidden),
+// then GotoNextSibling again should find ";".
+func buildHiddenSiblingTree() (*Tree, *SubtreeArena) {
+	arena := NewSubtreeArena(32)
+	lang := &Language{
+		SymbolMetadata: []SymbolMetadata{
+			{Visible: false, Named: false}, // 0: end
+			{Visible: true, Named: true},   // 1: string
+			{Visible: true, Named: true},   // 2: number
+			{Visible: false, Named: false}, // 3: _hidden
+			{Visible: true, Named: false},  // 4: ";"
+			{Visible: true, Named: true},   // 5: container
+			{Visible: true, Named: true},   // 6: document
+		},
+		SymbolNames: []string{"end", "string", "number", "_hidden", ";", "container", "document"},
+	}
+
+	// string at byte 0, size 3
+	str := NewLeafSubtree(arena, Symbol(1),
+		Length{Bytes: 0, Point: Point{Column: 0}},
+		Length{Bytes: 3, Point: Point{Column: 3}},
+		StateID(1), false, false, false, lang)
+
+	// number at byte 3, size 2
+	num := NewLeafSubtree(arena, Symbol(2),
+		Length{Bytes: 0, Point: Point{Column: 0}},
+		Length{Bytes: 2, Point: Point{Column: 2}},
+		StateID(2), false, false, false, lang)
+
+	// _hidden -> number
+	hidden := NewNodeSubtree(arena, Symbol(3), []Subtree{num}, 0, lang)
+	SummarizeChildren(hidden, arena, lang)
+
+	// ";" at byte 5, size 1
+	semi := NewLeafSubtree(arena, Symbol(4),
+		Length{Bytes: 0, Point: Point{Column: 0}},
+		Length{Bytes: 1, Point: Point{Column: 1}},
+		StateID(3), false, false, false, lang)
+
+	// container -> string, _hidden(number), ";"
+	container := NewNodeSubtree(arena, Symbol(5), []Subtree{str, hidden, semi}, 0, lang)
+	SummarizeChildren(container, arena, lang)
+
+	// document -> container
+	doc := NewNodeSubtree(arena, Symbol(6), []Subtree{container}, 0, lang)
+	SummarizeChildren(doc, arena, lang)
+
+	tree := NewTree(doc, lang, nil, []*SubtreeArena{arena})
+	return tree, arena
+}
+
+func TestTreeCursorNextSiblingThroughHidden(t *testing.T) {
+	tree, _ := buildHiddenSiblingTree()
+	root := tree.RootNode()
+	cursor := NewTreeCursor(root)
+
+	// Navigate to container -> string.
+	cursor.GotoFirstChild() // document -> container
+	if !cursor.GotoFirstChild() {
+		t.Fatal("should find first child of container")
+	}
+	current := cursor.CurrentNode()
+	if current.Type() != "string" {
+		t.Fatalf("first child = %q, want \"string\"", current.Type())
+	}
+
+	// GotoNextSibling should find number through _hidden.
+	if !cursor.GotoNextSibling() {
+		t.Fatal("should find sibling through hidden node")
+	}
+	current = cursor.CurrentNode()
+	if current.Type() != "number" {
+		t.Errorf("sibling through hidden = %q, want \"number\"", current.Type())
+	}
+
+	// GotoNextSibling should find ";" after the hidden node.
+	if !cursor.GotoNextSibling() {
+		t.Fatal("should find semicolon sibling")
+	}
+	current = cursor.CurrentNode()
+	if current.Type() != ";" {
+		t.Errorf("next sibling = %q, want \";\"", current.Type())
+	}
+
+	// No more siblings.
+	if cursor.GotoNextSibling() {
+		t.Error("should not have more siblings")
+	}
+
+	// GotoParent should go back to container.
+	if !cursor.GotoParent() {
+		t.Fatal("should go to parent")
+	}
+	current = cursor.CurrentNode()
+	if current.Type() != "container" {
+		t.Errorf("parent = %q, want \"container\"", current.Type())
+	}
+}
+
 func TestTreeCursorDeepHiddenNodes(t *testing.T) {
 	tree, _ := buildDeeplyNestedHiddenTree()
 	root := tree.RootNode()

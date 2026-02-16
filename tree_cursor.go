@@ -178,14 +178,11 @@ func (c *TreeCursor) GotoNextSibling() bool {
 		c.stack = c.stack[:stackBefore]
 
 		if c.findFirstVisibleChild(remaining, pos, arena, nextStructuralIdx) {
-			// Adjust child indices: findFirstVisibleChild uses 0-based indices
-			// within the remaining slice, but we need indices into parentChildren.
-			for k := stackBefore; k < len(c.stack); k++ {
-				if k == stackBefore {
-					// First pushed entry is relative to remaining slice.
-					c.stack[k].childIndex += uint32(nextIdx)
-				}
-			}
+			// Adjust the first pushed entry's childIndex: findFirstVisibleChild
+			// uses 0-based indices within the remaining slice, but we need
+			// indices into parentChildren. Deeper entries (hidden node descendants)
+			// are relative to their own parent and don't need adjustment.
+			c.stack[stackBefore].childIndex += uint32(nextIdx)
 			return true
 		}
 
