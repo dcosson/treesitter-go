@@ -743,3 +743,97 @@ func TestAliasResolutionSkipsExtras(t *testing.T) {
 		t.Errorf("cursor child 2 type = %q, want \"value\"", current.Type())
 	}
 }
+
+// TestTreeCursorNonZeroFirstChildPadding verifies that the cursor correctly
+// handles trees where the first child has non-zero padding. This exercises
+// the fix for the childBasePos double-count bug (wcu.11).
+//
+// Source: "  {1}" (2 spaces of leading whitespace)
+//   document (padding=2, size=3) -> object (padding=2, size=3) -> "{" number "}"
+//
+// The first visible child "{" has padding=2. Without the fix, GotoFirstChild
+// would double-count this padding, causing incorrect byte positions.
+func TestTreeCursorNonZeroFirstChildPadding(t *testing.T) {
+	arena := NewSubtreeArena(64)
+	lang := makeSubtreeTestLanguage()
+
+	// "{" at byte 2 (after 2 spaces of padding), size 1
+	lbrace := NewLeafSubtree(arena, Symbol(1),
+		Length{Bytes: 2, Point: Point{Column: 2}}, // padding = 2
+		Length{Bytes: 1, Point: Point{Column: 1}},
+		StateID(1), false, false, false, lang)
+
+	// "1" (number) at byte 3, size 1 (no padding between { and 1)
+	numVal := NewLeafSubtree(arena, Symbol(7),
+		Length{Bytes: 0, Point: Point{Column: 0}},
+		Length{Bytes: 1, Point: Point{Column: 1}},
+		StateID(4), false, false, false, lang)
+
+	// "}" at byte 4, size 1
+	rbrace := NewLeafSubtree(arena, Symbol(2),
+		Length{Bytes: 0, Point: Point{Column: 0}},
+		Length{Bytes: 1, Point: Point{Column: 1}},
+		StateID(5), false, false, false, lang)
+
+	// object -> "{" number "}"
+	object := NewNodeSubtree(arena, Symbol(3), []Subtree{lbrace, numVal, rbrace}, 0, lang)
+	SummarizeChildren(object, arena, lang)
+
+	// document -> object (SummarizeChildren sets document.padding = object.padding = 2)
+	document := NewNodeSubtree(arena, Symbol(8), []Subtree{object}, 0, lang)
+	SummarizeChildren(document, arena, lang)
+
+	tree := NewTree(document, lang, nil, []*SubtreeArena{arena})
+	root := tree.RootNode()
+
+	// Root (document) should start at byte 2 (content start, after 2 bytes padding).
+	if root.StartByte() != 2 {
+		t.Errorf("root startByte = %d, want 2", root.StartByte())
+	}
+
+	cursor := NewTreeCursor(root)
+
+	// Descend to object (first visible child of document through hidden).
+	if !cursor.GotoFirstChild() {
+		t.Fatal("should have first child (object)")
+	}
+	obj := cursor.CurrentNode()
+	if obj.Type() != "object" {
+		t.Errorf("first child type = %q, want \"object\"", obj.Type())
+	}
+	if obj.StartByte() != 2 {
+		t.Errorf("object startByte = %d, want 2", obj.StartByte())
+	}
+
+	// Descend to "{" (first visible child of object).
+	if !cursor.GotoFirstChild() {
+		t.Fatal("should have first child of object ({)")
+	}
+	brace := cursor.CurrentNode()
+	if brace.Type() != "{" {
+		t.Errorf("first child of object = %q, want \"{\"", brace.Type())
+	}
+	// This is the critical check: "{" should start at byte 2.
+	// Without the wcu.11 fix, this would incorrectly be byte 4 (double-counted padding).
+	if brace.StartByte() != 2 {
+		t.Errorf("brace startByte = %d, want 2 (padding double-count bug!)", brace.StartByte())
+	}
+
+	// Next sibling: number at byte 3
+	if !cursor.GotoNextSibling() {
+		t.Fatal("should have next sibling (number)")
+	}
+	num := cursor.CurrentNode()
+	if num.StartByte() != 3 {
+		t.Errorf("number startByte = %d, want 3", num.StartByte())
+	}
+
+	// Next sibling: "}" at byte 4
+	if !cursor.GotoNextSibling() {
+		t.Fatal("should have next sibling (})")
+	}
+	rb := cursor.CurrentNode()
+	if rb.StartByte() != 4 {
+		t.Errorf("rbrace startByte = %d, want 4", rb.StartByte())
+	}
+}

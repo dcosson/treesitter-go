@@ -3,7 +3,7 @@ package treesitter
 // TreeCursorEntry represents a position in the cursor's traversal stack.
 type TreeCursorEntry struct {
 	subtree              Subtree
-	position             Length  // byte offset + point where this subtree starts (including padding)
+	position             Length  // pre-padding position: content start = position + padding
 	childIndex           uint32  // index in parent's children slice
 	structuralChildIndex uint32  // index counting only structural (non-extra) children
 }
@@ -88,12 +88,15 @@ func (c *TreeCursor) GotoFirstChild() bool {
 		return false
 	}
 
-	// Find the first visible child, descending through hidden nodes.
-	padding := GetPadding(entry.subtree, arena)
-	childBasePos := LengthAdd(entry.position, padding)
-
+	// Start child iteration at the parent's position. entry.position is the
+	// pre-padding position of the parent. Since SummarizeChildren sets
+	// parent.padding = first_child.padding, the parent's pre-padding position
+	// equals the first child's pre-padding position. advancePosition advances
+	// by child.padding + child.size, so pos always tracks the pre-padding
+	// position of each successive child. This matches C tree-sitter's
+	// ts_tree_cursor_iterate_children which starts at entry->position directly.
 	stackBefore := len(c.stack)
-	if c.findFirstVisibleChild(children, childBasePos, arena, 0) {
+	if c.findFirstVisibleChild(children, entry.position, arena, 0) {
 		return true
 	}
 	// Restore stack if we didn't find anything.
@@ -130,9 +133,10 @@ func (c *TreeCursor) findFirstVisibleChild(children []Subtree, basePos Length, a
 				childIndex:           uint32(i),
 				structuralChildIndex: uint32(structuralIdx),
 			})
-			hiddenPadding := GetPadding(child, arena)
-			gcBasePos := LengthAdd(pos, hiddenPadding)
-			if c.findFirstVisibleChild(grandchildren, gcBasePos, arena, 0) {
+			// Pass pos directly — hidden child's pre-padding position equals
+			// its first grandchild's pre-padding position (same invariant as
+			// GotoFirstChild: parent.padding = first_child.padding).
+			if c.findFirstVisibleChild(grandchildren, pos, arena, 0) {
 				return true
 			}
 			// Not found in this hidden node's descendants — pop it.
