@@ -64,11 +64,18 @@ func (c *TreeCursor) GotoFirstChild() bool {
 		return false
 	}
 
-	// Find the first visible child (may need to descend into hidden nodes).
+	// Find the first visible child, recursively descending into hidden nodes.
 	padding := GetPadding(entry.subtree, arena)
 	childBasePos := LengthAdd(entry.position, padding)
 
-	pos := childBasePos
+	return c.findFirstVisibleChild(children, childBasePos, arena)
+}
+
+// findFirstVisibleChild searches through children for the first visible node,
+// recursively descending into hidden nodes. Pushes all intermediate hidden
+// nodes onto the stack.
+func (c *TreeCursor) findFirstVisibleChild(children []Subtree, startPos Length, arena *SubtreeArena) bool {
+	pos := startPos
 	for i, child := range children {
 		if IsVisible(child, arena) {
 			c.stack = append(c.stack, TreeCursorEntry{
@@ -78,29 +85,23 @@ func (c *TreeCursor) GotoFirstChild() bool {
 			})
 			return true
 		}
-		// Hidden node: check its children.
+		// Hidden node: push it and recurse into its children.
 		grandchildren := GetChildren(child, arena)
-		subPos := pos
-		for j, gc := range grandchildren {
-			if IsVisible(gc, arena) {
-				// Push the hidden parent and then the visible grandchild.
-				c.stack = append(c.stack, TreeCursorEntry{
-					subtree:    child,
-					position:   pos,
-					childIndex: uint32(i),
-				})
-				c.stack = append(c.stack, TreeCursorEntry{
-					subtree:    gc,
-					position:   subPos,
-					childIndex: uint32(j),
-				})
+		if len(grandchildren) > 0 {
+			c.stack = append(c.stack, TreeCursorEntry{
+				subtree:    child,
+				position:   pos,
+				childIndex: uint32(i),
+			})
+			gcStartPos := pos // hidden node's children start at the same position
+			if c.findFirstVisibleChild(grandchildren, gcStartPos, arena) {
 				return true
 			}
-			subPos = advancePosition(subPos, gc, arena)
+			// No visible child found in this hidden subtree; pop it.
+			c.stack = c.stack[:len(c.stack)-1]
 		}
 		pos = advancePosition(pos, child, arena)
 	}
-
 	return false
 }
 
@@ -121,7 +122,7 @@ func (c *TreeCursor) GotoNextSibling() bool {
 		pos := advancePosition(current.position, current.subtree, arena)
 		nextIdx := int(current.childIndex) + 1
 
-		// Look for the next visible sibling.
+		// Look for the next visible sibling, recursively descending into hidden nodes.
 		for i := nextIdx; i < len(parentChildren); i++ {
 			child := parentChildren[i]
 			if IsVisible(child, arena) {
@@ -132,24 +133,18 @@ func (c *TreeCursor) GotoNextSibling() bool {
 				}
 				return true
 			}
-			// Hidden node: check its children.
+			// Hidden node: push it and recursively search for visible children.
 			grandchildren := GetChildren(child, arena)
-			subPos := pos
-			for j, gc := range grandchildren {
-				if IsVisible(gc, arena) {
-					c.stack[len(c.stack)-1] = TreeCursorEntry{
-						subtree:    child,
-						position:   pos,
-						childIndex: uint32(i),
-					}
-					c.stack = append(c.stack, TreeCursorEntry{
-						subtree:    gc,
-						position:   subPos,
-						childIndex: uint32(j),
-					})
+			if len(grandchildren) > 0 {
+				c.stack[len(c.stack)-1] = TreeCursorEntry{
+					subtree:    child,
+					position:   pos,
+					childIndex: uint32(i),
+				}
+				if c.findFirstVisibleChild(grandchildren, pos, arena) {
 					return true
 				}
-				subPos = advancePosition(subPos, gc, arena)
+				// No visible child found; restore stack entry for continued search.
 			}
 			pos = advancePosition(pos, child, arena)
 		}
