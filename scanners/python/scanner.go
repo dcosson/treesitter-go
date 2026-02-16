@@ -118,7 +118,7 @@ func (s *Scanner) Serialize(buf []byte) uint32 {
 	buf[size] = byte(delimCount)
 	size++
 
-	for i := 0; i < delimCount; i++ {
+	for i := 0; i < delimCount && int(size) < len(buf); i++ {
 		buf[size] = byte(s.delimiters[i])
 		size++
 	}
@@ -154,7 +154,7 @@ func (s *Scanner) Deserialize(data []byte) {
 
 	if delimCount > 0 {
 		s.delimiters = make([]delimiter, delimCount)
-		for i := 0; i < delimCount; i++ {
+		for i := 0; i < delimCount && size < len(data); i++ {
 			s.delimiters[i] = delimiter(data[size])
 			size++
 		}

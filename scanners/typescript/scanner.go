@@ -329,6 +329,7 @@ func scanJSXText(lexer *ts.Lexer) bool {
 	}
 
 	lexer.ResultSymbol = JSXText
+	lexer.MarkEnd()
 	return sawText
 }
 

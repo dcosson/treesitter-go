@@ -61,7 +61,7 @@ func (s *Scanner) Serialize(buf []byte) uint32 {
 // Deserialize restores the scanner state from data.
 func (s *Scanner) Deserialize(data []byte) {
 	s.openingHashCount = 0
-	if len(data) == 1 {
+	if len(data) >= 1 {
 		s.openingHashCount = data[0]
 	}
 }
@@ -252,10 +252,12 @@ func processLineDocContent(lexer *ts.Lexer) bool {
 	lexer.ResultSymbol = LineDocContent
 	for {
 		if lexer.EOF() {
+			lexer.MarkEnd()
 			return true
 		}
 		if lexer.Lookahead == '\n' {
 			advance(lexer)
+			lexer.MarkEnd()
 			return true
 		}
 		advance(lexer)
