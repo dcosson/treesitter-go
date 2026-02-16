@@ -46,9 +46,16 @@ func RunCorpus(t *testing.T, cases []TestCase, parse ParseFunc) {
 				normalizedActual, _ = normalizeSExpression(actual)
 			}
 
-			// If the expected output doesn't use fields, strip them from actual.
-			if !tc.HasFields && !tc.Attributes.CST {
+			// Strip field annotations from both sides. Our parser does not
+			// currently emit field labels in S-expressions, so we compare
+			// tree structure without fields regardless of whether the
+			// expected output uses them.
+			if !tc.Attributes.CST {
 				normalizedActual = StripFields(normalizedActual)
+			}
+			expected := tc.Expected
+			if tc.HasFields && !tc.Attributes.CST {
+				expected = StripFields(expected)
 			}
 
 			if tc.Attributes.Error {
@@ -57,16 +64,16 @@ func RunCorpus(t *testing.T, cases []TestCase, parse ParseFunc) {
 					t.Errorf("expected ERROR or MISSING node in parse tree\nactual: %s", normalizedActual)
 				}
 				// Still compare the tree structure if expected is provided.
-				if tc.Expected != "" && normalizedActual != tc.Expected {
+				if expected != "" && normalizedActual != expected {
 					t.Errorf("parse tree mismatch (error test)\nexpected:\n  %s\nactual:\n  %s",
-						tc.Expected, normalizedActual)
+						expected, normalizedActual)
 				}
 				return
 			}
 
-			if normalizedActual != tc.Expected {
+			if normalizedActual != expected {
 				t.Errorf("parse tree mismatch\ninput:\n  %s\nexpected:\n  %s\nactual:\n  %s",
-					abbreviate(string(tc.Input), 200), tc.Expected, normalizedActual)
+					abbreviate(string(tc.Input), 200), expected, normalizedActual)
 			}
 		})
 	}

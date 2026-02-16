@@ -84,7 +84,8 @@ func ParseCorpusDir(dir string) ([]TestCase, error) {
 			allCases = append(allCases, subCases...)
 			continue
 		}
-		if filepath.Ext(entry.Name()) != ".txt" {
+		ext := filepath.Ext(entry.Name())
+		if ext != ".txt" && ext != "" {
 			continue
 		}
 		data, err := os.ReadFile(filepath.Join(dir, entry.Name()))
