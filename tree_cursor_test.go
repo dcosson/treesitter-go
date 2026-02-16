@@ -196,3 +196,92 @@ func TestTreeCursorPositions(t *testing.T) {
 		t.Errorf("colon endByte = %d, want 5", colon.EndByte())
 	}
 }
+
+// buildDeeplyNestedHiddenTree builds a tree where a visible node is nested
+// behind multiple levels of hidden nodes:
+//   document -> _hidden1 -> _hidden2 -> number
+// This tests that cursor and node traversal handle arbitrary hidden depth.
+func buildDeeplyNestedHiddenTree() (*Tree, *SubtreeArena) {
+	arena := NewSubtreeArena(32)
+	lang := &Language{
+		SymbolMetadata: []SymbolMetadata{
+			{Visible: false, Named: false}, // 0: end
+			{Visible: false, Named: false}, // 1: _hidden1
+			{Visible: false, Named: false}, // 2: _hidden2
+			{Visible: true, Named: true},   // 3: number
+			{Visible: true, Named: true},   // 4: document
+		},
+		SymbolNames: []string{"end", "_hidden1", "_hidden2", "number", "document"},
+	}
+
+	// Leaf: number at byte 0, size 1
+	num := NewLeafSubtree(arena, Symbol(3),
+		Length{Bytes: 0, Point: Point{Column: 0}},
+		Length{Bytes: 1, Point: Point{Column: 1}},
+		StateID(1), false, false, false, lang)
+
+	// _hidden2 -> number
+	hidden2 := NewNodeSubtree(arena, Symbol(2), []Subtree{num}, 0, lang)
+	SummarizeChildren(hidden2, arena, lang)
+
+	// _hidden1 -> _hidden2
+	hidden1 := NewNodeSubtree(arena, Symbol(1), []Subtree{hidden2}, 0, lang)
+	SummarizeChildren(hidden1, arena, lang)
+
+	// document -> _hidden1
+	doc := NewNodeSubtree(arena, Symbol(4), []Subtree{hidden1}, 0, lang)
+	SummarizeChildren(doc, arena, lang)
+
+	tree := NewTree(doc, lang, nil, []*SubtreeArena{arena})
+	return tree, arena
+}
+
+func TestTreeCursorDeepHiddenNodes(t *testing.T) {
+	tree, _ := buildDeeplyNestedHiddenTree()
+	root := tree.RootNode()
+	cursor := NewTreeCursor(root)
+
+	// Document -> (through 2 hidden layers) -> number
+	if !cursor.GotoFirstChild() {
+		t.Fatal("should find child through hidden layers")
+	}
+	current := cursor.CurrentNode()
+	if current.Type() != "number" {
+		t.Errorf("child through deep hidden = %q, want \"number\"", current.Type())
+	}
+	if current.StartByte() != 0 {
+		t.Errorf("number startByte = %d, want 0", current.StartByte())
+	}
+
+	// Should be able to go back up to document.
+	if !cursor.GotoParent() {
+		t.Fatal("should go back to parent")
+	}
+	current = cursor.CurrentNode()
+	if current.Type() != "document" {
+		t.Errorf("parent = %q, want \"document\"", current.Type())
+	}
+}
+
+func TestNodeChildDeepHiddenNodes(t *testing.T) {
+	tree, _ := buildDeeplyNestedHiddenTree()
+	root := tree.RootNode()
+
+	// Node.Child(0) should find number through 2 hidden layers.
+	child := root.Child(0)
+	if child.IsNull() {
+		t.Fatal("child through deep hidden should not be null")
+	}
+	if child.Type() != "number" {
+		t.Errorf("child type = %q, want \"number\"", child.Type())
+	}
+
+	// NamedChild(0) should also find it.
+	named := root.NamedChild(0)
+	if named.IsNull() {
+		t.Fatal("named child through deep hidden should not be null")
+	}
+	if named.Type() != "number" {
+		t.Errorf("named child type = %q, want \"number\"", named.Type())
+	}
+}

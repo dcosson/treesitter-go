@@ -52,6 +52,8 @@ func (c *TreeCursor) CurrentNode() Node {
 
 // GotoFirstChild moves the cursor to the first visible child of the current node.
 // Returns true if a child was found, false if the current node has no children.
+// Handles arbitrary nesting depth of hidden nodes — descends through multiple
+// layers of hidden wrapping until a visible node is found.
 func (c *TreeCursor) GotoFirstChild() bool {
 	if len(c.stack) == 0 {
 		return false
@@ -64,11 +66,25 @@ func (c *TreeCursor) GotoFirstChild() bool {
 		return false
 	}
 
-	// Find the first visible child (may need to descend into hidden nodes).
+	// Find the first visible child, descending through hidden nodes.
 	padding := GetPadding(entry.subtree, arena)
 	childBasePos := LengthAdd(entry.position, padding)
 
-	pos := childBasePos
+	stackBefore := len(c.stack)
+	if c.findFirstVisibleChild(children, childBasePos, arena) {
+		return true
+	}
+	// Restore stack if we didn't find anything.
+	c.stack = c.stack[:stackBefore]
+	return false
+}
+
+// findFirstVisibleChild searches through children for the first visible node,
+// recursively descending into hidden nodes to handle arbitrary nesting depth.
+// Pushes intermediate hidden nodes onto the cursor stack so GotoParent works.
+// Returns true if a visible child was found.
+func (c *TreeCursor) findFirstVisibleChild(children []Subtree, basePos Length, arena *SubtreeArena) bool {
+	pos := basePos
 	for i, child := range children {
 		if IsVisible(child, arena) {
 			c.stack = append(c.stack, TreeCursorEntry{
@@ -78,34 +94,30 @@ func (c *TreeCursor) GotoFirstChild() bool {
 			})
 			return true
 		}
-		// Hidden node: check its children.
+		// Hidden node: push it and recurse into its children.
 		grandchildren := GetChildren(child, arena)
-		subPos := pos
-		for j, gc := range grandchildren {
-			if IsVisible(gc, arena) {
-				// Push the hidden parent and then the visible grandchild.
-				c.stack = append(c.stack, TreeCursorEntry{
-					subtree:    child,
-					position:   pos,
-					childIndex: uint32(i),
-				})
-				c.stack = append(c.stack, TreeCursorEntry{
-					subtree:    gc,
-					position:   subPos,
-					childIndex: uint32(j),
-				})
+		if len(grandchildren) > 0 {
+			c.stack = append(c.stack, TreeCursorEntry{
+				subtree:    child,
+				position:   pos,
+				childIndex: uint32(i),
+			})
+			hiddenPadding := GetPadding(child, arena)
+			gcBasePos := LengthAdd(pos, hiddenPadding)
+			if c.findFirstVisibleChild(grandchildren, gcBasePos, arena) {
 				return true
 			}
-			subPos = advancePosition(subPos, gc, arena)
+			// Not found in this hidden node's descendants — pop it.
+			c.stack = c.stack[:len(c.stack)-1]
 		}
 		pos = advancePosition(pos, child, arena)
 	}
-
 	return false
 }
 
 // GotoNextSibling moves the cursor to the next visible sibling.
 // Returns true if a sibling was found, false if this is the last child.
+// Handles arbitrary nesting depth of hidden nodes.
 func (c *TreeCursor) GotoNextSibling() bool {
 	if len(c.stack) < 2 {
 		return false
@@ -121,44 +133,32 @@ func (c *TreeCursor) GotoNextSibling() bool {
 		pos := advancePosition(current.position, current.subtree, arena)
 		nextIdx := int(current.childIndex) + 1
 
-		// Look for the next visible sibling.
-		for i := nextIdx; i < len(parentChildren); i++ {
-			child := parentChildren[i]
-			if IsVisible(child, arena) {
-				c.stack[len(c.stack)-1] = TreeCursorEntry{
-					subtree:    child,
-					position:   pos,
-					childIndex: uint32(i),
+		// Look for the next visible sibling among remaining children.
+		remaining := parentChildren[nextIdx:]
+		stackBefore := len(c.stack) - 1 // Will replace top entry
+		c.stack = c.stack[:stackBefore]
+
+		if c.findFirstVisibleChild(remaining, pos, arena) {
+			// Adjust child indices: findFirstVisibleChild uses 0-based indices
+			// within the remaining slice, but we need indices into parentChildren.
+			for k := stackBefore; k < len(c.stack); k++ {
+				if k == stackBefore {
+					// First pushed entry is relative to remaining slice.
+					c.stack[k].childIndex += uint32(nextIdx)
 				}
-				return true
 			}
-			// Hidden node: check its children.
-			grandchildren := GetChildren(child, arena)
-			subPos := pos
-			for j, gc := range grandchildren {
-				if IsVisible(gc, arena) {
-					c.stack[len(c.stack)-1] = TreeCursorEntry{
-						subtree:    child,
-						position:   pos,
-						childIndex: uint32(i),
-					}
-					c.stack = append(c.stack, TreeCursorEntry{
-						subtree:    gc,
-						position:   subPos,
-						childIndex: uint32(j),
-					})
-					return true
-				}
-				subPos = advancePosition(subPos, gc, arena)
-			}
-			pos = advancePosition(pos, child, arena)
+			return true
 		}
 
-		// No more siblings at this level. If the parent is hidden, pop up and continue.
-		if len(c.stack) >= 3 && !IsVisible(parentEntry.subtree, arena) {
-			c.stack = c.stack[:len(c.stack)-1] // pop current
+		// No more siblings at this level. If the parent is hidden, pop up
+		// past the hidden node and continue looking in the grandparent.
+		if len(c.stack) >= 2 && !IsVisible(parentEntry.subtree, arena) {
 			continue
 		}
+
+		// No sibling found — restore the current entry so the cursor
+		// remains positioned at the same node it was before the call.
+		c.stack = append(c.stack[:stackBefore], current)
 		return false
 	}
 }

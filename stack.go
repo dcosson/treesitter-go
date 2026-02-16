@@ -261,6 +261,11 @@ func (s *Stack) Push(version StackVersion, state StateID, subtree Subtree, isPen
 //
 // For a simple stack (no merges), this returns exactly one path.
 // For merged stacks, it fans out, bounded by MaxIteratorCount.
+//
+// IMPORTANT: Pop mutates the version's head — after the call, the version's
+// top node is advanced to the first result's bottom node (results[0].node).
+// This matches C tree-sitter's stack_pop behavior where pop removes the
+// top N entries from the stack. Use PopCount for a read-only check.
 func (s *Stack) Pop(version StackVersion, count uint32) []StackIterator {
 	if int(version) >= len(s.heads) {
 		return nil

@@ -181,6 +181,7 @@ func (n Node) NamedChildCount() uint32 {
 
 // Child returns the child at the given index (0-based, including anonymous children).
 // Returns a null Node if the index is out of range.
+// Handles arbitrary nesting depth of hidden nodes.
 func (n Node) Child(index int) Node {
 	if n.IsNull() || index < 0 {
 		return Node{}
@@ -191,39 +192,43 @@ func (n Node) Child(index int) Node {
 		return Node{}
 	}
 
-	// Walk through structural children, counting visible ones.
-	visibleIndex := 0
 	childPos := Length{Bytes: n.context[0], Point: Point{Row: n.context[1], Column: n.context[2]}}
+	visibleIndex := 0
+	result, _ := findVisibleChildByIndex(n.tree, children, childPos, arena, index, &visibleIndex)
+	return result
+}
+
+// findVisibleChildByIndex recursively walks children (descending through hidden
+// nodes of arbitrary depth) to find the visible child at the given index.
+func findVisibleChildByIndex(tree *Tree, children []Subtree, basePos Length, arena *SubtreeArena, targetIndex int, currentIndex *int) (Node, Length) {
+	pos := basePos
 	for _, child := range children {
-		childVisible := IsVisible(child, arena)
-		if childVisible {
-			if visibleIndex == index {
-				return n.tree.nodeFromChildSubtree(child, childPos, n.subtree, arena)
+		if IsVisible(child, arena) {
+			if *currentIndex == targetIndex {
+				return tree.nodeFromChildSubtree(child, pos, SubtreeZero, arena), pos
 			}
-			visibleIndex++
-			childPos = advancePosition(childPos, child, arena)
+			*currentIndex++
+			pos = advancePosition(pos, child, arena)
 		} else {
-			// Hidden node: its visible descendants count as this node's children.
+			// Hidden node: recurse into its children.
 			grandchildren := GetChildren(child, arena)
-			subPos := childPos
-			for _, gc := range grandchildren {
-				if IsVisible(gc, arena) {
-					if visibleIndex == index {
-						return n.tree.nodeFromChildSubtree(gc, subPos, child, arena)
-					}
-					visibleIndex++
+			if len(grandchildren) > 0 {
+				hiddenPadding := GetPadding(child, arena)
+				gcPos := LengthAdd(pos, hiddenPadding)
+				result, _ := findVisibleChildByIndex(tree, grandchildren, gcPos, arena, targetIndex, currentIndex)
+				if !result.IsNull() {
+					return result, pos
 				}
-				subPos = advancePosition(subPos, gc, arena)
 			}
-			childPos = advancePosition(childPos, child, arena)
+			pos = advancePosition(pos, child, arena)
 		}
 	}
-
-	return Node{}
+	return Node{}, pos
 }
 
 // NamedChild returns the named child at the given index (0-based).
 // Returns a null Node if the index is out of range.
+// Handles arbitrary nesting depth of hidden nodes.
 func (n Node) NamedChild(index int) Node {
 	if n.IsNull() || index < 0 {
 		return Node{}
@@ -234,35 +239,39 @@ func (n Node) NamedChild(index int) Node {
 		return Node{}
 	}
 
-	namedIndex := 0
 	childPos := Length{Bytes: n.context[0], Point: Point{Row: n.context[1], Column: n.context[2]}}
+	namedIndex := 0
+	result, _ := findNamedChildByIndex(n.tree, children, childPos, arena, index, &namedIndex)
+	return result
+}
+
+// findNamedChildByIndex recursively walks children (descending through hidden
+// nodes of arbitrary depth) to find the named child at the given index.
+func findNamedChildByIndex(tree *Tree, children []Subtree, basePos Length, arena *SubtreeArena, targetIndex int, currentIndex *int) (Node, Length) {
+	pos := basePos
 	for _, child := range children {
-		childVisible := IsVisible(child, arena)
-		if childVisible {
+		if IsVisible(child, arena) {
 			if IsNamed(child, arena) && !IsExtra(child, arena) {
-				if namedIndex == index {
-					return n.tree.nodeFromChildSubtree(child, childPos, n.subtree, arena)
+				if *currentIndex == targetIndex {
+					return tree.nodeFromChildSubtree(child, pos, SubtreeZero, arena), pos
 				}
-				namedIndex++
+				*currentIndex++
 			}
-			childPos = advancePosition(childPos, child, arena)
+			pos = advancePosition(pos, child, arena)
 		} else {
 			grandchildren := GetChildren(child, arena)
-			subPos := childPos
-			for _, gc := range grandchildren {
-				if IsVisible(gc, arena) && IsNamed(gc, arena) && !IsExtra(gc, arena) {
-					if namedIndex == index {
-						return n.tree.nodeFromChildSubtree(gc, subPos, child, arena)
-					}
-					namedIndex++
+			if len(grandchildren) > 0 {
+				hiddenPadding := GetPadding(child, arena)
+				gcPos := LengthAdd(pos, hiddenPadding)
+				result, _ := findNamedChildByIndex(tree, grandchildren, gcPos, arena, targetIndex, currentIndex)
+				if !result.IsNull() {
+					return result, pos
 				}
-				subPos = advancePosition(subPos, gc, arena)
 			}
-			childPos = advancePosition(childPos, child, arena)
+			pos = advancePosition(pos, child, arena)
 		}
 	}
-
-	return Node{}
+	return Node{}, pos
 }
 
 // ChildByFieldName returns the first child associated with the given field name.
