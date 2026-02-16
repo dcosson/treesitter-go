@@ -43,7 +43,6 @@ func newTSLang() *ts.Language {
 // --- Bash Integration Tests ---
 
 func TestBashParseFunction(t *testing.T) {
-	t.Skip("external scanner bug — bash scanner timeout on function definitions")
 	p := ts.NewParser()
 	p.SetLanguage(newBashLang())
 
@@ -85,7 +84,6 @@ func TestBashParsePipeline(t *testing.T) {
 }
 
 func TestBashParseArray(t *testing.T) {
-	t.Skip("external scanner bug — bash scanner timeout on array/variable expansion")
 	p := ts.NewParser()
 	p.SetLanguage(newBashLang())
 
@@ -104,7 +102,6 @@ echo "${arr[1]}"`
 }
 
 func TestBashParseHeredoc(t *testing.T) {
-	t.Skip("external scanner bug — bash scanner timeout on heredoc")
 	p := ts.NewParser()
 	p.SetLanguage(newBashLang())
 
@@ -126,7 +123,6 @@ EOF`
 // --- Ruby Integration Tests ---
 
 func TestRubyParseClass(t *testing.T) {
-	t.Skip("external scanner bug — ruby scanner timeout on class/method definitions")
 	p := ts.NewParser()
 	p.SetLanguage(newRubyLang())
 
@@ -171,7 +167,7 @@ end`
 }
 
 func TestRubyParseHeredoc(t *testing.T) {
-	t.Skip("external scanner bug — ruby scanner timeout on heredoc")
+	t.Skip("ruby scanner bug — squiggly heredoc (<<~) not supported in scanner")
 	p := ts.NewParser()
 	p.SetLanguage(newRubyLang())
 
@@ -192,7 +188,6 @@ HEREDOC`
 }
 
 func TestRubyParseStringInterpolation(t *testing.T) {
-	t.Skip("external scanner bug — ruby scanner timeout on string interpolation")
 	p := ts.NewParser()
 	p.SetLanguage(newRubyLang())
 

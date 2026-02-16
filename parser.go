@@ -357,23 +357,40 @@ func (p *Parser) lexToken(version StackVersion, state StateID, position Length) 
 
 		// Call the external scanner.
 		if validSymbols != nil && p.externalScanner.Scan(p.lexer, validSymbols) {
-			// Scanner recognized a token. Serialize the new state.
-			externalScannerStateLen = p.externalScannerSerialize()
-
-			// Check if state changed from previous external token.
-			externalScannerStateChanged = !ExternalScannerStateEqual(
-				lastExtToken, p.arena,
-				p.serializationBuffer[:externalScannerStateLen],
-				externalScannerStateLen,
-			)
-
-			// Map the external token index to a grammar symbol.
-			extTokenIndex := p.lexer.ResultSymbol
-			if int(extTokenIndex) < len(p.language.ExternalSymbolMap) {
-				p.lexer.ResultSymbol = p.language.ExternalSymbolMap[extTokenIndex]
+			// If the scanner didn't call MarkEnd, default the token end to
+			// the current position (matching AcceptToken behavior). Without
+			// this, TokenEndPosition stays at Length{} (zero), causing size
+			// underflow when the token is at a non-zero position.
+			if !p.lexer.markEndCalled {
+				p.lexer.TokenEndPosition = p.lexer.currentPosition
 			}
 
-			foundExternalToken = true
+			// Reject zero-width external tokens where the scanner didn't
+			// call MarkEnd and didn't advance. These indicate the scanner
+			// matched a default/fallback rule (e.g. EmptyValue on whitespace)
+			// without actually consuming input. Accepting them causes infinite
+			// loops because zero-width tokens don't advance position.
+			if !p.lexer.markEndCalled && p.lexer.currentPosition.Bytes == position.Bytes {
+				// Fall through to internal lex.
+			} else {
+				// Scanner recognized a token. Serialize the new state.
+				externalScannerStateLen = p.externalScannerSerialize()
+
+				// Check if state changed from previous external token.
+				externalScannerStateChanged = !ExternalScannerStateEqual(
+					lastExtToken, p.arena,
+					p.serializationBuffer[:externalScannerStateLen],
+					externalScannerStateLen,
+				)
+
+				// Map the external token index to a grammar symbol.
+				extTokenIndex := p.lexer.ResultSymbol
+				if int(extTokenIndex) < len(p.language.ExternalSymbolMap) {
+					p.lexer.ResultSymbol = p.language.ExternalSymbolMap[extTokenIndex]
+				}
+
+				foundExternalToken = true
+			}
 		}
 	}
 
