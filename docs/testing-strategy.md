@@ -383,56 +383,101 @@ upfront — port the tests relevant to the current phase.
 
 ## 4. Cross-Verification Strategy
 
-### Differential Testing: Go vs C
+### Differential Testing: Go vs CLI
 
 The strongest guarantee of correctness is parsing identical inputs with both the
-C and Go implementations and comparing results. This catches edge cases that
-corpus tests miss.
+Go implementation and the tree-sitter CLI (the Rust-based reference
+implementation) and comparing results. This catches edge cases that corpus tests
+miss.
 
 #### Approach
 
 ```
                 ┌─────────────┐
- source file ──>│  C parser   │──> S-expression A
+ source file ──>│  CLI parser  │──> S-expression A (normalized)
                 └─────────────┘
                 ┌─────────────┐
- source file ──>│  Go parser  │──> S-expression B
+ source file ──>│  Go parser   │──> S-expression B (normalized)
                 └─────────────┘
                       │
                  compare A == B
 ```
 
-**Implementation**: A Go test binary that:
-1. Links to the C tree-sitter library via CGo (test-only dependency)
-2. Parses each input file with both C and Go parsers
-3. Compares S-expression output, node byte ranges, and node field assignments
+**Implementation**: The `internal/difftest` package provides the harness:
+1. **Go parser** produces an S-expression via `tree.RootNode().String()`
+2. **CLI parser** runs `tree-sitter parse --scope <scope> <file>` and captures stdout
+3. Both outputs are normalized (strip point ranges, field annotations, collapse
+   whitespace) via `corpustest.NormalizeSExpression` + `corpustest.StripFields`
+4. Normalized strings are compared; divergences report context around the first
+   difference
 
-```go
-// crosscheck/crosscheck_test.go
-// +build crosscheck
+**Note**: Byte position comparisons are explicitly out of scope. S-expression
+comparison is sufficient for verifying parse tree correctness. If byte ranges
+differ but S-expressions match, the impact is limited to code navigation
+(go-to-definition), and such bugs are extremely unlikely when S-expressions
+agree. This can be revisited if edge cases arise.
 
-func TestCrossCheck(t *testing.T) {
-    files := collectSourceFiles("testdata/corpora/")
-    cParser := cgo.NewParser()     // CGo wrapper around C tree-sitter
-    goParser := ts.NewParser()
+Benefits of the CLI approach over the original CGo plan:
+- **Pure Go project**: No CGo dependency, no C toolchain required for tests
+- **Same oracle**: The CLI uses the same C parser core as the library
+- **Simpler harness**: Shell out to `tree-sitter parse <file>`, compare output
+- **Unified harness**: Same tool for correctness comparison and performance timing
 
-    for _, f := range files {
-        input, _ := os.ReadFile(f.path)
-        cTree := cParser.Parse(f.language, input)
-        goTree := goParser.Parse(f.language, input)
+#### CLI Installation
 
-        cSexp := cTree.RootNode().String()
-        goSexp := goTree.RootNode().String()
+A `make deps` target installs the tree-sitter CLI using the best available
+package manager:
 
-        if cSexp != goSexp {
-            t.Errorf("divergence on %s:\nC:  %s\nGo: %s", f.path, cSexp, goSexp)
-        }
-
-        // Also compare byte ranges for every node
-        compareTrees(t, cTree.RootNode(), goTree.RootNode())
-    }
-}
+```makefile
+deps:
+	@if command -v brew >/dev/null 2>&1; then \
+		brew install tree-sitter; \
+	elif command -v cargo >/dev/null 2>&1; then \
+		cargo install tree-sitter-cli; \
+	elif command -v npm >/dev/null 2>&1; then \
+		npm install -g tree-sitter-cli; \
+	else \
+		echo "Install tree-sitter CLI: https://tree-sitter.github.io/tree-sitter/"; \
+		exit 1; \
+	fi
 ```
+
+For CI:
+```yaml
+- run: npm install tree-sitter-cli
+- run: export PATH="./node_modules/.bin:$PATH"
+```
+
+#### CLI Binary Path as Explicit Argument
+
+The tree-sitter CLI binary path is passed as an explicit argument, not
+auto-discovered via `LookPath`. This makes the dependency explicit and
+avoids silent skips when the CLI isn't installed.
+
+- **Test code** accepts the path via a `-ts-cli` test flag or `TS_CLI_PATH`
+  environment variable. If neither is set, differential/benchmark tests skip.
+- **Makefile** passes the path from `$(which tree-sitter)`:
+
+```makefile
+TREE_SITTER_CLI := $(shell which tree-sitter 2>/dev/null)
+
+diff-test:
+ifdef TREE_SITTER_CLI
+	go test ./internal/difftest/... -ts-cli=$(TREE_SITTER_CLI) -v -timeout 15m
+else
+	@echo "tree-sitter CLI not found. Run 'make deps' to install."
+	@exit 1
+endif
+```
+
+- **CI** installs the CLI via `make deps` and passes the path automatically.
+
+#### Test Functions
+
+- `RunDifferentialCorpus` -- run corpus test cases through both parsers
+- `RunDifferentialDir` -- run all files in a directory through both parsers
+- `RunDifferentialFile` -- single file comparison
+- `Compare` -- low-level: returns `CompareResult` with both S-expressions and diff
 
 #### Real-World Test Corpora
 
@@ -449,42 +494,6 @@ synthetic corpus tests don't cover:
 
 Collect a fixed set of these files (version-pinned) as `testdata/corpora/`.
 Run differential testing in CI.
-
-#### Node-Level Comparison
-
-S-expression comparison catches most issues, but some bugs manifest only in
-byte ranges or field assignments. The full comparison should check:
-
-```go
-func compareTrees(t *testing.T, cNode, goNode Node) {
-    // 1. Same symbol / node type
-    assert(cNode.Type() == goNode.Type())
-
-    // 2. Same byte range
-    assert(cNode.StartByte() == goNode.StartByte())
-    assert(cNode.EndByte() == goNode.EndByte())
-
-    // 3. Same point range
-    assert(cNode.StartPoint() == goNode.StartPoint())
-    assert(cNode.EndPoint() == goNode.EndPoint())
-
-    // 4. Same child count
-    assert(cNode.ChildCount() == goNode.ChildCount())
-    assert(cNode.NamedChildCount() == goNode.NamedChildCount())
-
-    // 5. Same field assignments
-    for _, field := range language.Fields() {
-        cChild := cNode.ChildByFieldName(field)
-        goChild := goNode.ChildByFieldName(field)
-        assert(cChild.IsNull() == goChild.IsNull())
-    }
-
-    // 6. Recurse into children
-    for i := 0; i < cNode.ChildCount(); i++ {
-        compareTrees(t, cNode.Child(i), goNode.Child(i))
-    }
-}
-```
 
 ### Regression Testing
 
@@ -678,30 +687,93 @@ func randomWords(rng *rand.Rand, maxCount int) []byte {
 
 ## 6. Performance Testing
 
+### Principle
+
+All benchmarks are designed to compare against the C implementation via the
+tree-sitter CLI. When the CLI is not available, they degrade to Go-only mode.
+There is no separate "Go-only benchmark suite" vs "comparison benchmark suite".
+
 ### Benchmark Suite
 
-Use Go's `testing.B` benchmark framework:
+Use Go's `testing.B` benchmark framework with unified Go/CLI comparison:
 
 ```go
-// benchmark_test.go
+var tsCLIPath = flag.String("ts-cli", os.Getenv("TS_CLI_PATH"), "path to tree-sitter CLI binary")
 
-func BenchmarkParseJSON1KB(b *testing.B) {
-    input := loadFixture("testdata/bench/small.json")  // ~1KB
-    parser := ts.NewParser()
-    parser.SetLanguage(jsonLang)
-    b.ResetTimer()
-    b.SetBytes(int64(len(input)))
-    for i := 0; i < b.N; i++ {
-        parser.ParseString(nil, input)
+func BenchmarkParse(b *testing.B) {
+    files := loadBenchFiles("testdata/bench/")
+
+    for _, f := range files {
+        input, _ := os.ReadFile(f.path)
+        scope := difftest.Scope[filepath.Ext(f.path)]
+
+        b.Run("go/"+f.name, func(b *testing.B) {
+            p := ts.NewParser()
+            p.SetLanguage(f.language)
+            b.SetBytes(int64(len(input)))
+            b.ReportAllocs()
+            b.ResetTimer()
+            for i := 0; i < b.N; i++ {
+                p.ParseString(context.Background(), input)
+            }
+        })
+
+        if *tsCLIPath != "" {
+            b.Run("cli/"+f.name, func(b *testing.B) {
+                b.SetBytes(int64(len(input)))
+                b.ResetTimer()
+                for i := 0; i < b.N; i++ {
+                    difftest.ParseWithCLI(*tsCLIPath, f.path, scope)
+                }
+            })
+        }
     }
 }
-
-func BenchmarkParseGo10KB(b *testing.B) { /* ... */ }
-func BenchmarkParseJS100KB(b *testing.B) { /* ... */ }
-func BenchmarkParseGo1MB(b *testing.B) { /* ... */ }
-func BenchmarkIncrementalReparse(b *testing.B) { /* ... */ }
-func BenchmarkQueryMatch(b *testing.B) { /* ... */ }
 ```
+
+Note: CLI timing includes process spawn overhead, so it overstates the C
+parser's latency. This is acceptable -- if Go is within 2-4x of the CLI
+wall-clock time, it is almost certainly faster than the C parser itself (since
+the CLI adds ~5-10ms of startup). For precise C-only timing, use
+`tree-sitter parse --time` and parse the reported duration from stderr.
+
+### Metrics to Report
+
+| Metric | How | Why |
+|--------|-----|-----|
+| **Throughput** (bytes/ms) | `b.SetBytes` + Go's ns/op | Primary speed metric |
+| **Memory** (allocs/parse) | `b.ReportAllocs` | Track allocation pressure |
+| **Latency p50/p99** | Custom histogram in extended bench mode | Tail latency for editor use |
+
+For latency percentiles, run a separate benchmark function that collects
+individual parse times into a slice and computes percentiles:
+
+```go
+func BenchmarkLatencyDistribution(b *testing.B) {
+    // Parse 1000 times, record each duration.
+    // Report p50, p95, p99 via b.ReportMetric.
+    b.ReportMetric(p50.Seconds()*1000, "p50-ms")
+    b.ReportMetric(p99.Seconds()*1000, "p99-ms")
+}
+```
+
+### Makefile Targets
+
+```makefile
+TREE_SITTER_CLI := $(shell which tree-sitter 2>/dev/null)
+
+bench:
+ifdef TREE_SITTER_CLI
+	go test ./... -bench=. -benchmem -count=5 -timeout 10m \
+		-ts-cli=$(TREE_SITTER_CLI) | tee bench-results.txt
+else
+	go test ./... -bench=. -benchmem -count=5 -timeout 10m | tee bench-results.txt
+	@echo "Note: tree-sitter CLI not found, Go-vs-C comparison skipped."
+endif
+```
+
+This way, benchmarks always run (Go-only timing), and when the tree-sitter
+binary is available, the comparison sub-benchmarks run as well.
 
 ### Performance Targets
 
@@ -713,45 +785,6 @@ From the design document (these are targets, not requirements):
 | Parse 10KB Go source | ~500 us | < 2 ms | 4x slower |
 | Incremental reparse (1 char, 10KB) | ~5 us | < 50 us | 10x slower |
 | Query match (simple, 10KB) | < 100 us | < 500 us | 5x slower |
-
-### Comparison Against C Implementation
-
-Build a benchmark harness that runs the same files through both C (via CGo)
-and Go parsers:
-
-```go
-// +build crossbench
-
-func BenchmarkComparison(b *testing.B) {
-    files := []struct{ name, path string }{
-        {"json-1kb", "testdata/bench/small.json"},
-        {"go-10kb", "testdata/bench/medium.go"},
-        {"js-100kb", "testdata/bench/large.js"},
-    }
-
-    for _, f := range files {
-        input, _ := os.ReadFile(f.path)
-
-        b.Run("c/"+f.name, func(b *testing.B) {
-            p := cgo.NewParser()
-            b.SetBytes(int64(len(input)))
-            b.ResetTimer()
-            for i := 0; i < b.N; i++ {
-                p.Parse(input)
-            }
-        })
-
-        b.Run("go/"+f.name, func(b *testing.B) {
-            p := ts.NewParser()
-            b.SetBytes(int64(len(input)))
-            b.ResetTimer()
-            for i := 0; i < b.N; i++ {
-                p.ParseString(nil, input)
-            }
-        })
-    }
-}
-```
 
 ### Memory Profiling
 
@@ -988,28 +1021,35 @@ on: [push, pull_request]
 
 jobs:
   unit-tests:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+          - os: ubuntu-24.04-arm
+          - os: macos-latest
+          - os: windows-latest
+    runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with: { go-version: '1.22' }
-      - run: make test
+      - run: go test -race -skip 'Corpus' ./... -count=1
 
   corpus-tests:
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
-      - run: make fetch-test-grammars
-      - run: make test-corpus
+      - run: go test ./... -run TestCorpus -v -count=1 -timeout 10m
 
-  cross-check:
+  diff-test:
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
-      - run: make test-crosscheck  # CGo-based differential testing
+      - run: make deps
+      - run: make diff-test
 
   benchmarks:
     runs-on: ubuntu-latest
@@ -1017,6 +1057,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
+      - run: make deps
       - run: make bench
       - uses: benchmark-action/github-action-benchmark@v1
         with:
@@ -1024,32 +1065,376 @@ jobs:
           auto-push: false
           comment-on-alert: true
           alert-threshold: '150%'  # Alert if 50% slower
+
+  fuzz-tests:
+    runs-on: ubuntu-latest
+    if: github.event.schedule != ''
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+      - run: go test -fuzz=FuzzParseBytes -fuzztime=5m ./...
+      - run: go test -fuzz=FuzzParseCorpusFile -fuzztime=2m ./internal/corpustest/
+      - run: go test -fuzz=FuzzScannerSerializeRoundTrip -fuzztime=2m ./...
 ```
 
 ### Makefile Targets
 
 ```makefile
-.PHONY: test test-corpus test-crosscheck bench
+TREE_SITTER_CLI := $(shell which tree-sitter 2>/dev/null)
+
+.PHONY: deps test test-corpus diff-test bench
+
+deps:
+	@if command -v brew >/dev/null 2>&1; then \
+		brew install tree-sitter; \
+	elif command -v cargo >/dev/null 2>&1; then \
+		cargo install tree-sitter-cli; \
+	elif command -v npm >/dev/null 2>&1; then \
+		npm install -g tree-sitter-cli; \
+	else \
+		echo "Install tree-sitter CLI: https://tree-sitter.github.io/tree-sitter/"; \
+		exit 1; \
+	fi
 
 test:
-    go test ./... -count=1
+	go test -race -skip 'Corpus' ./... -count=1
 
 test-corpus:
-    go test ./... -run TestCorpus -v -count=1 -timeout 10m
+	go test ./... -run TestCorpus -v -count=1 -timeout 10m
 
-test-crosscheck:
-    CGO_ENABLED=1 go test -tags crosscheck ./crosscheck/ -v -count=1 -timeout 30m
+diff-test:
+ifdef TREE_SITTER_CLI
+	go test ./internal/difftest/... -ts-cli=$(TREE_SITTER_CLI) -v -timeout 15m
+else
+	@echo "tree-sitter CLI not found. Run 'make deps' to install."
+	@exit 1
+endif
 
 bench:
-    go test ./... -bench=. -benchmem -count=5 -timeout 10m | tee bench-results.txt
+ifdef TREE_SITTER_CLI
+	go test ./... -bench=. -benchmem -count=5 -timeout 10m \
+		-ts-cli=$(TREE_SITTER_CLI) | tee bench-results.txt
+else
+	go test ./... -bench=. -benchmem -count=5 -timeout 10m | tee bench-results.txt
+	@echo "Note: tree-sitter CLI not found, Go-vs-C comparison skipped."
+endif
 
 fetch-test-grammars:
-    go run ./cmd/fetch-grammars
+	go run ./cmd/fetch-grammars
 ```
 
 ---
 
-## 9. Test Implementation Timeline
+## 9. Fuzz Testing
+
+### Go Native Fuzzing
+
+Use `go test -fuzz` (Go 1.18+). Three fuzz targets, each covering a distinct
+attack surface.
+
+#### Fuzz Target 1: Parser Crash Finding
+
+```go
+// fuzz_test.go
+
+func FuzzParseBytes(f *testing.F) {
+    // Seed with real source files and corpus test inputs.
+    seedFromDir(f, "testdata/grammars/tree-sitter-json/test/corpus/")
+    seedFromDir(f, "testdata/corpora/json/")
+
+    lang := tg.JSONLanguage()
+    lang.LexFn = jsonLexFn
+
+    f.Fuzz(func(t *testing.T, data []byte) {
+        p := ts.NewParser()
+        p.SetLanguage(lang)
+        ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+        defer cancel()
+        tree := p.ParseString(ctx, data)
+        // Property: never panics. Returns a tree or nil.
+        if tree != nil {
+            _ = tree.RootNode().String()
+        }
+    })
+}
+```
+
+One fuzz target per language with an external scanner (JSON, Go, JavaScript,
+Python at minimum). The shared `seedFromDir` helper adds corpus `.txt` file
+inputs and real source files from `testdata/corpora/`.
+
+#### Fuzz Target 2: Corpus Test Parser
+
+The S-expression parser in `internal/corpustest` is part of our test
+infrastructure. If it panics on malformed input, test failures could be masked.
+
+```go
+func FuzzParseCorpusFile(f *testing.F) {
+    seedFromDir(f, "testdata/grammars/tree-sitter-json/test/corpus/")
+    f.Fuzz(func(t *testing.T, data []byte) {
+        // Must not panic.
+        _, _ = corpustest.ParseCorpusFile(data)
+    })
+}
+```
+
+#### Fuzz Target 3: External Scanner Serialize/Deserialize
+
+Each scanner that implements state serialization must survive round-trip with
+arbitrary bytes.
+
+```go
+func FuzzScannerSerializeRoundTrip(f *testing.F) {
+    f.Add([]byte{})
+    f.Add([]byte{0, 0, 0, 0})
+    f.Add(bytes.Repeat([]byte{0xFF}, 1024))
+
+    f.Fuzz(func(t *testing.T, data []byte) {
+        scanner := pythonscanner.New()
+        // Deserialize arbitrary bytes -- must not panic.
+        scanner.Deserialize(data)
+        // Re-serialize -- must not panic.
+        buf := make([]byte, 4096)
+        n := scanner.Serialize(buf)
+        _ = n
+    })
+}
+```
+
+### Seed Corpus
+
+Seed files come from two sources:
+1. Grammar corpus test inputs (extracted from `.txt` files)
+2. Real source files from `testdata/corpora/`
+
+A helper extracts individual inputs from corpus files and writes them to
+`testdata/fuzz/corpus/<lang>/` as individual seed files. Run once during setup.
+
+### CI Integration
+
+Fuzz tests do not run in the normal `make test` flow. They run on a nightly
+schedule (see Section 8 CI Pipeline). Crash-reproducing inputs are committed to
+`testdata/fuzz/` and become permanent regression seeds.
+
+---
+
+## 10. Error Recovery Testing
+
+### Purpose
+
+Tree-sitter is designed to parse incomplete and malformed input gracefully. We
+must verify that the Go port's error recovery produces reasonable trees -- not
+just that it does not crash.
+
+### Input Categories
+
+| Category | Description | Example |
+|----------|-------------|---------|
+| **Truncated files** | File cut off mid-token or mid-construct | `func main() { fmt.Pr` |
+| **Syntax errors** | Single deliberate error in valid code | `if x == { y }` (missing condition) |
+| **Mixed valid/invalid** | Valid code with garbage injected | Valid Go with `@#$%` on line 15 |
+| **Incomplete constructs** | Unclosed brackets, strings, blocks | `{"key": "value` |
+| **Empty input** | Zero bytes, whitespace only | `""`, `"   \n\t  "` |
+
+### Properties to Verify
+
+For every malformed input:
+
+1. **Parser does not panic** -- returns a tree or nil
+2. **ERROR or MISSING nodes present** -- the tree acknowledges the problem
+3. **Rest of tree is reasonable** -- valid portions before/after the error
+   produce correct subtrees (spot-check S-expression structure)
+4. **Byte ranges are valid** -- no node extends beyond input length,
+   children ordered and within parent ranges (reuse `assertTreeConsistent`
+   from Section 5.4)
+
+### Test Structure
+
+```
+testdata/error-recovery/
+├── json/
+│   ├── truncated-object.json
+│   ├── missing-comma.json
+│   └── unclosed-string.json
+├── go/
+│   ├── truncated-func.go
+│   ├── missing-semicolon.go
+│   └── unclosed-brace.go
+├── javascript/
+│   └── ...
+└── ...
+```
+
+Each file is a standalone malformed input. No `.expected` file -- we verify
+properties, not exact trees (error recovery is implementation-defined and
+may differ between Go and C).
+
+```go
+func TestErrorRecovery(t *testing.T) {
+    for _, lang := range errorRecoveryLanguages {
+        dir := filepath.Join("testdata/error-recovery", lang.name)
+        files, _ := filepath.Glob(filepath.Join(dir, "*"))
+
+        for _, f := range files {
+            t.Run(filepath.Base(f), func(t *testing.T) {
+                input, _ := os.ReadFile(f)
+                tree := mustParse(t, lang.language, input)
+
+                // Must have at least one ERROR or MISSING node.
+                if !hasErrorNode(tree.RootNode()) {
+                    t.Error("expected ERROR or MISSING node in malformed input")
+                }
+                // Structural invariants still hold.
+                assertTreeConsistent(t, tree.RootNode(), input)
+            })
+        }
+    }
+}
+```
+
+### Regression Collection
+
+When users or fuzzing discover inputs where the Go parser's error recovery
+diverges significantly from the C parser (e.g., the Go parser produces
+`(ERROR)` for the entire file while C recovers most of the tree), add these
+to `testdata/regressions/<lang>/` with `.input` and `.expected` pairs. These
+become permanent regression tests via `RunRegressionTests`.
+
+### Scope
+
+Start with JSON (simplest grammar, easiest to reason about error recovery),
+Go, and JavaScript. Expand to remaining languages as those stabilize. Aim
+for 10-20 malformed inputs per language covering each category above.
+
+---
+
+## 11. Manual QA Testing Plans
+
+### Purpose
+
+Automated tests verify deterministic properties. Manual QA uses human/agent
+judgment to catch issues that are correct-by-spec but wrong-by-intent: poor
+error recovery, confusing tree shapes, performance regressions that benchmarks
+miss because the test files are too small.
+
+### Pre-Release QA Checklist
+
+Run before every tagged release. Each item should be performed by a human or
+agent and signed off.
+
+#### 1. Corpus Pass Rate Gate
+
+- [ ] Run `make test-corpus` and record pass rates per language
+- [ ] Compare to previous release -- no language regresses by more than 1%
+- [ ] Total pass rate meets the release target (document target per release)
+
+#### 2. Error Recovery Spot Check
+
+For each of the top 5 languages (JSON, Go, JavaScript, Python, TypeScript):
+
+- [ ] Take a 50-100 line source file and delete a random line. Parse it.
+  Inspect the S-expression. Does the error recovery look reasonable? Is the
+  ERROR node localized to the deletion site, or does it swallow the entire file?
+- [ ] Take a 50-100 line source file and insert `@@@GARBAGE@@@` at a random
+  position. Parse it. Same inspection.
+- [ ] Judgment call: would a syntax highlighter using this tree produce
+  acceptable results for the valid portions of the file?
+
+#### 3. Visual S-Expression Diff Review
+
+For each of the top 5 languages, pick 3 representative source files (~50 lines
+each) and run both the Go parser and `tree-sitter parse`. Visually diff the
+S-expression output side by side.
+
+```bash
+# Generate side-by-side diff for review.
+diff <(go run ./cmd/parse testdata/review/example.go) \
+     <(tree-sitter parse testdata/review/example.go) \
+     | head -100
+```
+
+- [ ] Review each diff. Are remaining differences documented known issues?
+- [ ] No new unexpected divergences compared to previous release
+
+#### 4. Smoke Test Each Language
+
+For each of the 15 languages, parse one small representative file and verify
+it produces a non-empty, non-ERROR-only tree:
+
+```bash
+for f in testdata/smoke/*.{json,go,js,py,rs,c,cpp,java,rb,ts,sh,css,html,lua,pl}; do
+    echo "=== $f ==="
+    go run ./cmd/parse "$f" | head -5
+done
+```
+
+- [ ] Every file produces output with the correct root node type
+- [ ] No panics, no timeouts
+
+#### 5. Performance Sanity Check
+
+- [ ] Run `make bench` and compare to previous release
+- [ ] No benchmark regresses by more than 20% without explanation
+- [ ] Parse a ~1MB generated file (e.g., `testdata/bench/xlarge.go`) and verify
+  it completes in under 10 seconds
+
+#### 6. Incremental Parse Spot Check
+
+- [ ] Open a ~100 line Go file. Parse it. Apply a single-character edit
+  (e.g., rename a variable). Reparse with the old tree. Verify the result
+  matches a fresh parse of the edited file.
+- [ ] Repeat for JavaScript and Python.
+- [ ] Judgment call: does the incremental reparse feel instantaneous (< 50ms
+  for a single-char edit on a 10KB file)?
+
+### Recording Results
+
+QA results are recorded in `docs/qa/YYYY-MM-DD-vX.Y.Z.md` with the checklist
+above filled in, any notes on judgment calls, and a final sign-off. These files
+are committed to the repo as a permanent record.
+
+---
+
+## 12. Implementation Status
+
+### What Is Implemented
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| Corpus test runner (`internal/corpustest`) | Done | Parses corpus files, runs against Go parser |
+| Corpus tests for all 15 languages | Done | `corpus_languages_test.go` |
+| Integration tests (hand-written) | Done | 79 tests across 15 languages, all passing |
+| CI pipeline | Done | GitHub Actions: multi-platform unit tests, corpus tests, benchmarks |
+| Benchmark suite | Partial | `benchmark_test.go` exists, Go-only |
+| External scanner unit tests | Partial | Lua scanner has 17 unit tests |
+| Ported internal API tests | Not started | parser_test, node_test, query_test from upstream |
+| Differential testing vs CLI | Not started | Design in Section 4 |
+| Fuzz testing | Not started | Design in Section 9 |
+| Error recovery tests | Not started | Design in Section 10 |
+| Real-world corpora collection | Not started | Need version-pinned files |
+| Performance comparison vs CLI | Not started | Design in Section 6 |
+| Scanner round-trip tests | Not started | |
+| Regression test directory | Not started | `testdata/regressions/` |
+
+### Current Corpus Pass Rates
+
+Post trailing-newline fix (d312604) and alias-sequence fix (9e978d1). 343
+failures across 14 languages (JSON is 100%). Top failure category: comment
+placement (107 failures, 31%).
+
+### Priority Ordering for Remaining Test Work
+
+1. **Fuzz testing** -- highest ROI crash-finding before stabilization
+2. **Error recovery test files** -- start with JSON/Go/JavaScript
+3. **CLI performance comparison benchmarks** -- quantify Go vs C gap
+4. **CI pipeline** -- GitHub Actions for corpus, differential, fuzz, bench
+5. **Real-world corpora** -- collect version-pinned files for Go, JS, Python
+6. **Differential testing for all 15 languages** -- currently only JSON is wired
+
+---
+
+## 13. Test Implementation Timeline
 
 | Phase | Tests to Build | Depends On |
 |-------|---------------|------------|
