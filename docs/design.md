@@ -32,22 +32,27 @@ with the existing tree-sitter grammar ecosystem (~300+ grammars).
 
 ### Target Languages
 
-The top 10 languages to support with compiled grammar packages, in priority order:
+The top 15 languages to support with compiled grammar packages, in priority order:
 
 1. **JSON** — simplest grammar, no external scanner, ideal for bootstrapping
 2. **Go** — primary use case
 3. **JavaScript** — large user base, exercises external scanners (template literals)
 4. **TypeScript** — extends JavaScript, stress-tests large grammar tables (~4000 lex states)
 5. **Python** — indentation-sensitive (complex external scanner)
-6. **Rust** — popular systems language
-7. **C** — foundational, relatively simple grammar
-8. **C++** — complex external scanner (~2000 lines), stress-tests the port
-9. **HTML** — exercises language injection (embedded JS/CSS)
-10. **CSS** — commonly injected within HTML
+6. **Bash** — shell use case, complex external scanner (~1050 lines: heredocs, variable expansion, globs)
+7. **Rust** — popular systems language
+8. **C** — foundational, relatively simple grammar
+9. **C++** — complex external scanner (~2000 lines), stress-tests the port
+10. **Ruby** — popular scripting language
+11. **Java** — enterprise lingua franca
+12. **HTML** — exercises language injection (embedded JS/CSS)
+13. **CSS** — commonly injected within HTML
+14. **Zsh** — shell use case (separate grammar from Bash; external scanner extends Bash's)
+15. **Perl** — scripting language
 
 JSON is the MVP grammar (Phase 1). Go and JavaScript are the primary validation
-targets (Phase 4-5). The remaining grammars validate robustness and are
-prioritized by user demand.
+targets (Phase 4-5). Bash and Zsh are key for shell tooling. The remaining
+grammars validate robustness and are prioritized by user demand.
 
 ### Target API
 
