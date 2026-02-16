@@ -1,4 +1,4 @@
-.PHONY: build test fetch-test-grammars test-corpus test-corpus-json
+.PHONY: build test bench fetch-test-grammars test-corpus test-corpus-json
 
 build:
 	go build ./...
@@ -14,3 +14,6 @@ test-corpus:
 
 test-corpus-json:
 	go test ./... -run TestCorpus/json -v
+
+bench:
+	go test ./... -bench=. -benchmem -count=5 -timeout 10m | tee bench-results.txt
