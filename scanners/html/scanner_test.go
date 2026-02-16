@@ -510,6 +510,72 @@ func TestIsAlnumOrDash(t *testing.T) {
 	}
 }
 
+// TestScanImplicitEndTagVoidAtEOF simulates what happens when a void element
+// like <img> is at the end of input. After the parser processes the start tag
+// and attributes, it should ask the scanner for ImplicitEndTag at EOF.
+func TestScanImplicitEndTagVoidAtEOF(t *testing.T) {
+	s := New().(*Scanner)
+
+	// Step 1: Scan start tag name "img"
+	lexer := newLexer("img")
+	v := onlyValid(StartTagName)
+	if !s.Scan(lexer, v) {
+		t.Fatal("expected start tag name")
+	}
+	if lexer.ResultSymbol != ts.Symbol(StartTagName) {
+		t.Errorf("ResultSymbol = %d, want %d (StartTagName)", lexer.ResultSymbol, StartTagName)
+	}
+	if len(s.tags) != 1 || s.tags[0].Type != Img {
+		t.Fatalf("tags = %v, want [Img]", s.tags)
+	}
+
+	// Step 2: At EOF, ask for ImplicitEndTag. The scanner should detect
+	// the parent is void and emit ImplicitEndTag.
+	lexer2 := newLexer("")
+	v2 := onlyValid(ImplicitEndTag)
+	if !s.Scan(lexer2, v2) {
+		t.Fatal("expected implicit end tag for void element at EOF")
+	}
+	if lexer2.ResultSymbol != ts.Symbol(ImplicitEndTag) {
+		t.Errorf("ResultSymbol = %d, want %d (ImplicitEndTag)", lexer2.ResultSymbol, ImplicitEndTag)
+	}
+	if len(s.tags) != 0 {
+		t.Errorf("tag stack should be empty after implicit end, got %v", s.tags)
+	}
+}
+
+// TestScanImplicitEndTagVoidAfterSerialize tests that the scanner correctly
+// emits ImplicitEndTag after a serialize/deserialize roundtrip.
+func TestScanImplicitEndTagVoidAfterSerialize(t *testing.T) {
+	s := New().(*Scanner)
+
+	// Step 1: Push img tag
+	lexer := newLexer("img")
+	v := onlyValid(StartTagName)
+	if !s.Scan(lexer, v) {
+		t.Fatal("expected start tag name")
+	}
+
+	// Step 2: Serialize and deserialize (simulates parser's state management)
+	buf := make([]byte, 1024)
+	n := s.Serialize(buf)
+	t.Logf("serialized %d bytes", n)
+
+	s2 := New().(*Scanner)
+	s2.Deserialize(buf[:n])
+	t.Logf("deserialized tags: %v (len=%d)", s2.tags, len(s2.tags))
+
+	// Step 3: At EOF, ask for ImplicitEndTag
+	lexer2 := newLexer("")
+	v2 := onlyValid(ImplicitEndTag)
+	if !s2.Scan(lexer2, v2) {
+		t.Fatal("expected implicit end tag for void element after deserialize")
+	}
+	if lexer2.ResultSymbol != ts.Symbol(ImplicitEndTag) {
+		t.Errorf("ResultSymbol = %d, want %d (ImplicitEndTag)", lexer2.ResultSymbol, ImplicitEndTag)
+	}
+}
+
 func TestToUpper(t *testing.T) {
 	if toUpper('a') != 'A' {
 		t.Errorf("toUpper('a') = %c, want 'A'", toUpper('a'))

@@ -162,21 +162,36 @@ func TestHTMLParseSelfClosingTag(t *testing.T) {
 }
 
 func TestHTMLParseVoidElement(t *testing.T) {
-	t.Skip("parser timeout on void elements — likely external scanner implicit end tag issue (separate from st1)")
-	p := ts.NewParser()
-	p.SetLanguage(htmlLang())
-
-	src := "<img src=\"test.png\">"
-	ctx, cancel := context.WithTimeout(context.Background(), testTimeout())
-	defer cancel()
-	tree := p.ParseString(ctx, []byte(src))
-	if tree == nil {
-		t.Fatal("expected tree, got nil")
+	cases := []struct {
+		name string
+		src  string
+	}{
+		{"img", `<img>`},
+		{"img_attr", `<img src="test.png">`},
+		{"br", `<br>`},
+		{"hr", `<hr>`},
+		{"input", `<input type="text">`},
 	}
-	root := tree.RootNode()
-	sexp := root.String()
-	if !strings.Contains(sexp, "element") {
-		t.Errorf("expected element in: %s", sexp)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			pp := ts.NewParser()
+			pp.SetLanguage(htmlLang())
+			ctx, cancel := context.WithTimeout(context.Background(), testTimeout())
+			defer cancel()
+			tree := pp.ParseString(ctx, []byte(tc.src))
+			if tree == nil {
+				t.Fatalf("nil tree for %q", tc.src)
+			}
+			root := tree.RootNode()
+			sexp := root.String()
+			t.Logf("sexp=%s", sexp)
+			if root.Type() != "document" {
+				t.Errorf("root type = %q, want document", root.Type())
+			}
+			if !strings.Contains(sexp, "element") {
+				t.Errorf("expected element in: %s", sexp)
+			}
+		})
 	}
 }
 

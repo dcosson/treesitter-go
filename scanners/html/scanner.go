@@ -277,6 +277,7 @@ func (s *Scanner) scanImplicitEndTag(lexer *ts.Lexer) bool {
 	} else {
 		if parent != nil && parent.isVoid() {
 			s.popTag()
+			lexer.MarkEnd()
 			lexer.ResultSymbol = ts.Symbol(ImplicitEndTag)
 			return true
 		}
@@ -299,6 +300,7 @@ func (s *Scanner) scanImplicitEndTag(lexer *ts.Lexer) bool {
 		for i := len(s.tags); i > 0; i-- {
 			if s.tags[i-1].eq(&nextTag) {
 				s.popTag()
+				lexer.MarkEnd()
 				lexer.ResultSymbol = ts.Symbol(ImplicitEndTag)
 				return true
 			}
@@ -307,6 +309,7 @@ func (s *Scanner) scanImplicitEndTag(lexer *ts.Lexer) bool {
 		(!parent.canContain(&nextTag) ||
 			((parent.Type == HTML || parent.Type == Head || parent.Type == Body) && lexer.EOF())) {
 		s.popTag()
+		lexer.MarkEnd()
 		lexer.ResultSymbol = ts.Symbol(ImplicitEndTag)
 		return true
 	}
