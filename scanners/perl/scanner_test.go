@@ -1020,3 +1020,120 @@ func TestIsIDCont(t *testing.T) {
 		t.Error("-1 should not be ID cont")
 	}
 }
+
+// --- Bug fix tests ---
+
+// TestHeredocContinueAtEOF verifies that heredocContinue state at EOF
+// does not cause an infinite loop (bug xew.1).
+func TestHeredocContinueAtEOF(t *testing.T) {
+	s := New().(*Scanner)
+	var delim tspString
+	for _, ch := range "END" {
+		delim.push(ch)
+	}
+	s.addHeredoc(&delim, true, false) // interpolating heredoc
+	s.heredocState = heredocContinue
+
+	// Input ends without a newline or delimiter — previously caused infinite loop.
+	lexer := newLexerForString("some text")
+	v := onlyValid(TokenHeredocMiddle, TokenHeredocEnd)
+
+	ok := s.Scan(lexer, v)
+	if !ok {
+		t.Fatal("expected scan to return true (emit partial heredoc content)")
+	}
+	if lexer.ResultSymbol != ts.Symbol(TokenHeredocMiddle) {
+		t.Errorf("expected TokenHeredocMiddle, got %d", lexer.ResultSymbol)
+	}
+}
+
+// TestHeredocContinueEmptyAtEOF verifies heredocContinue at EOF with no
+// content returns false (not infinite loop).
+func TestHeredocContinueEmptyAtEOF(t *testing.T) {
+	s := New().(*Scanner)
+	var delim tspString
+	for _, ch := range "END" {
+		delim.push(ch)
+	}
+	s.addHeredoc(&delim, true, false)
+	s.heredocState = heredocContinue
+
+	// Empty input — nothing to emit.
+	lexer := newLexerForString("")
+	v := onlyValid(TokenHeredocMiddle, TokenHeredocEnd)
+
+	ok := s.Scan(lexer, v)
+	if ok {
+		t.Fatal("expected scan to return false for empty input in heredocContinue")
+	}
+}
+
+// TestMarkEndCalledGobbledContent verifies TokenGobbledContent calls MarkEnd.
+func TestMarkEndCalledGobbledContent(t *testing.T) {
+	lexer := newLexerForString("abc def")
+	s := New().(*Scanner)
+	v := onlyValid(TokenGobbledContent)
+
+	if !s.Scan(lexer, v) {
+		t.Fatal("expected scan to succeed")
+	}
+	if lexer.ResultSymbol != ts.Symbol(TokenGobbledContent) {
+		t.Errorf("expected TokenGobbledContent, got %d", lexer.ResultSymbol)
+	}
+}
+
+// TestMarkEndCalledNonassoc verifies TokenNonassoc calls MarkEnd.
+func TestMarkEndCalledNonassoc(t *testing.T) {
+	lexer := newLexerForString("x")
+	s := New().(*Scanner)
+	v := onlyValid(TokenNonassoc)
+
+	if !s.Scan(lexer, v) {
+		t.Fatal("expected scan to succeed")
+	}
+	if lexer.ResultSymbol != ts.Symbol(TokenNonassoc) {
+		t.Errorf("expected TokenNonassoc, got %d", lexer.ResultSymbol)
+	}
+}
+
+// TestMarkEndCalledCtrlZ verifies TokenCtrlZ calls MarkEnd.
+func TestMarkEndCalledCtrlZ(t *testing.T) {
+	lexer := newLexerForString(string(rune(26))) // Ctrl-Z
+	s := New().(*Scanner)
+	v := onlyValid(TokenCtrlZ)
+
+	if !s.Scan(lexer, v) {
+		t.Fatal("expected scan to succeed")
+	}
+	if lexer.ResultSymbol != ts.Symbol(TokenCtrlZ) {
+		t.Errorf("expected TokenCtrlZ, got %d", lexer.ResultSymbol)
+	}
+}
+
+// TestMarkEndCalledPerlySemicolon verifies PerlySemicolon calls MarkEnd.
+func TestMarkEndCalledPerlySemicolon(t *testing.T) {
+	lexer := newLexerForString("}")
+	s := New().(*Scanner)
+	v := onlyValid(PerlySemicolon)
+
+	if !s.Scan(lexer, v) {
+		t.Fatal("expected scan to succeed")
+	}
+	if lexer.ResultSymbol != ts.Symbol(PerlySemicolon) {
+		t.Errorf("expected PerlySemicolon, got %d", lexer.ResultSymbol)
+	}
+}
+
+// TestMarkEndCalledPod verifies TokenPod calls MarkEnd.
+func TestMarkEndCalledPod(t *testing.T) {
+	lexer := newLexerForString("=pod\nsome docs\n=cut\n")
+	s := New().(*Scanner)
+	v := onlyValid(TokenPod)
+
+	if !s.Scan(lexer, v) {
+		t.Fatal("expected scan to succeed")
+	}
+	if lexer.ResultSymbol != ts.Symbol(TokenPod) {
+		t.Errorf("expected TokenPod, got %d", lexer.ResultSymbol)
+	}
+}

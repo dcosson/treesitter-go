@@ -377,12 +377,14 @@ func (s *Scanner) Scan(lexer *ts.Lexer, validSymbols []bool) bool {
 		for !lexer.EOF() {
 			advance(lexer)
 		}
+		lexer.MarkEnd()
 		lexer.ResultSymbol = ts.Symbol(TokenGobbledContent)
 		return true
 	}
 
-	// TOKEN_NONASSOC: force tree-sitter to stay on error branch
+	// TOKEN_NONASSOC: force tree-sitter to stay on error branch (zero-width)
 	if !isError && validSymbols[TokenNonassoc] {
+		lexer.MarkEnd()
 		lexer.ResultSymbol = ts.Symbol(TokenNonassoc)
 		return true
 	}
@@ -444,6 +446,15 @@ func (s *Scanner) Scan(lexer *ts.Lexer, validSymbols []bool) bool {
 			// Continue case: read ahead until \n or interpolation escape
 			sawChars := false
 			for {
+				if lexer.EOF() {
+					// EOF mid-heredoc-continue: emit what we have or bail.
+					if sawChars {
+						lexer.MarkEnd()
+						lexer.ResultSymbol = ts.Symbol(TokenHeredocMiddle)
+						return true
+					}
+					return false
+				}
 				if isInterpolationEscape(c) {
 					lexer.MarkEnd()
 					break
@@ -465,8 +476,9 @@ func (s *Scanner) Scan(lexer *ts.Lexer, validSymbols []bool) bool {
 		}
 	}
 
-	// TOKEN_NO_INTERP_WHITESPACE_ZW
+	// TOKEN_NO_INTERP_WHITESPACE_ZW (zero-width)
 	if isTSPWhitespace(c) && validSymbols[TokenNoInterpWhitespaceZW] {
+		lexer.MarkEnd()
 		lexer.ResultSymbol = ts.Symbol(TokenNoInterpWhitespaceZW)
 		return true
 	}
@@ -474,10 +486,11 @@ func (s *Scanner) Scan(lexer *ts.Lexer, validSymbols []bool) bool {
 	// Skip whitespace to end of line
 	skipWsToEOL(lexer)
 
-	// TOKEN_HEREDOC_START
+	// TOKEN_HEREDOC_START (zero-width — marks start of heredoc body)
 	if validSymbols[TokenHeredocStart] {
 		if s.heredocState == heredocStart && lexer.CurrentPosition().Point.Column == 0 {
 			s.heredocState = heredocUnknown
+			lexer.MarkEnd()
 			lexer.ResultSymbol = ts.Symbol(TokenHeredocStart)
 			return true
 		}
@@ -489,8 +502,9 @@ func (s *Scanner) Scan(lexer *ts.Lexer, validSymbols []bool) bool {
 	// original whitespace character. Attribute value checks read lexer.Lookahead
 	// directly instead.
 
-	// TOKEN_ATTRIBUTE_VALUE_BEGIN
+	// TOKEN_ATTRIBUTE_VALUE_BEGIN (zero-width — lookahead found '(')
 	if !isError && validSymbols[TokenAttributeValueBegin] && lexer.Lookahead == '(' {
+		lexer.MarkEnd()
 		lexer.ResultSymbol = ts.Symbol(TokenAttributeValueBegin)
 		return true
 	}
@@ -516,6 +530,7 @@ func (s *Scanner) Scan(lexer *ts.Lexer, validSymbols []bool) bool {
 			advance(lexer)
 			c = lexer.Lookahead
 		}
+		lexer.MarkEnd()
 		lexer.ResultSymbol = ts.Symbol(TokenAttributeValue)
 		return true
 	}
@@ -527,16 +542,18 @@ func (s *Scanner) Scan(lexer *ts.Lexer, validSymbols []bool) bool {
 		c = lexer.Lookahead
 	}
 
-	// CTRL-Z
+	// CTRL-Z (zero-width — lexer hasn't consumed the character)
 	if c == 26 && validSymbols[TokenCtrlZ] {
+		lexer.MarkEnd()
 		lexer.ResultSymbol = ts.Symbol(TokenCtrlZ)
 		return true
 	}
 
-	// PERLY_SEMICOLON
+	// PERLY_SEMICOLON (zero-width — implicit semicolon before } or at EOF)
 	if validSymbols[PerlySemicolon] {
 		if c == '}' || lexer.EOF() {
 			if isError || !validSymbols[TokenBraceEndZW] {
+				lexer.MarkEnd()
 				lexer.ResultSymbol = ts.Symbol(PerlySemicolon)
 				return true
 			}
@@ -681,6 +698,7 @@ func (s *Scanner) Scan(lexer *ts.Lexer, validSymbols []bool) bool {
 					c = lexer.Lookahead
 				}
 			}
+			lexer.MarkEnd()
 			lexer.ResultSymbol = ts.Symbol(TokenPod)
 			return true
 		}
@@ -877,6 +895,7 @@ func (s *Scanner) Scan(lexer *ts.Lexer, validSymbols []bool) bool {
 		}
 
 		if valid {
+			lexer.MarkEnd()
 			if isQQ {
 				lexer.ResultSymbol = ts.Symbol(TokenQQStringContent)
 			} else {
