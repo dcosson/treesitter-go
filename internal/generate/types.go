@@ -159,6 +159,10 @@ type LexTransition struct {
 	High    rune
 	// Negated match: "lookahead != X"
 	IsNegated bool
+	// Compound negation: "lookahead != 'a' && lookahead != 'b' && lookahead != 0"
+	// When set with IsNegated=true, advance on anything NOT in this set.
+	// Char 0 in the set means "also exclude EOF".
+	CharExclusions []rune
 
 	// Target state (used with ADVANCE/SKIP)
 	Target int

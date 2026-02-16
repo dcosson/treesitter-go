@@ -302,6 +302,87 @@ func TestExtractSmallParseTable(t *testing.T) {
 	}
 }
 
+func TestParseIfTransitionsCompoundNegation(t *testing.T) {
+	// Simulates C code: if (lookahead != '<' && lookahead != '&' && lookahead != 0) ADVANCE(76);
+	lines := []string{
+		"if (lookahead != '<' &&",
+		"    lookahead != '&' &&",
+		"    lookahead != 0) ADVANCE(76);",
+	}
+	idx := 0
+	result := parseIfTransitions(lines[0], lines, &idx)
+	if len(result) != 1 {
+		t.Fatalf("expected 1 transition, got %d", len(result))
+	}
+	tr := result[0]
+	if !tr.IsNegated {
+		t.Error("expected IsNegated=true")
+	}
+	if tr.Target != 76 {
+		t.Errorf("Target = %d, want 76", tr.Target)
+	}
+	if len(tr.CharExclusions) != 3 {
+		t.Fatalf("CharExclusions length = %d, want 3", len(tr.CharExclusions))
+	}
+	// Check exclusions contain '<', '&', and 0 (EOF).
+	exclusionSet := make(map[rune]bool)
+	for _, ex := range tr.CharExclusions {
+		exclusionSet[ex] = true
+	}
+	if !exclusionSet['<'] {
+		t.Error("missing '<' in CharExclusions")
+	}
+	if !exclusionSet['&'] {
+		t.Error("missing '&' in CharExclusions")
+	}
+	if !exclusionSet[0] {
+		t.Error("missing 0 (EOF) in CharExclusions")
+	}
+}
+
+func TestParseIfTransitionsSimpleNegation(t *testing.T) {
+	// Simple: if (lookahead != 0) ADVANCE(5);
+	lines := []string{"if (lookahead != 0) ADVANCE(5);"}
+	idx := 0
+	result := parseIfTransitions(lines[0], lines, &idx)
+	if len(result) != 1 {
+		t.Fatalf("expected 1 transition, got %d", len(result))
+	}
+	tr := result[0]
+	if !tr.IsNegated {
+		t.Error("expected IsNegated=true")
+	}
+	if tr.Char != 0 {
+		t.Errorf("Char = %d, want 0", tr.Char)
+	}
+	if len(tr.CharExclusions) != 0 {
+		t.Errorf("CharExclusions should be empty for simple negation, got %v", tr.CharExclusions)
+	}
+	if tr.Target != 5 {
+		t.Errorf("Target = %d, want 5", tr.Target)
+	}
+}
+
+func TestParseIfTransitionsSingleCharNegation(t *testing.T) {
+	// Single char: if (lookahead != '/') ADVANCE(10);
+	lines := []string{"if (lookahead != '/') ADVANCE(10);"}
+	idx := 0
+	result := parseIfTransitions(lines[0], lines, &idx)
+	if len(result) != 1 {
+		t.Fatalf("expected 1 transition, got %d", len(result))
+	}
+	tr := result[0]
+	if !tr.IsNegated {
+		t.Error("expected IsNegated=true")
+	}
+	if tr.Char != '/' {
+		t.Errorf("Char = %c, want '/'", tr.Char)
+	}
+	if len(tr.CharExclusions) != 0 {
+		t.Errorf("CharExclusions should be empty for single negation, got %v", tr.CharExclusions)
+	}
+}
+
 func TestExtractPrimaryStateIDs(t *testing.T) {
 	src := testParserC(t)
 	g, err := ExtractGrammar(src)

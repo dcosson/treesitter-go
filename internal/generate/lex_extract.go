@@ -279,22 +279,41 @@ func parseIfTransitions(line string, lines []string, idx *int) []LexTransition {
 
 	base := LexTransition{Target: target, Skip: skip}
 
-	// Negated: if (lookahead != 0)
-	if strings.Contains(fullLine, "lookahead != 0") && !strings.Contains(fullLine, "||") {
-		t := base
-		t.IsNegated = true
-		t.Char = 0
-		return []LexTransition{t}
-	}
+	// Negated conditions: lookahead != X, possibly &&-chained.
+	// Examples:
+	//   if (lookahead != 0)                       → simple EOF exclusion (default)
+	//   if (lookahead != '<')                      → single char exclusion
+	//   if (lookahead != '<' && lookahead != 0)    → compound: exclude '<' and EOF
+	//   if (lookahead != 'a' && lookahead != 'b')  → compound: exclude 'a' and 'b'
+	if strings.Contains(fullLine, "lookahead !=") && !strings.Contains(fullLine, "||") &&
+		!strings.Contains(fullLine, "lookahead ==") {
 
-	// Complex negation: if (lookahead != 'c')
-	if strings.Contains(fullLine, "lookahead !=") && !strings.Contains(fullLine, "||") {
-		re := regexp.MustCompile(`lookahead\s*!=\s*'([^']*)'`)
-		m := re.FindStringSubmatch(fullLine)
-		if m != nil {
+		// Extract all != conditions from the line.
+		neqCharRe := regexp.MustCompile(`lookahead\s*!=\s*'([^']*)'`)
+		neqZeroRe := regexp.MustCompile(`lookahead\s*!=\s*0[^x]|lookahead\s*!=\s*0\s*[)&]|lookahead\s*!=\s*0\s*$`)
+		charMatches := neqCharRe.FindAllStringSubmatch(fullLine, -1)
+		hasZeroExclusion := neqZeroRe.MatchString(fullLine)
+
+		var exclusions []rune
+		for _, m := range charMatches {
+			exclusions = append(exclusions, parseCChar("'"+m[1]+"'"))
+		}
+		if hasZeroExclusion {
+			exclusions = append(exclusions, 0)
+		}
+
+		if len(exclusions) == 1 {
+			// Simple single negation.
 			t := base
 			t.IsNegated = true
-			t.Char = parseCChar("'" + m[1] + "'")
+			t.Char = exclusions[0]
+			return []LexTransition{t}
+		}
+		if len(exclusions) > 1 {
+			// Compound negation: exclude all chars in the set.
+			t := base
+			t.IsNegated = true
+			t.CharExclusions = exclusions
 			return []LexTransition{t}
 		}
 	}
@@ -346,12 +365,15 @@ func parseIfTransitions(line string, lines []string, idx *int) []LexTransition {
 }
 
 // detectDefault detects if the last transition is a catch-all default.
+// A simple "lookahead != 0" becomes a plain default (advance on anything non-EOF).
+// A compound negation like "lookahead != '<' && lookahead != 0" stays as a
+// transition with CharExclusions so codegen can emit the proper compound check.
 func detectDefault(state *LexState) {
 	if len(state.Transitions) == 0 {
 		return
 	}
 	last := &state.Transitions[len(state.Transitions)-1]
-	if last.IsNegated && last.Char == 0 {
+	if last.IsNegated && last.Char == 0 && len(last.CharExclusions) == 0 {
 		state.HasDefault = true
 		state.DefaultTarget = last.Target
 		state.DefaultSkip = last.Skip

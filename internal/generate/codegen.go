@@ -431,9 +431,20 @@ func writeLexFunction(b *strings.Builder, g *Grammar, isKeyword bool) {
 				if t.IsRange {
 					fmt.Fprintf(b, "\t\t\tif lookahead >= %s && lookahead <= %s {\n",
 						goCharLit(t.Low), goCharLit(t.High))
+				} else if t.IsNegated && len(t.CharExclusions) > 0 {
+					// Compound negation: exclude multiple chars/EOF.
+					var conditions []string
+					for _, ex := range t.CharExclusions {
+						if ex == 0 {
+							conditions = append(conditions, "!eof")
+						} else {
+							conditions = append(conditions, fmt.Sprintf("lookahead != %s", goCharLit(ex)))
+						}
+					}
+					fmt.Fprintf(b, "\t\t\tif %s {\n", strings.Join(conditions, " && "))
 				} else if t.IsNegated {
 					if t.Char == 0 {
-						fmt.Fprintf(b, "\t\t\tif lookahead != 0 {\n")
+						fmt.Fprintf(b, "\t\t\tif !eof {\n")
 					} else {
 						fmt.Fprintf(b, "\t\t\tif lookahead != %s {\n", goCharLit(t.Char))
 					}

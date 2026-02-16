@@ -108,7 +108,6 @@ func TestCSSParseMediaQuery(t *testing.T) {
 // --- HTML Integration Tests ---
 
 func TestHTMLParseSimpleElement(t *testing.T) {
-	t.Skip("known bug: HTML lex DFA state 76 doesn't stop at '<', consuming closing tags as text (bead st1)")
 	p := ts.NewParser()
 	p.SetLanguage(htmlLang())
 
@@ -127,7 +126,6 @@ func TestHTMLParseSimpleElement(t *testing.T) {
 }
 
 func TestHTMLParseNestedElements(t *testing.T) {
-	t.Skip("known bug: HTML lex DFA state 76 doesn't stop at '<', consuming closing tags as text (bead st1)")
 	p := ts.NewParser()
 	p.SetLanguage(htmlLang())
 
@@ -146,7 +144,6 @@ func TestHTMLParseNestedElements(t *testing.T) {
 }
 
 func TestHTMLParseSelfClosingTag(t *testing.T) {
-	t.Skip("known bug: HTML lex DFA extraction issue (bead st1)")
 	p := ts.NewParser()
 	p.SetLanguage(htmlLang())
 
@@ -165,7 +162,7 @@ func TestHTMLParseSelfClosingTag(t *testing.T) {
 }
 
 func TestHTMLParseVoidElement(t *testing.T) {
-	t.Skip("known bug: HTML lex DFA extraction issue (bead st1)")
+	t.Skip("parser timeout on void elements — likely external scanner implicit end tag issue (separate from st1)")
 	p := ts.NewParser()
 	p.SetLanguage(htmlLang())
 
