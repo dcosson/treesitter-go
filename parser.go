@@ -388,12 +388,15 @@ func (p *Parser) lexToken(version StackVersion, state StateID, position Length) 
 
 		// If the result is the keyword capture token, try keyword lex.
 		// Keyword lex always starts at state 0 (initial keyword DFA state).
+		// The keyword match is only accepted if the keyword lex consumed the
+		// ENTIRE identifier text (current position == original token end).
 		if found && p.language.KeywordLexFn != nil && p.lexer.ResultSymbol == p.language.KeywordCaptureToken {
 			keywordEndPos := p.lexer.TokenEndPosition
 			origSymbol := p.lexer.ResultSymbol
 
 			p.lexer.Start(position)
-			if p.language.KeywordLexFn(p.lexer, 0) {
+			if p.language.KeywordLexFn(p.lexer, 0) &&
+				p.lexer.CurrentPosition() == keywordEndPos {
 				p.lexer.TokenEndPosition = keywordEndPos
 			} else {
 				p.lexer.ResultSymbol = origSymbol
