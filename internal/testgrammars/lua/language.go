@@ -2830,6 +2830,7 @@ func setContains(ranges []characterRange, c rune) bool {
 }
 
 func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
+	result := false
 	lookahead := lexer.Lookahead
 	eof := lexer.EOF()
 	_ = eof
@@ -3061,7 +3062,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 1:
 			if lookahead == '"' {
 				state = 41
@@ -3105,7 +3106,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 2:
 			if lookahead == '\'' {
 				state = 42
@@ -3149,7 +3150,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 3:
 			if lookahead == '.' {
 				state = 4
@@ -3165,7 +3166,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 4:
 			if lookahead == '.' {
 				state = 53
@@ -3174,7 +3175,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 5:
 			if lookahead == '.' {
 				state = 15
@@ -3204,7 +3205,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 6:
 			if lookahead == 'u' {
 				state = 7
@@ -3241,7 +3242,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 7:
 			if lookahead == '{' {
 				state = 16
@@ -3250,7 +3251,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 8:
 			if lookahead == '}' {
 				state = 49
@@ -3280,7 +3281,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 9:
 			if lookahead == '+' {
 				state = 13
@@ -3303,7 +3304,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 10:
 			if lookahead == 'L' {
 				state = 33
@@ -3319,7 +3320,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 11:
 			if lookahead == 'L' {
 				state = 10
@@ -3335,7 +3336,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 12:
 			if lookahead == '0' {
 				state = 38
@@ -3351,7 +3352,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 13:
 			if lookahead >= '0' && lookahead <= '9' {
 				state = 40
@@ -3360,7 +3361,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 14:
 			if lookahead >= '0' && lookahead <= '9' {
 				state = 49
@@ -3383,7 +3384,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 15:
 			if lookahead >= '0' && lookahead <= '9' {
 				state = 39
@@ -3406,7 +3407,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 16:
 			if lookahead >= '0' && lookahead <= '9' {
 				state = 8
@@ -3429,7 +3430,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 17:
 			if lookahead >= '0' && lookahead <= '9' {
 				state = 14
@@ -3452,7 +3453,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 18:
 			if eof {
 				state = 21
@@ -3671,7 +3672,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 19:
 			if eof {
 				state = 21
@@ -3806,7 +3807,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 20:
 			if eof {
 				state = 21
@@ -4011,12 +4012,13 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 21:
-			return false
+			return result
 		case 22:
 			lexer.MarkEnd()
 			lexer.AcceptToken(2)
+			result = true
 			if !eof && lookahead != '\n' {
 				state = 22
 				lexer.Advance(false)
@@ -4024,14 +4026,16 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return true
+			return result
 		case 23:
 			lexer.MarkEnd()
 			lexer.AcceptToken(4)
-			return true
+			result = true
+			return result
 		case 24:
 			lexer.MarkEnd()
 			lexer.AcceptToken(5)
+			result = true
 			if lookahead == '=' {
 				state = 61
 				lexer.Advance(false)
@@ -4039,18 +4043,21 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return true
+			return result
 		case 25:
 			lexer.MarkEnd()
 			lexer.AcceptToken(6)
-			return true
+			result = true
+			return result
 		case 26:
 			lexer.MarkEnd()
 			lexer.AcceptToken(7)
-			return true
+			result = true
+			return result
 		case 27:
 			lexer.MarkEnd()
 			lexer.AcceptToken(23)
+			result = true
 			if lookahead == '.' {
 				state = 76
 				lexer.Advance(false)
@@ -4058,10 +4065,11 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return true
+			return result
 		case 28:
 			lexer.MarkEnd()
 			lexer.AcceptToken(23)
+			result = true
 			if lookahead == '.' {
 				state = 76
 				lexer.Advance(false)
@@ -4076,10 +4084,11 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return true
+			return result
 		case 29:
 			lexer.MarkEnd()
 			lexer.AcceptToken(24)
+			result = true
 			if lookahead == ':' {
 				state = 26
 				lexer.Advance(false)
@@ -4087,10 +4096,11 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return true
+			return result
 		case 30:
 			lexer.MarkEnd()
 			lexer.AcceptToken(25)
+			result = true
 			if lookahead == '<' {
 				state = 68
 				lexer.Advance(false)
@@ -4105,14 +4115,16 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return true
+			return result
 		case 31:
 			lexer.MarkEnd()
 			lexer.AcceptToken(26)
-			return true
+			result = true
+			return result
 		case 32:
 			lexer.MarkEnd()
 			lexer.AcceptToken(26)
+			result = true
 			if lookahead == '=' {
 				state = 63
 				lexer.Advance(false)
@@ -4127,14 +4139,16 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return true
+			return result
 		case 33:
 			lexer.MarkEnd()
 			lexer.AcceptToken(30)
-			return true
+			result = true
+			return result
 		case 34:
 			lexer.MarkEnd()
 			lexer.AcceptToken(30)
+			result = true
 			if lookahead == '.' {
 				state = 37
 				lexer.Advance(false)
@@ -4233,10 +4247,11 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return true
+			return result
 		case 35:
 			lexer.MarkEnd()
 			lexer.AcceptToken(30)
+			result = true
 			if lookahead == '.' {
 				state = 37
 				lexer.Advance(false)
@@ -4307,10 +4322,11 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return true
+			return result
 		case 36:
 			lexer.MarkEnd()
 			lexer.AcceptToken(30)
+			result = true
 			if lookahead == '.' {
 				state = 39
 				lexer.Advance(false)
@@ -4395,10 +4411,11 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return true
+			return result
 		case 37:
 			lexer.MarkEnd()
 			lexer.AcceptToken(30)
+			result = true
 			if lookahead == 'E' {
 				state = 9
 				lexer.Advance(false)
@@ -4434,10 +4451,11 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return true
+			return result
 		case 38:
 			lexer.MarkEnd()
 			lexer.AcceptToken(30)
+			result = true
 			if lookahead == 'I' {
 				state = 33
 				lexer.Advance(false)
@@ -4494,10 +4512,11 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return true
+			return result
 		case 39:
 			lexer.MarkEnd()
 			lexer.AcceptToken(30)
+			result = true
 			if lookahead == 'I' {
 				state = 33
 				lexer.Advance(false)
@@ -4547,10 +4566,11 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return true
+			return result
 		case 40:
 			lexer.MarkEnd()
 			lexer.AcceptToken(30)
+			result = true
 			if lookahead == 'I' {
 				state = 33
 				lexer.Advance(false)
@@ -4572,18 +4592,21 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return true
+			return result
 		case 41:
 			lexer.MarkEnd()
 			lexer.AcceptToken(31)
-			return true
+			result = true
+			return result
 		case 42:
 			lexer.MarkEnd()
 			lexer.AcceptToken(32)
-			return true
+			result = true
+			return result
 		case 43:
 			lexer.MarkEnd()
 			lexer.AcceptToken(33)
+			result = true
 			if lookahead == '-' {
 				state = 44
 				lexer.Advance(false)
@@ -4612,10 +4635,11 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return true
+			return result
 		case 44:
 			lexer.MarkEnd()
 			lexer.AcceptToken(33)
+			result = true
 			if lookahead == '-' {
 				state = 45
 				lexer.Advance(false)
@@ -4630,10 +4654,11 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return true
+			return result
 		case 45:
 			lexer.MarkEnd()
 			lexer.AcceptToken(33)
+			result = true
 			if !eof && lookahead != '"' && lookahead != '\\' {
 				state = 45
 				lexer.Advance(false)
@@ -4641,10 +4666,11 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return true
+			return result
 		case 46:
 			lexer.MarkEnd()
 			lexer.AcceptToken(34)
+			result = true
 			if lookahead == '-' {
 				state = 47
 				lexer.Advance(false)
@@ -4673,10 +4699,11 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return true
+			return result
 		case 47:
 			lexer.MarkEnd()
 			lexer.AcceptToken(34)
+			result = true
 			if lookahead == '-' {
 				state = 48
 				lexer.Advance(false)
@@ -4691,10 +4718,11 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return true
+			return result
 		case 48:
 			lexer.MarkEnd()
 			lexer.AcceptToken(34)
+			result = true
 			if !eof && lookahead != '\'' && lookahead != '\\' {
 				state = 48
 				lexer.Advance(false)
@@ -4702,14 +4730,16 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return true
+			return result
 		case 49:
 			lexer.MarkEnd()
 			lexer.AcceptToken(35)
-			return true
+			result = true
+			return result
 		case 50:
 			lexer.MarkEnd()
 			lexer.AcceptToken(35)
+			result = true
 			if lookahead >= '\t' && lookahead <= '\r' {
 				state = 50
 				lexer.Advance(false)
@@ -4724,10 +4754,11 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return true
+			return result
 		case 51:
 			lexer.MarkEnd()
 			lexer.AcceptToken(35)
+			result = true
 			if lookahead >= '0' && lookahead <= '9' {
 				state = 49
 				lexer.Advance(false)
@@ -4735,10 +4766,11 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return true
+			return result
 		case 52:
 			lexer.MarkEnd()
 			lexer.AcceptToken(35)
+			result = true
 			if lookahead >= '0' && lookahead <= '9' {
 				state = 51
 				lexer.Advance(false)
@@ -4746,62 +4778,76 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return true
+			return result
 		case 53:
 			lexer.MarkEnd()
 			lexer.AcceptToken(36)
-			return true
+			result = true
+			return result
 		case 54:
 			lexer.MarkEnd()
 			lexer.AcceptToken(37)
-			return true
+			result = true
+			return result
 		case 55:
 			lexer.MarkEnd()
 			lexer.AcceptToken(38)
-			return true
+			result = true
+			return result
 		case 56:
 			lexer.MarkEnd()
 			lexer.AcceptToken(39)
-			return true
+			result = true
+			return result
 		case 57:
 			lexer.MarkEnd()
 			lexer.AcceptToken(40)
-			return true
+			result = true
+			return result
 		case 58:
 			lexer.MarkEnd()
 			lexer.AcceptToken(41)
-			return true
+			result = true
+			return result
 		case 59:
 			lexer.MarkEnd()
 			lexer.AcceptToken(42)
-			return true
+			result = true
+			return result
 		case 60:
 			lexer.MarkEnd()
 			lexer.AcceptToken(45)
-			return true
+			result = true
+			return result
 		case 61:
 			lexer.MarkEnd()
 			lexer.AcceptToken(46)
-			return true
+			result = true
+			return result
 		case 62:
 			lexer.MarkEnd()
 			lexer.AcceptToken(47)
-			return true
+			result = true
+			return result
 		case 63:
 			lexer.MarkEnd()
 			lexer.AcceptToken(48)
-			return true
+			result = true
+			return result
 		case 64:
 			lexer.MarkEnd()
 			lexer.AcceptToken(49)
-			return true
+			result = true
+			return result
 		case 65:
 			lexer.MarkEnd()
 			lexer.AcceptToken(50)
-			return true
+			result = true
+			return result
 		case 66:
 			lexer.MarkEnd()
 			lexer.AcceptToken(50)
+			result = true
 			if lookahead == '=' {
 				state = 62
 				lexer.Advance(false)
@@ -4809,26 +4855,31 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return true
+			return result
 		case 67:
 			lexer.MarkEnd()
 			lexer.AcceptToken(51)
-			return true
+			result = true
+			return result
 		case 68:
 			lexer.MarkEnd()
 			lexer.AcceptToken(52)
-			return true
+			result = true
+			return result
 		case 69:
 			lexer.MarkEnd()
 			lexer.AcceptToken(53)
-			return true
+			result = true
+			return result
 		case 70:
 			lexer.MarkEnd()
 			lexer.AcceptToken(54)
-			return true
+			result = true
+			return result
 		case 71:
 			lexer.MarkEnd()
 			lexer.AcceptToken(55)
+			result = true
 			if lookahead == '-' {
 				state = 80
 				lexer.Advance(false)
@@ -4836,14 +4887,16 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return true
+			return result
 		case 72:
 			lexer.MarkEnd()
 			lexer.AcceptToken(56)
-			return true
+			result = true
+			return result
 		case 73:
 			lexer.MarkEnd()
 			lexer.AcceptToken(57)
+			result = true
 			if lookahead == '/' {
 				state = 74
 				lexer.Advance(false)
@@ -4851,30 +4904,36 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return true
+			return result
 		case 74:
 			lexer.MarkEnd()
 			lexer.AcceptToken(58)
-			return true
+			result = true
+			return result
 		case 75:
 			lexer.MarkEnd()
 			lexer.AcceptToken(59)
-			return true
+			result = true
+			return result
 		case 76:
 			lexer.MarkEnd()
 			lexer.AcceptToken(60)
-			return true
+			result = true
+			return result
 		case 77:
 			lexer.MarkEnd()
 			lexer.AcceptToken(61)
-			return true
+			result = true
+			return result
 		case 78:
 			lexer.MarkEnd()
 			lexer.AcceptToken(63)
-			return true
+			result = true
+			return result
 		case 79:
 			lexer.MarkEnd()
 			lexer.AcceptToken(1)
+			result = true
 			if lookahead > ' ' && lookahead != '"' && lookahead != '#' && (lookahead < '%' || lookahead > '/') && (lookahead < ':' || lookahead > '>') && (lookahead < '[' || lookahead > '^') {
 				state = 79
 				lexer.Advance(false)
@@ -4882,14 +4941,16 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return true
+			return result
 		case 80:
 			lexer.MarkEnd()
 			lexer.AcceptToken(64)
-			return true
+			result = true
+			return result
 		case 81:
 			lexer.MarkEnd()
 			lexer.AcceptToken(64)
+			result = true
 			if !eof && lookahead != '\n' && lookahead != '\r' {
 				state = 84
 				lexer.Advance(false)
@@ -4897,10 +4958,11 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return true
+			return result
 		case 82:
 			lexer.MarkEnd()
 			lexer.AcceptToken(65)
+			result = true
 			if lookahead == '-' {
 				state = 83
 				lexer.Advance(false)
@@ -4943,10 +5005,11 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return true
+			return result
 		case 83:
 			lexer.MarkEnd()
 			lexer.AcceptToken(65)
+			result = true
 			if lookahead == '-' {
 				state = 81
 				lexer.Advance(false)
@@ -4961,10 +5024,11 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return true
+			return result
 		case 84:
 			lexer.MarkEnd()
 			lexer.AcceptToken(65)
+			result = true
 			if !eof && lookahead != '\n' && lookahead != '\r' {
 				state = 84
 				lexer.Advance(false)
@@ -4972,7 +5036,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return true
+			return result
 		default:
 			return false
 		}
@@ -4980,6 +5044,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 }
 
 func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
+	result := false
 	lookahead := lexer.Lookahead
 	eof := lexer.EOF()
 	_ = eof
@@ -5099,7 +5164,7 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 1:
 			if lookahead == 'n' {
 				state = 15
@@ -5108,7 +5173,7 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 2:
 			if lookahead == 'r' {
 				state = 16
@@ -5117,7 +5182,7 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 3:
 			if lookahead == 'o' {
 				state = 17
@@ -5126,7 +5191,7 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 4:
 			if lookahead == 'l' {
 				state = 18
@@ -5142,7 +5207,7 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 5:
 			if lookahead == 'a' {
 				state = 20
@@ -5165,7 +5230,7 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 6:
 			if lookahead == 'o' {
 				state = 23
@@ -5174,7 +5239,7 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 7:
 			if lookahead == 'f' {
 				state = 24
@@ -5190,7 +5255,7 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 8:
 			if lookahead == 'o' {
 				state = 26
@@ -5199,7 +5264,7 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 9:
 			if lookahead == 'i' {
 				state = 27
@@ -5215,7 +5280,7 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 10:
 			if lookahead == 'r' {
 				state = 29
@@ -5224,7 +5289,7 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 11:
 			if lookahead == 'e' {
 				state = 30
@@ -5233,7 +5298,7 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 12:
 			if lookahead == 'h' {
 				state = 31
@@ -5249,7 +5314,7 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 13:
 			if lookahead == 'n' {
 				state = 33
@@ -5258,7 +5323,7 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 14:
 			if lookahead == 'h' {
 				state = 34
@@ -5267,7 +5332,7 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 15:
 			if lookahead == 'd' {
 				state = 35
@@ -5276,7 +5341,7 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 16:
 			if lookahead == 'e' {
 				state = 36
@@ -5285,11 +5350,12 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 17:
 			lexer.MarkEnd()
 			lexer.AcceptToken(10)
-			return true
+			result = true
+			return result
 		case 18:
 			if lookahead == 's' {
 				state = 37
@@ -5298,7 +5364,7 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 19:
 			if lookahead == 'd' {
 				state = 38
@@ -5307,7 +5373,7 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 20:
 			if lookahead == 'l' {
 				state = 39
@@ -5316,7 +5382,7 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 21:
 			if lookahead == 'r' {
 				state = 40
@@ -5325,7 +5391,7 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 22:
 			if lookahead == 'n' {
 				state = 41
@@ -5334,7 +5400,7 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 23:
 			if lookahead == 't' {
 				state = 42
@@ -5343,15 +5409,17 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 24:
 			lexer.MarkEnd()
 			lexer.AcceptToken(15)
-			return true
+			result = true
+			return result
 		case 25:
 			lexer.MarkEnd()
 			lexer.AcceptToken(20)
-			return true
+			result = true
+			return result
 		case 26:
 			if lookahead == 'c' {
 				state = 43
@@ -5360,7 +5428,7 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 27:
 			if lookahead == 'l' {
 				state = 44
@@ -5369,7 +5437,7 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 28:
 			if lookahead == 't' {
 				state = 45
@@ -5378,11 +5446,12 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 29:
 			lexer.MarkEnd()
 			lexer.AcceptToken(43)
-			return true
+			result = true
+			return result
 		case 30:
 			if lookahead == 'p' {
 				state = 46
@@ -5398,7 +5467,7 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 31:
 			if lookahead == 'e' {
 				state = 48
@@ -5407,7 +5476,7 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 32:
 			if lookahead == 'u' {
 				state = 49
@@ -5416,7 +5485,7 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 33:
 			if lookahead == 't' {
 				state = 50
@@ -5425,7 +5494,7 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 34:
 			if lookahead == 'i' {
 				state = 51
@@ -5434,11 +5503,12 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 35:
 			lexer.MarkEnd()
 			lexer.AcceptToken(44)
-			return true
+			result = true
+			return result
 		case 36:
 			if lookahead == 'a' {
 				state = 52
@@ -5447,7 +5517,7 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 37:
 			if lookahead == 'e' {
 				state = 53
@@ -5456,11 +5526,12 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 38:
 			lexer.MarkEnd()
 			lexer.AcceptToken(11)
-			return true
+			result = true
+			return result
 		case 39:
 			if lookahead == 's' {
 				state = 54
@@ -5469,11 +5540,12 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 40:
 			lexer.MarkEnd()
 			lexer.AcceptToken(19)
-			return true
+			result = true
+			return result
 		case 41:
 			if lookahead == 'c' {
 				state = 55
@@ -5482,7 +5554,7 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 42:
 			if lookahead == 'o' {
 				state = 56
@@ -5491,7 +5563,7 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 43:
 			if lookahead == 'a' {
 				state = 57
@@ -5500,15 +5572,17 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 44:
 			lexer.MarkEnd()
 			lexer.AcceptToken(27)
-			return true
+			result = true
+			return result
 		case 45:
 			lexer.MarkEnd()
 			lexer.AcceptToken(62)
-			return true
+			result = true
+			return result
 		case 46:
 			if lookahead == 'e' {
 				state = 58
@@ -5517,7 +5591,7 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 47:
 			if lookahead == 'u' {
 				state = 59
@@ -5526,7 +5600,7 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 48:
 			if lookahead == 'n' {
 				state = 60
@@ -5535,7 +5609,7 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 49:
 			if lookahead == 'e' {
 				state = 61
@@ -5544,7 +5618,7 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 50:
 			if lookahead == 'i' {
 				state = 62
@@ -5553,7 +5627,7 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 51:
 			if lookahead == 'l' {
 				state = 63
@@ -5562,7 +5636,7 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 52:
 			if lookahead == 'k' {
 				state = 64
@@ -5571,10 +5645,11 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 53:
 			lexer.MarkEnd()
 			lexer.AcceptToken(18)
+			result = true
 			if lookahead == 'i' {
 				state = 65
 				lexer.Advance(false)
@@ -5582,7 +5657,7 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return true
+			return result
 		case 54:
 			if lookahead == 'e' {
 				state = 66
@@ -5591,7 +5666,7 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 55:
 			if lookahead == 't' {
 				state = 67
@@ -5600,11 +5675,12 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 56:
 			lexer.MarkEnd()
 			lexer.AcceptToken(9)
-			return true
+			result = true
+			return result
 		case 57:
 			if lookahead == 'l' {
 				state = 68
@@ -5613,7 +5689,7 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 58:
 			if lookahead == 'a' {
 				state = 69
@@ -5622,7 +5698,7 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 59:
 			if lookahead == 'r' {
 				state = 70
@@ -5631,15 +5707,17 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 60:
 			lexer.MarkEnd()
 			lexer.AcceptToken(16)
-			return true
+			result = true
+			return result
 		case 61:
 			lexer.MarkEnd()
 			lexer.AcceptToken(29)
-			return true
+			result = true
+			return result
 		case 62:
 			if lookahead == 'l' {
 				state = 71
@@ -5648,7 +5726,7 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 63:
 			if lookahead == 'e' {
 				state = 72
@@ -5657,11 +5735,12 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 64:
 			lexer.MarkEnd()
 			lexer.AcceptToken(8)
-			return true
+			result = true
+			return result
 		case 65:
 			if lookahead == 'f' {
 				state = 73
@@ -5670,11 +5749,12 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 66:
 			lexer.MarkEnd()
 			lexer.AcceptToken(28)
-			return true
+			result = true
+			return result
 		case 67:
 			if lookahead == 'i' {
 				state = 74
@@ -5683,11 +5763,12 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 68:
 			lexer.MarkEnd()
 			lexer.AcceptToken(22)
-			return true
+			result = true
+			return result
 		case 69:
 			if lookahead == 't' {
 				state = 75
@@ -5696,7 +5777,7 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 70:
 			if lookahead == 'n' {
 				state = 76
@@ -5705,19 +5786,22 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 71:
 			lexer.MarkEnd()
 			lexer.AcceptToken(14)
-			return true
+			result = true
+			return result
 		case 72:
 			lexer.MarkEnd()
 			lexer.AcceptToken(12)
-			return true
+			result = true
+			return result
 		case 73:
 			lexer.MarkEnd()
 			lexer.AcceptToken(17)
-			return true
+			result = true
+			return result
 		case 74:
 			if lookahead == 'o' {
 				state = 77
@@ -5726,15 +5810,17 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 75:
 			lexer.MarkEnd()
 			lexer.AcceptToken(13)
-			return true
+			result = true
+			return result
 		case 76:
 			lexer.MarkEnd()
 			lexer.AcceptToken(3)
-			return true
+			result = true
+			return result
 		case 77:
 			if lookahead == 'n' {
 				state = 78
@@ -5743,11 +5829,12 @@ func tsLexKeywords(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			return false
+			return result
 		case 78:
 			lexer.MarkEnd()
 			lexer.AcceptToken(21)
-			return true
+			result = true
+			return result
 		default:
 			return false
 		}

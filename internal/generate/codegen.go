@@ -422,6 +422,7 @@ func writeLexFunction(b *strings.Builder, g *Grammar, isKeyword bool) {
 	}
 
 	fmt.Fprintf(b, "func %s(lexer *ts.Lexer, state ts.StateID) bool {\n", funcName)
+	fmt.Fprintf(b, "\tresult := false\n")
 	fmt.Fprintf(b, "\tlookahead := lexer.Lookahead\n")
 	fmt.Fprintf(b, "\teof := lexer.EOF()\n")
 	fmt.Fprintf(b, "\t_ = eof\n\n")
@@ -432,9 +433,13 @@ func writeLexFunction(b *strings.Builder, g *Grammar, isKeyword bool) {
 		fmt.Fprintf(b, "\t\tcase %d:\n", s.ID)
 
 		// Accept token if this is an accepting state.
+		// Like C tree-sitter's ACCEPT_TOKEN macro, this sets result=true
+		// so that END_STATE (return result) returns true even if later
+		// states don't themselves accept.
 		if s.AcceptToken != 0 {
 			fmt.Fprintf(b, "\t\t\tlexer.MarkEnd()\n")
 			fmt.Fprintf(b, "\t\t\tlexer.AcceptToken(%d)\n", s.AcceptToken)
+			fmt.Fprintf(b, "\t\t\tresult = true\n")
 		}
 
 		// EOF check.
@@ -532,12 +537,10 @@ func writeLexFunction(b *strings.Builder, g *Grammar, isKeyword bool) {
 			fmt.Fprintf(b, "\t\t\t}\n")
 		}
 
-		// Return.
-		if s.AcceptToken != 0 {
-			fmt.Fprintf(b, "\t\t\treturn true\n")
-		} else {
-			fmt.Fprintf(b, "\t\t\treturn false\n")
-		}
+		// END_STATE: return result (like C tree-sitter's END_STATE() macro).
+		// If AcceptToken was called in this state, result is already true.
+		// If a prior state called AcceptToken, result carries forward.
+		fmt.Fprintf(b, "\t\t\treturn result\n")
 	}
 
 	fmt.Fprintf(b, "\t\tdefault:\n")
