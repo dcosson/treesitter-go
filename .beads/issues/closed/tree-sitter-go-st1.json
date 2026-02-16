@@ -1,7 +1,7 @@
 {
   "id": "tree-sitter-go-st1",
   "title": "HTML lex DFA extraction bug: state 76 doesn't stop at '\u003c'",
-  "description": "## Root Cause\n\nThe `parseIfTransitions` function in `internal/generate/lex_extract.go` (lines 252-346) cannot handle **compound AND negation** conditions from the C parser.\n\n### C Parser State 76 (HTML text content)\n```c\nif (lookahead != '\u003c' \u0026\u0026 lookahead != 0) {\n    ADVANCE(76);  // Keep consuming text\n}\n```\n\nThis means 'consume all chars except \u003c and EOF as text'.\n\n### What the Extraction Does Wrong\n- Lines 283/291 explicitly exclude conditions with `||` but don't handle `\u0026\u0026`\n- The compound `lookahead != '\u003c' \u0026\u0026 lookahead != 0` falls through to the fallback (line 345)\n- Fallback returns a generic transition with Char=0, IsNegated=false\n- `detectDefault()` turns this into a catch-all `if !eof` check\n- Generated code: `if !eof { state = 76; ... }` — consumes `\u003c` as text\n\n### Generated Code (HTML language.go state 76)\n```go\ncase 76:\n    lexer.MarkEnd()\n    lexer.AcceptToken(16)\n    // whitespace transitions...\n    if !eof {  // \u003c-- BUG: no guard against '\u003c'\n        state = 76\n        lexer.Advance(false)\n    }\n    return true\n```\n\n### Fix Required\nUpdate `parseIfTransitions` in lex_extract.go to detect and handle compound AND negations (`!=` with `\u0026\u0026`). Convert `lookahead != '\u003c' \u0026\u0026 lookahead != 0` to a negated transition that excludes '\u003c' AND EOF.\n\n### Impact\n- HTML parsing completely broken (text content consumes closing tags)\n- May affect other grammars with compound AND negation lex conditions\n- CSS appears unaffected (its conditions use simple patterns)\n\n### Files to Change\n- `internal/generate/lex_extract.go`: `parseIfTransitions` function\n- After fix, regenerate HTML grammar: `internal/testgrammars/html/language.go`\n- Enable skipped HTML tests in `scripting_integration_test.go`",
+  "description": "FIXED in 8ffe44c on feat/st1-lex-fix. Root cause: parseIfTransitions in lex_extract.go matched 'lookahead \\!= 0' first in compound conditions like 'lookahead \\!= chr \u0026\u0026 lookahead \\!= 0', returning a catch-all default that discarded other exclusions. Fix adds CharExclusions to LexTransition, detects \u0026\u0026-chained \\!= patterns, and emits compound negation checks in codegen. HTML grammar regenerated. 3/4 HTML tests pass (void element timeout is a separate external scanner issue).",
   "status": "closed",
   "priority": 2,
   "type": "task",
@@ -13,7 +13,7 @@
     "html"
   ],
   "created_at": "2026-02-16T03:27:26.132425-08:00",
-  "updated_at": "2026-02-16T06:22:15.130989-08:00",
+  "updated_at": "2026-02-16T06:24:31.237963-08:00",
   "closed_at": "2026-02-16T06:22:15.130988-08:00",
   "close_reason": "Closed"
 }
