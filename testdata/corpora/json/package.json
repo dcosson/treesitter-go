@@ -1,0 +1,26 @@
+{
+  "name": "example-app",
+  "version": "1.0.0",
+  "description": "An example application",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "jest --coverage",
+    "build": "webpack --mode production"
+  },
+  "dependencies": {
+    "express": "^4.18.0",
+    "lodash": "~4.17.21"
+  },
+  "devDependencies": {
+    "jest": "^29.0.0",
+    "webpack": "^5.0.0"
+  },
+  "keywords": ["example", "demo"],
+  "author": "Test Author",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://example.com/repo.git"
+  }
+}
