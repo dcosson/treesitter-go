@@ -450,7 +450,7 @@ func (n Node) writeSExpr(buf *strings.Builder) {
 		if childCount > 0 {
 			for i := 0; i < int(childCount); i++ {
 				child := n.Child(i)
-				if child.IsNull() || child.IsExtra() {
+				if child.IsNull() {
 					continue
 				}
 				if child.IsNamed() {
