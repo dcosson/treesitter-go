@@ -140,6 +140,7 @@ func benchmarkTreeTraversal(b *testing.B, size int) {
 		b.Fatal("parse failed")
 	}
 
+	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		countNodes(tree.RootNode())
@@ -168,6 +169,7 @@ func BenchmarkSExpression_1KB(b *testing.B) {
 	}
 	root := tree.RootNode()
 
+	b.ReportAllocs()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		_ = root.String()
@@ -199,7 +201,9 @@ func TestAllocationsPerParse(t *testing.T) {
 				parser.ParseString(context.Background(), input)
 			}
 
-			// Measure
+			// Flush pending finalizers for cleaner measurements.
+			runtime.GC()
+
 			var stats runtime.MemStats
 			runtime.ReadMemStats(&stats)
 			allocsBefore := stats.Mallocs
@@ -260,6 +264,7 @@ func BenchmarkParallelParse(b *testing.B) {
 
 	for _, goroutines := range []int{1, 2, 4, 8} {
 		b.Run(fmt.Sprintf("goroutines-%d", goroutines), func(b *testing.B) {
+			// Total throughput across all goroutines (aggregate, not per-goroutine).
 			b.SetBytes(int64(len(input)) * int64(goroutines))
 			b.ReportAllocs()
 			b.ResetTimer()
@@ -344,7 +349,8 @@ func TestGCImpact(t *testing.T) {
 
 	// Force GC to start clean.
 	runtime.GC()
-	debug.SetGCPercent(100)
+	prev := debug.SetGCPercent(100)
+	t.Cleanup(func() { debug.SetGCPercent(prev) })
 
 	iterations := 50
 	var totalPause time.Duration
@@ -359,8 +365,12 @@ func TestGCImpact(t *testing.T) {
 
 	debug.ReadGCStats(&statsAfter)
 
-	gcCount := statsAfter.NumGC - statsBefore.NumGC
-	// Compute pauses from the new GC cycles.
+	gcCount := int(statsAfter.NumGC - statsBefore.NumGC)
+	// Pause is a circular buffer of recent pauses, most-recent-first.
+	// Clamp to available length to avoid OOB if many GC cycles occurred.
+	if gcCount > len(statsAfter.Pause) {
+		gcCount = len(statsAfter.Pause)
+	}
 	newPauses := statsAfter.Pause[:gcCount]
 	for _, p := range newPauses {
 		totalPause += p
