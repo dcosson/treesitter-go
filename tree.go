@@ -194,20 +194,28 @@ func (n Node) Child(index int) Node {
 
 	childPos := Length{Bytes: n.context[0], Point: Point{Row: n.context[1], Column: n.context[2]}}
 	visibleIndex := 0
-	result, _ := findVisibleChildByIndex(n.tree, children, childPos, arena, index, &visibleIndex)
+	result, _ := findVisibleChildByIndex(n.tree, children, childPos, n.subtree, arena, index, &visibleIndex)
 	return result
 }
 
 // findVisibleChildByIndex recursively walks children (descending through hidden
 // nodes of arbitrary depth) to find the visible child at the given index.
-func findVisibleChildByIndex(tree *Tree, children []Subtree, basePos Length, arena *SubtreeArena, targetIndex int, currentIndex *int) (Node, Length) {
+// parentSubtree is the immediate parent whose children we're iterating (may be hidden).
+// structuralIdx tracks the structural child index (non-extra children) within
+// the parent, used for alias resolution.
+func findVisibleChildByIndex(tree *Tree, children []Subtree, basePos Length, parentSubtree Subtree, arena *SubtreeArena, targetIndex int, currentIndex *int) (Node, Length) {
 	pos := basePos
+	structuralIdx := 0
 	for _, child := range children {
+		isExtra := IsExtra(child, arena)
 		if IsVisible(child, arena) {
 			if *currentIndex == targetIndex {
-				return tree.nodeFromChildSubtree(child, pos, SubtreeZero, arena), pos
+				return tree.nodeFromChildSubtree(child, pos, parentSubtree, structuralIdx, arena), pos
 			}
 			*currentIndex++
+			if !isExtra {
+				structuralIdx++
+			}
 			pos = advancePosition(pos, child, arena)
 		} else {
 			// Hidden node: recurse into its children.
@@ -215,10 +223,13 @@ func findVisibleChildByIndex(tree *Tree, children []Subtree, basePos Length, are
 			if len(grandchildren) > 0 {
 				hiddenPadding := GetPadding(child, arena)
 				gcPos := LengthAdd(pos, hiddenPadding)
-				result, _ := findVisibleChildByIndex(tree, grandchildren, gcPos, arena, targetIndex, currentIndex)
+				result, _ := findVisibleChildByIndex(tree, grandchildren, gcPos, child, arena, targetIndex, currentIndex)
 				if !result.IsNull() {
 					return result, pos
 				}
+			}
+			if !isExtra {
+				structuralIdx++
 			}
 			pos = advancePosition(pos, child, arena)
 		}
@@ -241,21 +252,27 @@ func (n Node) NamedChild(index int) Node {
 
 	childPos := Length{Bytes: n.context[0], Point: Point{Row: n.context[1], Column: n.context[2]}}
 	namedIndex := 0
-	result, _ := findNamedChildByIndex(n.tree, children, childPos, arena, index, &namedIndex)
+	result, _ := findNamedChildByIndex(n.tree, children, childPos, n.subtree, arena, index, &namedIndex)
 	return result
 }
 
 // findNamedChildByIndex recursively walks children (descending through hidden
 // nodes of arbitrary depth) to find the named child at the given index.
-func findNamedChildByIndex(tree *Tree, children []Subtree, basePos Length, arena *SubtreeArena, targetIndex int, currentIndex *int) (Node, Length) {
+// parentSubtree and structural indexing work the same as findVisibleChildByIndex.
+func findNamedChildByIndex(tree *Tree, children []Subtree, basePos Length, parentSubtree Subtree, arena *SubtreeArena, targetIndex int, currentIndex *int) (Node, Length) {
 	pos := basePos
+	structuralIdx := 0
 	for _, child := range children {
+		isExtra := IsExtra(child, arena)
 		if IsVisible(child, arena) {
-			if IsNamed(child, arena) && !IsExtra(child, arena) {
+			if IsNamed(child, arena) && !isExtra {
 				if *currentIndex == targetIndex {
-					return tree.nodeFromChildSubtree(child, pos, SubtreeZero, arena), pos
+					return tree.nodeFromChildSubtree(child, pos, parentSubtree, structuralIdx, arena), pos
 				}
 				*currentIndex++
+			}
+			if !isExtra {
+				structuralIdx++
 			}
 			pos = advancePosition(pos, child, arena)
 		} else {
@@ -263,10 +280,13 @@ func findNamedChildByIndex(tree *Tree, children []Subtree, basePos Length, arena
 			if len(grandchildren) > 0 {
 				hiddenPadding := GetPadding(child, arena)
 				gcPos := LengthAdd(pos, hiddenPadding)
-				result, _ := findNamedChildByIndex(tree, grandchildren, gcPos, arena, targetIndex, currentIndex)
+				result, _ := findNamedChildByIndex(tree, grandchildren, gcPos, child, arena, targetIndex, currentIndex)
 				if !result.IsNull() {
 					return result, pos
 				}
+			}
+			if !isExtra {
+				structuralIdx++
 			}
 			pos = advancePosition(pos, child, arena)
 		}
@@ -489,20 +509,21 @@ func advancePosition(pos Length, s Subtree, arena *SubtreeArena) Length {
 	return LengthAdd(LengthAdd(pos, padding), size)
 }
 
-// nodeFromChildSubtree creates a Node for a child subtree, considering aliases.
-func (t *Tree) nodeFromChildSubtree(child Subtree, position Length, parent Subtree, arena *SubtreeArena) Node {
+// nodeFromChildSubtree creates a Node for a child subtree, resolving aliases.
+// The structuralChildIndex is the index of this child among non-extra siblings
+// in the parent's children, used to look up alias sequences.
+func (t *Tree) nodeFromChildSubtree(child Subtree, position Length, parent Subtree, structuralChildIndex int, arena *SubtreeArena) Node {
 	padding := GetPadding(child, arena)
 	startPos := LengthAdd(position, padding)
 
-	// Check for alias.
+	// Look up alias for this child based on the parent's production.
+	// Only heap-allocated parents have a ProductionID; extras are never aliased.
 	var aliasSymbol Symbol
-	if !parent.IsInline() {
+	if !parent.IsInline() && !IsExtra(child, arena) {
 		parentData := arena.Get(parent)
 		if parentData.ProductionID > 0 {
-			// Look up alias for this child's position in the production.
-			// This is simplified — full implementation would track child index.
+			aliasSymbol = t.language.AliasForProduction(parentData.ProductionID, structuralChildIndex)
 		}
-		_ = aliasSymbol
 	}
 
 	return Node{

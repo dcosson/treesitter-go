@@ -42,12 +42,34 @@ func NewTreeCursor(node Node) TreeCursor {
 }
 
 // CurrentNode returns the Node at the cursor's current position.
+// Resolves aliases by looking up the parent's production and the current
+// node's structural child index.
 func (c *TreeCursor) CurrentNode() Node {
 	if len(c.stack) == 0 {
 		return Node{}
 	}
 	entry := &c.stack[len(c.stack)-1]
-	return c.tree.nodeFromSubtree(entry.subtree, entry.position, 0)
+
+	// Resolve alias: if we have a parent and the current node is not extra,
+	// check if the parent's production aliases this child.
+	var aliasSymbol Symbol
+	if len(c.stack) > 1 {
+		arena := c.tree.Arena()
+		if !IsExtra(entry.subtree, arena) {
+			parentEntry := &c.stack[len(c.stack)-2]
+			if !parentEntry.subtree.IsInline() {
+				parentData := arena.Get(parentEntry.subtree)
+				if parentData.ProductionID > 0 {
+					aliasSymbol = c.tree.language.AliasForProduction(
+						parentData.ProductionID,
+						int(entry.structuralChildIndex),
+					)
+				}
+			}
+		}
+	}
+
+	return c.tree.nodeFromSubtree(entry.subtree, entry.position, aliasSymbol)
 }
 
 // GotoFirstChild moves the cursor to the first visible child of the current node.
@@ -71,7 +93,7 @@ func (c *TreeCursor) GotoFirstChild() bool {
 	childBasePos := LengthAdd(entry.position, padding)
 
 	stackBefore := len(c.stack)
-	if c.findFirstVisibleChild(children, childBasePos, arena) {
+	if c.findFirstVisibleChild(children, childBasePos, arena, 0) {
 		return true
 	}
 	// Restore stack if we didn't find anything.
@@ -82,15 +104,20 @@ func (c *TreeCursor) GotoFirstChild() bool {
 // findFirstVisibleChild searches through children for the first visible node,
 // recursively descending into hidden nodes to handle arbitrary nesting depth.
 // Pushes intermediate hidden nodes onto the cursor stack so GotoParent works.
+// structuralOffset is the structural child index accumulated from prior siblings
+// at this level (used when called from GotoNextSibling to continue counting).
 // Returns true if a visible child was found.
-func (c *TreeCursor) findFirstVisibleChild(children []Subtree, basePos Length, arena *SubtreeArena) bool {
+func (c *TreeCursor) findFirstVisibleChild(children []Subtree, basePos Length, arena *SubtreeArena, structuralOffset int) bool {
 	pos := basePos
+	structuralIdx := structuralOffset
 	for i, child := range children {
+		isExtra := IsExtra(child, arena)
 		if IsVisible(child, arena) {
 			c.stack = append(c.stack, TreeCursorEntry{
-				subtree:    child,
-				position:   pos,
-				childIndex: uint32(i),
+				subtree:              child,
+				position:             pos,
+				childIndex:           uint32(i),
+				structuralChildIndex: uint32(structuralIdx),
 			})
 			return true
 		}
@@ -98,17 +125,21 @@ func (c *TreeCursor) findFirstVisibleChild(children []Subtree, basePos Length, a
 		grandchildren := GetChildren(child, arena)
 		if len(grandchildren) > 0 {
 			c.stack = append(c.stack, TreeCursorEntry{
-				subtree:    child,
-				position:   pos,
-				childIndex: uint32(i),
+				subtree:              child,
+				position:             pos,
+				childIndex:           uint32(i),
+				structuralChildIndex: uint32(structuralIdx),
 			})
 			hiddenPadding := GetPadding(child, arena)
 			gcBasePos := LengthAdd(pos, hiddenPadding)
-			if c.findFirstVisibleChild(grandchildren, gcBasePos, arena) {
+			if c.findFirstVisibleChild(grandchildren, gcBasePos, arena, 0) {
 				return true
 			}
 			// Not found in this hidden node's descendants — pop it.
 			c.stack = c.stack[:len(c.stack)-1]
+		}
+		if !isExtra {
+			structuralIdx++
 		}
 		pos = advancePosition(pos, child, arena)
 	}
@@ -133,12 +164,20 @@ func (c *TreeCursor) GotoNextSibling() bool {
 		pos := advancePosition(current.position, current.subtree, arena)
 		nextIdx := int(current.childIndex) + 1
 
+		// Compute the structural offset for the remaining children.
+		// The current child occupies a structural slot (unless it's extra),
+		// so the next structural index continues from there.
+		nextStructuralIdx := int(current.structuralChildIndex)
+		if !IsExtra(current.subtree, arena) {
+			nextStructuralIdx++
+		}
+
 		// Look for the next visible sibling among remaining children.
 		remaining := parentChildren[nextIdx:]
 		stackBefore := len(c.stack) - 1 // Will replace top entry
 		c.stack = c.stack[:stackBefore]
 
-		if c.findFirstVisibleChild(remaining, pos, arena) {
+		if c.findFirstVisibleChild(remaining, pos, arena, nextStructuralIdx) {
 			// Adjust child indices: findFirstVisibleChild uses 0-based indices
 			// within the remaining slice, but we need indices into parentChildren.
 			for k := stackBefore; k < len(c.stack); k++ {
