@@ -24198,7 +24198,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 		case 133:
 			lexer.MarkEnd()
 			lexer.AcceptToken(90)
-			if lookahead == '0' {
+			if lookahead == 0 {
 				state = 168
 				lexer.Advance(false)
 				lookahead = lexer.Lookahead
@@ -24381,7 +24381,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			if lookahead == 0 {
+			if lookahead == '\v' {
 				state = 135
 				lexer.Advance(false)
 				lookahead = lexer.Lookahead
@@ -24402,21 +24402,21 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			if lookahead == 0 {
+			if lookahead == 0x200b {
 				state = 135
 				lexer.Advance(false)
 				lookahead = lexer.Lookahead
 				eof = lexer.EOF()
 				continue
 			}
-			if lookahead == 0 {
+			if lookahead == 0x2060 {
 				state = 135
 				lexer.Advance(false)
 				lookahead = lexer.Lookahead
 				eof = lexer.EOF()
 				continue
 			}
-			if lookahead == 0 {
+			if lookahead == 0xfeff {
 				state = 135
 				lexer.Advance(false)
 				lookahead = lexer.Lookahead

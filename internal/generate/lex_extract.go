@@ -241,14 +241,23 @@ func parseAdvanceMap(block string) []LexTransition {
 	content := block[start+1 : end]
 
 	// Parse character, target pairs.
-	// Format: 'c', N, 'c2', N2, ...
+	// Format: 'c', N, 'c2', N2, ... or bare_int, N, ...
+	// Bare integers (e.g. 0) represent the ASCII value directly (null byte),
+	// while quoted chars (e.g. '0') represent the character literal.
 	var transitions []LexTransition
 	pairs := splitCSV(content)
 	for i := 0; i+1 < len(pairs); i += 2 {
 		charStr := strings.TrimSpace(pairs[i])
 		targetStr := strings.TrimSpace(pairs[i+1])
 
-		ch := parseCChar(charStr)
+		var ch rune
+		if len(charStr) > 0 && charStr[0] != '\'' {
+			// Bare integer literal: treat as ASCII code point.
+			v, _ := strconv.ParseInt(charStr, 0, 32)
+			ch = rune(v)
+		} else {
+			ch = parseCChar(charStr)
+		}
 		target, _ := strconv.Atoi(targetStr)
 
 		transitions = append(transitions, LexTransition{

@@ -8137,247 +8137,247 @@ func GoLanguage() *ts.Language {
 
 	lexModes := []ts.LexMode{
 		{LexState: 0}, // state 0
-		{LexState: 0}, // state 1
-		{LexState: 0}, // state 2
-		{LexState: 0}, // state 3
-		{LexState: 0}, // state 4
-		{LexState: 0}, // state 5
-		{LexState: 0}, // state 6
-		{LexState: 0}, // state 7
-		{LexState: 0}, // state 8
-		{LexState: 0}, // state 9
-		{LexState: 0}, // state 10
-		{LexState: 0}, // state 11
-		{LexState: 0}, // state 12
-		{LexState: 0}, // state 13
-		{LexState: 0}, // state 14
-		{LexState: 0}, // state 15
-		{LexState: 0}, // state 16
-		{LexState: 0}, // state 17
-		{LexState: 0}, // state 18
-		{LexState: 0}, // state 19
-		{LexState: 0}, // state 20
-		{LexState: 0}, // state 21
-		{LexState: 0}, // state 22
-		{LexState: 0}, // state 23
-		{LexState: 0}, // state 24
-		{LexState: 0}, // state 25
-		{LexState: 0}, // state 26
-		{LexState: 0}, // state 27
-		{LexState: 0}, // state 28
-		{LexState: 0}, // state 29
-		{LexState: 0}, // state 30
-		{LexState: 0}, // state 31
-		{LexState: 0}, // state 32
-		{LexState: 0}, // state 33
-		{LexState: 0}, // state 34
-		{LexState: 0}, // state 35
-		{LexState: 0}, // state 36
-		{LexState: 0}, // state 37
-		{LexState: 0}, // state 38
-		{LexState: 0}, // state 39
-		{LexState: 0}, // state 40
-		{LexState: 0}, // state 41
-		{LexState: 0}, // state 42
-		{LexState: 0}, // state 43
-		{LexState: 0}, // state 44
-		{LexState: 0}, // state 45
-		{LexState: 0}, // state 46
-		{LexState: 0}, // state 47
-		{LexState: 0}, // state 48
-		{LexState: 0}, // state 49
-		{LexState: 0}, // state 50
-		{LexState: 0}, // state 51
-		{LexState: 0}, // state 52
-		{LexState: 0}, // state 53
-		{LexState: 0}, // state 54
-		{LexState: 0}, // state 55
-		{LexState: 0}, // state 56
-		{LexState: 0}, // state 57
-		{LexState: 0}, // state 58
-		{LexState: 0}, // state 59
-		{LexState: 0}, // state 60
-		{LexState: 0}, // state 61
-		{LexState: 0}, // state 62
-		{LexState: 0}, // state 63
-		{LexState: 0}, // state 64
-		{LexState: 0}, // state 65
-		{LexState: 0}, // state 66
-		{LexState: 0}, // state 67
-		{LexState: 0}, // state 68
-		{LexState: 0}, // state 69
-		{LexState: 0}, // state 70
-		{LexState: 0}, // state 71
-		{LexState: 0}, // state 72
-		{LexState: 0}, // state 73
-		{LexState: 0}, // state 74
-		{LexState: 0}, // state 75
-		{LexState: 0}, // state 76
-		{LexState: 0}, // state 77
-		{LexState: 0}, // state 78
-		{LexState: 0}, // state 79
-		{LexState: 0}, // state 80
-		{LexState: 0}, // state 81
-		{LexState: 0}, // state 82
-		{LexState: 0}, // state 83
-		{LexState: 0}, // state 84
-		{LexState: 0}, // state 85
-		{LexState: 0}, // state 86
-		{LexState: 0}, // state 87
-		{LexState: 0}, // state 88
-		{LexState: 0}, // state 89
-		{LexState: 0}, // state 90
-		{LexState: 0}, // state 91
-		{LexState: 0}, // state 92
-		{LexState: 0}, // state 93
-		{LexState: 0}, // state 94
-		{LexState: 0}, // state 95
-		{LexState: 0}, // state 96
-		{LexState: 0}, // state 97
-		{LexState: 0}, // state 98
-		{LexState: 0}, // state 99
-		{LexState: 0}, // state 100
-		{LexState: 0}, // state 101
-		{LexState: 0}, // state 102
-		{LexState: 0}, // state 103
-		{LexState: 0}, // state 104
-		{LexState: 0}, // state 105
-		{LexState: 0}, // state 106
-		{LexState: 0}, // state 107
-		{LexState: 0}, // state 108
-		{LexState: 0}, // state 109
-		{LexState: 0}, // state 110
-		{LexState: 0}, // state 111
-		{LexState: 0}, // state 112
-		{LexState: 0}, // state 113
-		{LexState: 0}, // state 114
-		{LexState: 0}, // state 115
-		{LexState: 0}, // state 116
-		{LexState: 0}, // state 117
-		{LexState: 0}, // state 118
-		{LexState: 0}, // state 119
-		{LexState: 0}, // state 120
-		{LexState: 0}, // state 121
-		{LexState: 0}, // state 122
-		{LexState: 0}, // state 123
-		{LexState: 0}, // state 124
-		{LexState: 0}, // state 125
-		{LexState: 0}, // state 126
-		{LexState: 0}, // state 127
-		{LexState: 0}, // state 128
-		{LexState: 0}, // state 129
-		{LexState: 0}, // state 130
-		{LexState: 0}, // state 131
-		{LexState: 0}, // state 132
-		{LexState: 0}, // state 133
-		{LexState: 0}, // state 134
-		{LexState: 0}, // state 135
-		{LexState: 0}, // state 136
-		{LexState: 0}, // state 137
-		{LexState: 0}, // state 138
-		{LexState: 0}, // state 139
-		{LexState: 0}, // state 140
-		{LexState: 0}, // state 141
-		{LexState: 0}, // state 142
-		{LexState: 0}, // state 143
-		{LexState: 0}, // state 144
-		{LexState: 0}, // state 145
-		{LexState: 0}, // state 146
-		{LexState: 0}, // state 147
-		{LexState: 0}, // state 148
-		{LexState: 0}, // state 149
-		{LexState: 0}, // state 150
-		{LexState: 0}, // state 151
-		{LexState: 0}, // state 152
-		{LexState: 0}, // state 153
-		{LexState: 0}, // state 154
-		{LexState: 0}, // state 155
-		{LexState: 0}, // state 156
-		{LexState: 0}, // state 157
-		{LexState: 0}, // state 158
-		{LexState: 0}, // state 159
-		{LexState: 0}, // state 160
-		{LexState: 0}, // state 161
-		{LexState: 0}, // state 162
-		{LexState: 0}, // state 163
-		{LexState: 0}, // state 164
-		{LexState: 0}, // state 165
-		{LexState: 0}, // state 166
-		{LexState: 0}, // state 167
-		{LexState: 0}, // state 168
-		{LexState: 0}, // state 169
-		{LexState: 0}, // state 170
-		{LexState: 0}, // state 171
-		{LexState: 0}, // state 172
-		{LexState: 0}, // state 173
-		{LexState: 0}, // state 174
-		{LexState: 0}, // state 175
-		{LexState: 0}, // state 176
-		{LexState: 0}, // state 177
-		{LexState: 0}, // state 178
-		{LexState: 0}, // state 179
-		{LexState: 0}, // state 180
-		{LexState: 0}, // state 181
-		{LexState: 0}, // state 182
-		{LexState: 0}, // state 183
-		{LexState: 0}, // state 184
-		{LexState: 0}, // state 185
-		{LexState: 0}, // state 186
-		{LexState: 0}, // state 187
-		{LexState: 0}, // state 188
-		{LexState: 0}, // state 189
-		{LexState: 0}, // state 190
-		{LexState: 0}, // state 191
-		{LexState: 0}, // state 192
-		{LexState: 0}, // state 193
-		{LexState: 0}, // state 194
-		{LexState: 0}, // state 195
-		{LexState: 0}, // state 196
-		{LexState: 0}, // state 197
-		{LexState: 0}, // state 198
-		{LexState: 0}, // state 199
-		{LexState: 0}, // state 200
-		{LexState: 0}, // state 201
-		{LexState: 0}, // state 202
-		{LexState: 0}, // state 203
-		{LexState: 0}, // state 204
-		{LexState: 0}, // state 205
-		{LexState: 0}, // state 206
-		{LexState: 0}, // state 207
-		{LexState: 0}, // state 208
-		{LexState: 0}, // state 209
-		{LexState: 0}, // state 210
-		{LexState: 0}, // state 211
-		{LexState: 0}, // state 212
-		{LexState: 0}, // state 213
-		{LexState: 0}, // state 214
-		{LexState: 0}, // state 215
-		{LexState: 0}, // state 216
-		{LexState: 0}, // state 217
-		{LexState: 0}, // state 218
-		{LexState: 0}, // state 219
-		{LexState: 0}, // state 220
-		{LexState: 0}, // state 221
-		{LexState: 0}, // state 222
-		{LexState: 0}, // state 223
-		{LexState: 0}, // state 224
-		{LexState: 0}, // state 225
-		{LexState: 0}, // state 226
-		{LexState: 0}, // state 227
-		{LexState: 0}, // state 228
-		{LexState: 0}, // state 229
-		{LexState: 0}, // state 230
-		{LexState: 0}, // state 231
-		{LexState: 0}, // state 232
-		{LexState: 0}, // state 233
-		{LexState: 0}, // state 234
-		{LexState: 0}, // state 235
-		{LexState: 0}, // state 236
+		{LexState: 58}, // state 1
+		{LexState: 58}, // state 2
+		{LexState: 58}, // state 3
+		{LexState: 58}, // state 4
+		{LexState: 58}, // state 5
+		{LexState: 58}, // state 6
+		{LexState: 58}, // state 7
+		{LexState: 58}, // state 8
+		{LexState: 58}, // state 9
+		{LexState: 58}, // state 10
+		{LexState: 58}, // state 11
+		{LexState: 58}, // state 12
+		{LexState: 58}, // state 13
+		{LexState: 58}, // state 14
+		{LexState: 58}, // state 15
+		{LexState: 58}, // state 16
+		{LexState: 58}, // state 17
+		{LexState: 58}, // state 18
+		{LexState: 58}, // state 19
+		{LexState: 58}, // state 20
+		{LexState: 58}, // state 21
+		{LexState: 58}, // state 22
+		{LexState: 58}, // state 23
+		{LexState: 58}, // state 24
+		{LexState: 58}, // state 25
+		{LexState: 58}, // state 26
+		{LexState: 58}, // state 27
+		{LexState: 55}, // state 28
+		{LexState: 58}, // state 29
+		{LexState: 58}, // state 30
+		{LexState: 58}, // state 31
+		{LexState: 58}, // state 32
+		{LexState: 58}, // state 33
+		{LexState: 58}, // state 34
+		{LexState: 58}, // state 35
+		{LexState: 58}, // state 36
+		{LexState: 58}, // state 37
+		{LexState: 58}, // state 38
+		{LexState: 58}, // state 39
+		{LexState: 58}, // state 40
+		{LexState: 58}, // state 41
+		{LexState: 58}, // state 42
+		{LexState: 58}, // state 43
+		{LexState: 58}, // state 44
+		{LexState: 58}, // state 45
+		{LexState: 58}, // state 46
+		{LexState: 58}, // state 47
+		{LexState: 58}, // state 48
+		{LexState: 58}, // state 49
+		{LexState: 58}, // state 50
+		{LexState: 58}, // state 51
+		{LexState: 58}, // state 52
+		{LexState: 58}, // state 53
+		{LexState: 58}, // state 54
+		{LexState: 58}, // state 55
+		{LexState: 58}, // state 56
+		{LexState: 58}, // state 57
+		{LexState: 58}, // state 58
+		{LexState: 58}, // state 59
+		{LexState: 58}, // state 60
+		{LexState: 58}, // state 61
+		{LexState: 58}, // state 62
+		{LexState: 58}, // state 63
+		{LexState: 58}, // state 64
+		{LexState: 58}, // state 65
+		{LexState: 58}, // state 66
+		{LexState: 58}, // state 67
+		{LexState: 58}, // state 68
+		{LexState: 58}, // state 69
+		{LexState: 58}, // state 70
+		{LexState: 58}, // state 71
+		{LexState: 58}, // state 72
+		{LexState: 58}, // state 73
+		{LexState: 58}, // state 74
+		{LexState: 58}, // state 75
+		{LexState: 58}, // state 76
+		{LexState: 58}, // state 77
+		{LexState: 58}, // state 78
+		{LexState: 58}, // state 79
+		{LexState: 58}, // state 80
+		{LexState: 58}, // state 81
+		{LexState: 58}, // state 82
+		{LexState: 58}, // state 83
+		{LexState: 58}, // state 84
+		{LexState: 58}, // state 85
+		{LexState: 58}, // state 86
+		{LexState: 58}, // state 87
+		{LexState: 58}, // state 88
+		{LexState: 58}, // state 89
+		{LexState: 58}, // state 90
+		{LexState: 58}, // state 91
+		{LexState: 58}, // state 92
+		{LexState: 58}, // state 93
+		{LexState: 58}, // state 94
+		{LexState: 58}, // state 95
+		{LexState: 58}, // state 96
+		{LexState: 58}, // state 97
+		{LexState: 58}, // state 98
+		{LexState: 58}, // state 99
+		{LexState: 58}, // state 100
+		{LexState: 58}, // state 101
+		{LexState: 58}, // state 102
+		{LexState: 58}, // state 103
+		{LexState: 58}, // state 104
+		{LexState: 58}, // state 105
+		{LexState: 58}, // state 106
+		{LexState: 58}, // state 107
+		{LexState: 58}, // state 108
+		{LexState: 58}, // state 109
+		{LexState: 58}, // state 110
+		{LexState: 58}, // state 111
+		{LexState: 58}, // state 112
+		{LexState: 58}, // state 113
+		{LexState: 58}, // state 114
+		{LexState: 58}, // state 115
+		{LexState: 58}, // state 116
+		{LexState: 58}, // state 117
+		{LexState: 58}, // state 118
+		{LexState: 58}, // state 119
+		{LexState: 58}, // state 120
+		{LexState: 58}, // state 121
+		{LexState: 58}, // state 122
+		{LexState: 58}, // state 123
+		{LexState: 58}, // state 124
+		{LexState: 58}, // state 125
+		{LexState: 58}, // state 126
+		{LexState: 58}, // state 127
+		{LexState: 58}, // state 128
+		{LexState: 58}, // state 129
+		{LexState: 58}, // state 130
+		{LexState: 58}, // state 131
+		{LexState: 58}, // state 132
+		{LexState: 58}, // state 133
+		{LexState: 58}, // state 134
+		{LexState: 58}, // state 135
+		{LexState: 58}, // state 136
+		{LexState: 58}, // state 137
+		{LexState: 58}, // state 138
+		{LexState: 58}, // state 139
+		{LexState: 58}, // state 140
+		{LexState: 58}, // state 141
+		{LexState: 58}, // state 142
+		{LexState: 58}, // state 143
+		{LexState: 58}, // state 144
+		{LexState: 58}, // state 145
+		{LexState: 58}, // state 146
+		{LexState: 58}, // state 147
+		{LexState: 58}, // state 148
+		{LexState: 58}, // state 149
+		{LexState: 58}, // state 150
+		{LexState: 58}, // state 151
+		{LexState: 58}, // state 152
+		{LexState: 58}, // state 153
+		{LexState: 58}, // state 154
+		{LexState: 58}, // state 155
+		{LexState: 58}, // state 156
+		{LexState: 58}, // state 157
+		{LexState: 58}, // state 158
+		{LexState: 58}, // state 159
+		{LexState: 58}, // state 160
+		{LexState: 58}, // state 161
+		{LexState: 58}, // state 162
+		{LexState: 58}, // state 163
+		{LexState: 58}, // state 164
+		{LexState: 58}, // state 165
+		{LexState: 58}, // state 166
+		{LexState: 58}, // state 167
+		{LexState: 58}, // state 168
+		{LexState: 58}, // state 169
+		{LexState: 58}, // state 170
+		{LexState: 58}, // state 171
+		{LexState: 58}, // state 172
+		{LexState: 58}, // state 173
+		{LexState: 58}, // state 174
+		{LexState: 58}, // state 175
+		{LexState: 58}, // state 176
+		{LexState: 58}, // state 177
+		{LexState: 58}, // state 178
+		{LexState: 58}, // state 179
+		{LexState: 58}, // state 180
+		{LexState: 58}, // state 181
+		{LexState: 58}, // state 182
+		{LexState: 58}, // state 183
+		{LexState: 58}, // state 184
+		{LexState: 58}, // state 185
+		{LexState: 58}, // state 186
+		{LexState: 58}, // state 187
+		{LexState: 58}, // state 188
+		{LexState: 58}, // state 189
+		{LexState: 58}, // state 190
+		{LexState: 58}, // state 191
+		{LexState: 58}, // state 192
+		{LexState: 58}, // state 193
+		{LexState: 58}, // state 194
+		{LexState: 58}, // state 195
+		{LexState: 58}, // state 196
+		{LexState: 58}, // state 197
+		{LexState: 58}, // state 198
+		{LexState: 58}, // state 199
+		{LexState: 58}, // state 200
+		{LexState: 58}, // state 201
+		{LexState: 58}, // state 202
+		{LexState: 58}, // state 203
+		{LexState: 58}, // state 204
+		{LexState: 58}, // state 205
+		{LexState: 58}, // state 206
+		{LexState: 58}, // state 207
+		{LexState: 58}, // state 208
+		{LexState: 58}, // state 209
+		{LexState: 58}, // state 210
+		{LexState: 58}, // state 211
+		{LexState: 58}, // state 212
+		{LexState: 58}, // state 213
+		{LexState: 58}, // state 214
+		{LexState: 58}, // state 215
+		{LexState: 58}, // state 216
+		{LexState: 58}, // state 217
+		{LexState: 58}, // state 218
+		{LexState: 58}, // state 219
+		{LexState: 58}, // state 220
+		{LexState: 58}, // state 221
+		{LexState: 58}, // state 222
+		{LexState: 58}, // state 223
+		{LexState: 58}, // state 224
+		{LexState: 58}, // state 225
+		{LexState: 58}, // state 226
+		{LexState: 58}, // state 227
+		{LexState: 58}, // state 228
+		{LexState: 58}, // state 229
+		{LexState: 58}, // state 230
+		{LexState: 58}, // state 231
+		{LexState: 58}, // state 232
+		{LexState: 58}, // state 233
+		{LexState: 58}, // state 234
+		{LexState: 58}, // state 235
+		{LexState: 3}, // state 236
 		{LexState: 56}, // state 237
 		{LexState: 56}, // state 238
 		{LexState: 56}, // state 239
 		{LexState: 56}, // state 240
-		{LexState: 0}, // state 241
+		{LexState: 58}, // state 241
 		{LexState: 56}, // state 242
 		{LexState: 56}, // state 243
 		{LexState: 56}, // state 244
@@ -8487,7 +8487,7 @@ func GoLanguage() *ts.Language {
 		{LexState: 5}, // state 348
 		{LexState: 5}, // state 349
 		{LexState: 5}, // state 350
-		{LexState: 0}, // state 351
+		{LexState: 55}, // state 351
 		{LexState: 5}, // state 352
 		{LexState: 5}, // state 353
 		{LexState: 5}, // state 354
@@ -8500,11 +8500,11 @@ func GoLanguage() *ts.Language {
 		{LexState: 5}, // state 361
 		{LexState: 5}, // state 362
 		{LexState: 5}, // state 363
-		{LexState: 0}, // state 364
+		{LexState: 55}, // state 364
 		{LexState: 5}, // state 365
 		{LexState: 5}, // state 366
 		{LexState: 5}, // state 367
-		{LexState: 0}, // state 368
+		{LexState: 56}, // state 368
 		{LexState: 5}, // state 369
 		{LexState: 5}, // state 370
 		{LexState: 5}, // state 371
@@ -8528,8 +8528,8 @@ func GoLanguage() *ts.Language {
 		{LexState: 5}, // state 389
 		{LexState: 6}, // state 390
 		{LexState: 6}, // state 391
-		{LexState: 0}, // state 392
-		{LexState: 0}, // state 393
+		{LexState: 55}, // state 392
+		{LexState: 55}, // state 393
 		{LexState: 6}, // state 394
 		{LexState: 6}, // state 395
 		{LexState: 6}, // state 396
@@ -8589,14 +8589,14 @@ func GoLanguage() *ts.Language {
 		{LexState: 1}, // state 450
 		{LexState: 3}, // state 451
 		{LexState: 0}, // state 452
-		{LexState: 0}, // state 453
-		{LexState: 0}, // state 454
+		{LexState: 3}, // state 453
+		{LexState: 55}, // state 454
 		{LexState: 1}, // state 455
 		{LexState: 1}, // state 456
 		{LexState: 1}, // state 457
 		{LexState: 3}, // state 458
-		{LexState: 0}, // state 459
-		{LexState: 0}, // state 460
+		{LexState: 55}, // state 459
+		{LexState: 55}, // state 460
 		{LexState: 1}, // state 461
 		{LexState: 1}, // state 462
 		{LexState: 1}, // state 463
@@ -8628,17 +8628,17 @@ func GoLanguage() *ts.Language {
 		{LexState: 1}, // state 489
 		{LexState: 1}, // state 490
 		{LexState: 1}, // state 491
-		{LexState: 0}, // state 492
-		{LexState: 0}, // state 493
+		{LexState: 55}, // state 492
+		{LexState: 55}, // state 493
 		{LexState: 1}, // state 494
 		{LexState: 1}, // state 495
-		{LexState: 0}, // state 496
+		{LexState: 55}, // state 496
 		{LexState: 1}, // state 497
 		{LexState: 0}, // state 498
 		{LexState: 3}, // state 499
-		{LexState: 0}, // state 500
+		{LexState: 55}, // state 500
 		{LexState: 3}, // state 501
-		{LexState: 0}, // state 502
+		{LexState: 55}, // state 502
 		{LexState: 1}, // state 503
 		{LexState: 1}, // state 504
 		{LexState: 3}, // state 505
@@ -8665,7 +8665,7 @@ func GoLanguage() *ts.Language {
 		{LexState: 0}, // state 526
 		{LexState: 0}, // state 527
 		{LexState: 6}, // state 528
-		{LexState: 0}, // state 529
+		{LexState: 55}, // state 529
 		{LexState: 6}, // state 530
 		{LexState: 6}, // state 531
 		{LexState: 6}, // state 532
@@ -8919,20 +8919,20 @@ func GoLanguage() *ts.Language {
 		{LexState: 0}, // state 780
 		{LexState: 0}, // state 781
 		{LexState: 0}, // state 782
-		{LexState: 0}, // state 783
-		{LexState: 0}, // state 784
-		{LexState: 0}, // state 785
-		{LexState: 0}, // state 786
-		{LexState: 0}, // state 787
-		{LexState: 0}, // state 788
+		{LexState: 55}, // state 783
+		{LexState: 55}, // state 784
+		{LexState: 55}, // state 785
+		{LexState: 55}, // state 786
+		{LexState: 55}, // state 787
+		{LexState: 55}, // state 788
 		{LexState: 0}, // state 789
 		{LexState: 0}, // state 790
 		{LexState: 0}, // state 791
 		{LexState: 0}, // state 792
-		{LexState: 0}, // state 793
-		{LexState: 0}, // state 794
-		{LexState: 0}, // state 795
-		{LexState: 0}, // state 796
+		{LexState: 55}, // state 793
+		{LexState: 55}, // state 794
+		{LexState: 55}, // state 795
+		{LexState: 55}, // state 796
 		{LexState: 56}, // state 797
 		{LexState: 0}, // state 798
 		{LexState: 56}, // state 799
@@ -8979,21 +8979,21 @@ func GoLanguage() *ts.Language {
 		{LexState: 0}, // state 840
 		{LexState: 0}, // state 841
 		{LexState: 0}, // state 842
-		{LexState: 0}, // state 843
+		{LexState: 3}, // state 843
 		{LexState: 3}, // state 844
 		{LexState: 56}, // state 845
-		{LexState: 0}, // state 846
+		{LexState: 3}, // state 846
 		{LexState: 0}, // state 847
 		{LexState: 55}, // state 848
-		{LexState: 0}, // state 849
-		{LexState: 0}, // state 850
-		{LexState: 0}, // state 851
+		{LexState: 3}, // state 849
+		{LexState: 3}, // state 850
+		{LexState: 3}, // state 851
 		{LexState: 55}, // state 852
-		{LexState: 0}, // state 853
-		{LexState: 0}, // state 854
+		{LexState: 3}, // state 853
+		{LexState: 3}, // state 854
 		{LexState: 3}, // state 855
 		{LexState: 56}, // state 856
-		{LexState: 0}, // state 857
+		{LexState: 3}, // state 857
 		{LexState: 0}, // state 858
 		{LexState: 0}, // state 859
 		{LexState: 0}, // state 860
@@ -9001,7 +9001,7 @@ func GoLanguage() *ts.Language {
 		{LexState: 0}, // state 862
 		{LexState: 0}, // state 863
 		{LexState: 0}, // state 864
-		{LexState: 0}, // state 865
+		{LexState: 3}, // state 865
 		{LexState: 0}, // state 866
 		{LexState: 0}, // state 867
 		{LexState: 0}, // state 868
@@ -9047,9 +9047,9 @@ func GoLanguage() *ts.Language {
 		{LexState: 55}, // state 908
 		{LexState: 0}, // state 909
 		{LexState: 55}, // state 910
-		{LexState: 0}, // state 911
+		{LexState: 55}, // state 911
 		{LexState: 0}, // state 912
-		{LexState: 0}, // state 913
+		{LexState: 55}, // state 913
 		{LexState: 55}, // state 914
 		{LexState: 55}, // state 915
 		{LexState: 55}, // state 916
@@ -12105,7 +12105,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			if lookahead == '0' {
+			if lookahead == 0 {
 				state = 62
 				lexer.Advance(false)
 				lookahead = lexer.Lookahead
@@ -12338,7 +12338,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 			}
 			return false
 		case 1:
-			if lookahead == '0' {
+			if lookahead == 0 {
 				state = 62
 				lexer.Advance(false)
 				lookahead = lexer.Lookahead
@@ -14189,7 +14189,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			if lookahead == '0' {
+			if lookahead == 0 {
 				state = 62
 				lexer.Advance(false)
 				lookahead = lexer.Lookahead
@@ -14401,7 +14401,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			if lookahead == '0' {
+			if lookahead == 0 {
 				state = 62
 				lexer.Advance(false)
 				lookahead = lexer.Lookahead
@@ -14613,7 +14613,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			if lookahead == '0' {
+			if lookahead == 0 {
 				state = 62
 				lexer.Advance(false)
 				lookahead = lexer.Lookahead

@@ -21496,7 +21496,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			if lookahead != '\n' && !eof {
+			if !eof && lookahead != '\n' {
 				state = 70
 				lexer.Advance(false)
 				lookahead = lexer.Lookahead
@@ -21519,7 +21519,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			if lookahead != '\n' && !eof {
+			if !eof && lookahead != '\n' {
 				state = 70
 				lexer.Advance(false)
 				lookahead = lexer.Lookahead
@@ -22586,7 +22586,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 			}
 			return false
 		case 118:
-			if lookahead != '*' && !eof {
+			if !eof && lookahead != '*' {
 				state = 153
 				lexer.Advance(false)
 				lookahead = lexer.Lookahead
@@ -23804,7 +23804,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			if lookahead != '\n' && !eof {
+			if !eof && lookahead != '\n' {
 				state = 153
 				lexer.Advance(false)
 				lookahead = lexer.Lookahead
@@ -23861,7 +23861,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			if lookahead != '\n' && !eof {
+			if !eof && lookahead != '\n' {
 				state = 153
 				lexer.Advance(false)
 				lookahead = lexer.Lookahead
@@ -28027,7 +28027,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			if lookahead != '\n' && lookahead != '"' && lookahead != '\\' && !eof {
+			if !eof && lookahead != '\n' && lookahead != '"' && lookahead != '\\' {
 				state = 292
 				lexer.Advance(false)
 				lookahead = lexer.Lookahead
@@ -28052,7 +28052,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			if lookahead != '\n' && lookahead != '"' && lookahead != '\\' && !eof {
+			if !eof && lookahead != '\n' && lookahead != '"' && lookahead != '\\' {
 				state = 290
 				lexer.Advance(false)
 				lookahead = lexer.Lookahead
@@ -28070,7 +28070,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			if lookahead != '\n' && lookahead != '"' && lookahead != '\\' && !eof {
+			if !eof && lookahead != '\n' && lookahead != '"' && lookahead != '\\' {
 				state = 290
 				lexer.Advance(false)
 				lookahead = lexer.Lookahead
@@ -28109,7 +28109,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			if lookahead == 0 {
+			if !eof && lookahead != '"' && lookahead != '\\' && (lookahead < '\t' || lookahead > '\r') {
 				state = 292
 				lexer.Advance(false)
 				lookahead = lexer.Lookahead
@@ -28120,7 +28120,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 		case 292:
 			lexer.MarkEnd()
 			lexer.AcceptToken(153)
-			if lookahead != '\n' && lookahead != '"' && lookahead != '\\' && !eof {
+			if !eof && lookahead != '\n' && lookahead != '"' && lookahead != '\\' {
 				state = 292
 				lexer.Advance(false)
 				lookahead = lexer.Lookahead
@@ -28261,7 +28261,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			if lookahead != '\n' && !eof {
+			if !eof && lookahead != '\n' {
 				state = 70
 				lexer.Advance(false)
 				lookahead = lexer.Lookahead
@@ -28746,7 +28746,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			if lookahead != '\n' && !eof {
+			if !eof && lookahead != '\n' {
 				state = 320
 				lexer.Advance(false)
 				lookahead = lexer.Lookahead
@@ -28771,7 +28771,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			if lookahead != '\n' && !eof {
+			if !eof && lookahead != '\n' {
 				state = 320
 				lexer.Advance(false)
 				lookahead = lexer.Lookahead
@@ -28814,7 +28814,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			if lookahead != '\n' && !eof {
+			if !eof && lookahead != '\n' {
 				state = 322
 				lexer.Advance(false)
 				lookahead = lexer.Lookahead

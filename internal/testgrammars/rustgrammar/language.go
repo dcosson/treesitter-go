@@ -26843,7 +26843,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			if lookahead != '[' && !eof {
+			if !eof && lookahead != '[' {
 				state = 3
 				lexer.Advance(false)
 				lookahead = lexer.Lookahead
@@ -33084,7 +33084,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			if lookahead != '*' && lookahead != '+' && lookahead != '?' && !eof {
+			if !eof && lookahead != '*' && lookahead != '+' && lookahead != '?' {
 				state = 90
 				lexer.Advance(false)
 				lookahead = lexer.Lookahead
@@ -33116,7 +33116,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			if lookahead != '*' && lookahead != '+' && lookahead != '?' && !eof {
+			if !eof && lookahead != '*' && lookahead != '+' && lookahead != '?' {
 				state = 90
 				lexer.Advance(false)
 				lookahead = lexer.Lookahead
@@ -33127,7 +33127,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 		case 90:
 			lexer.MarkEnd()
 			lexer.AcceptToken(13)
-			if lookahead != '*' && lookahead != '+' && lookahead != '?' && !eof {
+			if !eof && lookahead != '*' && lookahead != '+' && lookahead != '?' {
 				state = 90
 				lexer.Advance(false)
 				lookahead = lexer.Lookahead
@@ -34049,7 +34049,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 		case 163:
 			lexer.MarkEnd()
 			lexer.AcceptToken(134)
-			if lookahead != '*' && lookahead != '+' && lookahead != '?' && !eof {
+			if !eof && lookahead != '*' && lookahead != '+' && lookahead != '?' {
 				state = 90
 				lexer.Advance(false)
 				lookahead = lexer.Lookahead
@@ -34060,7 +34060,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 		case 164:
 			lexer.MarkEnd()
 			lexer.AcceptToken(134)
-			if lookahead != '\n' && !eof {
+			if !eof && lookahead != '\n' {
 				state = 168
 				lexer.Advance(false)
 				lookahead = lexer.Lookahead
@@ -34089,7 +34089,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			if lookahead != '\n' && !eof {
+			if !eof && lookahead != '\n' {
 				state = 168
 				lexer.Advance(false)
 				lookahead = lexer.Lookahead
@@ -34128,7 +34128,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			if lookahead == 0 {
+			if !eof {
 				state = 168
 				lexer.Advance(false)
 				lookahead = lexer.Lookahead
@@ -34139,7 +34139,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 		case 168:
 			lexer.MarkEnd()
 			lexer.AcceptToken(136)
-			if lookahead != '\n' && !eof {
+			if !eof && lookahead != '\n' {
 				state = 168
 				lexer.Advance(false)
 				lookahead = lexer.Lookahead
@@ -34185,7 +34185,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			if lookahead == 0 {
+			if !eof {
 				state = 172
 				lexer.Advance(false)
 				lookahead = lexer.Lookahead
@@ -34210,7 +34210,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			if lookahead != '\n' && !eof {
+			if !eof && lookahead != '\n' {
 				state = 172
 				lexer.Advance(false)
 				lookahead = lexer.Lookahead
@@ -34249,7 +34249,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			if lookahead == 0 {
+			if !eof {
 				state = 172
 				lexer.Advance(false)
 				lookahead = lexer.Lookahead
@@ -34260,7 +34260,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 		case 172:
 			lexer.MarkEnd()
 			lexer.AcceptToken(137)
-			if lookahead != '\n' && !eof {
+			if !eof && lookahead != '\n' {
 				state = 172
 				lexer.Advance(false)
 				lookahead = lexer.Lookahead
@@ -34294,7 +34294,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 		case 177:
 			lexer.MarkEnd()
 			lexer.AcceptToken(140)
-			if lookahead != '\n' && !eof {
+			if !eof && lookahead != '\n' {
 				state = 168
 				lexer.Advance(false)
 				lookahead = lexer.Lookahead
