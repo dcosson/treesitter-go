@@ -589,7 +589,8 @@ func extractLexModes(g *Grammar, src string) error {
 		return fmt.Errorf("ts_lex_modes not found")
 	}
 
-	re := regexp.MustCompile(`\[(\d+)\]\s*=\s*\{\.lex_state\s*=\s*(\d+)(?:,\s*\.external_lex_state\s*=\s*(\d+))?\}`)
+	// Tolerate extra fields like .reserved_word_set_id between captured groups and closing brace.
+	re := regexp.MustCompile(`\[(\d+)\]\s*=\s*\{\.lex_state\s*=\s*(\d+)(?:,\s*\.external_lex_state\s*=\s*(\d+))?[^}]*\}`)
 	modes := make([]LexModeEntry, g.StateCount)
 	for _, m := range re.FindAllStringSubmatch(block, -1) {
 		idx, _ := strconv.Atoi(m[1])
