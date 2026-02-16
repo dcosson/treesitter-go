@@ -156,10 +156,13 @@ func extractSymbolNames(g *Grammar, src string) error {
 	// Match C string assignments: [name] = "value"
 	// Must handle escaped quotes in values like "\""
 	re := regexp.MustCompile(`\[(\w+)\]\s*=\s*"((?:[^"\\]|\\.)*)"`)
-	names := make([]string, g.SymbolCount)
+	// Allocate enough for regular symbols + alias symbols so alias names
+	// (e.g. type_identifier, field_identifier) are included.
+	totalSymbols := g.SymbolCount + g.AliasCount
+	names := make([]string, totalSymbols)
 	for _, m := range re.FindAllStringSubmatch(block, -1) {
 		idx := g.resolveSymbolIndex(m[1])
-		if idx >= 0 && idx < g.SymbolCount {
+		if idx >= 0 && idx < totalSymbols {
 			names[idx] = unescapeCString(m[2])
 		}
 	}
@@ -174,7 +177,9 @@ func extractSymbolMetadata(g *Grammar, src string) error {
 		return fmt.Errorf("ts_symbol_metadata not found")
 	}
 
-	meta := make([]SymMeta, g.SymbolCount)
+	// Include alias symbols in the metadata array.
+	totalSymbols := g.SymbolCount + g.AliasCount
+	meta := make([]SymMeta, totalSymbols)
 
 	// The metadata entries span multiple lines:
 	//   [sym_name] = {
@@ -196,7 +201,7 @@ func extractSymbolMetadata(g *Grammar, src string) error {
 		}
 		symName := strings.TrimSpace(entry[:closeBracket])
 		idx := g.resolveSymbolIndex(symName)
-		if idx < 0 || idx >= g.SymbolCount {
+		if idx < 0 || idx >= totalSymbols {
 			continue
 		}
 
@@ -282,9 +287,30 @@ func extractAliasSequences(g *Grammar, src string) {
 	size := g.ProductionIDCount * g.MaxAliasSequenceLength
 	seqs := make([]uint16, size)
 
-	// Parse [prodID][childIdx] = symbol entries.
-	re := regexp.MustCompile(`\[(\d+)\]\[(\d+)\]\s*=\s*(\w+)`)
-	for _, m := range re.FindAllStringSubmatch(block, -1) {
+	// The C format uses nested braces:
+	//   [prodID] = {
+	//     [childIdx] = symbolName,
+	//   },
+	// Phase 1: Parse the nested format.
+	prodRe := regexp.MustCompile(`\[(\d+)\]\s*=\s*\{([^}]*)\}`)
+	childRe := regexp.MustCompile(`\[(\d+)\]\s*=\s*(\w+)`)
+
+	for _, pm := range prodRe.FindAllStringSubmatch(block, -1) {
+		prodID, _ := strconv.Atoi(pm[1])
+		innerBlock := pm[2]
+		for _, cm := range childRe.FindAllStringSubmatch(innerBlock, -1) {
+			childIdx, _ := strconv.Atoi(cm[1])
+			sym := g.resolveSymbolValue(cm[2])
+			idx := prodID*g.MaxAliasSequenceLength + childIdx
+			if idx < len(seqs) {
+				seqs[idx] = sym
+			}
+		}
+	}
+
+	// Phase 2: Also try the flat format [prodID][childIdx] = sym (fallback).
+	flatRe := regexp.MustCompile(`\[(\d+)\]\[(\d+)\]\s*=\s*(\w+)`)
+	for _, m := range flatRe.FindAllStringSubmatch(block, -1) {
 		prodID, _ := strconv.Atoi(m[1])
 		childIdx, _ := strconv.Atoi(m[2])
 		sym := g.resolveSymbolValue(m[3])
@@ -293,6 +319,7 @@ func extractAliasSequences(g *Grammar, src string) {
 			seqs[idx] = sym
 		}
 	}
+
 	g.AliasSequences = seqs
 }
 

@@ -368,6 +368,9 @@ const (
 	SymCharLiteralRepeat1 ts.Symbol = 357
 	SymConcatenatedStringRepeat1 ts.Symbol = 358
 	SymStringLiteralRepeat1 ts.Symbol = 359
+	SymFieldIdentifier ts.Symbol = 360
+	SymStatementIdentifier ts.Symbol = 361
+	SymTypeIdentifier ts.Symbol = 362
 )
 
 // Grammar field IDs.
@@ -14703,7 +14706,26 @@ func CLanguage() *ts.Language {
 	}
 
 	aliasSequences := make([]ts.Symbol, 1179)
-	_ = aliasSequences
+	aliasSequences[9] = 362
+	aliasSequences[64] = 362
+	aliasSequences[90] = 362
+	aliasSequences[136] = 362
+	aliasSequences[189] = 93
+	aliasSequences[217] = 362
+	aliasSequences[227] = 362
+	aliasSequences[262] = 361
+	aliasSequences[279] = 361
+	aliasSequences[326] = 360
+	aliasSequences[344] = 362
+	aliasSequences[460] = 362
+	aliasSequences[468] = 360
+	aliasSequences[479] = 362
+	aliasSequences[489] = 362
+	aliasSequences[694] = 362
+	aliasSequences[714] = 362
+	aliasSequences[883] = 360
+	aliasSequences[949] = 360
+	aliasSequences[1017] = 360
 
 	symbolMetadata := []ts.SymbolMetadata{
 		{Visible: false, Named: true}, // 0: end
@@ -15067,6 +15089,9 @@ func CLanguage() *ts.Language {
 		{Visible: false, Named: false}, // 357: char_literal_repeat1
 		{Visible: false, Named: false}, // 358: concatenated_string_repeat1
 		{Visible: false, Named: false}, // 359: string_literal_repeat1
+		{Visible: true, Named: true}, // 360: field_identifier
+		{Visible: true, Named: true}, // 361: statement_identifier
+		{Visible: true, Named: true}, // 362: type_identifier
 	}
 
 	symbolNames := []string{
@@ -15430,6 +15455,9 @@ func CLanguage() *ts.Language {
 		"char_literal_repeat1", // 357
 		"concatenated_string_repeat1", // 358
 		"string_literal_repeat1", // 359
+		"field_identifier", // 360
+		"statement_identifier", // 361
+		"type_identifier", // 362
 	}
 
 	fieldMapSlices := []ts.FieldMapSlice{

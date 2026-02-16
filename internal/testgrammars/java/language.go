@@ -328,6 +328,7 @@ const (
 	SymArrayInitializerRepeat1 ts.Symbol = 317
 	SymFormalParametersRepeat1 ts.Symbol = 318
 	SymReceiverParameterRepeat1 ts.Symbol = 319
+	SymTypeIdentifier ts.Symbol = 320
 )
 
 // Grammar field IDs.
@@ -9459,7 +9460,27 @@ func JavaLanguage() *ts.Language {
 	}
 
 	aliasSequences := make([]ts.Symbol, 2288)
-	_ = aliasSequences
+	aliasSequences[11] = 1
+	aliasSequences[22] = 320
+	aliasSequences[166] = 320
+	aliasSequences[199] = 320
+	aliasSequences[210] = 320
+	aliasSequences[330] = 320
+	aliasSequences[332] = 320
+	aliasSequences[464] = 320
+	aliasSequences[540] = 320
+	aliasSequences[551] = 320
+	aliasSequences[574] = 320
+	aliasSequences[607] = 320
+	aliasSequences[618] = 320
+	aliasSequences[726] = 320
+	aliasSequences[729] = 320
+	aliasSequences[850] = 320
+	aliasSequences[883] = 320
+	aliasSequences[915] = 320
+	aliasSequences[926] = 320
+	aliasSequences[949] = 320
+	aliasSequences[1280] = 320
 
 	symbolMetadata := []ts.SymbolMetadata{
 		{Visible: false, Named: true}, // 0: end
@@ -9782,6 +9803,7 @@ func JavaLanguage() *ts.Language {
 		{Visible: false, Named: false}, // 317: array_initializer_repeat1
 		{Visible: false, Named: false}, // 318: formal_parameters_repeat1
 		{Visible: false, Named: false}, // 319: receiver_parameter_repeat1
+		{Visible: true, Named: true}, // 320: type_identifier
 	}
 
 	symbolNames := []string{
@@ -10105,6 +10127,7 @@ func JavaLanguage() *ts.Language {
 		"array_initializer_repeat1", // 317
 		"formal_parameters_repeat1", // 318
 		"receiver_parameter_repeat1", // 319
+		"type_identifier", // 320
 	}
 
 	fieldMapSlices := []ts.FieldMapSlice{

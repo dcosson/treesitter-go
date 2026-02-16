@@ -384,6 +384,13 @@ const (
 	SymObjectTypeRepeat1 ts.Symbol = 373
 	SymTypeParametersRepeat1 ts.Symbol = 374
 	SymTupleTypeRepeat1 ts.Symbol = 375
+	SymInterfaceBody ts.Symbol = 376
+	SymPropertyIdentifier ts.Symbol = 377
+	SymShorthandPropertyIdentifier ts.Symbol = 378
+	SymShorthandPropertyIdentifierPattern ts.Symbol = 379
+	SymStatementIdentifier ts.Symbol = 380
+	SymThisType ts.Symbol = 381
+	SymTypeIdentifier ts.Symbol = 382
 )
 
 // Grammar field IDs.
@@ -32320,7 +32327,77 @@ func TypescriptLanguage() *ts.Language {
 	}
 
 	aliasSequences := make([]ts.Symbol, 3400)
-	_ = aliasSequences
+	aliasSequences[10] = 1
+	aliasSequences[70] = 377
+	aliasSequences[130] = 382
+	aliasSequences[140] = 382
+	aliasSequences[150] = 381
+	aliasSequences[260] = 1
+	aliasSequences[270] = 380
+	aliasSequences[280] = 1
+	aliasSequences[301] = 378
+	aliasSequences[311] = 379
+	aliasSequences[321] = 1
+	aliasSequences[481] = 380
+	aliasSequences[491] = 382
+	aliasSequences[621] = 382
+	aliasSequences[630] = 382
+	aliasSequences[640] = 382
+	aliasSequences[650] = 382
+	aliasSequences[661] = 382
+	aliasSequences[671] = 154
+	aliasSequences[731] = 382
+	aliasSequences[732] = 376
+	aliasSequences[752] = 377
+	aliasSequences[772] = 377
+	aliasSequences[880] = 234
+	aliasSequences[882] = 377
+	aliasSequences[890] = 379
+	aliasSequences[1111] = 382
+	aliasSequences[1121] = 382
+	aliasSequences[1161] = 1
+	aliasSequences[1231] = 1
+	aliasSequences[1311] = 382
+	aliasSequences[1321] = 382
+	aliasSequences[1332] = 382
+	aliasSequences[1340] = 382
+	aliasSequences[1362] = 377
+	aliasSequences[1382] = 377
+	aliasSequences[1402] = 382
+	aliasSequences[1411] = 382
+	aliasSequences[1431] = 382
+	aliasSequences[1433] = 376
+	aliasSequences[1441] = 382
+	aliasSequences[1443] = 376
+	aliasSequences[1482] = 382
+	aliasSequences[1531] = 382
+	aliasSequences[1550] = 1
+	aliasSequences[1671] = 382
+	aliasSequences[1752] = 377
+	aliasSequences[1771] = 382
+	aliasSequences[1802] = 382
+	aliasSequences[1812] = 382
+	aliasSequences[1821] = 382
+	aliasSequences[1841] = 382
+	aliasSequences[1844] = 376
+	aliasSequences[1870] = 1
+	aliasSequences[1892] = 382
+	aliasSequences[1902] = 382
+	aliasSequences[1923] = 382
+	aliasSequences[1941] = 382
+	aliasSequences[1961] = 1
+	aliasSequences[1971] = 1
+	aliasSequences[2020] = 382
+	aliasSequences[2262] = 382
+	aliasSequences[2312] = 382
+	aliasSequences[2323] = 382
+	aliasSequences[2333] = 382
+	aliasSequences[2653] = 377
+	aliasSequences[2663] = 382
+	aliasSequences[2751] = 1
+	aliasSequences[2760] = 382
+	aliasSequences[3022] = 1
+	aliasSequences[3183] = 1
 
 	symbolMetadata := []ts.SymbolMetadata{
 		{Visible: false, Named: true}, // 0: end
@@ -32699,6 +32776,13 @@ func TypescriptLanguage() *ts.Language {
 		{Visible: false, Named: false}, // 373: object_type_repeat1
 		{Visible: false, Named: false}, // 374: type_parameters_repeat1
 		{Visible: false, Named: false}, // 375: tuple_type_repeat1
+		{Visible: true, Named: true}, // 376: interface_body
+		{Visible: true, Named: true}, // 377: property_identifier
+		{Visible: true, Named: true}, // 378: shorthand_property_identifier
+		{Visible: true, Named: true}, // 379: shorthand_property_identifier_pattern
+		{Visible: true, Named: true}, // 380: statement_identifier
+		{Visible: true, Named: true}, // 381: this_type
+		{Visible: true, Named: true}, // 382: type_identifier
 	}
 
 	symbolNames := []string{
@@ -33078,6 +33162,13 @@ func TypescriptLanguage() *ts.Language {
 		"object_type_repeat1", // 373
 		"type_parameters_repeat1", // 374
 		"tuple_type_repeat1", // 375
+		"interface_body", // 376
+		"property_identifier", // 377
+		"shorthand_property_identifier", // 378
+		"shorthand_property_identifier_pattern", // 379
+		"statement_identifier", // 380
+		"this_type", // 381
+		"type_identifier", // 382
 	}
 
 	fieldMapSlices := []ts.FieldMapSlice{

@@ -269,6 +269,10 @@ const (
 	SymTemplateStringRepeat1 ts.Symbol = 258
 	SymClassBodyRepeat1 ts.Symbol = 259
 	SymFormalParametersRepeat1 ts.Symbol = 260
+	SymPropertyIdentifier ts.Symbol = 261
+	SymShorthandPropertyIdentifier ts.Symbol = 262
+	SymShorthandPropertyIdentifierPattern ts.Symbol = 263
+	SymStatementIdentifier ts.Symbol = 264
 )
 
 // Grammar field IDs.
@@ -11747,7 +11751,27 @@ func JavascriptLanguage() *ts.Language {
 	}
 
 	aliasSequences := make([]ts.Symbol, 1089)
-	_ = aliasSequences
+	aliasSequences[9] = 1
+	aliasSequences[36] = 261
+	aliasSequences[45] = 1
+	aliasSequences[135] = 264
+	aliasSequences[144] = 1
+	aliasSequences[153] = 1
+	aliasSequences[163] = 262
+	aliasSequences[172] = 263
+	aliasSequences[181] = 1
+	aliasSequences[207] = 1
+	aliasSequences[289] = 264
+	aliasSequences[407] = 261
+	aliasSequences[425] = 261
+	aliasSequences[504] = 263
+	aliasSequences[658] = 1
+	aliasSequences[856] = 1
+	aliasSequences[920] = 1
+	aliasSequences[983] = 1
+	aliasSequences[1001] = 1
+	aliasSequences[1020] = 1
+	aliasSequences[1065] = 1
 
 	symbolMetadata := []ts.SymbolMetadata{
 		{Visible: false, Named: true}, // 0: end
@@ -12011,6 +12035,10 @@ func JavascriptLanguage() *ts.Language {
 		{Visible: false, Named: false}, // 258: template_string_repeat1
 		{Visible: false, Named: false}, // 259: class_body_repeat1
 		{Visible: false, Named: false}, // 260: formal_parameters_repeat1
+		{Visible: true, Named: true}, // 261: property_identifier
+		{Visible: true, Named: true}, // 262: shorthand_property_identifier
+		{Visible: true, Named: true}, // 263: shorthand_property_identifier_pattern
+		{Visible: true, Named: true}, // 264: statement_identifier
 	}
 
 	symbolNames := []string{
@@ -12275,6 +12303,10 @@ func JavascriptLanguage() *ts.Language {
 		"template_string_repeat1", // 258
 		"class_body_repeat1", // 259
 		"formal_parameters_repeat1", // 260
+		"property_identifier", // 261
+		"shorthand_property_identifier", // 262
+		"shorthand_property_identifier_pattern", // 263
+		"statement_identifier", // 264
 	}
 
 	fieldMapSlices := []ts.FieldMapSlice{

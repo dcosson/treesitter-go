@@ -143,6 +143,15 @@ const (
 	SymGridValueRepeat1 ts.Symbol = 132
 	SymArgumentsRepeat1 ts.Symbol = 133
 	SymClassNameRepeat1 ts.Symbol = 134
+	SymAttributeName ts.Symbol = 135
+	SymFeatureName ts.Symbol = 136
+	SymFunctionName ts.Symbol = 137
+	SymIdName ts.Symbol = 138
+	SymKeyframesName ts.Symbol = 139
+	SymKeywordQuery ts.Symbol = 140
+	SymNamespaceName ts.Symbol = 141
+	SymPropertyName ts.Symbol = 142
+	SymTagName ts.Symbol = 143
 )
 
 // CssLanguage returns the compiled css grammar as a Language.
@@ -3067,7 +3076,22 @@ func CssLanguage() *ts.Language {
 	}
 
 	aliasSequences := make([]ts.Symbol, 102)
-	_ = aliasSequences
+	aliasSequences[6] = 143
+	aliasSequences[13] = 121
+	aliasSequences[18] = 68
+	aliasSequences[24] = 140
+	aliasSequences[31] = 143
+	aliasSequences[37] = 138
+	aliasSequences[42] = 137
+	aliasSequences[49] = 139
+	aliasSequences[55] = 135
+	aliasSequences[62] = 121
+	aliasSequences[68] = 143
+	aliasSequences[74] = 138
+	aliasSequences[79] = 141
+	aliasSequences[84] = 142
+	aliasSequences[92] = 135
+	aliasSequences[97] = 136
 
 	symbolMetadata := []ts.SymbolMetadata{
 		{Visible: false, Named: true}, // 0: end
@@ -3205,6 +3229,15 @@ func CssLanguage() *ts.Language {
 		{Visible: false, Named: false}, // 132: grid_value_repeat1
 		{Visible: false, Named: false}, // 133: arguments_repeat1
 		{Visible: false, Named: false}, // 134: class_name_repeat1
+		{Visible: true, Named: true}, // 135: attribute_name
+		{Visible: true, Named: true}, // 136: feature_name
+		{Visible: true, Named: true}, // 137: function_name
+		{Visible: true, Named: true}, // 138: id_name
+		{Visible: true, Named: true}, // 139: keyframes_name
+		{Visible: true, Named: true}, // 140: keyword_query
+		{Visible: true, Named: true}, // 141: namespace_name
+		{Visible: true, Named: true}, // 142: property_name
+		{Visible: true, Named: true}, // 143: tag_name
 	}
 
 	symbolNames := []string{
@@ -3343,6 +3376,15 @@ func CssLanguage() *ts.Language {
 		"grid_value_repeat1", // 132
 		"arguments_repeat1", // 133
 		"class_name_repeat1", // 134
+		"attribute_name", // 135
+		"feature_name", // 136
+		"function_name", // 137
+		"id_name", // 138
+		"keyframes_name", // 139
+		"keyword_query", // 140
+		"namespace_name", // 141
+		"property_name", // 142
+		"tag_name", // 143
 	}
 
 	externalScannerStates := []bool{

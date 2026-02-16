@@ -281,6 +281,8 @@ const (
 	SymStringRepeat1 ts.Symbol = 270
 	SymStringContentRepeat1 ts.Symbol = 271
 	SymFormatSpecifierRepeat1 ts.Symbol = 272
+	SymAsPatternTarget ts.Symbol = 273
+	SymFormatExpression ts.Symbol = 274
 )
 
 // Grammar field IDs.
@@ -17487,7 +17489,49 @@ func PythonLanguage() *ts.Language {
 	}
 
 	aliasSequences := make([]ts.Symbol, 1420)
-	_ = aliasSequences
+	aliasSequences[10] = 1
+	aliasSequences[20] = 149
+	aliasSequences[51] = 1
+	aliasSequences[222] = 273
+	aliasSequences[331] = 226
+	aliasSequences[373] = 161
+	aliasSequences[413] = 161
+	aliasSequences[422] = 161
+	aliasSequences[433] = 161
+	aliasSequences[453] = 161
+	aliasSequences[500] = 274
+	aliasSequences[543] = 161
+	aliasSequences[553] = 161
+	aliasSequences[594] = 161
+	aliasSequences[603] = 161
+	aliasSequences[644] = 161
+	aliasSequences[664] = 161
+	aliasSequences[674] = 161
+	aliasSequences[690] = 1
+	aliasSequences[783] = 161
+	aliasSequences[855] = 161
+	aliasSequences[865] = 161
+	aliasSequences[882] = 161
+	aliasSequences[905] = 161
+	aliasSequences[925] = 161
+	aliasSequences[996] = 161
+	aliasSequences[1016] = 161
+	aliasSequences[1025] = 161
+	aliasSequences[1043] = 161
+	aliasSequences[1053] = 161
+	aliasSequences[1066] = 161
+	aliasSequences[1113] = 161
+	aliasSequences[1126] = 161
+	aliasSequences[1147] = 161
+	aliasSequences[1197] = 161
+	aliasSequences[1234] = 161
+	aliasSequences[1254] = 161
+	aliasSequences[1288] = 161
+	aliasSequences[1295] = 161
+	aliasSequences[1305] = 161
+	aliasSequences[1335] = 161
+	aliasSequences[1355] = 161
+	aliasSequences[1406] = 161
 
 	symbolMetadata := []ts.SymbolMetadata{
 		{Visible: false, Named: true}, // 0: end
@@ -17763,6 +17807,8 @@ func PythonLanguage() *ts.Language {
 		{Visible: false, Named: false}, // 270: string_repeat1
 		{Visible: false, Named: false}, // 271: string_content_repeat1
 		{Visible: false, Named: false}, // 272: format_specifier_repeat1
+		{Visible: true, Named: true}, // 273: as_pattern_target
+		{Visible: true, Named: true}, // 274: format_expression
 	}
 
 	symbolNames := []string{
@@ -18039,6 +18085,8 @@ func PythonLanguage() *ts.Language {
 		"string_repeat1", // 270
 		"string_content_repeat1", // 271
 		"format_specifier_repeat1", // 272
+		"as_pattern_target", // 273
+		"format_expression", // 274
 	}
 
 	fieldMapSlices := []ts.FieldMapSlice{

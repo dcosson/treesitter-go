@@ -222,6 +222,11 @@ const (
 	SymArgumentListRepeat1 ts.Symbol = 211
 	SymLiteralValueRepeat1 ts.Symbol = 212
 	SymInterpretedStringLiteralRepeat1 ts.Symbol = 213
+	SymFieldIdentifier ts.Symbol = 214
+	SymLabelName ts.Symbol = 215
+	SymPackageIdentifier ts.Symbol = 216
+	SymTypeConstraint ts.Symbol = 217
+	SymTypeIdentifier ts.Symbol = 218
 )
 
 // Grammar field IDs.
@@ -9729,7 +9734,37 @@ func GoLanguage() *ts.Language {
 	}
 
 	aliasSequences := make([]ts.Symbol, 999)
-	_ = aliasSequences
+	aliasSequences[9] = 218
+	aliasSequences[19] = 216
+	aliasSequences[73] = 215
+	aliasSequences[99] = 218
+	aliasSequences[108] = 218
+	aliasSequences[144] = 216
+	aliasSequences[216] = 218
+	aliasSequences[225] = 218
+	aliasSequences[234] = 215
+	aliasSequences[279] = 216
+	aliasSequences[281] = 218
+	aliasSequences[308] = 214
+	aliasSequences[407] = 214
+	aliasSequences[441] = 218
+	aliasSequences[450] = 218
+	aliasSequences[460] = 218
+	aliasSequences[468] = 214
+	aliasSequences[477] = 218
+	aliasSequences[495] = 214
+	aliasSequences[613] = 217
+	aliasSequences[650] = 214
+	aliasSequences[659] = 214
+	aliasSequences[666] = 218
+	aliasSequences[676] = 218
+	aliasSequences[694] = 214
+	aliasSequences[702] = 214
+	aliasSequences[711] = 214
+	aliasSequences[720] = 214
+	aliasSequences[866] = 217
+	aliasSequences[884] = 214
+	aliasSequences[891] = 214
 
 	symbolMetadata := []ts.SymbolMetadata{
 		{Visible: false, Named: true}, // 0: end
@@ -9946,6 +9981,11 @@ func GoLanguage() *ts.Language {
 		{Visible: false, Named: false}, // 211: argument_list_repeat1
 		{Visible: false, Named: false}, // 212: literal_value_repeat1
 		{Visible: false, Named: false}, // 213: interpreted_string_literal_repeat1
+		{Visible: true, Named: true}, // 214: field_identifier
+		{Visible: true, Named: true}, // 215: label_name
+		{Visible: true, Named: true}, // 216: package_identifier
+		{Visible: true, Named: true}, // 217: type_constraint
+		{Visible: true, Named: true}, // 218: type_identifier
 	}
 
 	symbolNames := []string{
@@ -10163,6 +10203,11 @@ func GoLanguage() *ts.Language {
 		"argument_list_repeat1", // 211
 		"literal_value_repeat1", // 212
 		"interpreted_string_literal_repeat1", // 213
+		"field_identifier", // 214
+		"label_name", // 215
+		"package_identifier", // 216
+		"type_constraint", // 217
+		"type_identifier", // 218
 	}
 
 	fieldMapSlices := []ts.FieldMapSlice{

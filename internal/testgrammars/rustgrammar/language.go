@@ -359,6 +359,10 @@ const (
 	SymSlicePatternRepeat1 ts.Symbol = 348
 	SymStructPatternRepeat1 ts.Symbol = 349
 	SymStringLiteralRepeat1 ts.Symbol = 350
+	SymFieldIdentifier ts.Symbol = 351
+	SymLetChain ts.Symbol = 352
+	SymShorthandFieldIdentifier ts.Symbol = 353
+	SymTypeIdentifier ts.Symbol = 354
 )
 
 // Grammar field IDs.
@@ -23349,7 +23353,121 @@ func RustLanguage() *ts.Language {
 	}
 
 	aliasSequences := make([]ts.Symbol, 2950)
-	_ = aliasSequences
+	aliasSequences[10] = 1
+	aliasSequences[50] = 354
+	aliasSequences[71] = 354
+	aliasSequences[90] = 352
+	aliasSequences[100] = 354
+	aliasSequences[160] = 1
+	aliasSequences[170] = 1
+	aliasSequences[172] = 354
+	aliasSequences[190] = 1
+	aliasSequences[201] = 1
+	aliasSequences[220] = 1
+	aliasSequences[240] = 354
+	aliasSequences[281] = 354
+	aliasSequences[300] = 354
+	aliasSequences[330] = 1
+	aliasSequences[341] = 354
+	aliasSequences[360] = 354
+	aliasSequences[472] = 354
+	aliasSequences[490] = 354
+	aliasSequences[510] = 226
+	aliasSequences[520] = 226
+	aliasSequences[522] = 354
+	aliasSequences[562] = 351
+	aliasSequences[592] = 155
+	aliasSequences[601] = 1
+	aliasSequences[620] = 1
+	aliasSequences[622] = 1
+	aliasSequences[630] = 1
+	aliasSequences[650] = 354
+	aliasSequences[660] = 353
+	aliasSequences[672] = 1
+	aliasSequences[700] = 226
+	aliasSequences[751] = 354
+	aliasSequences[770] = 1
+	aliasSequences[801] = 354
+	aliasSequences[811] = 354
+	aliasSequences[850] = 354
+	aliasSequences[911] = 354
+	aliasSequences[921] = 354
+	aliasSequences[931] = 354
+	aliasSequences[952] = 354
+	aliasSequences[960] = 1
+	aliasSequences[970] = 1
+	aliasSequences[1022] = 354
+	aliasSequences[1081] = 353
+	aliasSequences[1113] = 354
+	aliasSequences[1132] = 354
+	aliasSequences[1140] = 354
+	aliasSequences[1170] = 1
+	aliasSequences[1210] = 354
+	aliasSequences[1221] = 354
+	aliasSequences[1280] = 354
+	aliasSequences[1291] = 354
+	aliasSequences[1301] = 354
+	aliasSequences[1353] = 1
+	aliasSequences[1371] = 354
+	aliasSequences[1381] = 354
+	aliasSequences[1391] = 354
+	aliasSequences[1401] = 354
+	aliasSequences[1442] = 354
+	aliasSequences[1452] = 354
+	aliasSequences[1462] = 354
+	aliasSequences[1480] = 351
+	aliasSequences[1512] = 354
+	aliasSequences[1523] = 354
+	aliasSequences[1560] = 354
+	aliasSequences[1572] = 353
+	aliasSequences[1580] = 351
+	aliasSequences[1611] = 354
+	aliasSequences[1631] = 354
+	aliasSequences[1702] = 354
+	aliasSequences[1712] = 354
+	aliasSequences[1740] = 354
+	aliasSequences[1751] = 354
+	aliasSequences[1762] = 354
+	aliasSequences[1772] = 354
+	aliasSequences[1890] = 351
+	aliasSequences[1901] = 354
+	aliasSequences[1911] = 354
+	aliasSequences[1921] = 354
+	aliasSequences[1942] = 354
+	aliasSequences[1952] = 354
+	aliasSequences[1962] = 354
+	aliasSequences[1991] = 351
+	aliasSequences[2032] = 354
+	aliasSequences[2043] = 354
+	aliasSequences[2053] = 354
+	aliasSequences[2063] = 354
+	aliasSequences[2100] = 354
+	aliasSequences[2111] = 351
+	aliasSequences[2192] = 354
+	aliasSequences[2213] = 354
+	aliasSequences[2223] = 354
+	aliasSequences[2252] = 354
+	aliasSequences[2331] = 351
+	aliasSequences[2341] = 354
+	aliasSequences[2353] = 354
+	aliasSequences[2363] = 354
+	aliasSequences[2393] = 354
+	aliasSequences[2403] = 354
+	aliasSequences[2432] = 354
+	aliasSequences[2472] = 354
+	aliasSequences[2482] = 354
+	aliasSequences[2493] = 354
+	aliasSequences[2503] = 354
+	aliasSequences[2513] = 354
+	aliasSequences[2572] = 351
+	aliasSequences[2603] = 354
+	aliasSequences[2673] = 354
+	aliasSequences[2694] = 354
+	aliasSequences[2704] = 354
+	aliasSequences[2733] = 354
+	aliasSequences[2792] = 354
+	aliasSequences[2803] = 354
+	aliasSequences[2864] = 354
 
 	symbolMetadata := []ts.SymbolMetadata{
 		{Visible: false, Named: true}, // 0: end
@@ -23703,6 +23821,10 @@ func RustLanguage() *ts.Language {
 		{Visible: false, Named: false}, // 348: slice_pattern_repeat1
 		{Visible: false, Named: false}, // 349: struct_pattern_repeat1
 		{Visible: false, Named: false}, // 350: string_literal_repeat1
+		{Visible: true, Named: true}, // 351: field_identifier
+		{Visible: true, Named: true}, // 352: let_chain
+		{Visible: true, Named: true}, // 353: shorthand_field_identifier
+		{Visible: true, Named: true}, // 354: type_identifier
 	}
 
 	symbolNames := []string{
@@ -24057,6 +24179,10 @@ func RustLanguage() *ts.Language {
 		"slice_pattern_repeat1", // 348
 		"struct_pattern_repeat1", // 349
 		"string_literal_repeat1", // 350
+		"field_identifier", // 351
+		"let_chain", // 352
+		"shorthand_field_identifier", // 353
+		"type_identifier", // 354
 	}
 
 	fieldMapSlices := []ts.FieldMapSlice{

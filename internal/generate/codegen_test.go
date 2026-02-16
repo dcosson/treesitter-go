@@ -228,11 +228,12 @@ func TestExtractGoGrammar(t *testing.T) {
 	if g.StateCount < 500 {
 		t.Errorf("StateCount = %d, want >= 500", g.StateCount)
 	}
-	if len(g.SymbolNames) != g.SymbolCount {
-		t.Errorf("SymbolNames length = %d, want %d", len(g.SymbolNames), g.SymbolCount)
+	expectedSymbolLen := g.SymbolCount + g.AliasCount
+	if len(g.SymbolNames) != expectedSymbolLen {
+		t.Errorf("SymbolNames length = %d, want %d (symbols=%d + aliases=%d)", len(g.SymbolNames), expectedSymbolLen, g.SymbolCount, g.AliasCount)
 	}
-	if len(g.SymbolMetadata) != g.SymbolCount {
-		t.Errorf("SymbolMetadata length = %d, want %d", len(g.SymbolMetadata), g.SymbolCount)
+	if len(g.SymbolMetadata) != expectedSymbolLen {
+		t.Errorf("SymbolMetadata length = %d, want %d (symbols=%d + aliases=%d)", len(g.SymbolMetadata), expectedSymbolLen, g.SymbolCount, g.AliasCount)
 	}
 
 	// Should have lex states.

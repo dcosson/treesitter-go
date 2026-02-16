@@ -2258,7 +2258,7 @@ func LuaLanguage() *ts.Language {
 	}
 
 	aliasSequences := make([]ts.Symbol, 413)
-	_ = aliasSequences
+	aliasSequences[197] = 70
 
 	symbolMetadata := []ts.SymbolMetadata{
 		{Visible: false, Named: true}, // 0: end
