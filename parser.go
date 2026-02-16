@@ -22,9 +22,10 @@ type Parser struct {
 
 	// Token cache: avoids re-lexing when the parser inspects the
 	// current token multiple times (e.g. across versions).
-	cachedToken      Subtree
-	cachedTokenState StateID
-	cachedTokenValid bool
+	cachedToken         Subtree
+	cachedTokenState    StateID
+	cachedTokenPosition Length
+	cachedTokenValid    bool
 
 	// Error recovery state.
 	acceptCount     uint32
@@ -84,6 +85,7 @@ func (p *Parser) Reset() {
 	p.stack.Clear()
 	p.finishedTree = SubtreeZero
 	p.cachedToken = SubtreeZero
+	p.cachedTokenPosition = LengthZero
 	p.cachedTokenState = 0
 	p.cachedTokenValid = false
 	p.acceptCount = 0
@@ -242,7 +244,9 @@ func (p *Parser) lexToken(state StateID, position Length) Subtree {
 	lexMode := p.language.LexModes[state]
 
 	// Check cache: only valid if same lex state and position.
-	if p.cachedTokenValid && p.cachedTokenState == StateID(lexMode.LexState) {
+	if p.cachedTokenValid &&
+		p.cachedTokenState == StateID(lexMode.LexState) &&
+		p.cachedTokenPosition.Bytes == position.Bytes {
 		return p.cachedToken
 	}
 
@@ -309,6 +313,7 @@ func (p *Parser) lexToken(state StateID, position Length) Subtree {
 
 	// Cache the token.
 	p.cachedToken = token
+	p.cachedTokenPosition = position
 	p.cachedTokenState = StateID(lexMode.LexState)
 	p.cachedTokenValid = true
 
@@ -447,12 +452,7 @@ func (p *Parser) handleError(version StackVersion, token Subtree) bool {
 			p.stack.Push(skipVersion, state, errNode, false, newPosition)
 			p.cachedTokenValid = false
 
-			if int(skipVersion) < p.stack.VersionCount() {
-				topNode := p.stack.heads[skipVersion].node
-				if topNode != nil {
-					topNode.errorCost += skipCost
-				}
-			}
+			p.stack.AddErrorCost(skipVersion, skipCost)
 		}
 	}
 
@@ -474,10 +474,7 @@ func (p *Parser) handleError(version StackVersion, token Subtree) bool {
 		p.stack.Push(version, state, errNode, false, newPosition)
 		p.cachedTokenValid = false
 
-		topNode := p.stack.heads[version].node
-		if topNode != nil {
-			topNode.errorCost += skipCost + ErrorCostPerRecovery
-		}
+		p.stack.AddErrorCost(version, skipCost+ErrorCostPerRecovery)
 	}
 
 	return true
@@ -513,12 +510,7 @@ func (p *Parser) doAllPotentialReductions(version StackVersion, lookahead Subtre
 			newEntry := p.language.tableEntry(newState, lookaheadSymbol)
 			if newEntry.ActionCount > 0 {
 				recovered = true
-				if int(testVersion) < p.stack.VersionCount() {
-					topNode := p.stack.heads[testVersion].node
-					if topNode != nil {
-						topNode.errorCost += ErrorCostPerRecovery
-					}
-				}
+				p.stack.AddErrorCost(testVersion, ErrorCostPerRecovery)
 			} else {
 				p.stack.Halt(testVersion)
 			}
@@ -565,12 +557,7 @@ func (p *Parser) tryMissingTokens(version StackVersion, lookahead Subtree) bool 
 		newEntry := p.language.tableEntry(newState, lookaheadSymbol)
 		if newEntry.ActionCount > 0 {
 			recovered = true
-			if int(testVersion) < p.stack.VersionCount() {
-				topNode := p.stack.heads[testVersion].node
-				if topNode != nil {
-					topNode.errorCost += ErrorCostPerMissingTree
-				}
-			}
+			p.stack.AddErrorCost(testVersion, ErrorCostPerMissingTree)
 		} else {
 			p.stack.Halt(testVersion)
 		}

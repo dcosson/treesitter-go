@@ -487,6 +487,16 @@ func (s *Stack) LastExternalToken(version StackVersion) Subtree {
 	return s.heads[version].lastExternalToken
 }
 
+// AddErrorCost adds to the error cost of a version's top node.
+func (s *Stack) AddErrorCost(version StackVersion, cost uint32) {
+	if int(version) >= len(s.heads) {
+		return
+	}
+	if s.heads[version].node != nil {
+		s.heads[version].node.errorCost += cost
+	}
+}
+
 // CompactHaltedVersions removes all halted versions from the stack.
 func (s *Stack) CompactHaltedVersions() {
 	n := 0

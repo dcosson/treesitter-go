@@ -224,36 +224,23 @@ func testJSONLanguage() *Language {
 	return lang
 }
 
-// buildTestJSONLanguage constructs the JSON grammar language struct.
-// This is a simplified copy of internal/testgrammars.JSONLanguage() to avoid
-// import cycles from the test file in the main package.
+// buildTestJSONLanguage constructs a stub JSON grammar language struct
+// for parser API lifecycle tests (set language, reset, cancellation).
+// Real parsing tests use the complete grammar in parser_integration_test.go.
 func buildTestJSONLanguage() *Language {
-	// Symbol metadata for 25 symbols.
 	symbolMetadata := make([]SymbolMetadata, numJSONSymbols)
-	// Anonymous tokens: visible=true, named=false.
 	for _, sym := range []Symbol{symLBrace, symComma, symRBrace, symColon, symLBrack, symRBrack, symDQuote} {
 		symbolMetadata[sym] = SymbolMetadata{Visible: true, Named: false}
 	}
-	// Named tokens.
-	symbolMetadata[symStringContent] = SymbolMetadata{Visible: true, Named: true}
-	symbolMetadata[symEscapeSequence] = SymbolMetadata{Visible: true, Named: true}
-	symbolMetadata[symNumber] = SymbolMetadata{Visible: true, Named: true}
-	symbolMetadata[symTrue] = SymbolMetadata{Visible: true, Named: true}
-	symbolMetadata[symFalse] = SymbolMetadata{Visible: true, Named: true}
-	symbolMetadata[symNull] = SymbolMetadata{Visible: true, Named: true}
-	symbolMetadata[symComment] = SymbolMetadata{Visible: true, Named: true}
-	// Named non-terminals.
+	for _, sym := range []Symbol{symStringContent, symEscapeSequence, symNumber, symTrue, symFalse, symNull, symComment} {
+		symbolMetadata[sym] = SymbolMetadata{Visible: true, Named: true}
+	}
 	symbolMetadata[symDocument] = SymbolMetadata{Visible: true, Named: true}
-	symbolMetadata[symValue] = SymbolMetadata{Visible: false, Named: true} // supertype, hidden
+	symbolMetadata[symValue] = SymbolMetadata{Visible: false, Named: true}
 	symbolMetadata[symObject] = SymbolMetadata{Visible: true, Named: true}
 	symbolMetadata[symPair] = SymbolMetadata{Visible: true, Named: true}
 	symbolMetadata[symArray] = SymbolMetadata{Visible: true, Named: true}
 	symbolMetadata[symString] = SymbolMetadata{Visible: true, Named: true}
-	// Aux (hidden).
-	symbolMetadata[symAuxStringContent] = SymbolMetadata{Visible: false, Named: false}
-	symbolMetadata[symAuxDocRepeat1] = SymbolMetadata{Visible: false, Named: false}
-	symbolMetadata[symAuxObjRepeat1] = SymbolMetadata{Visible: false, Named: false}
-	symbolMetadata[symAuxArrRepeat1] = SymbolMetadata{Visible: false, Named: false}
 
 	symbolNames := []string{
 		"end", "{", ",", "}", ":", "[", "]", "\"",
@@ -263,39 +250,6 @@ func buildTestJSONLanguage() *Language {
 		"_string_content", "document_repeat1", "object_repeat1", "array_repeat1",
 	}
 
-	// Simplified parse tables for a basic JSON grammar.
-	// We use a minimal set of states to get the parser working.
-	// This focuses on: null, true, false, number, string, {}, [], and nested.
-	//
-	// Parse states:
-	//   0: initial state
-	//   1: after seeing document start (expect value or end)
-	//   2-6: large states
-	//   7-15: small states
-	//   ... (matches the full grammar from testgrammars)
-
-	// For the parser tests, we'll reuse the parse tables from the test grammars.
-	// But since we can't import them, we inline a simplified version.
-	// Actually, the cleanest approach is to import the language from an external
-	// test package. Let me create the language using the testgrammars package
-	// via an external test file instead.
-
-	// For now, use a minimal viable grammar that handles basic JSON values.
-	// This won't match C tree-sitter exactly but will validate the parser loop.
-
-	// MINIMAL JSON GRAMMAR:
-	// States: 0 (start), 1 (after shift value), 2 (accept state)
-	//
-	// State 0: SHIFT on value tokens (null/true/false/number/"/[/{) to state 1
-	//          SHIFT on { to state 3 (object start)
-	//          SHIFT on [ to state 5 (array start)
-	//          SHIFT on " to state 7 (string start)
-	//
-	// Actually, let's build a proper language from the test grammar tables.
-	// Since we can't import the package, we'll create a bridge.
-
-	// PLACEHOLDER: return a nil-table language for now.
-	// The real solution is to use an external test file.
 	return &Language{
 		Version:        15,
 		SymbolCount:    numJSONSymbols,
