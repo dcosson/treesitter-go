@@ -93,6 +93,10 @@
     {
       "id": "tree-sitter-go-wcu.17",
       "type": "parent-child"
+    },
+    {
+      "id": "tree-sitter-go-cmn",
+      "type": "parent-child"
     }
   ],
   "created_by": "Danny Cosson",
