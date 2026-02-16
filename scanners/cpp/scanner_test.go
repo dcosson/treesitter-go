@@ -88,11 +88,11 @@ func TestDeserializeBadLength(t *testing.T) {
 func TestSerializeSmallBuffer(t *testing.T) {
 	s := New().(*Scanner)
 	s.delimiter = []int32{'a', 'b', 'c'}
-	// Buffer only fits 1 rune (4 bytes)
+	// Buffer only fits 1 rune (5 bytes) but needs 12; should fail
 	buf := make([]byte, 5)
 	n := s.Serialize(buf)
-	if n != 4 {
-		t.Errorf("Serialize with small buffer = %d, want 4 (only 1 rune fits)", n)
+	if n != 0 {
+		t.Errorf("Serialize with small buffer = %d, want 0 (buffer too small)", n)
 	}
 }
 
@@ -142,6 +142,31 @@ func TestScanDelimiterWithSpace(t *testing.T) {
 	v := onlyValid(RawStringDelimiter)
 	if s.Scan(lexer, v) {
 		t.Error("expected false for delimiter with space")
+	}
+}
+
+func TestScanDelimiterFailureResetsState(t *testing.T) {
+	// After a failed opening scan (e.g., backslash mid-delimiter),
+	// the delimiter should be cleared so a subsequent call takes the
+	// opening path, not the closing path.
+	s := New().(*Scanner)
+	v := onlyValid(RawStringDelimiter)
+
+	lexer1 := newLexerForString("abc\\def(")
+	if s.Scan(lexer1, v) {
+		t.Error("expected false for delimiter with backslash")
+	}
+	if s.delimiter != nil {
+		t.Errorf("delimiter should be nil after failed open, got %v", s.delimiter)
+	}
+
+	// Now a valid opening should work (takes opening path, not closing)
+	lexer2 := newLexerForString("xyz(")
+	if !s.Scan(lexer2, v) {
+		t.Fatal("expected successful opening delimiter after prior failure")
+	}
+	if len(s.delimiter) != 3 {
+		t.Errorf("delimiter = %v, want [x y z]", s.delimiter)
 	}
 }
 

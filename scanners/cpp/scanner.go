@@ -50,10 +50,11 @@ func New() ts.ExternalScanner {
 // Format: delimiter runes encoded as little-endian uint32 (wchar_t compat).
 func (s *Scanner) Serialize(buf []byte) uint32 {
 	size := uint32(0)
+	needed := len(s.delimiter) * wcharSize
+	if needed > len(buf) {
+		return 0 // Buffer too small; signal serialization failure.
+	}
 	for _, r := range s.delimiter {
-		if int(size)+wcharSize > len(buf) {
-			break
-		}
 		binary.LittleEndian.PutUint32(buf[size:], uint32(r))
 		size += wcharSize
 	}
@@ -112,6 +113,7 @@ func (s *Scanner) scanRawStringDelimiter(lexer *ts.Lexer) bool {
 	for {
 		if len(s.delimiter) >= maxDelimiterLength || lexer.EOF() ||
 			lexer.Lookahead == '\\' || isSpace(lexer.Lookahead) {
+			s.delimiter = nil // Reset partial state on failure.
 			return false
 		}
 		if lexer.Lookahead == '(' {
