@@ -1,0 +1,25 @@
+{
+  "id": "tree-sitter-go-pwd",
+  "title": "Fix 6j5 Query system P1/P2 issues from review",
+  "description": "3 P1 and 4 P2 issues found in b914e92 (query system commit). P1.1: pointer invalidation in advanceStates (use-after-free from append while holding pointer). P1.2: currentFieldID() stub always returns 0, field matching silently broken. P1.3: alternation patterns match any node via wildcard collision. P2.1: quantifier fork creates incorrect capture state. P2.2: linear scan instead of binary search on pattern map. P2.3: no test coverage for runtime matching engine. P2.4: uint16 overflow risk for large queries. Assigned to coder-1, will fix after wcu.4.",
+  "status": "closed",
+  "priority": 2,
+  "type": "task",
+  "dependents": [
+    {
+      "id": "tree-sitter-go-6j5",
+      "type": "blocks"
+    }
+  ],
+  "created_by": "Danny Cosson",
+  "owner": "dcosson@gmail.com",
+  "labels": [
+    "p1",
+    "review-feedback"
+  ],
+  "assignee": "coder-1",
+  "created_at": "2026-02-16T01:14:30.616932-08:00",
+  "updated_at": "2026-02-16T02:24:55.01906-08:00",
+  "closed_at": "2026-02-16T02:18:05.553455-08:00",
+  "close_reason": "Closed"
+}

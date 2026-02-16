@@ -2,7 +2,7 @@
   "id": "tree-sitter-go-wcu.3",
   "title": "GLR parser engine: parse loop and error recovery",
   "description": "Implement the core GLR parsing engine — the main parse loop with shift/reduce/accept and error recovery. This is the hardest and most complex task in the project.\n\nDepends on the data structures bead (Tree/Node/TreeCursor/GSS stack) and the corpus test runner (for test-driven development against real grammar expectations).\n\nDeliverables:\n- parser.go: Parser struct (language, lexer, stack, reusableNode, oldTree, finishedTree, tokenCache). Main parse loop (ts_parser__advance equivalent). Shift, reduce, accept actions. Token caching. context.Context integration for cancellation (check ctx.Done() in main loop).\n- Parser.Reset() implementation: clear stack, reusable node state, token cache, finished tree.\n- Error recovery: handle_error, recover, do_all_potential_reductions, condense_stack. Error cost constants (ERROR_COST_PER_RECOVERY=500, ERROR_COST_PER_MISSING_TREE=110, ERROR_COST_PER_SKIPPED_TREE=100, ERROR_COST_PER_SKIPPED_LINE=30, ERROR_COST_PER_SKIPPED_CHAR=1). MAX_VERSION_COUNT=6, MAX_COST_DIFFERENCE=1800.\n- Integration: wire Parser to use Lexer (from pso bead) and Language (from 4q9 bead) to drive the full parse pipeline.\n\nTests:\n- Parse JSON files using hand-compiled grammar, verify S-expression output matches C tree-sitter\n- Run JSON corpus tests via the corpus test runner (from corpus bead)\n- Test error recovery on malformed JSON\n- Parse with context cancellation\n- Test Parser.Reset() clears all state\n- Multiple sequential parses on same parser\n- GLR ambiguity: verify stack version splitting and merging\n\nReference: docs/design.md §6, §9 Phase 3, §10 Error Recovery Fidelity, C source: parser.c",
-  "status": "open",
+  "status": "closed",
   "priority": 2,
   "type": "task",
   "parent": "tree-sitter-go-wcu",
@@ -40,5 +40,7 @@
     "phase-3b"
   ],
   "created_at": "2026-02-15T22:22:04.833298-08:00",
-  "updated_at": "2026-02-15T22:22:04.833298-08:00"
+  "updated_at": "2026-02-16T03:06:06.785495-08:00",
+  "closed_at": "2026-02-16T03:06:06.785495-08:00",
+  "close_reason": "Closed"
 }

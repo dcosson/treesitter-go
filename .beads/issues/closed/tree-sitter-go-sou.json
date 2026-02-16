@@ -2,7 +2,7 @@
   "id": "tree-sitter-go-sou",
   "title": "Port Bash external scanner and grammar",
   "description": "Generate the Bash grammar package and port its external scanner to Go.\n\nThe Bash external scanner (~1050 lines C++) handles heredocs, variable expansions, test operators, extended globs, regex patterns, and string handling. This is a complex scanner that exercises most of the ExternalScanner interface.\n\nDeliverables:\n- Generate Bash grammar using tsgo-generate\n- Port scanner.cc to Go ExternalScanner implementation\n- Heredoc support: delimiter tracking, raw vs interpolated, indentation tolerance\n- Variable expansion: simple variables, special parameters ($*, $@, $?), complex expansions\n- Test operators within [[ ]] contexts\n- Extended glob patterns (@(), *(), +())\n- Regex patterns in [[ $var =~ pattern ]]\n\nTests:\n- Parse real bash scripts (from popular repos)\n- Differential test against C tree-sitter\n- Exercise all external scanner token types\n- Heredoc edge cases (nested, quoted delimiters, indented)\n\nReference: tree-sitter-bash src/scanner.cc",
-  "status": "open",
+  "status": "closed",
   "priority": 2,
   "type": "task",
   "parent": "tree-sitter-go-wcu",
@@ -40,5 +40,7 @@
     "grammar-port"
   ],
   "created_at": "2026-02-15T21:25:38.98125-08:00",
-  "updated_at": "2026-02-15T21:25:38.98125-08:00"
+  "updated_at": "2026-02-16T03:06:06.764476-08:00",
+  "closed_at": "2026-02-16T03:06:06.764476-08:00",
+  "close_reason": "Closed"
 }

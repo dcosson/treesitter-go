@@ -16,6 +16,12 @@
       "type": "blocks"
     }
   ],
+  "dependents": [
+    {
+      "id": "tree-sitter-go-0ab.1",
+      "type": "parent-child"
+    }
+  ],
   "created_by": "Danny Cosson",
   "owner": "dcosson@gmail.com",
   "labels": [

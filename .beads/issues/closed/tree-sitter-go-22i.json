@@ -1,0 +1,19 @@
+{
+  "id": "tree-sitter-go-22i",
+  "title": "Fix JSON test grammar Version: 14 -\u003e 15 to match ABI v15 target",
+  "description": "In internal/testgrammars/json_language.go:353, the hand-compiled JSON test grammar sets Version: 14. The design doc (docs/design.md) states we target ABI version 15 only. This should be updated to Version: 15 so downstream code that checks this field behaves correctly. Quick one-line fix.",
+  "status": "closed",
+  "priority": 2,
+  "type": "task",
+  "created_by": "Danny Cosson",
+  "owner": "dcosson@gmail.com",
+  "labels": [
+    "bug",
+    "tree-sitter-go"
+  ],
+  "assignee": "coder-1",
+  "created_at": "2026-02-15T22:51:37.332016-08:00",
+  "updated_at": "2026-02-15T23:03:44.157292-08:00",
+  "closed_at": "2026-02-15T23:03:09.098573-08:00",
+  "close_reason": "Closed"
+}

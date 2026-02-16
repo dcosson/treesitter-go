@@ -2,7 +2,7 @@
   "id": "tree-sitter-go-pso",
   "title": "Lexer: chunked input, UTF-8 decoding, and token scanning",
   "description": "Implement the lexer runtime that reads input and produces tokens using generated lex functions.\n\nDeliverables:\n- lexer.go: Lexer struct with Advance, Skip, MarkEnd, AcceptToken, Lookahead, EOF, position tracking (byte offset + row/column via Length).\n- Chunked input management: maintain current chunk from Input.Read() callback, handle chunk boundary crossing, buffer management.\n- UTF-8 decoding with ASCII fast path (byte \u003c 0x80 → single comparison + assignment, skip utf8.DecodeRune).\n- Input interface and []byte convenience adapter (StringInput).\n- Included ranges support: detect range exits, jump to next range, is_at_included_range_start flag.\n- Use concrete *Lexer type (not interface) for hot path performance.\n\nTests:\n- Lex JSON tokens using the hand-compiled JSON grammar from task 1\n- Verify byte positions and row/column positions\n- Test chunk boundary crossing (split input at various points)\n- Test included ranges (single range, multiple ranges, range boundaries)\n- ASCII vs multi-byte UTF-8 character handling\n- EOF handling\n\nReference: docs/design.md §2, §5, C source: lexer.c, lexer.h",
-  "status": "open",
+  "status": "closed",
   "priority": 2,
   "type": "task",
   "parent": "tree-sitter-go-wcu",
@@ -28,5 +28,7 @@
     "phase-2"
   ],
   "created_at": "2026-02-15T21:22:16.934119-08:00",
-  "updated_at": "2026-02-15T21:22:16.934119-08:00"
+  "updated_at": "2026-02-16T03:06:06.774589-08:00",
+  "closed_at": "2026-02-16T03:06:06.774589-08:00",
+  "close_reason": "Closed"
 }

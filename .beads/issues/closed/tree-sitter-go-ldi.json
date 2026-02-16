@@ -2,7 +2,7 @@
   "id": "tree-sitter-go-ldi",
   "title": "Incremental parsing and changed range detection",
   "description": "Implement incremental re-parsing so that edits to already-parsed files reuse unchanged subtrees.\n\nDeliverables:\n- Tree.Edit() with immutable tree / structural sharing: clone only nodes on the edit path (O(depth) = O(log N)). Propagate has_changes flag, adjust padding/size, handle depends_on_column invalidation.\n- ReusableNode iterator: stack-based DFS over old tree with (tree, childIndex, byteOffset) entries. lastExternalToken tracking.\n- Reusability checks in parser.advance(): has_changes, error node, missing node, fragile (fragileLeft/fragileRight), external scanner state match, included_range_difference overlap, first leaf lex mode compatibility, is_reusable table flag.\n- changed_ranges.go: parallel tree walk for change detection. Two Iterator structs walking old and new trees. Compare by symbol, size, parse state, error cost, external scanner state. Merge adjacent changed ranges.\n- Tree balancing: subtree.compress() with AVL-like rotations on repetition nodes (tracked by repeatDepth). Keep depth O(log N) for left-recursive repetitions.\n- Structural hashing (Alien Artifact AA-2): compute bottom-up structural hashes during tree construction. Tree.ChangedRanges() first compares root hashes — if equal, return nil in O(1), avoiding O(N) tree walk. This is low-hanging fruit (O(1) extra work per node during construction) that provides 10-100x speedup for whitespace-only edits.\n- Arena lifetime management: new tree holds references to both its own arena and old tree's arena(s) for shared subtrees.\n\nTests:\n- Edit-and-reparse cycles: single char insert/delete, line insert/delete, multi-line edit\n- Verify incremental parse produces identical tree to from-scratch parse\n- Benchmark incremental vs full parse (expect \u003e99% subtree reuse for single-char edits)\n- ChangedRanges correctness (ranges match expectations for various edit patterns)\n- Structural hash fast path: verify whitespace-only edits return empty ChangedRanges in O(1)\n- Tree balancing: parse file with 1000+ top-level statements, verify balanced depth\n- Column-dependent invalidation (Python-style indentation scenarios)\n- Arena lifetime: verify old tree's subtrees remain valid after old tree is discarded but new tree is retained\n\nReference: docs/design.md §6, docs/addendum-incremental-parsing.md §1-2, §3b (structural hashing), C source: subtree.c (ts_subtree_edit), parser.c (ts_parser__reuse_node), get_changed_ranges.c, reusable_node.h",
-  "status": "open",
+  "status": "closed",
   "priority": 2,
   "type": "task",
   "parent": "tree-sitter-go-wcu",
@@ -26,5 +26,7 @@
     "phase-6"
   ],
   "created_at": "2026-02-15T21:24:44.686439-08:00",
-  "updated_at": "2026-02-15T22:25:16.730284-08:00"
+  "updated_at": "2026-02-16T03:06:06.744133-08:00",
+  "closed_at": "2026-02-16T03:06:06.744133-08:00",
+  "close_reason": "Closed"
 }

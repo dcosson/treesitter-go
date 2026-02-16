@@ -2,7 +2,7 @@
   "id": "tree-sitter-go-wcu.1",
   "title": "Tree, Node, TreeCursor, GSS stack, and subtree node creation",
   "description": "Implement the core data structures needed by the parser. These can be unit tested independently before the parser loop is built.\n\nDeliverables:\n- stack.go: Graph-Structured Stack (GSS) with StackNode (state, links[8], position, errorCost, nodeCount, dynamicPrecedence), StackLink (node, subtree, isPending). Operations: push, pop (fan out across merged links, bounded by MAX_ITERATOR_COUNT=64), split (fork version), merge (combine equivalent versions), pause/resume (error recovery), halt (discard version). Use sync.Pool or manual free-list for StackNode. Replace C callback pattern in stack_iter with direct loop + enum return.\n- tree.go: Tree struct (root Subtree, language *Language, includedRanges []Range, arenas []*SubtreeArena). Node value type (~24 bytes: context [4]uint32, id SubtreeID, tree *Tree). Node accessors: Type, Symbol, StartByte, EndByte, StartPoint, EndPoint, ChildCount, NamedChildCount, Child, NamedChild, ChildByFieldName, Parent, NextSibling, PrevSibling, String (S-expression).\n- tree_cursor.go: TreeCursor with stack-based traversal. TreeCursorEntry (subtree, position, childIndex, structuralChildIndex, descendantIndex). GotoFirstChild, GotoNextSibling, GotoParent, CurrentNode. Pre-allocate cursor stack with capacity 32.\n- subtree.go additions: internal node creation (ts_subtree_new_node), ts_subtree_summarize_children (compute visibleChildCount, namedChildCount, visibleDescendantCount, firstLeaf, repeatDepth, etc).\n\nTests:\n- Stack operations: push, pop with multiple paths, version merging, version halting\n- TreeCursor traversal correctness (manually constructed trees)\n- Node accessor correctness (positions, child navigation, field names)\n- S-expression output\n- Internal node creation and summarize_children correctness\n\nReference: docs/design.md §2, C source: stack.c, node.c, tree_cursor.c, tree.c, subtree.c",
-  "status": "open",
+  "status": "closed",
   "priority": 2,
   "type": "task",
   "parent": "tree-sitter-go-wcu",
@@ -28,5 +28,7 @@
     "phase-3a"
   ],
   "created_at": "2026-02-15T22:21:23.390829-08:00",
-  "updated_at": "2026-02-15T22:21:23.390829-08:00"
+  "updated_at": "2026-02-16T03:06:06.796474-08:00",
+  "closed_at": "2026-02-16T03:06:06.796474-08:00",
+  "close_reason": "Closed"
 }

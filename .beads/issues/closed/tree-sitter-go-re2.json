@@ -1,0 +1,17 @@
+{
+  "id": "tree-sitter-go-re2",
+  "title": "Fix query system P1/P2 review issues",
+  "description": "Address review feedback on b914e92 (query system, 6j5). 3 P1 blocking issues: (1) Pointer invalidation in advanceStates after append reallocation, (2) currentFieldID() stub always returns 0 — field matching silently broken, (3) Alternation pass-through steps with symbol=0 treated as wildcards in introduceNewStates. 4 P2 issues: (1) Quantifier fork creates incorrect capture state, (2) Linear scan instead of binary search on sorted pattern map, (3) Missing test coverage for alternation/field/quantifier matching, (4) uint16 overflow risk for step indices. Branch: feat/query-system.",
+  "status": "closed",
+  "priority": 2,
+  "type": "task",
+  "created_by": "Danny Cosson",
+  "owner": "dcosson@gmail.com",
+  "labels": [
+    "P1"
+  ],
+  "created_at": "2026-02-16T01:13:41.908546-08:00",
+  "updated_at": "2026-02-16T01:19:44.615629-08:00",
+  "closed_at": "2026-02-16T01:19:44.615629-08:00",
+  "close_reason": "Closed"
+}

@@ -2,7 +2,7 @@
   "id": "tree-sitter-go-agm",
   "title": "Grammar code generator (tsgo-generate)",
   "description": "Build the tool that compiles tree-sitter grammars to Go packages.\n\nDeliverables:\n- cmd/tsgo-generate/main.go: CLI that reads grammar JSON (src/grammar.json) + node-types.json (src/node-types.json) from a tree-sitter grammar repo and produces a Go package.\n- Generated output includes: parse tables as Go slice literals, lex function as Go for/switch state machine, keyword lex function, symbol metadata (names, visibility), field maps, alias sequences, LexMode array, external scanner stub (interface + factory placeholder).\n- Lex function generation: translate C DFA states to Go switch cases. Use equivalence classes with O(1) ASCII lookup table (128-byte array) + binary search for Unicode. BFS state numbering for cache locality.\n- Validate by generating JSON grammar and comparing output to hand-compiled version from task 1.\n- Generate Go and JavaScript grammars to test robustness with larger/more complex grammars.\n\nTests:\n- Generate JSON grammar, parse files, verify identical output to hand-compiled version\n- Generate Go grammar, parse Go standard library files, compare S-expressions with C tree-sitter\n- Generate JavaScript grammar, parse JS files, compare with C tree-sitter\n- Test equivalence class table correctness\n- Test lex function generation for edge cases (Unicode characters, large ADVANCE_MAP entries)\n\nReference: docs/design.md §3, docs/addendum-lexer-performance.md Phase 0",
-  "status": "open",
+  "status": "closed",
   "priority": 2,
   "type": "task",
   "parent": "tree-sitter-go-wcu",
@@ -44,5 +44,7 @@
     "phase-4"
   ],
   "created_at": "2026-02-15T21:24:06.543757-08:00",
-  "updated_at": "2026-02-15T21:24:06.543757-08:00"
+  "updated_at": "2026-02-16T03:06:06.723247-08:00",
+  "closed_at": "2026-02-16T03:06:06.723247-08:00",
+  "close_reason": "Closed"
 }
