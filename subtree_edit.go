@@ -23,6 +23,12 @@ func (a *SubtreeArena) Fork() *SubtreeArena {
 	// Share block data arrays. The slice headers are copied but the underlying
 	// arrays are shared. Since old blocks are frozen, this is safe.
 	copy(forked.blocks, a.blocks)
+
+	// Freeze the parent: force it to allocate a fresh block on next Alloc.
+	// This prevents accidental writes to shared memory if someone mistakenly
+	// allocates in the parent after forking.
+	a.offset = a.blockSize
+
 	return forked
 }
 
@@ -90,8 +96,10 @@ func editSubtree(s Subtree, edit *InputEdit, arena *SubtreeArena) Subtree {
 	data.Children = newChildren
 
 	// Walk children, pushing the edit into each overlapping child.
-	// Position tracking uses the ORIGINAL padding (before adjustment).
-	childOffset := padding.Bytes
+	// Per SummarizeChildren convention, child 0 starts at byte 0 relative
+	// to the parent (parent.Padding == child0.Padding), so childOffset
+	// starts at 0, not padding.Bytes.
+	childOffset := uint32(0)
 	editAbsorbed := false
 
 	for i := 0; i < len(newChildren); i++ {
@@ -182,9 +190,16 @@ func editSubtree(s Subtree, edit *InputEdit, arena *SubtreeArena) Subtree {
 //  3. Edit within content: resize content
 func adjustNodePaddingAndSize(s Subtree, arena *SubtreeArena, edit *InputEdit) {
 	if s.IsInline() {
-		// Inline subtrees are value types — their padding/size are encoded in
-		// the 8-byte value and can't be mutated through a pointer. The parent
-		// node's size adjustment accounts for the change transitively.
+		// Inline subtrees are value types — their padding/size are encoded
+		// in the 8-byte value. We don't adjust them here because:
+		// 1. The parent's adjustNodePaddingAndSize handles the total size change.
+		// 2. Inline tokens with has_changes will be re-lexed by the parser,
+		//    producing a new token with correct padding/size.
+		// 3. tryReuseNode checks has_changes before reusing, so stale inline
+		//    padding/size values are never used for position comparisons of
+		//    reused subtrees.
+		// Note: children's sizes may not sum to parent's size after editing,
+		// but this is harmless because changed children are always re-parsed.
 		return
 	}
 

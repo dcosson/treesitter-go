@@ -62,22 +62,44 @@ func TestArenaForkIndependence(t *testing.T) {
 	arena := NewSubtreeArena(32)
 	lang := makeSubtreeTestLanguage()
 
-	// Create a heap-allocated node.
-	st, _ := arena.Alloc()
-	_ = st
+	// Create a heap-allocated node in the original arena.
+	origLeaf := NewLeafSubtree(arena, Symbol(5),
+		Length{Bytes: 0, Point: Point{Column: 0}},
+		Length{Bytes: 7, Point: Point{Column: 7}},
+		StateID(1), false, false, false, lang)
 
-	originalCount := arena.TotalAllocated()
 	forked := arena.Fork()
 
-	// Allocate in forked — should not affect original.
+	// Allocate in forked — should not corrupt original data.
 	NewLeafSubtree(forked, Symbol(1),
 		Length{Bytes: 0, Point: Point{Column: 0}},
 		Length{Bytes: 100, Point: Point{Column: 100}},
 		StateID(1), false, false, false, lang)
 
-	if arena.TotalAllocated() != originalCount {
-		t.Errorf("original arena allocation count changed after fork allocation: %d -> %d",
-			originalCount, arena.TotalAllocated())
+	// Original leaf should still be readable with correct data from both arenas.
+	if GetSymbol(origLeaf, arena) != 5 {
+		t.Error("original leaf symbol corrupted after fork allocation")
+	}
+	if GetSize(origLeaf, arena).Bytes != 7 {
+		t.Error("original leaf size corrupted after fork allocation")
+	}
+	if GetSymbol(origLeaf, forked) != 5 {
+		t.Error("original leaf not accessible from forked arena")
+	}
+
+	// Parent arena is frozen after fork: allocating in it creates a new block
+	// that doesn't affect the forked arena's shared blocks.
+	parentLeaf := NewLeafSubtree(arena, Symbol(9),
+		Length{Bytes: 0, Point: Point{Column: 0}},
+		Length{Bytes: 3, Point: Point{Column: 3}},
+		StateID(1), false, false, false, lang)
+
+	if GetSymbol(parentLeaf, arena) != 9 {
+		t.Error("post-fork parent allocation failed")
+	}
+	// Original data still intact in both arenas.
+	if GetSymbol(origLeaf, forked) != 5 {
+		t.Error("original leaf corrupted after post-fork parent allocation")
 	}
 }
 
@@ -89,7 +111,6 @@ func TestReusableNodeWithEditedTree(t *testing.T) {
 	// ReusableNode correctly reports has_changes and doesn't reuse it.
 	arena := NewSubtreeArena(32)
 	lang := makeSubtreeTestLanguage()
-	arena.Alloc() // skip offset 0
 
 	leaf := NewLeafSubtree(arena, Symbol(7),
 		Length{Bytes: 0, Point: Point{Column: 0}},
@@ -147,9 +168,6 @@ func TestEditSubtreeInlineHasChanges(t *testing.T) {
 	arena := NewSubtreeArena(32)
 	lang := makeSubtreeTestLanguage()
 
-	// Skip offset 0 (SubtreeZero issue).
-	arena.Alloc()
-
 	// Create a leaf: symbol 7, padding=0, size=4 (like "null").
 	leaf := NewLeafSubtree(arena, Symbol(7),
 		Length{Bytes: 0, Point: Point{Column: 0}},
@@ -189,6 +207,59 @@ func TestEditSubtreeInlineHasChanges(t *testing.T) {
 	}
 	if !HasChanges(child, forked) {
 		t.Errorf("edited inline child should have has_changes, data=0x%016x", child.data)
+	}
+}
+
+// --- editSubtree child 0 padding test (P1 regression) ---
+
+func TestEditSubtreeChildZeroPadding(t *testing.T) {
+	// Verify that an edit within child 0's padding correctly sets
+	// has_changes on child 0. This tests the fix where childOffset
+	// must start at 0 (not padding.Bytes), because per SummarizeChildren
+	// convention, parent.Padding == child0.Padding.
+	arena := NewSubtreeArena(32)
+	lang := makeSubtreeTestLanguage()
+
+	// Create child0 with padding=2, size=3 (like "  foo")
+	child0 := NewLeafSubtree(arena, Symbol(1),
+		Length{Bytes: 2, Point: Point{Column: 2}},
+		Length{Bytes: 3, Point: Point{Column: 3}},
+		StateID(1), false, false, false, lang)
+
+	// Create child1 with padding=1, size=2 (like " ab")
+	child1 := NewLeafSubtree(arena, Symbol(2),
+		Length{Bytes: 1, Point: Point{Column: 1}},
+		Length{Bytes: 2, Point: Point{Column: 2}},
+		StateID(2), false, false, false, lang)
+
+	// Parent: children = [child0, child1]
+	// After SummarizeChildren: parent.Padding = child0.Padding = 2, parent.Size = 3+1+2 = 6
+	// Total bytes = 2 + 6 = 8
+	parent := NewNodeSubtree(arena, Symbol(8), []Subtree{child0, child1}, 0, lang)
+	SummarizeChildren(parent, arena, lang)
+
+	// Edit within child0's padding: insert at byte 1 (within the 2-byte padding).
+	forked := arena.Fork()
+	edit := &InputEdit{
+		StartByte: 1, OldEndByte: 1, NewEndByte: 2,
+		StartPoint:  Point{Row: 0, Column: 1},
+		OldEndPoint: Point{Row: 0, Column: 1},
+		NewEndPoint: Point{Row: 0, Column: 2},
+	}
+	newParent := editSubtree(parent, edit, forked)
+
+	// Parent should have has_changes.
+	if !HasChanges(newParent, forked) {
+		t.Error("edited parent should have has_changes")
+	}
+
+	// Child 0 should also have has_changes (edit is within its span).
+	children := GetChildren(newParent, forked)
+	if len(children) < 2 {
+		t.Fatalf("expected 2 children, got %d", len(children))
+	}
+	if !HasChanges(children[0], forked) {
+		t.Error("child 0 should have has_changes (edit is within its padding)")
 	}
 }
 
@@ -386,9 +457,6 @@ func TestTreeEditInPadding(t *testing.T) {
 	// Create a tree where a node has padding > 0.
 	arena := NewSubtreeArena(32)
 	lang := makeSubtreeTestLanguage()
-
-	// Skip first allocation to avoid offset-0 == SubtreeZero issue.
-	arena.Alloc()
 
 	// "x" with 2 bytes of padding (whitespace before it).
 	leaf := NewLeafSubtree(arena, Symbol(7),

@@ -1,6 +1,7 @@
 package treesitter
 
 import (
+	"bytes"
 	"context"
 )
 
@@ -496,10 +497,11 @@ func (p *Parser) tryReuseNode(version StackVersion, state StateID, position Leng
 				continue
 			}
 		} else {
-			// Terminal/leaf: check the action table.
+			// Terminal/leaf: check the action table and lex mode compatibility.
 			leafSym := sym
+			var firstLeaf FirstLeaf
 			if !candidate.IsInline() {
-				firstLeaf := GetFirstLeaf(candidate, p.arena)
+				firstLeaf = GetFirstLeaf(candidate, p.arena)
 				leafSym = firstLeaf.Symbol
 			}
 			entry := p.language.tableEntry(state, leafSym)
@@ -509,15 +511,12 @@ func (p *Parser) tryReuseNode(version StackVersion, state StateID, position Leng
 			}
 
 			// Check lex mode compatibility.
-			if !candidate.IsInline() {
-				firstLeaf := GetFirstLeaf(candidate, p.arena)
-				if firstLeaf.ParseState != 0 {
-					currentLexMode := p.language.LexModes[state]
-					origLexMode := p.language.LexModes[StateID(firstLeaf.ParseState)]
-					if origLexMode.LexState != currentLexMode.LexState {
-						rn.Advance()
-						break
-					}
+			if !candidate.IsInline() && firstLeaf.ParseState != 0 {
+				currentLexMode := p.language.LexModes[state]
+				origLexMode := p.language.LexModes[StateID(firstLeaf.ParseState)]
+				if origLexMode.LexState != currentLexMode.LexState {
+					rn.Advance()
+					break
 				}
 			}
 		}
@@ -527,7 +526,7 @@ func (p *Parser) tryReuseNode(version StackVersion, state StateID, position Leng
 			lastExtToken := p.stack.LastExternalToken(version)
 			candidateExtState := GetExternalScannerState(candidate, p.arena)
 			lastExtState := GetExternalScannerState(lastExtToken, p.arena)
-			if !bytesEqual(candidateExtState, lastExtState) {
+			if !bytes.Equal(candidateExtState, lastExtState) {
 				rn.Descend()
 				continue
 			}
@@ -539,19 +538,6 @@ func (p *Parser) tryReuseNode(version StackVersion, state StateID, position Leng
 	}
 
 	return SubtreeZero, false
-}
-
-// bytesEqual compares two byte slices for equality.
-func bytesEqual(a, b []byte) bool {
-	if len(a) != len(b) {
-		return false
-	}
-	for i := range a {
-		if a[i] != b[i] {
-			return false
-		}
-	}
-	return true
 }
 
 // doShift pushes a token onto the stack and transitions to a new state.
