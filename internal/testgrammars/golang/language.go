@@ -8137,247 +8137,247 @@ func GoLanguage() *ts.Language {
 
 	lexModes := []ts.LexMode{
 		{LexState: 0}, // state 0
-		{LexState: 58}, // state 1
-		{LexState: 58}, // state 2
-		{LexState: 58}, // state 3
-		{LexState: 58}, // state 4
-		{LexState: 58}, // state 5
-		{LexState: 58}, // state 6
-		{LexState: 58}, // state 7
-		{LexState: 58}, // state 8
-		{LexState: 58}, // state 9
-		{LexState: 58}, // state 10
-		{LexState: 58}, // state 11
-		{LexState: 58}, // state 12
-		{LexState: 58}, // state 13
-		{LexState: 58}, // state 14
-		{LexState: 58}, // state 15
-		{LexState: 58}, // state 16
-		{LexState: 58}, // state 17
-		{LexState: 58}, // state 18
-		{LexState: 58}, // state 19
-		{LexState: 58}, // state 20
-		{LexState: 58}, // state 21
-		{LexState: 58}, // state 22
-		{LexState: 58}, // state 23
-		{LexState: 58}, // state 24
-		{LexState: 58}, // state 25
-		{LexState: 58}, // state 26
-		{LexState: 58}, // state 27
-		{LexState: 55}, // state 28
-		{LexState: 58}, // state 29
-		{LexState: 58}, // state 30
-		{LexState: 58}, // state 31
-		{LexState: 58}, // state 32
-		{LexState: 58}, // state 33
-		{LexState: 58}, // state 34
-		{LexState: 58}, // state 35
-		{LexState: 58}, // state 36
-		{LexState: 58}, // state 37
-		{LexState: 58}, // state 38
-		{LexState: 58}, // state 39
-		{LexState: 58}, // state 40
-		{LexState: 58}, // state 41
-		{LexState: 58}, // state 42
-		{LexState: 58}, // state 43
-		{LexState: 58}, // state 44
-		{LexState: 58}, // state 45
-		{LexState: 58}, // state 46
-		{LexState: 58}, // state 47
-		{LexState: 58}, // state 48
-		{LexState: 58}, // state 49
-		{LexState: 58}, // state 50
-		{LexState: 58}, // state 51
-		{LexState: 58}, // state 52
-		{LexState: 58}, // state 53
-		{LexState: 58}, // state 54
-		{LexState: 58}, // state 55
-		{LexState: 58}, // state 56
-		{LexState: 58}, // state 57
-		{LexState: 58}, // state 58
-		{LexState: 58}, // state 59
-		{LexState: 58}, // state 60
-		{LexState: 58}, // state 61
-		{LexState: 58}, // state 62
-		{LexState: 58}, // state 63
-		{LexState: 58}, // state 64
-		{LexState: 58}, // state 65
-		{LexState: 58}, // state 66
-		{LexState: 58}, // state 67
-		{LexState: 58}, // state 68
-		{LexState: 58}, // state 69
-		{LexState: 58}, // state 70
-		{LexState: 58}, // state 71
-		{LexState: 58}, // state 72
-		{LexState: 58}, // state 73
-		{LexState: 58}, // state 74
-		{LexState: 58}, // state 75
-		{LexState: 58}, // state 76
-		{LexState: 58}, // state 77
-		{LexState: 58}, // state 78
-		{LexState: 58}, // state 79
-		{LexState: 58}, // state 80
-		{LexState: 58}, // state 81
-		{LexState: 58}, // state 82
-		{LexState: 58}, // state 83
-		{LexState: 58}, // state 84
-		{LexState: 58}, // state 85
-		{LexState: 58}, // state 86
-		{LexState: 58}, // state 87
-		{LexState: 58}, // state 88
-		{LexState: 58}, // state 89
-		{LexState: 58}, // state 90
-		{LexState: 58}, // state 91
-		{LexState: 58}, // state 92
-		{LexState: 58}, // state 93
-		{LexState: 58}, // state 94
-		{LexState: 58}, // state 95
-		{LexState: 58}, // state 96
-		{LexState: 58}, // state 97
-		{LexState: 58}, // state 98
-		{LexState: 58}, // state 99
-		{LexState: 58}, // state 100
-		{LexState: 58}, // state 101
-		{LexState: 58}, // state 102
-		{LexState: 58}, // state 103
-		{LexState: 58}, // state 104
-		{LexState: 58}, // state 105
-		{LexState: 58}, // state 106
-		{LexState: 58}, // state 107
-		{LexState: 58}, // state 108
-		{LexState: 58}, // state 109
-		{LexState: 58}, // state 110
-		{LexState: 58}, // state 111
-		{LexState: 58}, // state 112
-		{LexState: 58}, // state 113
-		{LexState: 58}, // state 114
-		{LexState: 58}, // state 115
-		{LexState: 58}, // state 116
-		{LexState: 58}, // state 117
-		{LexState: 58}, // state 118
-		{LexState: 58}, // state 119
-		{LexState: 58}, // state 120
-		{LexState: 58}, // state 121
-		{LexState: 58}, // state 122
-		{LexState: 58}, // state 123
-		{LexState: 58}, // state 124
-		{LexState: 58}, // state 125
-		{LexState: 58}, // state 126
-		{LexState: 58}, // state 127
-		{LexState: 58}, // state 128
-		{LexState: 58}, // state 129
-		{LexState: 58}, // state 130
-		{LexState: 58}, // state 131
-		{LexState: 58}, // state 132
-		{LexState: 58}, // state 133
-		{LexState: 58}, // state 134
-		{LexState: 58}, // state 135
-		{LexState: 58}, // state 136
-		{LexState: 58}, // state 137
-		{LexState: 58}, // state 138
-		{LexState: 58}, // state 139
-		{LexState: 58}, // state 140
-		{LexState: 58}, // state 141
-		{LexState: 58}, // state 142
-		{LexState: 58}, // state 143
-		{LexState: 58}, // state 144
-		{LexState: 58}, // state 145
-		{LexState: 58}, // state 146
-		{LexState: 58}, // state 147
-		{LexState: 58}, // state 148
-		{LexState: 58}, // state 149
-		{LexState: 58}, // state 150
-		{LexState: 58}, // state 151
-		{LexState: 58}, // state 152
-		{LexState: 58}, // state 153
-		{LexState: 58}, // state 154
-		{LexState: 58}, // state 155
-		{LexState: 58}, // state 156
-		{LexState: 58}, // state 157
-		{LexState: 58}, // state 158
-		{LexState: 58}, // state 159
-		{LexState: 58}, // state 160
-		{LexState: 58}, // state 161
-		{LexState: 58}, // state 162
-		{LexState: 58}, // state 163
-		{LexState: 58}, // state 164
-		{LexState: 58}, // state 165
-		{LexState: 58}, // state 166
-		{LexState: 58}, // state 167
-		{LexState: 58}, // state 168
-		{LexState: 58}, // state 169
-		{LexState: 58}, // state 170
-		{LexState: 58}, // state 171
-		{LexState: 58}, // state 172
-		{LexState: 58}, // state 173
-		{LexState: 58}, // state 174
-		{LexState: 58}, // state 175
-		{LexState: 58}, // state 176
-		{LexState: 58}, // state 177
-		{LexState: 58}, // state 178
-		{LexState: 58}, // state 179
-		{LexState: 58}, // state 180
-		{LexState: 58}, // state 181
-		{LexState: 58}, // state 182
-		{LexState: 58}, // state 183
-		{LexState: 58}, // state 184
-		{LexState: 58}, // state 185
-		{LexState: 58}, // state 186
-		{LexState: 58}, // state 187
-		{LexState: 58}, // state 188
-		{LexState: 58}, // state 189
-		{LexState: 58}, // state 190
-		{LexState: 58}, // state 191
-		{LexState: 58}, // state 192
-		{LexState: 58}, // state 193
-		{LexState: 58}, // state 194
-		{LexState: 58}, // state 195
-		{LexState: 58}, // state 196
-		{LexState: 58}, // state 197
-		{LexState: 58}, // state 198
-		{LexState: 58}, // state 199
-		{LexState: 58}, // state 200
-		{LexState: 58}, // state 201
-		{LexState: 58}, // state 202
-		{LexState: 58}, // state 203
-		{LexState: 58}, // state 204
-		{LexState: 58}, // state 205
-		{LexState: 58}, // state 206
-		{LexState: 58}, // state 207
-		{LexState: 58}, // state 208
-		{LexState: 58}, // state 209
-		{LexState: 58}, // state 210
-		{LexState: 58}, // state 211
-		{LexState: 58}, // state 212
-		{LexState: 58}, // state 213
-		{LexState: 58}, // state 214
-		{LexState: 58}, // state 215
-		{LexState: 58}, // state 216
-		{LexState: 58}, // state 217
-		{LexState: 58}, // state 218
-		{LexState: 58}, // state 219
-		{LexState: 58}, // state 220
-		{LexState: 58}, // state 221
-		{LexState: 58}, // state 222
-		{LexState: 58}, // state 223
-		{LexState: 58}, // state 224
-		{LexState: 58}, // state 225
-		{LexState: 58}, // state 226
-		{LexState: 58}, // state 227
-		{LexState: 58}, // state 228
-		{LexState: 58}, // state 229
-		{LexState: 58}, // state 230
-		{LexState: 58}, // state 231
-		{LexState: 58}, // state 232
-		{LexState: 58}, // state 233
-		{LexState: 58}, // state 234
-		{LexState: 58}, // state 235
-		{LexState: 3}, // state 236
+		{LexState: 58, ReservedWordSetID: 1}, // state 1
+		{LexState: 58, ReservedWordSetID: 1}, // state 2
+		{LexState: 58, ReservedWordSetID: 1}, // state 3
+		{LexState: 58, ReservedWordSetID: 1}, // state 4
+		{LexState: 58, ReservedWordSetID: 1}, // state 5
+		{LexState: 58, ReservedWordSetID: 1}, // state 6
+		{LexState: 58, ReservedWordSetID: 1}, // state 7
+		{LexState: 58, ReservedWordSetID: 1}, // state 8
+		{LexState: 58, ReservedWordSetID: 2}, // state 9
+		{LexState: 58, ReservedWordSetID: 2}, // state 10
+		{LexState: 58, ReservedWordSetID: 3}, // state 11
+		{LexState: 58, ReservedWordSetID: 2}, // state 12
+		{LexState: 58, ReservedWordSetID: 1}, // state 13
+		{LexState: 58, ReservedWordSetID: 1}, // state 14
+		{LexState: 58, ReservedWordSetID: 3}, // state 15
+		{LexState: 58, ReservedWordSetID: 3}, // state 16
+		{LexState: 58, ReservedWordSetID: 3}, // state 17
+		{LexState: 58, ReservedWordSetID: 1}, // state 18
+		{LexState: 58, ReservedWordSetID: 3}, // state 19
+		{LexState: 58, ReservedWordSetID: 3}, // state 20
+		{LexState: 58, ReservedWordSetID: 4}, // state 21
+		{LexState: 58, ReservedWordSetID: 5}, // state 22
+		{LexState: 58, ReservedWordSetID: 1}, // state 23
+		{LexState: 58, ReservedWordSetID: 1}, // state 24
+		{LexState: 58, ReservedWordSetID: 1}, // state 25
+		{LexState: 58, ReservedWordSetID: 1}, // state 26
+		{LexState: 58, ReservedWordSetID: 5}, // state 27
+		{LexState: 55, ReservedWordSetID: 6}, // state 28
+		{LexState: 58, ReservedWordSetID: 5}, // state 29
+		{LexState: 58, ReservedWordSetID: 5}, // state 30
+		{LexState: 58, ReservedWordSetID: 5}, // state 31
+		{LexState: 58, ReservedWordSetID: 5}, // state 32
+		{LexState: 58, ReservedWordSetID: 1}, // state 33
+		{LexState: 58, ReservedWordSetID: 1}, // state 34
+		{LexState: 58, ReservedWordSetID: 5}, // state 35
+		{LexState: 58, ReservedWordSetID: 1}, // state 36
+		{LexState: 58, ReservedWordSetID: 5}, // state 37
+		{LexState: 58, ReservedWordSetID: 5}, // state 38
+		{LexState: 58, ReservedWordSetID: 5}, // state 39
+		{LexState: 58, ReservedWordSetID: 1}, // state 40
+		{LexState: 58, ReservedWordSetID: 5}, // state 41
+		{LexState: 58, ReservedWordSetID: 5}, // state 42
+		{LexState: 58, ReservedWordSetID: 5}, // state 43
+		{LexState: 58, ReservedWordSetID: 5}, // state 44
+		{LexState: 58, ReservedWordSetID: 1}, // state 45
+		{LexState: 58, ReservedWordSetID: 1}, // state 46
+		{LexState: 58, ReservedWordSetID: 1}, // state 47
+		{LexState: 58, ReservedWordSetID: 1}, // state 48
+		{LexState: 58, ReservedWordSetID: 1}, // state 49
+		{LexState: 58, ReservedWordSetID: 5}, // state 50
+		{LexState: 58, ReservedWordSetID: 1}, // state 51
+		{LexState: 58, ReservedWordSetID: 5}, // state 52
+		{LexState: 58, ReservedWordSetID: 5}, // state 53
+		{LexState: 58, ReservedWordSetID: 5}, // state 54
+		{LexState: 58, ReservedWordSetID: 1}, // state 55
+		{LexState: 58, ReservedWordSetID: 1}, // state 56
+		{LexState: 58, ReservedWordSetID: 5}, // state 57
+		{LexState: 58, ReservedWordSetID: 1}, // state 58
+		{LexState: 58, ReservedWordSetID: 1}, // state 59
+		{LexState: 58, ReservedWordSetID: 5}, // state 60
+		{LexState: 58, ReservedWordSetID: 5}, // state 61
+		{LexState: 58, ReservedWordSetID: 5}, // state 62
+		{LexState: 58, ReservedWordSetID: 5}, // state 63
+		{LexState: 58, ReservedWordSetID: 5}, // state 64
+		{LexState: 58, ReservedWordSetID: 5}, // state 65
+		{LexState: 58, ReservedWordSetID: 5}, // state 66
+		{LexState: 58, ReservedWordSetID: 5}, // state 67
+		{LexState: 58, ReservedWordSetID: 5}, // state 68
+		{LexState: 58, ReservedWordSetID: 5}, // state 69
+		{LexState: 58, ReservedWordSetID: 5}, // state 70
+		{LexState: 58, ReservedWordSetID: 1}, // state 71
+		{LexState: 58, ReservedWordSetID: 1}, // state 72
+		{LexState: 58, ReservedWordSetID: 1}, // state 73
+		{LexState: 58, ReservedWordSetID: 1}, // state 74
+		{LexState: 58, ReservedWordSetID: 1}, // state 75
+		{LexState: 58, ReservedWordSetID: 5}, // state 76
+		{LexState: 58, ReservedWordSetID: 1}, // state 77
+		{LexState: 58, ReservedWordSetID: 5}, // state 78
+		{LexState: 58, ReservedWordSetID: 5}, // state 79
+		{LexState: 58, ReservedWordSetID: 5}, // state 80
+		{LexState: 58, ReservedWordSetID: 5}, // state 81
+		{LexState: 58, ReservedWordSetID: 5}, // state 82
+		{LexState: 58, ReservedWordSetID: 5}, // state 83
+		{LexState: 58, ReservedWordSetID: 5}, // state 84
+		{LexState: 58, ReservedWordSetID: 5}, // state 85
+		{LexState: 58, ReservedWordSetID: 5}, // state 86
+		{LexState: 58, ReservedWordSetID: 1}, // state 87
+		{LexState: 58, ReservedWordSetID: 1}, // state 88
+		{LexState: 58, ReservedWordSetID: 1}, // state 89
+		{LexState: 58, ReservedWordSetID: 5}, // state 90
+		{LexState: 58, ReservedWordSetID: 1}, // state 91
+		{LexState: 58, ReservedWordSetID: 5}, // state 92
+		{LexState: 58, ReservedWordSetID: 5}, // state 93
+		{LexState: 58, ReservedWordSetID: 5}, // state 94
+		{LexState: 58, ReservedWordSetID: 5}, // state 95
+		{LexState: 58, ReservedWordSetID: 1}, // state 96
+		{LexState: 58, ReservedWordSetID: 5}, // state 97
+		{LexState: 58, ReservedWordSetID: 5}, // state 98
+		{LexState: 58, ReservedWordSetID: 5}, // state 99
+		{LexState: 58, ReservedWordSetID: 5}, // state 100
+		{LexState: 58, ReservedWordSetID: 5}, // state 101
+		{LexState: 58, ReservedWordSetID: 1}, // state 102
+		{LexState: 58, ReservedWordSetID: 5}, // state 103
+		{LexState: 58, ReservedWordSetID: 5}, // state 104
+		{LexState: 58, ReservedWordSetID: 5}, // state 105
+		{LexState: 58, ReservedWordSetID: 1}, // state 106
+		{LexState: 58, ReservedWordSetID: 5}, // state 107
+		{LexState: 58, ReservedWordSetID: 1}, // state 108
+		{LexState: 58, ReservedWordSetID: 1}, // state 109
+		{LexState: 58, ReservedWordSetID: 1}, // state 110
+		{LexState: 58, ReservedWordSetID: 5}, // state 111
+		{LexState: 58, ReservedWordSetID: 5}, // state 112
+		{LexState: 58, ReservedWordSetID: 5}, // state 113
+		{LexState: 58, ReservedWordSetID: 1}, // state 114
+		{LexState: 58, ReservedWordSetID: 5}, // state 115
+		{LexState: 58, ReservedWordSetID: 5}, // state 116
+		{LexState: 58, ReservedWordSetID: 1}, // state 117
+		{LexState: 58, ReservedWordSetID: 1}, // state 118
+		{LexState: 58, ReservedWordSetID: 5}, // state 119
+		{LexState: 58, ReservedWordSetID: 5}, // state 120
+		{LexState: 58, ReservedWordSetID: 1}, // state 121
+		{LexState: 58, ReservedWordSetID: 1}, // state 122
+		{LexState: 58, ReservedWordSetID: 1}, // state 123
+		{LexState: 58, ReservedWordSetID: 1}, // state 124
+		{LexState: 58, ReservedWordSetID: 5}, // state 125
+		{LexState: 58, ReservedWordSetID: 5}, // state 126
+		{LexState: 58, ReservedWordSetID: 1}, // state 127
+		{LexState: 58, ReservedWordSetID: 5}, // state 128
+		{LexState: 58, ReservedWordSetID: 5}, // state 129
+		{LexState: 58, ReservedWordSetID: 1}, // state 130
+		{LexState: 58, ReservedWordSetID: 5}, // state 131
+		{LexState: 58, ReservedWordSetID: 5}, // state 132
+		{LexState: 58, ReservedWordSetID: 5}, // state 133
+		{LexState: 58, ReservedWordSetID: 5}, // state 134
+		{LexState: 58, ReservedWordSetID: 5}, // state 135
+		{LexState: 58, ReservedWordSetID: 5}, // state 136
+		{LexState: 58, ReservedWordSetID: 5}, // state 137
+		{LexState: 58, ReservedWordSetID: 5}, // state 138
+		{LexState: 58, ReservedWordSetID: 5}, // state 139
+		{LexState: 58, ReservedWordSetID: 5}, // state 140
+		{LexState: 58, ReservedWordSetID: 5}, // state 141
+		{LexState: 58, ReservedWordSetID: 5}, // state 142
+		{LexState: 58, ReservedWordSetID: 5}, // state 143
+		{LexState: 58, ReservedWordSetID: 5}, // state 144
+		{LexState: 58, ReservedWordSetID: 5}, // state 145
+		{LexState: 58, ReservedWordSetID: 5}, // state 146
+		{LexState: 58, ReservedWordSetID: 5}, // state 147
+		{LexState: 58, ReservedWordSetID: 5}, // state 148
+		{LexState: 58, ReservedWordSetID: 5}, // state 149
+		{LexState: 58, ReservedWordSetID: 5}, // state 150
+		{LexState: 58, ReservedWordSetID: 5}, // state 151
+		{LexState: 58, ReservedWordSetID: 5}, // state 152
+		{LexState: 58, ReservedWordSetID: 5}, // state 153
+		{LexState: 58, ReservedWordSetID: 5}, // state 154
+		{LexState: 58, ReservedWordSetID: 5}, // state 155
+		{LexState: 58, ReservedWordSetID: 5}, // state 156
+		{LexState: 58, ReservedWordSetID: 5}, // state 157
+		{LexState: 58, ReservedWordSetID: 5}, // state 158
+		{LexState: 58, ReservedWordSetID: 5}, // state 159
+		{LexState: 58, ReservedWordSetID: 1}, // state 160
+		{LexState: 58, ReservedWordSetID: 1}, // state 161
+		{LexState: 58, ReservedWordSetID: 5}, // state 162
+		{LexState: 58, ReservedWordSetID: 1}, // state 163
+		{LexState: 58, ReservedWordSetID: 1}, // state 164
+		{LexState: 58, ReservedWordSetID: 1}, // state 165
+		{LexState: 58, ReservedWordSetID: 1}, // state 166
+		{LexState: 58, ReservedWordSetID: 1}, // state 167
+		{LexState: 58, ReservedWordSetID: 1}, // state 168
+		{LexState: 58, ReservedWordSetID: 1}, // state 169
+		{LexState: 58, ReservedWordSetID: 1}, // state 170
+		{LexState: 58, ReservedWordSetID: 1}, // state 171
+		{LexState: 58, ReservedWordSetID: 1}, // state 172
+		{LexState: 58, ReservedWordSetID: 5}, // state 173
+		{LexState: 58, ReservedWordSetID: 5}, // state 174
+		{LexState: 58, ReservedWordSetID: 1}, // state 175
+		{LexState: 58, ReservedWordSetID: 5}, // state 176
+		{LexState: 58, ReservedWordSetID: 5}, // state 177
+		{LexState: 58, ReservedWordSetID: 5}, // state 178
+		{LexState: 58, ReservedWordSetID: 5}, // state 179
+		{LexState: 58, ReservedWordSetID: 5}, // state 180
+		{LexState: 58, ReservedWordSetID: 5}, // state 181
+		{LexState: 58, ReservedWordSetID: 5}, // state 182
+		{LexState: 58, ReservedWordSetID: 5}, // state 183
+		{LexState: 58, ReservedWordSetID: 5}, // state 184
+		{LexState: 58, ReservedWordSetID: 5}, // state 185
+		{LexState: 58, ReservedWordSetID: 1}, // state 186
+		{LexState: 58, ReservedWordSetID: 1}, // state 187
+		{LexState: 58, ReservedWordSetID: 5}, // state 188
+		{LexState: 58, ReservedWordSetID: 1}, // state 189
+		{LexState: 58, ReservedWordSetID: 5}, // state 190
+		{LexState: 58, ReservedWordSetID: 5}, // state 191
+		{LexState: 58, ReservedWordSetID: 5}, // state 192
+		{LexState: 58, ReservedWordSetID: 5}, // state 193
+		{LexState: 58, ReservedWordSetID: 5}, // state 194
+		{LexState: 58, ReservedWordSetID: 1}, // state 195
+		{LexState: 58, ReservedWordSetID: 5}, // state 196
+		{LexState: 58, ReservedWordSetID: 5}, // state 197
+		{LexState: 58, ReservedWordSetID: 5}, // state 198
+		{LexState: 58, ReservedWordSetID: 5}, // state 199
+		{LexState: 58, ReservedWordSetID: 5}, // state 200
+		{LexState: 58, ReservedWordSetID: 1}, // state 201
+		{LexState: 58, ReservedWordSetID: 1}, // state 202
+		{LexState: 58, ReservedWordSetID: 5}, // state 203
+		{LexState: 58, ReservedWordSetID: 5}, // state 204
+		{LexState: 58, ReservedWordSetID: 5}, // state 205
+		{LexState: 58, ReservedWordSetID: 1}, // state 206
+		{LexState: 58, ReservedWordSetID: 5}, // state 207
+		{LexState: 58, ReservedWordSetID: 5}, // state 208
+		{LexState: 58, ReservedWordSetID: 5}, // state 209
+		{LexState: 58, ReservedWordSetID: 1}, // state 210
+		{LexState: 58, ReservedWordSetID: 1}, // state 211
+		{LexState: 58, ReservedWordSetID: 1}, // state 212
+		{LexState: 58, ReservedWordSetID: 5}, // state 213
+		{LexState: 58, ReservedWordSetID: 1}, // state 214
+		{LexState: 58, ReservedWordSetID: 5}, // state 215
+		{LexState: 58, ReservedWordSetID: 5}, // state 216
+		{LexState: 58, ReservedWordSetID: 5}, // state 217
+		{LexState: 58, ReservedWordSetID: 5}, // state 218
+		{LexState: 58, ReservedWordSetID: 5}, // state 219
+		{LexState: 58, ReservedWordSetID: 5}, // state 220
+		{LexState: 58, ReservedWordSetID: 5}, // state 221
+		{LexState: 58, ReservedWordSetID: 5}, // state 222
+		{LexState: 58, ReservedWordSetID: 5}, // state 223
+		{LexState: 58, ReservedWordSetID: 5}, // state 224
+		{LexState: 58, ReservedWordSetID: 5}, // state 225
+		{LexState: 58, ReservedWordSetID: 5}, // state 226
+		{LexState: 58, ReservedWordSetID: 1}, // state 227
+		{LexState: 58, ReservedWordSetID: 1}, // state 228
+		{LexState: 58, ReservedWordSetID: 1}, // state 229
+		{LexState: 58, ReservedWordSetID: 1}, // state 230
+		{LexState: 58, ReservedWordSetID: 1}, // state 231
+		{LexState: 58, ReservedWordSetID: 1}, // state 232
+		{LexState: 58, ReservedWordSetID: 1}, // state 233
+		{LexState: 58, ReservedWordSetID: 1}, // state 234
+		{LexState: 58, ReservedWordSetID: 1}, // state 235
+		{LexState: 3, ReservedWordSetID: 1}, // state 236
 		{LexState: 56}, // state 237
 		{LexState: 56}, // state 238
 		{LexState: 56}, // state 239
 		{LexState: 56}, // state 240
-		{LexState: 58}, // state 241
+		{LexState: 58, ReservedWordSetID: 1}, // state 241
 		{LexState: 56}, // state 242
 		{LexState: 56}, // state 243
 		{LexState: 56}, // state 244
@@ -8487,7 +8487,7 @@ func GoLanguage() *ts.Language {
 		{LexState: 5}, // state 348
 		{LexState: 5}, // state 349
 		{LexState: 5}, // state 350
-		{LexState: 55}, // state 351
+		{LexState: 55, ReservedWordSetID: 6}, // state 351
 		{LexState: 5}, // state 352
 		{LexState: 5}, // state 353
 		{LexState: 5}, // state 354
@@ -8500,11 +8500,11 @@ func GoLanguage() *ts.Language {
 		{LexState: 5}, // state 361
 		{LexState: 5}, // state 362
 		{LexState: 5}, // state 363
-		{LexState: 55}, // state 364
+		{LexState: 55, ReservedWordSetID: 6}, // state 364
 		{LexState: 5}, // state 365
 		{LexState: 5}, // state 366
 		{LexState: 5}, // state 367
-		{LexState: 56}, // state 368
+		{LexState: 56, ReservedWordSetID: 1}, // state 368
 		{LexState: 5}, // state 369
 		{LexState: 5}, // state 370
 		{LexState: 5}, // state 371
@@ -8528,8 +8528,8 @@ func GoLanguage() *ts.Language {
 		{LexState: 5}, // state 389
 		{LexState: 6}, // state 390
 		{LexState: 6}, // state 391
-		{LexState: 55}, // state 392
-		{LexState: 55}, // state 393
+		{LexState: 55, ReservedWordSetID: 6}, // state 392
+		{LexState: 55, ReservedWordSetID: 6}, // state 393
 		{LexState: 6}, // state 394
 		{LexState: 6}, // state 395
 		{LexState: 6}, // state 396
@@ -8575,7 +8575,7 @@ func GoLanguage() *ts.Language {
 		{LexState: 6}, // state 436
 		{LexState: 1}, // state 437
 		{LexState: 6}, // state 438
-		{LexState: 0}, // state 439
+		{LexState: 0, ReservedWordSetID: 5}, // state 439
 		{LexState: 1}, // state 440
 		{LexState: 6}, // state 441
 		{LexState: 6}, // state 442
@@ -8585,18 +8585,18 @@ func GoLanguage() *ts.Language {
 		{LexState: 1}, // state 446
 		{LexState: 1}, // state 447
 		{LexState: 1}, // state 448
-		{LexState: 0}, // state 449
+		{LexState: 0, ReservedWordSetID: 5}, // state 449
 		{LexState: 1}, // state 450
 		{LexState: 3}, // state 451
-		{LexState: 0}, // state 452
-		{LexState: 3}, // state 453
-		{LexState: 55}, // state 454
+		{LexState: 0, ReservedWordSetID: 5}, // state 452
+		{LexState: 3, ReservedWordSetID: 1}, // state 453
+		{LexState: 55, ReservedWordSetID: 1}, // state 454
 		{LexState: 1}, // state 455
 		{LexState: 1}, // state 456
 		{LexState: 1}, // state 457
 		{LexState: 3}, // state 458
-		{LexState: 55}, // state 459
-		{LexState: 55}, // state 460
+		{LexState: 55, ReservedWordSetID: 1}, // state 459
+		{LexState: 55, ReservedWordSetID: 1}, // state 460
 		{LexState: 1}, // state 461
 		{LexState: 1}, // state 462
 		{LexState: 1}, // state 463
@@ -8628,17 +8628,17 @@ func GoLanguage() *ts.Language {
 		{LexState: 1}, // state 489
 		{LexState: 1}, // state 490
 		{LexState: 1}, // state 491
-		{LexState: 55}, // state 492
-		{LexState: 55}, // state 493
+		{LexState: 55, ReservedWordSetID: 1}, // state 492
+		{LexState: 55, ReservedWordSetID: 1}, // state 493
 		{LexState: 1}, // state 494
 		{LexState: 1}, // state 495
-		{LexState: 55}, // state 496
+		{LexState: 55, ReservedWordSetID: 1}, // state 496
 		{LexState: 1}, // state 497
-		{LexState: 0}, // state 498
+		{LexState: 0, ReservedWordSetID: 5}, // state 498
 		{LexState: 3}, // state 499
-		{LexState: 55}, // state 500
+		{LexState: 55, ReservedWordSetID: 1}, // state 500
 		{LexState: 3}, // state 501
-		{LexState: 55}, // state 502
+		{LexState: 55, ReservedWordSetID: 1}, // state 502
 		{LexState: 1}, // state 503
 		{LexState: 1}, // state 504
 		{LexState: 3}, // state 505
@@ -8646,8 +8646,8 @@ func GoLanguage() *ts.Language {
 		{LexState: 3}, // state 507
 		{LexState: 3}, // state 508
 		{LexState: 1}, // state 509
-		{LexState: 0}, // state 510
-		{LexState: 0}, // state 511
+		{LexState: 0, ReservedWordSetID: 5}, // state 510
+		{LexState: 0, ReservedWordSetID: 5}, // state 511
 		{LexState: 1}, // state 512
 		{LexState: 1}, // state 513
 		{LexState: 1}, // state 514
@@ -8655,31 +8655,31 @@ func GoLanguage() *ts.Language {
 		{LexState: 6}, // state 516
 		{LexState: 3}, // state 517
 		{LexState: 6}, // state 518
-		{LexState: 0}, // state 519
-		{LexState: 0}, // state 520
-		{LexState: 0}, // state 521
+		{LexState: 0, ReservedWordSetID: 5}, // state 519
+		{LexState: 0, ReservedWordSetID: 5}, // state 520
+		{LexState: 0, ReservedWordSetID: 5}, // state 521
 		{LexState: 6}, // state 522
-		{LexState: 0}, // state 523
+		{LexState: 0, ReservedWordSetID: 5}, // state 523
 		{LexState: 6}, // state 524
 		{LexState: 6}, // state 525
-		{LexState: 0}, // state 526
-		{LexState: 0}, // state 527
+		{LexState: 0, ReservedWordSetID: 5}, // state 526
+		{LexState: 0, ReservedWordSetID: 5}, // state 527
 		{LexState: 6}, // state 528
-		{LexState: 55}, // state 529
+		{LexState: 55, ReservedWordSetID: 1}, // state 529
 		{LexState: 6}, // state 530
 		{LexState: 6}, // state 531
 		{LexState: 6}, // state 532
 		{LexState: 3}, // state 533
 		{LexState: 6}, // state 534
-		{LexState: 0}, // state 535
+		{LexState: 0, ReservedWordSetID: 1}, // state 535
 		{LexState: 6}, // state 536
 		{LexState: 6}, // state 537
 		{LexState: 6}, // state 538
 		{LexState: 6}, // state 539
-		{LexState: 0}, // state 540
-		{LexState: 0}, // state 541
+		{LexState: 0, ReservedWordSetID: 5}, // state 540
+		{LexState: 0, ReservedWordSetID: 5}, // state 541
 		{LexState: 6}, // state 542
-		{LexState: 0}, // state 543
+		{LexState: 0, ReservedWordSetID: 1}, // state 543
 		{LexState: 3}, // state 544
 		{LexState: 6}, // state 545
 		{LexState: 3}, // state 546
@@ -8705,7 +8705,7 @@ func GoLanguage() *ts.Language {
 		{LexState: 3}, // state 566
 		{LexState: 3}, // state 567
 		{LexState: 3}, // state 568
-		{LexState: 0}, // state 569
+		{LexState: 0, ReservedWordSetID: 5}, // state 569
 		{LexState: 3}, // state 570
 		{LexState: 3}, // state 571
 		{LexState: 3}, // state 572
@@ -8719,226 +8719,226 @@ func GoLanguage() *ts.Language {
 		{LexState: 3}, // state 580
 		{LexState: 3}, // state 581
 		{LexState: 3}, // state 582
-		{LexState: 0}, // state 583
-		{LexState: 0}, // state 584
-		{LexState: 0}, // state 585
+		{LexState: 0, ReservedWordSetID: 5}, // state 583
+		{LexState: 0, ReservedWordSetID: 5}, // state 584
+		{LexState: 0, ReservedWordSetID: 5}, // state 585
 		{LexState: 6}, // state 586
 		{LexState: 6}, // state 587
 		{LexState: 6}, // state 588
 		{LexState: 6}, // state 589
-		{LexState: 0}, // state 590
-		{LexState: 0}, // state 591
-		{LexState: 0}, // state 592
+		{LexState: 0, ReservedWordSetID: 5}, // state 590
+		{LexState: 0, ReservedWordSetID: 1}, // state 591
+		{LexState: 0, ReservedWordSetID: 5}, // state 592
 		{LexState: 6}, // state 593
-		{LexState: 0}, // state 594
-		{LexState: 0}, // state 595
-		{LexState: 0}, // state 596
+		{LexState: 0, ReservedWordSetID: 5}, // state 594
+		{LexState: 0, ReservedWordSetID: 5}, // state 595
+		{LexState: 0, ReservedWordSetID: 5}, // state 596
 		{LexState: 6}, // state 597
 		{LexState: 3}, // state 598
 		{LexState: 6}, // state 599
 		{LexState: 6}, // state 600
-		{LexState: 0}, // state 601
+		{LexState: 0, ReservedWordSetID: 5}, // state 601
 		{LexState: 6}, // state 602
-		{LexState: 0}, // state 603
+		{LexState: 0, ReservedWordSetID: 5}, // state 603
 		{LexState: 6}, // state 604
 		{LexState: 6}, // state 605
-		{LexState: 0}, // state 606
-		{LexState: 0}, // state 607
+		{LexState: 0, ReservedWordSetID: 1}, // state 606
+		{LexState: 0, ReservedWordSetID: 5}, // state 607
 		{LexState: 6}, // state 608
 		{LexState: 6}, // state 609
-		{LexState: 0}, // state 610
+		{LexState: 0, ReservedWordSetID: 5}, // state 610
 		{LexState: 6}, // state 611
-		{LexState: 0}, // state 612
+		{LexState: 0, ReservedWordSetID: 1}, // state 612
 		{LexState: 6}, // state 613
-		{LexState: 0}, // state 614
+		{LexState: 0, ReservedWordSetID: 1}, // state 614
 		{LexState: 6}, // state 615
-		{LexState: 0}, // state 616
+		{LexState: 0, ReservedWordSetID: 5}, // state 616
 		{LexState: 6}, // state 617
 		{LexState: 6}, // state 618
-		{LexState: 0}, // state 619
+		{LexState: 0, ReservedWordSetID: 5}, // state 619
 		{LexState: 6}, // state 620
-		{LexState: 0}, // state 621
+		{LexState: 0, ReservedWordSetID: 5}, // state 621
 		{LexState: 6}, // state 622
-		{LexState: 0}, // state 623
+		{LexState: 0, ReservedWordSetID: 5}, // state 623
 		{LexState: 6}, // state 624
 		{LexState: 6}, // state 625
-		{LexState: 0}, // state 626
+		{LexState: 0, ReservedWordSetID: 1}, // state 626
 		{LexState: 6}, // state 627
 		{LexState: 6}, // state 628
-		{LexState: 0}, // state 629
+		{LexState: 0, ReservedWordSetID: 1}, // state 629
 		{LexState: 6}, // state 630
 		{LexState: 6}, // state 631
 		{LexState: 6}, // state 632
 		{LexState: 6}, // state 633
 		{LexState: 6}, // state 634
-		{LexState: 0}, // state 635
+		{LexState: 0, ReservedWordSetID: 1}, // state 635
 		{LexState: 6}, // state 636
 		{LexState: 6}, // state 637
 		{LexState: 6}, // state 638
 		{LexState: 6}, // state 639
-		{LexState: 0}, // state 640
-		{LexState: 0}, // state 641
-		{LexState: 0}, // state 642
+		{LexState: 0, ReservedWordSetID: 5}, // state 640
+		{LexState: 0, ReservedWordSetID: 1}, // state 641
+		{LexState: 0, ReservedWordSetID: 5}, // state 642
 		{LexState: 6}, // state 643
-		{LexState: 0}, // state 644
-		{LexState: 0}, // state 645
+		{LexState: 0, ReservedWordSetID: 1}, // state 644
+		{LexState: 0, ReservedWordSetID: 1}, // state 645
 		{LexState: 6}, // state 646
-		{LexState: 0}, // state 647
+		{LexState: 0, ReservedWordSetID: 5}, // state 647
 		{LexState: 6}, // state 648
 		{LexState: 6}, // state 649
 		{LexState: 6}, // state 650
 		{LexState: 6}, // state 651
 		{LexState: 6}, // state 652
-		{LexState: 0}, // state 653
+		{LexState: 0, ReservedWordSetID: 5}, // state 653
 		{LexState: 6}, // state 654
 		{LexState: 6}, // state 655
-		{LexState: 0}, // state 656
-		{LexState: 0}, // state 657
-		{LexState: 0}, // state 658
-		{LexState: 0}, // state 659
-		{LexState: 0}, // state 660
-		{LexState: 0}, // state 661
+		{LexState: 0, ReservedWordSetID: 5}, // state 656
+		{LexState: 0, ReservedWordSetID: 5}, // state 657
+		{LexState: 0, ReservedWordSetID: 5}, // state 658
+		{LexState: 0, ReservedWordSetID: 5}, // state 659
+		{LexState: 0, ReservedWordSetID: 5}, // state 660
+		{LexState: 0, ReservedWordSetID: 1}, // state 661
 		{LexState: 6}, // state 662
 		{LexState: 6}, // state 663
 		{LexState: 6}, // state 664
 		{LexState: 6}, // state 665
-		{LexState: 0}, // state 666
+		{LexState: 0, ReservedWordSetID: 1}, // state 666
 		{LexState: 6}, // state 667
-		{LexState: 0}, // state 668
+		{LexState: 0, ReservedWordSetID: 1}, // state 668
 		{LexState: 6}, // state 669
 		{LexState: 6}, // state 670
-		{LexState: 0}, // state 671
+		{LexState: 0, ReservedWordSetID: 5}, // state 671
 		{LexState: 6}, // state 672
 		{LexState: 6}, // state 673
-		{LexState: 0}, // state 674
-		{LexState: 0}, // state 675
+		{LexState: 0, ReservedWordSetID: 1}, // state 674
+		{LexState: 0, ReservedWordSetID: 1}, // state 675
 		{LexState: 6}, // state 676
 		{LexState: 6}, // state 677
 		{LexState: 6}, // state 678
 		{LexState: 6}, // state 679
-		{LexState: 0}, // state 680
+		{LexState: 0, ReservedWordSetID: 1}, // state 680
 		{LexState: 6}, // state 681
-		{LexState: 0}, // state 682
-		{LexState: 0}, // state 683
+		{LexState: 0, ReservedWordSetID: 5}, // state 682
+		{LexState: 0, ReservedWordSetID: 5}, // state 683
 		{LexState: 6}, // state 684
-		{LexState: 0}, // state 685
-		{LexState: 0}, // state 686
+		{LexState: 0, ReservedWordSetID: 1}, // state 685
+		{LexState: 0, ReservedWordSetID: 5}, // state 686
 		{LexState: 6}, // state 687
-		{LexState: 0}, // state 688
+		{LexState: 0, ReservedWordSetID: 1}, // state 688
 		{LexState: 6}, // state 689
 		{LexState: 6}, // state 690
 		{LexState: 6}, // state 691
-		{LexState: 0}, // state 692
+		{LexState: 0, ReservedWordSetID: 1}, // state 692
 		{LexState: 6}, // state 693
-		{LexState: 0}, // state 694
-		{LexState: 0}, // state 695
+		{LexState: 0, ReservedWordSetID: 5}, // state 694
+		{LexState: 0, ReservedWordSetID: 5}, // state 695
 		{LexState: 6}, // state 696
-		{LexState: 0}, // state 697
-		{LexState: 0}, // state 698
-		{LexState: 0}, // state 699
+		{LexState: 0, ReservedWordSetID: 5}, // state 697
+		{LexState: 0, ReservedWordSetID: 5}, // state 698
+		{LexState: 0, ReservedWordSetID: 5}, // state 699
 		{LexState: 6}, // state 700
-		{LexState: 0}, // state 701
-		{LexState: 0}, // state 702
-		{LexState: 0}, // state 703
-		{LexState: 0}, // state 704
-		{LexState: 0}, // state 705
-		{LexState: 0}, // state 706
-		{LexState: 0}, // state 707
-		{LexState: 0}, // state 708
-		{LexState: 0}, // state 709
-		{LexState: 0}, // state 710
-		{LexState: 0}, // state 711
-		{LexState: 0}, // state 712
-		{LexState: 0}, // state 713
-		{LexState: 0}, // state 714
-		{LexState: 0}, // state 715
-		{LexState: 0}, // state 716
-		{LexState: 0}, // state 717
-		{LexState: 0}, // state 718
-		{LexState: 0}, // state 719
-		{LexState: 0}, // state 720
-		{LexState: 0}, // state 721
-		{LexState: 0}, // state 722
-		{LexState: 0}, // state 723
-		{LexState: 0}, // state 724
-		{LexState: 0}, // state 725
-		{LexState: 0}, // state 726
+		{LexState: 0, ReservedWordSetID: 5}, // state 701
+		{LexState: 0, ReservedWordSetID: 5}, // state 702
+		{LexState: 0, ReservedWordSetID: 5}, // state 703
+		{LexState: 0, ReservedWordSetID: 1}, // state 704
+		{LexState: 0, ReservedWordSetID: 5}, // state 705
+		{LexState: 0, ReservedWordSetID: 1}, // state 706
+		{LexState: 0, ReservedWordSetID: 1}, // state 707
+		{LexState: 0, ReservedWordSetID: 5}, // state 708
+		{LexState: 0, ReservedWordSetID: 5}, // state 709
+		{LexState: 0, ReservedWordSetID: 1}, // state 710
+		{LexState: 0, ReservedWordSetID: 5}, // state 711
+		{LexState: 0, ReservedWordSetID: 1}, // state 712
+		{LexState: 0, ReservedWordSetID: 5}, // state 713
+		{LexState: 0, ReservedWordSetID: 1}, // state 714
+		{LexState: 0, ReservedWordSetID: 1}, // state 715
+		{LexState: 0, ReservedWordSetID: 5}, // state 716
+		{LexState: 0, ReservedWordSetID: 1}, // state 717
+		{LexState: 0, ReservedWordSetID: 5}, // state 718
+		{LexState: 0, ReservedWordSetID: 5}, // state 719
+		{LexState: 0, ReservedWordSetID: 5}, // state 720
+		{LexState: 0, ReservedWordSetID: 5}, // state 721
+		{LexState: 0, ReservedWordSetID: 5}, // state 722
+		{LexState: 0, ReservedWordSetID: 5}, // state 723
+		{LexState: 0, ReservedWordSetID: 1}, // state 724
+		{LexState: 0, ReservedWordSetID: 1}, // state 725
+		{LexState: 0, ReservedWordSetID: 5}, // state 726
 		{LexState: 6}, // state 727
-		{LexState: 0}, // state 728
-		{LexState: 0}, // state 729
-		{LexState: 0}, // state 730
-		{LexState: 0}, // state 731
-		{LexState: 0}, // state 732
-		{LexState: 0}, // state 733
-		{LexState: 0}, // state 734
-		{LexState: 0}, // state 735
-		{LexState: 0}, // state 736
-		{LexState: 0}, // state 737
-		{LexState: 0}, // state 738
-		{LexState: 0}, // state 739
-		{LexState: 0}, // state 740
-		{LexState: 0}, // state 741
-		{LexState: 0}, // state 742
-		{LexState: 0}, // state 743
-		{LexState: 0}, // state 744
-		{LexState: 0}, // state 745
-		{LexState: 0}, // state 746
-		{LexState: 0}, // state 747
-		{LexState: 0}, // state 748
-		{LexState: 0}, // state 749
-		{LexState: 0}, // state 750
-		{LexState: 0}, // state 751
-		{LexState: 0}, // state 752
-		{LexState: 0}, // state 753
-		{LexState: 0}, // state 754
-		{LexState: 0}, // state 755
-		{LexState: 0}, // state 756
-		{LexState: 0}, // state 757
-		{LexState: 0}, // state 758
-		{LexState: 0}, // state 759
-		{LexState: 0}, // state 760
-		{LexState: 0}, // state 761
-		{LexState: 0}, // state 762
-		{LexState: 0}, // state 763
-		{LexState: 0}, // state 764
-		{LexState: 0}, // state 765
-		{LexState: 0}, // state 766
-		{LexState: 0}, // state 767
-		{LexState: 0}, // state 768
-		{LexState: 0}, // state 769
-		{LexState: 0}, // state 770
-		{LexState: 0}, // state 771
-		{LexState: 0}, // state 772
-		{LexState: 0}, // state 773
-		{LexState: 0}, // state 774
-		{LexState: 0}, // state 775
-		{LexState: 0}, // state 776
-		{LexState: 0}, // state 777
-		{LexState: 0}, // state 778
-		{LexState: 0}, // state 779
-		{LexState: 0}, // state 780
-		{LexState: 0}, // state 781
-		{LexState: 0}, // state 782
-		{LexState: 55}, // state 783
-		{LexState: 55}, // state 784
-		{LexState: 55}, // state 785
-		{LexState: 55}, // state 786
-		{LexState: 55}, // state 787
-		{LexState: 55}, // state 788
-		{LexState: 0}, // state 789
-		{LexState: 0}, // state 790
-		{LexState: 0}, // state 791
-		{LexState: 0}, // state 792
-		{LexState: 55}, // state 793
-		{LexState: 55}, // state 794
-		{LexState: 55}, // state 795
-		{LexState: 55}, // state 796
+		{LexState: 0, ReservedWordSetID: 5}, // state 728
+		{LexState: 0, ReservedWordSetID: 5}, // state 729
+		{LexState: 0, ReservedWordSetID: 5}, // state 730
+		{LexState: 0, ReservedWordSetID: 5}, // state 731
+		{LexState: 0, ReservedWordSetID: 5}, // state 732
+		{LexState: 0, ReservedWordSetID: 5}, // state 733
+		{LexState: 0, ReservedWordSetID: 5}, // state 734
+		{LexState: 0, ReservedWordSetID: 5}, // state 735
+		{LexState: 0, ReservedWordSetID: 5}, // state 736
+		{LexState: 0, ReservedWordSetID: 5}, // state 737
+		{LexState: 0, ReservedWordSetID: 1}, // state 738
+		{LexState: 0, ReservedWordSetID: 5}, // state 739
+		{LexState: 0, ReservedWordSetID: 5}, // state 740
+		{LexState: 0, ReservedWordSetID: 5}, // state 741
+		{LexState: 0, ReservedWordSetID: 1}, // state 742
+		{LexState: 0, ReservedWordSetID: 1}, // state 743
+		{LexState: 0, ReservedWordSetID: 1}, // state 744
+		{LexState: 0, ReservedWordSetID: 5}, // state 745
+		{LexState: 0, ReservedWordSetID: 1}, // state 746
+		{LexState: 0, ReservedWordSetID: 1}, // state 747
+		{LexState: 0, ReservedWordSetID: 5}, // state 748
+		{LexState: 0, ReservedWordSetID: 5}, // state 749
+		{LexState: 0, ReservedWordSetID: 5}, // state 750
+		{LexState: 0, ReservedWordSetID: 5}, // state 751
+		{LexState: 0, ReservedWordSetID: 1}, // state 752
+		{LexState: 0, ReservedWordSetID: 1}, // state 753
+		{LexState: 0, ReservedWordSetID: 1}, // state 754
+		{LexState: 0, ReservedWordSetID: 5}, // state 755
+		{LexState: 0, ReservedWordSetID: 5}, // state 756
+		{LexState: 0, ReservedWordSetID: 5}, // state 757
+		{LexState: 0, ReservedWordSetID: 1}, // state 758
+		{LexState: 0, ReservedWordSetID: 5}, // state 759
+		{LexState: 0, ReservedWordSetID: 1}, // state 760
+		{LexState: 0, ReservedWordSetID: 5}, // state 761
+		{LexState: 0, ReservedWordSetID: 5}, // state 762
+		{LexState: 0, ReservedWordSetID: 5}, // state 763
+		{LexState: 0, ReservedWordSetID: 5}, // state 764
+		{LexState: 0, ReservedWordSetID: 5}, // state 765
+		{LexState: 0, ReservedWordSetID: 1}, // state 766
+		{LexState: 0, ReservedWordSetID: 5}, // state 767
+		{LexState: 0, ReservedWordSetID: 5}, // state 768
+		{LexState: 0, ReservedWordSetID: 5}, // state 769
+		{LexState: 0, ReservedWordSetID: 5}, // state 770
+		{LexState: 0, ReservedWordSetID: 5}, // state 771
+		{LexState: 0, ReservedWordSetID: 5}, // state 772
+		{LexState: 0, ReservedWordSetID: 5}, // state 773
+		{LexState: 0, ReservedWordSetID: 5}, // state 774
+		{LexState: 0, ReservedWordSetID: 5}, // state 775
+		{LexState: 0, ReservedWordSetID: 1}, // state 776
+		{LexState: 0, ReservedWordSetID: 1}, // state 777
+		{LexState: 0, ReservedWordSetID: 1}, // state 778
+		{LexState: 0, ReservedWordSetID: 1}, // state 779
+		{LexState: 0, ReservedWordSetID: 1}, // state 780
+		{LexState: 0, ReservedWordSetID: 1}, // state 781
+		{LexState: 0, ReservedWordSetID: 1}, // state 782
+		{LexState: 55, ReservedWordSetID: 6}, // state 783
+		{LexState: 55, ReservedWordSetID: 6}, // state 784
+		{LexState: 55, ReservedWordSetID: 6}, // state 785
+		{LexState: 55, ReservedWordSetID: 6}, // state 786
+		{LexState: 55, ReservedWordSetID: 6}, // state 787
+		{LexState: 55, ReservedWordSetID: 6}, // state 788
+		{LexState: 0, ReservedWordSetID: 5}, // state 789
+		{LexState: 0, ReservedWordSetID: 5}, // state 790
+		{LexState: 0, ReservedWordSetID: 5}, // state 791
+		{LexState: 0, ReservedWordSetID: 5}, // state 792
+		{LexState: 55, ReservedWordSetID: 5}, // state 793
+		{LexState: 55, ReservedWordSetID: 5}, // state 794
+		{LexState: 55, ReservedWordSetID: 5}, // state 795
+		{LexState: 55, ReservedWordSetID: 5}, // state 796
 		{LexState: 56}, // state 797
 		{LexState: 0}, // state 798
 		{LexState: 56}, // state 799
 		{LexState: 0}, // state 800
 		{LexState: 55}, // state 801
-		{LexState: 0}, // state 802
+		{LexState: 0, ReservedWordSetID: 5}, // state 802
 		{LexState: 55}, // state 803
 		{LexState: 55}, // state 804
 		{LexState: 55}, // state 805
@@ -8956,7 +8956,7 @@ func GoLanguage() *ts.Language {
 		{LexState: 55}, // state 817
 		{LexState: 55}, // state 818
 		{LexState: 55}, // state 819
-		{LexState: 0}, // state 820
+		{LexState: 0, ReservedWordSetID: 5}, // state 820
 		{LexState: 55}, // state 821
 		{LexState: 0}, // state 822
 		{LexState: 0}, // state 823
@@ -8964,7 +8964,7 @@ func GoLanguage() *ts.Language {
 		{LexState: 0}, // state 825
 		{LexState: 55}, // state 826
 		{LexState: 55}, // state 827
-		{LexState: 0}, // state 828
+		{LexState: 0, ReservedWordSetID: 1}, // state 828
 		{LexState: 55}, // state 829
 		{LexState: 55}, // state 830
 		{LexState: 55}, // state 831
@@ -8975,25 +8975,25 @@ func GoLanguage() *ts.Language {
 		{LexState: 55}, // state 836
 		{LexState: 55}, // state 837
 		{LexState: 0}, // state 838
-		{LexState: 0}, // state 839
-		{LexState: 0}, // state 840
-		{LexState: 0}, // state 841
-		{LexState: 0}, // state 842
-		{LexState: 3}, // state 843
+		{LexState: 0, ReservedWordSetID: 5}, // state 839
+		{LexState: 0, ReservedWordSetID: 1}, // state 840
+		{LexState: 0, ReservedWordSetID: 5}, // state 841
+		{LexState: 0, ReservedWordSetID: 5}, // state 842
+		{LexState: 3, ReservedWordSetID: 1}, // state 843
 		{LexState: 3}, // state 844
 		{LexState: 56}, // state 845
-		{LexState: 3}, // state 846
+		{LexState: 3, ReservedWordSetID: 1}, // state 846
 		{LexState: 0}, // state 847
 		{LexState: 55}, // state 848
-		{LexState: 3}, // state 849
-		{LexState: 3}, // state 850
-		{LexState: 3}, // state 851
+		{LexState: 3, ReservedWordSetID: 1}, // state 849
+		{LexState: 3, ReservedWordSetID: 1}, // state 850
+		{LexState: 3, ReservedWordSetID: 1}, // state 851
 		{LexState: 55}, // state 852
-		{LexState: 3}, // state 853
-		{LexState: 3}, // state 854
+		{LexState: 3, ReservedWordSetID: 1}, // state 853
+		{LexState: 3, ReservedWordSetID: 1}, // state 854
 		{LexState: 3}, // state 855
 		{LexState: 56}, // state 856
-		{LexState: 3}, // state 857
+		{LexState: 3, ReservedWordSetID: 1}, // state 857
 		{LexState: 0}, // state 858
 		{LexState: 0}, // state 859
 		{LexState: 0}, // state 860
@@ -9001,7 +9001,7 @@ func GoLanguage() *ts.Language {
 		{LexState: 0}, // state 862
 		{LexState: 0}, // state 863
 		{LexState: 0}, // state 864
-		{LexState: 3}, // state 865
+		{LexState: 3, ReservedWordSetID: 1}, // state 865
 		{LexState: 0}, // state 866
 		{LexState: 0}, // state 867
 		{LexState: 0}, // state 868
@@ -9026,8 +9026,8 @@ func GoLanguage() *ts.Language {
 		{LexState: 0}, // state 887
 		{LexState: 0}, // state 888
 		{LexState: 55}, // state 889
-		{LexState: 0}, // state 890
-		{LexState: 0}, // state 891
+		{LexState: 0, ReservedWordSetID: 1}, // state 890
+		{LexState: 0, ReservedWordSetID: 1}, // state 891
 		{LexState: 0}, // state 892
 		{LexState: 55}, // state 893
 		{LexState: 55}, // state 894
@@ -9035,21 +9035,21 @@ func GoLanguage() *ts.Language {
 		{LexState: 55}, // state 896
 		{LexState: 55}, // state 897
 		{LexState: 56}, // state 898
-		{LexState: 0}, // state 899
+		{LexState: 0, ReservedWordSetID: 1}, // state 899
 		{LexState: 56}, // state 900
 		{LexState: 0}, // state 901
-		{LexState: 0}, // state 902
-		{LexState: 0}, // state 903
-		{LexState: 0}, // state 904
+		{LexState: 0, ReservedWordSetID: 1}, // state 902
+		{LexState: 0, ReservedWordSetID: 1}, // state 903
+		{LexState: 0, ReservedWordSetID: 1}, // state 904
 		{LexState: 55}, // state 905
-		{LexState: 0}, // state 906
-		{LexState: 0}, // state 907
+		{LexState: 0, ReservedWordSetID: 1}, // state 906
+		{LexState: 0, ReservedWordSetID: 1}, // state 907
 		{LexState: 55}, // state 908
-		{LexState: 0}, // state 909
+		{LexState: 0, ReservedWordSetID: 1}, // state 909
 		{LexState: 55}, // state 910
-		{LexState: 55}, // state 911
-		{LexState: 0}, // state 912
-		{LexState: 55}, // state 913
+		{LexState: 55, ReservedWordSetID: 7}, // state 911
+		{LexState: 0, ReservedWordSetID: 1}, // state 912
+		{LexState: 55, ReservedWordSetID: 7}, // state 913
 		{LexState: 55}, // state 914
 		{LexState: 55}, // state 915
 		{LexState: 55}, // state 916
@@ -9192,7 +9192,7 @@ func GoLanguage() *ts.Language {
 		{LexState: 0}, // state 1053
 		{LexState: 55}, // state 1054
 		{LexState: 55}, // state 1055
-		{LexState: 0}, // state 1056
+		{LexState: 0, ReservedWordSetID: 1}, // state 1056
 		{LexState: 55}, // state 1057
 		{LexState: 0}, // state 1058
 		{LexState: 55}, // state 1059
@@ -9201,10 +9201,10 @@ func GoLanguage() *ts.Language {
 		{LexState: 55}, // state 1062
 		{LexState: 55}, // state 1063
 		{LexState: 0}, // state 1064
-		{LexState: 0}, // state 1065
-		{LexState: 0}, // state 1066
+		{LexState: 0, ReservedWordSetID: 1}, // state 1065
+		{LexState: 0, ReservedWordSetID: 1}, // state 1066
 		{LexState: 55}, // state 1067
-		{LexState: 0}, // state 1068
+		{LexState: 0, ReservedWordSetID: 1}, // state 1068
 		{LexState: 55}, // state 1069
 		{LexState: 55}, // state 1070
 		{LexState: 55}, // state 1071
@@ -9215,7 +9215,7 @@ func GoLanguage() *ts.Language {
 		{LexState: 55}, // state 1076
 		{LexState: 0}, // state 1077
 		{LexState: 55}, // state 1078
-		{LexState: 0}, // state 1079
+		{LexState: 0, ReservedWordSetID: 1}, // state 1079
 		{LexState: 2}, // state 1080
 		{LexState: 0}, // state 1081
 		{LexState: 0}, // state 1082
@@ -9226,8 +9226,8 @@ func GoLanguage() *ts.Language {
 		{LexState: 0}, // state 1087
 		{LexState: 0}, // state 1088
 		{LexState: 55}, // state 1089
-		{LexState: 0}, // state 1090
-		{LexState: 0}, // state 1091
+		{LexState: 0, ReservedWordSetID: 1}, // state 1090
+		{LexState: 0, ReservedWordSetID: 1}, // state 1091
 		{LexState: 0}, // state 1092
 		{LexState: 55}, // state 1093
 		{LexState: 55}, // state 1094
@@ -9249,7 +9249,7 @@ func GoLanguage() *ts.Language {
 		{LexState: 55}, // state 1110
 		{LexState: 0}, // state 1111
 		{LexState: 55}, // state 1112
-		{LexState: 0}, // state 1113
+		{LexState: 0, ReservedWordSetID: 1}, // state 1113
 		{LexState: 2}, // state 1114
 		{LexState: 55}, // state 1115
 		{LexState: 55}, // state 1116
@@ -9258,7 +9258,7 @@ func GoLanguage() *ts.Language {
 		{LexState: 55}, // state 1119
 		{LexState: 2}, // state 1120
 		{LexState: 58}, // state 1121
-		{LexState: 0}, // state 1122
+		{LexState: 0, ReservedWordSetID: 1}, // state 1122
 		{LexState: 2}, // state 1123
 		{LexState: 58}, // state 1124
 		{LexState: 55}, // state 1125
@@ -9269,14 +9269,14 @@ func GoLanguage() *ts.Language {
 		{LexState: 0}, // state 1130
 		{LexState: 55}, // state 1131
 		{LexState: 55}, // state 1132
-		{LexState: 0}, // state 1133
+		{LexState: 0, ReservedWordSetID: 1}, // state 1133
 		{LexState: 55}, // state 1134
 		{LexState: 0}, // state 1135
 		{LexState: 2}, // state 1136
 		{LexState: 0}, // state 1137
 		{LexState: 0}, // state 1138
 		{LexState: 55}, // state 1139
-		{LexState: 0}, // state 1140
+		{LexState: 0, ReservedWordSetID: 1}, // state 1140
 		{LexState: 55}, // state 1141
 		{LexState: 2}, // state 1142
 		{LexState: 0}, // state 1143
@@ -9288,7 +9288,7 @@ func GoLanguage() *ts.Language {
 		{LexState: 0}, // state 1149
 		{LexState: 2}, // state 1150
 		{LexState: 2}, // state 1151
-		{LexState: 0}, // state 1152
+		{LexState: 0, ReservedWordSetID: 1}, // state 1152
 		{LexState: 0}, // state 1153
 		{LexState: 0}, // state 1154
 		{LexState: 55}, // state 1155
@@ -9309,7 +9309,7 @@ func GoLanguage() *ts.Language {
 		{LexState: 0}, // state 1170
 		{LexState: 55}, // state 1171
 		{LexState: 0}, // state 1172
-		{LexState: 0}, // state 1173
+		{LexState: 0, ReservedWordSetID: 1}, // state 1173
 		{LexState: 0}, // state 1174
 		{LexState: 0}, // state 1175
 		{LexState: 0}, // state 1176
@@ -9317,7 +9317,7 @@ func GoLanguage() *ts.Language {
 		{LexState: 0}, // state 1178
 		{LexState: 0}, // state 1179
 		{LexState: 0}, // state 1180
-		{LexState: 0}, // state 1181
+		{LexState: 0, ReservedWordSetID: 1}, // state 1181
 		{LexState: 0}, // state 1182
 		{LexState: 55}, // state 1183
 		{LexState: 0}, // state 1184
@@ -9331,7 +9331,7 @@ func GoLanguage() *ts.Language {
 		{LexState: 0}, // state 1192
 		{LexState: 0}, // state 1193
 		{LexState: 0}, // state 1194
-		{LexState: 0}, // state 1195
+		{LexState: 0, ReservedWordSetID: 1}, // state 1195
 		{LexState: 0}, // state 1196
 		{LexState: 0}, // state 1197
 		{LexState: 0}, // state 1198
@@ -9358,11 +9358,11 @@ func GoLanguage() *ts.Language {
 		{LexState: 55}, // state 1219
 		{LexState: 0}, // state 1220
 		{LexState: 0}, // state 1221
-		{LexState: 0}, // state 1222
+		{LexState: 0, ReservedWordSetID: 1}, // state 1222
 		{LexState: 55}, // state 1223
 		{LexState: 0}, // state 1224
 		{LexState: 0}, // state 1225
-		{LexState: 0}, // state 1226
+		{LexState: 0, ReservedWordSetID: 1}, // state 1226
 		{LexState: 55}, // state 1227
 		{LexState: 0}, // state 1228
 		{LexState: 0}, // state 1229
@@ -9381,7 +9381,7 @@ func GoLanguage() *ts.Language {
 		{LexState: 0}, // state 1242
 		{LexState: 0}, // state 1243
 		{LexState: 0}, // state 1244
-		{LexState: 0}, // state 1245
+		{LexState: 0, ReservedWordSetID: 1}, // state 1245
 		{LexState: 0}, // state 1246
 		{LexState: 0}, // state 1247
 		{LexState: 0}, // state 1248
@@ -9404,12 +9404,12 @@ func GoLanguage() *ts.Language {
 		{LexState: 0}, // state 1265
 		{LexState: 0}, // state 1266
 		{LexState: 0}, // state 1267
-		{LexState: 0}, // state 1268
+		{LexState: 0, ReservedWordSetID: 1}, // state 1268
 		{LexState: 0}, // state 1269
-		{LexState: 0}, // state 1270
+		{LexState: 0, ReservedWordSetID: 1}, // state 1270
 		{LexState: 0}, // state 1271
 		{LexState: 0}, // state 1272
-		{LexState: 0}, // state 1273
+		{LexState: 0, ReservedWordSetID: 1}, // state 1273
 		{LexState: 0}, // state 1274
 		{LexState: 0}, // state 1275
 		{LexState: 0}, // state 1276
@@ -9418,22 +9418,22 @@ func GoLanguage() *ts.Language {
 		{LexState: 0}, // state 1279
 		{LexState: 0}, // state 1280
 		{LexState: 0}, // state 1281
-		{LexState: 0}, // state 1282
+		{LexState: 0, ReservedWordSetID: 1}, // state 1282
 		{LexState: 0}, // state 1283
 		{LexState: 0}, // state 1284
-		{LexState: 0}, // state 1285
+		{LexState: 0, ReservedWordSetID: 1}, // state 1285
 		{LexState: 0}, // state 1286
 		{LexState: 0}, // state 1287
 		{LexState: 0}, // state 1288
 		{LexState: 0}, // state 1289
-		{LexState: 0}, // state 1290
+		{LexState: 0, ReservedWordSetID: 1}, // state 1290
 		{LexState: 0}, // state 1291
 		{LexState: 0}, // state 1292
 		{LexState: 0}, // state 1293
-		{LexState: 0}, // state 1294
-		{LexState: 0}, // state 1295
+		{LexState: 0, ReservedWordSetID: 1}, // state 1294
+		{LexState: 0, ReservedWordSetID: 1}, // state 1295
 		{LexState: 0}, // state 1296
-		{LexState: 0}, // state 1297
+		{LexState: 0, ReservedWordSetID: 1}, // state 1297
 		{LexState: 0}, // state 1298
 		{LexState: 0}, // state 1299
 		{LexState: 0}, // state 1300
@@ -9444,16 +9444,16 @@ func GoLanguage() *ts.Language {
 		{LexState: 0}, // state 1305
 		{LexState: 0}, // state 1306
 		{LexState: 0}, // state 1307
-		{LexState: 0}, // state 1308
+		{LexState: 0, ReservedWordSetID: 1}, // state 1308
 		{LexState: 0}, // state 1309
-		{LexState: 0}, // state 1310
+		{LexState: 0, ReservedWordSetID: 1}, // state 1310
 		{LexState: 0}, // state 1311
 		{LexState: 0}, // state 1312
 		{LexState: 0}, // state 1313
 		{LexState: 0}, // state 1314
 		{LexState: 0}, // state 1315
 		{LexState: 58}, // state 1316
-		{LexState: 0}, // state 1317
+		{LexState: 0, ReservedWordSetID: 1}, // state 1317
 		{LexState: 0}, // state 1318
 		{LexState: 0}, // state 1319
 		{LexState: 0}, // state 1320
@@ -9461,11 +9461,11 @@ func GoLanguage() *ts.Language {
 		{LexState: 0}, // state 1322
 		{LexState: 0}, // state 1323
 		{LexState: 0}, // state 1324
-		{LexState: 0}, // state 1325
+		{LexState: 0, ReservedWordSetID: 1}, // state 1325
 		{LexState: 0}, // state 1326
 		{LexState: 0}, // state 1327
 		{LexState: 0}, // state 1328
-		{LexState: 0}, // state 1329
+		{LexState: 0, ReservedWordSetID: 1}, // state 1329
 		{LexState: 0}, // state 1330
 		{LexState: 0}, // state 1331
 		{LexState: 0}, // state 1332
@@ -9481,13 +9481,13 @@ func GoLanguage() *ts.Language {
 		{LexState: 0}, // state 1342
 		{LexState: 0}, // state 1343
 		{LexState: 0}, // state 1344
-		{LexState: 0}, // state 1345
+		{LexState: 0, ReservedWordSetID: 1}, // state 1345
 		{LexState: 0}, // state 1346
 		{LexState: 0}, // state 1347
 		{LexState: 0}, // state 1348
 		{LexState: 0}, // state 1349
 		{LexState: 0}, // state 1350
-		{LexState: 0}, // state 1351
+		{LexState: 0, ReservedWordSetID: 1}, // state 1351
 		{LexState: 0}, // state 1352
 		{LexState: 0}, // state 1353
 		{LexState: 0}, // state 1354
@@ -9498,13 +9498,13 @@ func GoLanguage() *ts.Language {
 		{LexState: 0}, // state 1359
 		{LexState: 0}, // state 1360
 		{LexState: 0}, // state 1361
-		{LexState: 0}, // state 1362
+		{LexState: 0, ReservedWordSetID: 1}, // state 1362
 		{LexState: 0}, // state 1363
 		{LexState: 0}, // state 1364
 		{LexState: 0}, // state 1365
 		{LexState: 0}, // state 1366
 		{LexState: 0}, // state 1367
-		{LexState: 0}, // state 1368
+		{LexState: 0, ReservedWordSetID: 1}, // state 1368
 		{LexState: 0}, // state 1369
 		{LexState: 0}, // state 1370
 		{LexState: 0}, // state 1371
@@ -9515,7 +9515,7 @@ func GoLanguage() *ts.Language {
 		{LexState: 0}, // state 1376
 		{LexState: 0}, // state 1377
 		{LexState: 0}, // state 1378
-		{LexState: 0}, // state 1379
+		{LexState: 0, ReservedWordSetID: 1}, // state 1379
 		{LexState: 0}, // state 1380
 		{LexState: 0}, // state 1381
 		{LexState: 0}, // state 1382
@@ -9541,7 +9541,7 @@ func GoLanguage() *ts.Language {
 		{LexState: 0}, // state 1402
 		{LexState: 0}, // state 1403
 		{LexState: 0}, // state 1404
-		{LexState: 0}, // state 1405
+		{LexState: 0, ReservedWordSetID: 1}, // state 1405
 		{LexState: 0}, // state 1406
 		{LexState: 140}, // state 1407
 		{LexState: 0}, // state 1408
@@ -9551,7 +9551,7 @@ func GoLanguage() *ts.Language {
 		{LexState: 0}, // state 1412
 		{LexState: 0}, // state 1413
 		{LexState: 0}, // state 1414
-		{LexState: 0}, // state 1415
+		{LexState: 0, ReservedWordSetID: 1}, // state 1415
 		{LexState: 0}, // state 1416
 		{LexState: 0}, // state 1417
 		{LexState: 0}, // state 1418
@@ -9568,13 +9568,13 @@ func GoLanguage() *ts.Language {
 		{LexState: 0}, // state 1429
 		{LexState: 140}, // state 1430
 		{LexState: 0}, // state 1431
-		{LexState: 0}, // state 1432
+		{LexState: 0, ReservedWordSetID: 1}, // state 1432
 		{LexState: 0}, // state 1433
 		{LexState: 0}, // state 1434
 		{LexState: 0}, // state 1435
 		{LexState: 0}, // state 1436
 		{LexState: 0}, // state 1437
-		{LexState: 0}, // state 1438
+		{LexState: 0, ReservedWordSetID: 1}, // state 1438
 		{LexState: 0}, // state 1439
 		{LexState: 0}, // state 1440
 		{LexState: 0}, // state 1441
@@ -10535,6 +10535,47 @@ func GoLanguage() *ts.Language {
 
 	supertypeSymbols := []ts.Symbol{119, 138, 140, 169, }
 
+	reservedWords := []bool{
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		true, true, false, false, false, false, true, false, false, true, true, false, false, false, true, false, true, false, false, false, 
+		true, false, true, true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, true, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, true, false, true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, true, true, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, false, 
+		true, false, true, true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, true, true, false, false, false, false, true, false, false, true, false, false, false, false, true, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, true, true, true, true, true, true, true, true, true, true, false, true, true, true, true, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		true, true, false, false, false, false, true, false, false, true, false, false, false, false, true, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, true, false, false, false, 
+		false, true, false, false, true, false, false, false, false, true, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, true, true, true, true, 
+		true, true, true, true, true, true, true, false, false, true, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, true, true, false, false, false, false, true, false, false, true, 
+		true, false, false, false, true, false, true, false, false, false, true, false, true, true, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, true, true, true, true, true, true, true, true, true, true, 
+		true, true, false, false, true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+	}
+
 	return &ts.Language{
 		Version:                14,
 		SymbolCount:            214,
@@ -10562,6 +10603,9 @@ func GoLanguage() *ts.Language {
 		FieldNames:             fieldNames,
 		AliasSequences:         aliasSequences,
 		SupertypeSymbols:       supertypeSymbols,
+		ReservedWords:          reservedWords,
+		ReservedWordCount:      95,
+		ReservedWordSetCount:   8,
 	}
 }
 

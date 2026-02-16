@@ -73,6 +73,12 @@ type Grammar struct {
 	// Maps C variable name -> sorted array of {Low, High} codepoint ranges.
 	CharacterSets map[string][]CharacterRange
 
+	// Reserved words (ABI v15): flat 2D bool table.
+	// [setID * maxReservedWordSetSize + symbolIdx] -> true if symbol is reserved in set.
+	ReservedWords          []bool
+	MaxReservedWordSetSize int
+	ReservedWordSetCount   int
+
 	// Internal: enum maps built during extraction for resolving C identifiers.
 	symbolEnum map[string]int // C enum name -> integer value
 	fieldEnum  map[string]int // C field enum name -> integer value
@@ -118,8 +124,9 @@ type ActionEntry struct {
 
 // LexModeEntry corresponds to a TSLexMode.
 type LexModeEntry struct {
-	LexState         uint16
-	ExternalLexState uint16
+	LexState           uint16
+	ExternalLexState   uint16
+	ReservedWordSetID  uint16
 }
 
 // FieldSlice identifies a range in the field entries array.

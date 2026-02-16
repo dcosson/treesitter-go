@@ -68,6 +68,9 @@ func GenerateGo(g *Grammar, packageName string) string {
 	// External scanner data.
 	writeExternalScannerData(&b, g)
 
+	// Reserved words (ABI v15).
+	writeReservedWords(&b, g)
+
 	// Build the Language struct.
 	fmt.Fprintf(&b, "\treturn &ts.Language{\n")
 	fmt.Fprintf(&b, "\t\tVersion:                14,\n")
@@ -115,6 +118,11 @@ func GenerateGo(g *Grammar, packageName string) string {
 	}
 	if len(g.ExternalSymbolMap) > 0 {
 		fmt.Fprintf(&b, "\t\tExternalSymbolMap:      externalSymbolMap,\n")
+	}
+	if len(g.ReservedWords) > 0 {
+		fmt.Fprintf(&b, "\t\tReservedWords:          reservedWords,\n")
+		fmt.Fprintf(&b, "\t\tReservedWordCount:      %d,\n", g.TokenCount)
+		fmt.Fprintf(&b, "\t\tReservedWordSetCount:   %d,\n", g.ReservedWordSetCount)
 	}
 	fmt.Fprintf(&b, "\t}\n")
 	fmt.Fprintf(&b, "}\n\n")
@@ -236,11 +244,14 @@ func writeSmallParseTableMap(b *strings.Builder, g *Grammar) {
 func writeLexModes(b *strings.Builder, g *Grammar) {
 	fmt.Fprintf(b, "\tlexModes := []ts.LexMode{\n")
 	for i, lm := range g.LexModes {
+		parts := fmt.Sprintf("LexState: %d", lm.LexState)
 		if lm.ExternalLexState != 0 {
-			fmt.Fprintf(b, "\t\t{LexState: %d, ExternalLexState: %d}, // state %d\n", lm.LexState, lm.ExternalLexState, i)
-		} else {
-			fmt.Fprintf(b, "\t\t{LexState: %d}, // state %d\n", lm.LexState, i)
+			parts += fmt.Sprintf(", ExternalLexState: %d", lm.ExternalLexState)
 		}
+		if lm.ReservedWordSetID != 0 {
+			parts += fmt.Sprintf(", ReservedWordSetID: %d", lm.ReservedWordSetID)
+		}
+		fmt.Fprintf(b, "\t\t{%s}, // state %d\n", parts, i)
 	}
 	fmt.Fprintf(b, "\t}\n\n")
 }
@@ -377,6 +388,25 @@ func writeExternalScannerData(b *strings.Builder, g *Grammar) {
 		}
 		fmt.Fprintf(b, "}\n\n")
 	}
+}
+
+// writeReservedWords writes the reserved words flat bool table.
+func writeReservedWords(b *strings.Builder, g *Grammar) {
+	if len(g.ReservedWords) == 0 {
+		return
+	}
+	fmt.Fprintf(b, "\treservedWords := []bool{")
+	for i, v := range g.ReservedWords {
+		if i%20 == 0 {
+			fmt.Fprintf(b, "\n\t\t")
+		}
+		if v {
+			fmt.Fprintf(b, "true, ")
+		} else {
+			fmt.Fprintf(b, "false, ")
+		}
+	}
+	fmt.Fprintf(b, "\n\t}\n\n")
 }
 
 // writeLexFunction generates the Go lex function from DFA states.

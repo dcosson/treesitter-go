@@ -96,6 +96,9 @@ func ExtractGrammar(parserC string) (*Grammar, error) {
 	extractExternalScannerSymbolMap(g, parserC)
 	extractExternalScannerStates(g, parserC)
 
+	// Extract reserved words (ABI v15).
+	extractReservedWords(g, parserC)
+
 	return g, nil
 }
 
@@ -589,25 +592,92 @@ func extractLexModes(g *Grammar, src string) error {
 		return fmt.Errorf("ts_lex_modes not found")
 	}
 
-	// Tolerate extra fields like .reserved_word_set_id between captured groups and closing brace.
-	re := regexp.MustCompile(`\[(\d+)\]\s*=\s*\{\.lex_state\s*=\s*(\d+)(?:,\s*\.external_lex_state\s*=\s*(\d+))?[^}]*\}`)
+	// Capture lex_state, external_lex_state, and reserved_word_set_id.
+	re := regexp.MustCompile(`\[(\d+)\]\s*=\s*\{\.lex_state\s*=\s*(\d+)(?:,\s*\.external_lex_state\s*=\s*(\d+))?(?:,\s*\.reserved_word_set_id\s*=\s*(\d+))?[^}]*\}`)
 	modes := make([]LexModeEntry, g.StateCount)
 	for _, m := range re.FindAllStringSubmatch(block, -1) {
 		idx, _ := strconv.Atoi(m[1])
 		lexState, _ := strconv.Atoi(m[2])
-		var extState int
+		var extState, rwSetID int
 		if m[3] != "" {
 			extState, _ = strconv.Atoi(m[3])
 		}
+		if m[4] != "" {
+			rwSetID, _ = strconv.Atoi(m[4])
+		}
 		if idx < len(modes) {
 			modes[idx] = LexModeEntry{
-				LexState:         uint16(lexState),
-				ExternalLexState: uint16(extState),
+				LexState:          uint16(lexState),
+				ExternalLexState:  uint16(extState),
+				ReservedWordSetID: uint16(rwSetID),
 			}
 		}
 	}
 	g.LexModes = modes
 	return nil
+}
+
+// extractReservedWords extracts ts_reserved_words[][] and MAX_RESERVED_WORD_SET_SIZE.
+// The reserved words array is a 2D table: [set_id][word_index] -> symbol.
+// Set 0 is always empty (no reserved words). A symbol value of 0 terminates the list.
+func extractReservedWords(g *Grammar, src string) {
+	// Extract MAX_RESERVED_WORD_SET_SIZE constant.
+	maxSizeRe := regexp.MustCompile(`#define\s+MAX_RESERVED_WORD_SET_SIZE\s+(\d+)`)
+	m := maxSizeRe.FindStringSubmatch(src)
+	if m == nil {
+		return // No reserved words in this grammar.
+	}
+	maxSize, _ := strconv.Atoi(m[1])
+	g.MaxReservedWordSetSize = maxSize
+
+	// Find the ts_reserved_words array block.
+	block := extractArrayBlock(src, "ts_reserved_words")
+	if block == "" {
+		return
+	}
+
+	// Count the number of sets by finding [N] entries.
+	setRe := regexp.MustCompile(`\[(\d+)\]\s*=\s*\{`)
+	setMatches := setRe.FindAllStringSubmatch(block, -1)
+	maxSetID := 0
+	for _, sm := range setMatches {
+		id, _ := strconv.Atoi(sm[1])
+		if id > maxSetID {
+			maxSetID = id
+		}
+	}
+	numSets := maxSetID + 1
+	g.ReservedWordSetCount = numSets
+
+	// Build flat bool table: [set_id * token_count + symbol] -> true
+	// Use token_count as the dimension so we can look up by symbol directly.
+	tableSize := numSets * g.TokenCount
+	table := make([]bool, tableSize)
+
+	// Parse each set entry: [N] = { sym1, sym2, ... }
+	// We need to extract the inner content of each set.
+	setBlockRe := regexp.MustCompile(`\[(\d+)\]\s*=\s*\{([^}]*)\}`)
+	for _, sm := range setBlockRe.FindAllStringSubmatch(block, -1) {
+		setID, _ := strconv.Atoi(sm[1])
+		entries := sm[2]
+
+		// Parse comma-separated symbol identifiers.
+		for _, entry := range strings.Split(entries, ",") {
+			symName := strings.TrimSpace(entry)
+			if symName == "" {
+				continue
+			}
+			symVal, ok := g.symbolEnum[symName]
+			if !ok {
+				continue
+			}
+			if symVal < g.TokenCount {
+				table[setID*g.TokenCount+symVal] = true
+			}
+		}
+	}
+
+	g.ReservedWords = table
 }
 
 // extractPublicSymbolMap extracts ts_symbol_map[].

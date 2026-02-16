@@ -9685,362 +9685,362 @@ func JavascriptLanguage() *ts.Language {
 
 	lexModes := []ts.LexMode{
 		{LexState: 0, ExternalLexState: 1}, // state 0
-		{LexState: 125, ExternalLexState: 2}, // state 1
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1
 		{LexState: 5, ExternalLexState: 2}, // state 2
 		{LexState: 5, ExternalLexState: 2}, // state 3
 		{LexState: 5, ExternalLexState: 2}, // state 4
 		{LexState: 5, ExternalLexState: 2}, // state 5
 		{LexState: 5, ExternalLexState: 2}, // state 6
-		{LexState: 3, ExternalLexState: 3}, // state 7
-		{LexState: 3, ExternalLexState: 3}, // state 8
-		{LexState: 125, ExternalLexState: 2}, // state 9
-		{LexState: 3, ExternalLexState: 3}, // state 10
-		{LexState: 125, ExternalLexState: 2}, // state 11
-		{LexState: 125, ExternalLexState: 2}, // state 12
-		{LexState: 125, ExternalLexState: 2}, // state 13
-		{LexState: 125, ExternalLexState: 2}, // state 14
-		{LexState: 3, ExternalLexState: 4}, // state 15
-		{LexState: 3, ExternalLexState: 4}, // state 16
-		{LexState: 125, ExternalLexState: 2}, // state 17
-		{LexState: 125, ExternalLexState: 2}, // state 18
-		{LexState: 125, ExternalLexState: 2}, // state 19
-		{LexState: 125, ExternalLexState: 2}, // state 20
-		{LexState: 125, ExternalLexState: 2}, // state 21
-		{LexState: 125, ExternalLexState: 2}, // state 22
-		{LexState: 125, ExternalLexState: 2}, // state 23
-		{LexState: 125, ExternalLexState: 2}, // state 24
-		{LexState: 125, ExternalLexState: 2}, // state 25
-		{LexState: 125, ExternalLexState: 2}, // state 26
-		{LexState: 125, ExternalLexState: 2}, // state 27
-		{LexState: 125, ExternalLexState: 2}, // state 28
-		{LexState: 3, ExternalLexState: 3}, // state 29
-		{LexState: 125, ExternalLexState: 2}, // state 30
-		{LexState: 3, ExternalLexState: 3}, // state 31
-		{LexState: 3, ExternalLexState: 4}, // state 32
-		{LexState: 3, ExternalLexState: 3}, // state 33
-		{LexState: 3, ExternalLexState: 4}, // state 34
-		{LexState: 3, ExternalLexState: 3}, // state 35
-		{LexState: 3, ExternalLexState: 4}, // state 36
-		{LexState: 3, ExternalLexState: 3}, // state 37
-		{LexState: 3, ExternalLexState: 4}, // state 38
-		{LexState: 3, ExternalLexState: 3}, // state 39
-		{LexState: 125, ExternalLexState: 2}, // state 40
-		{LexState: 125, ExternalLexState: 2}, // state 41
-		{LexState: 125, ExternalLexState: 2}, // state 42
-		{LexState: 125, ExternalLexState: 2}, // state 43
-		{LexState: 125, ExternalLexState: 2}, // state 44
-		{LexState: 125, ExternalLexState: 2}, // state 45
-		{LexState: 125, ExternalLexState: 2}, // state 46
-		{LexState: 125, ExternalLexState: 2}, // state 47
-		{LexState: 125, ExternalLexState: 2}, // state 48
-		{LexState: 125, ExternalLexState: 2}, // state 49
-		{LexState: 125, ExternalLexState: 2}, // state 50
-		{LexState: 3, ExternalLexState: 4}, // state 51
-		{LexState: 125, ExternalLexState: 2}, // state 52
-		{LexState: 125, ExternalLexState: 2}, // state 53
-		{LexState: 125, ExternalLexState: 2}, // state 54
-		{LexState: 125, ExternalLexState: 2}, // state 55
-		{LexState: 125, ExternalLexState: 2}, // state 56
-		{LexState: 125, ExternalLexState: 2}, // state 57
-		{LexState: 125, ExternalLexState: 2}, // state 58
-		{LexState: 125, ExternalLexState: 2}, // state 59
-		{LexState: 125, ExternalLexState: 2}, // state 60
-		{LexState: 125, ExternalLexState: 2}, // state 61
-		{LexState: 125, ExternalLexState: 2}, // state 62
-		{LexState: 125, ExternalLexState: 2}, // state 63
-		{LexState: 125, ExternalLexState: 2}, // state 64
-		{LexState: 125, ExternalLexState: 2}, // state 65
-		{LexState: 125, ExternalLexState: 2}, // state 66
-		{LexState: 125, ExternalLexState: 2}, // state 67
-		{LexState: 125, ExternalLexState: 2}, // state 68
-		{LexState: 125, ExternalLexState: 2}, // state 69
-		{LexState: 125, ExternalLexState: 2}, // state 70
-		{LexState: 125, ExternalLexState: 2}, // state 71
-		{LexState: 3, ExternalLexState: 3}, // state 72
-		{LexState: 3, ExternalLexState: 4}, // state 73
-		{LexState: 3, ExternalLexState: 4}, // state 74
-		{LexState: 3, ExternalLexState: 4}, // state 75
-		{LexState: 3, ExternalLexState: 4}, // state 76
-		{LexState: 3, ExternalLexState: 4}, // state 77
-		{LexState: 3, ExternalLexState: 4}, // state 78
-		{LexState: 3, ExternalLexState: 4}, // state 79
-		{LexState: 124, ExternalLexState: 4}, // state 80
-		{LexState: 124, ExternalLexState: 3}, // state 81
-		{LexState: 124, ExternalLexState: 3}, // state 82
-		{LexState: 124, ExternalLexState: 4}, // state 83
-		{LexState: 124, ExternalLexState: 4}, // state 84
-		{LexState: 124, ExternalLexState: 4}, // state 85
-		{LexState: 124, ExternalLexState: 3}, // state 86
-		{LexState: 124, ExternalLexState: 3}, // state 87
-		{LexState: 124, ExternalLexState: 3}, // state 88
-		{LexState: 124, ExternalLexState: 3}, // state 89
-		{LexState: 124, ExternalLexState: 3}, // state 90
-		{LexState: 124, ExternalLexState: 3}, // state 91
-		{LexState: 124, ExternalLexState: 3}, // state 92
-		{LexState: 124, ExternalLexState: 3}, // state 93
-		{LexState: 124, ExternalLexState: 3}, // state 94
-		{LexState: 124, ExternalLexState: 3}, // state 95
-		{LexState: 124, ExternalLexState: 3}, // state 96
-		{LexState: 124, ExternalLexState: 3}, // state 97
-		{LexState: 124, ExternalLexState: 3}, // state 98
-		{LexState: 124, ExternalLexState: 3}, // state 99
-		{LexState: 124, ExternalLexState: 3}, // state 100
-		{LexState: 125, ExternalLexState: 2}, // state 101
-		{LexState: 125, ExternalLexState: 2}, // state 102
-		{LexState: 125, ExternalLexState: 2}, // state 103
-		{LexState: 125, ExternalLexState: 2}, // state 104
-		{LexState: 125, ExternalLexState: 2}, // state 105
-		{LexState: 125, ExternalLexState: 2}, // state 106
-		{LexState: 125, ExternalLexState: 2}, // state 107
-		{LexState: 125, ExternalLexState: 2}, // state 108
-		{LexState: 125, ExternalLexState: 2}, // state 109
-		{LexState: 125, ExternalLexState: 2}, // state 110
-		{LexState: 125, ExternalLexState: 2}, // state 111
-		{LexState: 125, ExternalLexState: 2}, // state 112
-		{LexState: 125, ExternalLexState: 5}, // state 113
-		{LexState: 125, ExternalLexState: 2}, // state 114
-		{LexState: 125, ExternalLexState: 2}, // state 115
-		{LexState: 125, ExternalLexState: 2}, // state 116
-		{LexState: 125, ExternalLexState: 2}, // state 117
-		{LexState: 125, ExternalLexState: 2}, // state 118
-		{LexState: 125, ExternalLexState: 2}, // state 119
-		{LexState: 125, ExternalLexState: 2}, // state 120
-		{LexState: 125, ExternalLexState: 2}, // state 121
-		{LexState: 125, ExternalLexState: 2}, // state 122
-		{LexState: 125, ExternalLexState: 2}, // state 123
-		{LexState: 125, ExternalLexState: 2}, // state 124
-		{LexState: 125, ExternalLexState: 2}, // state 125
-		{LexState: 125, ExternalLexState: 2}, // state 126
-		{LexState: 125, ExternalLexState: 2}, // state 127
-		{LexState: 125, ExternalLexState: 2}, // state 128
-		{LexState: 125, ExternalLexState: 2}, // state 129
-		{LexState: 125, ExternalLexState: 2}, // state 130
-		{LexState: 125, ExternalLexState: 2}, // state 131
-		{LexState: 125, ExternalLexState: 2}, // state 132
+		{LexState: 3, ExternalLexState: 3, ReservedWordSetID: 2}, // state 7
+		{LexState: 3, ExternalLexState: 3, ReservedWordSetID: 2}, // state 8
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 3}, // state 9
+		{LexState: 3, ExternalLexState: 3, ReservedWordSetID: 2}, // state 10
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 11
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 12
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 13
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 14
+		{LexState: 3, ExternalLexState: 4, ReservedWordSetID: 2}, // state 15
+		{LexState: 3, ExternalLexState: 4, ReservedWordSetID: 2}, // state 16
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 17
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 4}, // state 18
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 4}, // state 19
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 20
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 21
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 4}, // state 22
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 4}, // state 23
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 4}, // state 24
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 4}, // state 25
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 26
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 27
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 4}, // state 28
+		{LexState: 3, ExternalLexState: 3, ReservedWordSetID: 2}, // state 29
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 4}, // state 30
+		{LexState: 3, ExternalLexState: 3, ReservedWordSetID: 2}, // state 31
+		{LexState: 3, ExternalLexState: 4, ReservedWordSetID: 2}, // state 32
+		{LexState: 3, ExternalLexState: 3, ReservedWordSetID: 1}, // state 33
+		{LexState: 3, ExternalLexState: 4, ReservedWordSetID: 1}, // state 34
+		{LexState: 3, ExternalLexState: 3, ReservedWordSetID: 2}, // state 35
+		{LexState: 3, ExternalLexState: 4, ReservedWordSetID: 2}, // state 36
+		{LexState: 3, ExternalLexState: 3, ReservedWordSetID: 2}, // state 37
+		{LexState: 3, ExternalLexState: 4, ReservedWordSetID: 2}, // state 38
+		{LexState: 3, ExternalLexState: 3, ReservedWordSetID: 2}, // state 39
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 4}, // state 40
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 4}, // state 41
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 4}, // state 42
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 4}, // state 43
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 4}, // state 44
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 4}, // state 45
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 4}, // state 46
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 4}, // state 47
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 4}, // state 48
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 4}, // state 49
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 4}, // state 50
+		{LexState: 3, ExternalLexState: 4, ReservedWordSetID: 2}, // state 51
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 4}, // state 52
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 4}, // state 53
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 4}, // state 54
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 4}, // state 55
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 4}, // state 56
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 4}, // state 57
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 4}, // state 58
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 4}, // state 59
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 4}, // state 60
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 4}, // state 61
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 4}, // state 62
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 4}, // state 63
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 4}, // state 64
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 4}, // state 65
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 4}, // state 66
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 4}, // state 67
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 4}, // state 68
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 4}, // state 69
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 4}, // state 70
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 4}, // state 71
+		{LexState: 3, ExternalLexState: 3, ReservedWordSetID: 2}, // state 72
+		{LexState: 3, ExternalLexState: 4, ReservedWordSetID: 1}, // state 73
+		{LexState: 3, ExternalLexState: 4, ReservedWordSetID: 1}, // state 74
+		{LexState: 3, ExternalLexState: 4, ReservedWordSetID: 1}, // state 75
+		{LexState: 3, ExternalLexState: 4, ReservedWordSetID: 2}, // state 76
+		{LexState: 3, ExternalLexState: 4, ReservedWordSetID: 2}, // state 77
+		{LexState: 3, ExternalLexState: 4, ReservedWordSetID: 2}, // state 78
+		{LexState: 3, ExternalLexState: 4, ReservedWordSetID: 1}, // state 79
+		{LexState: 124, ExternalLexState: 4, ReservedWordSetID: 2}, // state 80
+		{LexState: 124, ExternalLexState: 3, ReservedWordSetID: 2}, // state 81
+		{LexState: 124, ExternalLexState: 3, ReservedWordSetID: 2}, // state 82
+		{LexState: 124, ExternalLexState: 4, ReservedWordSetID: 2}, // state 83
+		{LexState: 124, ExternalLexState: 4, ReservedWordSetID: 2}, // state 84
+		{LexState: 124, ExternalLexState: 4, ReservedWordSetID: 2}, // state 85
+		{LexState: 124, ExternalLexState: 3, ReservedWordSetID: 5}, // state 86
+		{LexState: 124, ExternalLexState: 3, ReservedWordSetID: 5}, // state 87
+		{LexState: 124, ExternalLexState: 3, ReservedWordSetID: 5}, // state 88
+		{LexState: 124, ExternalLexState: 3, ReservedWordSetID: 5}, // state 89
+		{LexState: 124, ExternalLexState: 3, ReservedWordSetID: 5}, // state 90
+		{LexState: 124, ExternalLexState: 3, ReservedWordSetID: 5}, // state 91
+		{LexState: 124, ExternalLexState: 3, ReservedWordSetID: 5}, // state 92
+		{LexState: 124, ExternalLexState: 3, ReservedWordSetID: 5}, // state 93
+		{LexState: 124, ExternalLexState: 3, ReservedWordSetID: 5}, // state 94
+		{LexState: 124, ExternalLexState: 3, ReservedWordSetID: 5}, // state 95
+		{LexState: 124, ExternalLexState: 3, ReservedWordSetID: 5}, // state 96
+		{LexState: 124, ExternalLexState: 3, ReservedWordSetID: 5}, // state 97
+		{LexState: 124, ExternalLexState: 3, ReservedWordSetID: 5}, // state 98
+		{LexState: 124, ExternalLexState: 3, ReservedWordSetID: 5}, // state 99
+		{LexState: 124, ExternalLexState: 3, ReservedWordSetID: 5}, // state 100
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 6}, // state 101
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 6}, // state 102
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 6}, // state 103
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 6}, // state 104
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 105
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 106
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 107
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 108
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 109
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 110
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 111
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 6}, // state 112
+		{LexState: 125, ExternalLexState: 5, ReservedWordSetID: 1}, // state 113
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 6}, // state 114
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 115
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 116
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 117
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 118
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 119
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 120
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 121
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 122
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 123
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 124
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 125
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 126
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 127
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 128
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 129
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 130
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 131
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 132
 		{LexState: 3, ExternalLexState: 3}, // state 133
 		{LexState: 3, ExternalLexState: 3}, // state 134
-		{LexState: 125, ExternalLexState: 2}, // state 135
-		{LexState: 125, ExternalLexState: 5}, // state 136
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 135
+		{LexState: 125, ExternalLexState: 5, ReservedWordSetID: 1}, // state 136
 		{LexState: 3, ExternalLexState: 3}, // state 137
-		{LexState: 125, ExternalLexState: 2}, // state 138
-		{LexState: 125, ExternalLexState: 2}, // state 139
-		{LexState: 125, ExternalLexState: 2}, // state 140
-		{LexState: 125, ExternalLexState: 2}, // state 141
-		{LexState: 125, ExternalLexState: 5}, // state 142
-		{LexState: 125, ExternalLexState: 2}, // state 143
-		{LexState: 125, ExternalLexState: 2}, // state 144
-		{LexState: 125, ExternalLexState: 2}, // state 145
-		{LexState: 125, ExternalLexState: 2}, // state 146
-		{LexState: 125, ExternalLexState: 2}, // state 147
-		{LexState: 125, ExternalLexState: 2}, // state 148
-		{LexState: 125, ExternalLexState: 2}, // state 149
-		{LexState: 125, ExternalLexState: 2}, // state 150
-		{LexState: 125, ExternalLexState: 2}, // state 151
-		{LexState: 125, ExternalLexState: 2}, // state 152
-		{LexState: 125, ExternalLexState: 2}, // state 153
-		{LexState: 125, ExternalLexState: 2}, // state 154
-		{LexState: 125, ExternalLexState: 2}, // state 155
-		{LexState: 125, ExternalLexState: 2}, // state 156
-		{LexState: 6, ExternalLexState: 2}, // state 157
-		{LexState: 125, ExternalLexState: 2}, // state 158
-		{LexState: 125, ExternalLexState: 2}, // state 159
-		{LexState: 125, ExternalLexState: 2}, // state 160
-		{LexState: 125, ExternalLexState: 2}, // state 161
-		{LexState: 125, ExternalLexState: 2}, // state 162
-		{LexState: 125, ExternalLexState: 2}, // state 163
-		{LexState: 125, ExternalLexState: 2}, // state 164
-		{LexState: 6, ExternalLexState: 2}, // state 165
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 138
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 139
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 140
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 141
+		{LexState: 125, ExternalLexState: 5, ReservedWordSetID: 7}, // state 142
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 143
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 144
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 145
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 146
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 147
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 148
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 149
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 150
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 151
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 152
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 153
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 154
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 155
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 156
+		{LexState: 6, ExternalLexState: 2, ReservedWordSetID: 7}, // state 157
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 158
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 159
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 160
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 161
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 162
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 163
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 164
+		{LexState: 6, ExternalLexState: 2, ReservedWordSetID: 1}, // state 165
 		{LexState: 3, ExternalLexState: 3}, // state 166
-		{LexState: 125, ExternalLexState: 2}, // state 167
-		{LexState: 125, ExternalLexState: 2}, // state 168
-		{LexState: 125, ExternalLexState: 2}, // state 169
-		{LexState: 125, ExternalLexState: 2}, // state 170
-		{LexState: 125, ExternalLexState: 2}, // state 171
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 167
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 168
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 169
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 170
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 171
 		{LexState: 3, ExternalLexState: 3}, // state 172
-		{LexState: 125, ExternalLexState: 2}, // state 173
-		{LexState: 125, ExternalLexState: 2}, // state 174
-		{LexState: 125, ExternalLexState: 2}, // state 175
-		{LexState: 125, ExternalLexState: 2}, // state 176
-		{LexState: 125, ExternalLexState: 2}, // state 177
-		{LexState: 125, ExternalLexState: 2}, // state 178
-		{LexState: 125, ExternalLexState: 2}, // state 179
-		{LexState: 125, ExternalLexState: 2}, // state 180
-		{LexState: 125, ExternalLexState: 2}, // state 181
-		{LexState: 125, ExternalLexState: 2}, // state 182
-		{LexState: 125, ExternalLexState: 2}, // state 183
-		{LexState: 125, ExternalLexState: 2}, // state 184
-		{LexState: 125, ExternalLexState: 2}, // state 185
-		{LexState: 125, ExternalLexState: 2}, // state 186
-		{LexState: 125, ExternalLexState: 2}, // state 187
-		{LexState: 125, ExternalLexState: 2}, // state 188
-		{LexState: 125, ExternalLexState: 2}, // state 189
-		{LexState: 125, ExternalLexState: 2}, // state 190
-		{LexState: 125, ExternalLexState: 2}, // state 191
-		{LexState: 6, ExternalLexState: 2}, // state 192
-		{LexState: 125, ExternalLexState: 2}, // state 193
-		{LexState: 125, ExternalLexState: 2}, // state 194
-		{LexState: 125, ExternalLexState: 2}, // state 195
-		{LexState: 125, ExternalLexState: 2}, // state 196
-		{LexState: 125, ExternalLexState: 2}, // state 197
-		{LexState: 125, ExternalLexState: 2}, // state 198
-		{LexState: 125, ExternalLexState: 2}, // state 199
-		{LexState: 125, ExternalLexState: 2}, // state 200
-		{LexState: 125, ExternalLexState: 2}, // state 201
-		{LexState: 125, ExternalLexState: 2}, // state 202
-		{LexState: 125, ExternalLexState: 2}, // state 203
-		{LexState: 125, ExternalLexState: 2}, // state 204
-		{LexState: 125, ExternalLexState: 2}, // state 205
-		{LexState: 125, ExternalLexState: 2}, // state 206
-		{LexState: 125, ExternalLexState: 2}, // state 207
-		{LexState: 125, ExternalLexState: 2}, // state 208
-		{LexState: 125, ExternalLexState: 2}, // state 209
-		{LexState: 6, ExternalLexState: 2}, // state 210
-		{LexState: 125, ExternalLexState: 2}, // state 211
-		{LexState: 125, ExternalLexState: 2}, // state 212
-		{LexState: 6, ExternalLexState: 2}, // state 213
-		{LexState: 125, ExternalLexState: 2}, // state 214
-		{LexState: 125, ExternalLexState: 2}, // state 215
-		{LexState: 6, ExternalLexState: 2}, // state 216
-		{LexState: 125, ExternalLexState: 2}, // state 217
-		{LexState: 125, ExternalLexState: 2}, // state 218
-		{LexState: 125, ExternalLexState: 2}, // state 219
-		{LexState: 125, ExternalLexState: 2}, // state 220
-		{LexState: 125, ExternalLexState: 2}, // state 221
-		{LexState: 125, ExternalLexState: 2}, // state 222
-		{LexState: 125, ExternalLexState: 2}, // state 223
-		{LexState: 125, ExternalLexState: 2}, // state 224
-		{LexState: 125, ExternalLexState: 2}, // state 225
-		{LexState: 125, ExternalLexState: 2}, // state 226
-		{LexState: 125, ExternalLexState: 2}, // state 227
-		{LexState: 125, ExternalLexState: 2}, // state 228
-		{LexState: 125, ExternalLexState: 2}, // state 229
-		{LexState: 125, ExternalLexState: 2}, // state 230
-		{LexState: 125, ExternalLexState: 2}, // state 231
-		{LexState: 125, ExternalLexState: 2}, // state 232
-		{LexState: 125, ExternalLexState: 2}, // state 233
-		{LexState: 125, ExternalLexState: 2}, // state 234
-		{LexState: 125, ExternalLexState: 2}, // state 235
-		{LexState: 125, ExternalLexState: 2}, // state 236
-		{LexState: 125, ExternalLexState: 2}, // state 237
-		{LexState: 125, ExternalLexState: 2}, // state 238
-		{LexState: 125, ExternalLexState: 2}, // state 239
-		{LexState: 125, ExternalLexState: 2}, // state 240
-		{LexState: 125, ExternalLexState: 2}, // state 241
-		{LexState: 125, ExternalLexState: 2}, // state 242
-		{LexState: 125, ExternalLexState: 2}, // state 243
-		{LexState: 125, ExternalLexState: 2}, // state 244
-		{LexState: 125, ExternalLexState: 2}, // state 245
-		{LexState: 125, ExternalLexState: 2}, // state 246
-		{LexState: 125, ExternalLexState: 2}, // state 247
-		{LexState: 125, ExternalLexState: 2}, // state 248
-		{LexState: 125, ExternalLexState: 2}, // state 249
-		{LexState: 125, ExternalLexState: 2}, // state 250
-		{LexState: 125, ExternalLexState: 2}, // state 251
-		{LexState: 125, ExternalLexState: 2}, // state 252
-		{LexState: 125, ExternalLexState: 2}, // state 253
-		{LexState: 125, ExternalLexState: 2}, // state 254
-		{LexState: 125, ExternalLexState: 2}, // state 255
-		{LexState: 125, ExternalLexState: 2}, // state 256
-		{LexState: 125, ExternalLexState: 2}, // state 257
-		{LexState: 125, ExternalLexState: 2}, // state 258
-		{LexState: 125, ExternalLexState: 2}, // state 259
-		{LexState: 125, ExternalLexState: 2}, // state 260
-		{LexState: 125, ExternalLexState: 2}, // state 261
-		{LexState: 125, ExternalLexState: 2}, // state 262
-		{LexState: 125, ExternalLexState: 2}, // state 263
-		{LexState: 125, ExternalLexState: 2}, // state 264
-		{LexState: 125, ExternalLexState: 2}, // state 265
-		{LexState: 125, ExternalLexState: 2}, // state 266
-		{LexState: 125, ExternalLexState: 2}, // state 267
-		{LexState: 125, ExternalLexState: 2}, // state 268
-		{LexState: 125, ExternalLexState: 2}, // state 269
-		{LexState: 125, ExternalLexState: 2}, // state 270
-		{LexState: 125, ExternalLexState: 2}, // state 271
-		{LexState: 125, ExternalLexState: 2}, // state 272
-		{LexState: 125, ExternalLexState: 2}, // state 273
-		{LexState: 125, ExternalLexState: 2}, // state 274
-		{LexState: 125, ExternalLexState: 2}, // state 275
-		{LexState: 125, ExternalLexState: 2}, // state 276
-		{LexState: 125, ExternalLexState: 2}, // state 277
-		{LexState: 125, ExternalLexState: 2}, // state 278
-		{LexState: 125, ExternalLexState: 2}, // state 279
-		{LexState: 125, ExternalLexState: 2}, // state 280
-		{LexState: 125, ExternalLexState: 2}, // state 281
-		{LexState: 125, ExternalLexState: 2}, // state 282
-		{LexState: 125, ExternalLexState: 2}, // state 283
-		{LexState: 125, ExternalLexState: 2}, // state 284
-		{LexState: 125, ExternalLexState: 2}, // state 285
-		{LexState: 125, ExternalLexState: 2}, // state 286
-		{LexState: 125, ExternalLexState: 2}, // state 287
-		{LexState: 125, ExternalLexState: 2}, // state 288
-		{LexState: 125, ExternalLexState: 2}, // state 289
-		{LexState: 125, ExternalLexState: 2}, // state 290
-		{LexState: 125, ExternalLexState: 2}, // state 291
-		{LexState: 125, ExternalLexState: 2}, // state 292
-		{LexState: 125, ExternalLexState: 2}, // state 293
-		{LexState: 125, ExternalLexState: 2}, // state 294
-		{LexState: 125, ExternalLexState: 2}, // state 295
-		{LexState: 125, ExternalLexState: 2}, // state 296
-		{LexState: 125, ExternalLexState: 2}, // state 297
-		{LexState: 125, ExternalLexState: 2}, // state 298
-		{LexState: 125, ExternalLexState: 2}, // state 299
-		{LexState: 125, ExternalLexState: 2}, // state 300
-		{LexState: 125, ExternalLexState: 2}, // state 301
-		{LexState: 125, ExternalLexState: 2}, // state 302
-		{LexState: 125, ExternalLexState: 2}, // state 303
-		{LexState: 125, ExternalLexState: 2}, // state 304
-		{LexState: 125, ExternalLexState: 2}, // state 305
-		{LexState: 125, ExternalLexState: 2}, // state 306
-		{LexState: 125, ExternalLexState: 2}, // state 307
-		{LexState: 125, ExternalLexState: 2}, // state 308
-		{LexState: 125, ExternalLexState: 2}, // state 309
-		{LexState: 125, ExternalLexState: 2}, // state 310
-		{LexState: 125, ExternalLexState: 2}, // state 311
-		{LexState: 125, ExternalLexState: 2}, // state 312
-		{LexState: 125, ExternalLexState: 2}, // state 313
-		{LexState: 125, ExternalLexState: 2}, // state 314
-		{LexState: 125, ExternalLexState: 2}, // state 315
-		{LexState: 125, ExternalLexState: 2}, // state 316
-		{LexState: 125, ExternalLexState: 2}, // state 317
-		{LexState: 125, ExternalLexState: 2}, // state 318
-		{LexState: 125, ExternalLexState: 2}, // state 319
-		{LexState: 125, ExternalLexState: 2}, // state 320
-		{LexState: 125, ExternalLexState: 2}, // state 321
-		{LexState: 125, ExternalLexState: 2}, // state 322
-		{LexState: 125, ExternalLexState: 2}, // state 323
-		{LexState: 125, ExternalLexState: 2}, // state 324
-		{LexState: 125, ExternalLexState: 2}, // state 325
-		{LexState: 125, ExternalLexState: 2}, // state 326
-		{LexState: 125, ExternalLexState: 2}, // state 327
-		{LexState: 125, ExternalLexState: 2}, // state 328
-		{LexState: 125, ExternalLexState: 2}, // state 329
-		{LexState: 125, ExternalLexState: 2}, // state 330
-		{LexState: 125, ExternalLexState: 2}, // state 331
-		{LexState: 125, ExternalLexState: 2}, // state 332
-		{LexState: 125, ExternalLexState: 2}, // state 333
-		{LexState: 125, ExternalLexState: 2}, // state 334
-		{LexState: 125, ExternalLexState: 2}, // state 335
-		{LexState: 125, ExternalLexState: 2}, // state 336
-		{LexState: 125, ExternalLexState: 2}, // state 337
-		{LexState: 125, ExternalLexState: 2}, // state 338
-		{LexState: 125, ExternalLexState: 2}, // state 339
-		{LexState: 125, ExternalLexState: 2}, // state 340
-		{LexState: 125, ExternalLexState: 2}, // state 341
-		{LexState: 125, ExternalLexState: 2}, // state 342
-		{LexState: 125, ExternalLexState: 2}, // state 343
-		{LexState: 125, ExternalLexState: 2}, // state 344
-		{LexState: 125, ExternalLexState: 2}, // state 345
-		{LexState: 125, ExternalLexState: 2}, // state 346
-		{LexState: 125, ExternalLexState: 2}, // state 347
-		{LexState: 125, ExternalLexState: 2}, // state 348
-		{LexState: 125, ExternalLexState: 2}, // state 349
-		{LexState: 125, ExternalLexState: 2}, // state 350
-		{LexState: 125, ExternalLexState: 2}, // state 351
-		{LexState: 125, ExternalLexState: 2}, // state 352
-		{LexState: 125, ExternalLexState: 2}, // state 353
-		{LexState: 125, ExternalLexState: 2}, // state 354
-		{LexState: 125, ExternalLexState: 2}, // state 355
-		{LexState: 125, ExternalLexState: 2}, // state 356
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 173
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 174
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 175
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 176
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 177
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 178
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 179
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 180
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 181
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 182
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 183
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 184
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 185
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 186
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 187
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 188
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 189
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 190
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 191
+		{LexState: 6, ExternalLexState: 2, ReservedWordSetID: 7}, // state 192
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 193
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 194
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 195
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 196
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 197
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 198
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 199
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 200
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 201
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 202
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 203
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 204
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 205
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 206
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 207
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 208
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 209
+		{LexState: 6, ExternalLexState: 2, ReservedWordSetID: 7}, // state 210
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 211
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 212
+		{LexState: 6, ExternalLexState: 2, ReservedWordSetID: 1}, // state 213
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 214
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 215
+		{LexState: 6, ExternalLexState: 2, ReservedWordSetID: 1}, // state 216
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 217
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 218
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 219
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 220
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 221
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 222
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 223
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 224
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 225
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 226
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 227
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 228
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 229
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 230
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 231
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 232
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 233
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 234
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 235
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 236
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 237
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 238
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 239
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 240
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 241
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 242
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 243
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 244
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 245
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 246
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 247
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 248
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 249
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 250
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 251
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 252
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 253
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 254
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 255
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 256
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 257
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 258
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 259
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 260
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 261
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 262
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 263
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 264
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 265
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 266
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 267
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 268
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 269
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 270
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 271
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 272
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 273
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 274
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 275
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 276
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 277
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 278
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 279
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 280
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 281
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 282
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 283
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 284
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 285
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 286
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 287
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 288
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 289
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 290
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 291
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 292
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 293
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 294
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 295
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 296
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 297
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 298
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 299
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 300
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 301
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 302
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 303
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 304
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 305
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 306
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 307
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 308
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 309
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 310
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 311
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 312
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 313
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 314
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 315
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 316
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 317
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 318
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 319
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 320
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 321
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 322
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 323
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 324
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 325
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 326
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 327
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 328
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 329
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 330
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 331
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 332
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 333
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 334
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 335
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 336
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 337
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 338
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 339
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 340
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 341
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 342
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 343
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 344
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 345
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 346
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 347
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 348
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 349
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 350
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 351
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 352
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 353
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 354
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 355
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 7}, // state 356
 		{LexState: 3, ExternalLexState: 3}, // state 357
 		{LexState: 3, ExternalLexState: 3}, // state 358
 		{LexState: 3, ExternalLexState: 3}, // state 359
@@ -10050,130 +10050,130 @@ func JavascriptLanguage() *ts.Language {
 		{LexState: 3, ExternalLexState: 3}, // state 363
 		{LexState: 3, ExternalLexState: 3}, // state 364
 		{LexState: 3, ExternalLexState: 3}, // state 365
-		{LexState: 3, ExternalLexState: 4}, // state 366
-		{LexState: 3, ExternalLexState: 4}, // state 367
-		{LexState: 3, ExternalLexState: 3}, // state 368
-		{LexState: 125, ExternalLexState: 5}, // state 369
-		{LexState: 3, ExternalLexState: 3}, // state 370
-		{LexState: 3, ExternalLexState: 3}, // state 371
-		{LexState: 3, ExternalLexState: 3}, // state 372
-		{LexState: 3, ExternalLexState: 3}, // state 373
-		{LexState: 125, ExternalLexState: 5}, // state 374
-		{LexState: 3, ExternalLexState: 3}, // state 375
-		{LexState: 3, ExternalLexState: 3}, // state 376
-		{LexState: 3, ExternalLexState: 3}, // state 377
-		{LexState: 3, ExternalLexState: 4}, // state 378
-		{LexState: 3, ExternalLexState: 4}, // state 379
-		{LexState: 3, ExternalLexState: 3}, // state 380
-		{LexState: 125, ExternalLexState: 2}, // state 381
-		{LexState: 3, ExternalLexState: 4}, // state 382
-		{LexState: 3, ExternalLexState: 4}, // state 383
-		{LexState: 125, ExternalLexState: 2}, // state 384
-		{LexState: 125, ExternalLexState: 2}, // state 385
-		{LexState: 3, ExternalLexState: 4}, // state 386
-		{LexState: 3, ExternalLexState: 4}, // state 387
-		{LexState: 3, ExternalLexState: 3}, // state 388
-		{LexState: 125, ExternalLexState: 2}, // state 389
-		{LexState: 3, ExternalLexState: 3}, // state 390
-		{LexState: 125, ExternalLexState: 5}, // state 391
-		{LexState: 125, ExternalLexState: 5}, // state 392
-		{LexState: 3, ExternalLexState: 4}, // state 393
-		{LexState: 125, ExternalLexState: 5}, // state 394
-		{LexState: 125, ExternalLexState: 5}, // state 395
-		{LexState: 3, ExternalLexState: 3}, // state 396
-		{LexState: 3, ExternalLexState: 3}, // state 397
-		{LexState: 125, ExternalLexState: 5}, // state 398
-		{LexState: 125, ExternalLexState: 5}, // state 399
-		{LexState: 125, ExternalLexState: 5}, // state 400
-		{LexState: 125, ExternalLexState: 2}, // state 401
-		{LexState: 125, ExternalLexState: 5}, // state 402
-		{LexState: 125, ExternalLexState: 5}, // state 403
-		{LexState: 125, ExternalLexState: 5}, // state 404
-		{LexState: 125, ExternalLexState: 5}, // state 405
-		{LexState: 3, ExternalLexState: 4}, // state 406
-		{LexState: 125, ExternalLexState: 2}, // state 407
-		{LexState: 125, ExternalLexState: 5}, // state 408
-		{LexState: 125, ExternalLexState: 5}, // state 409
-		{LexState: 3, ExternalLexState: 4}, // state 410
-		{LexState: 125, ExternalLexState: 2}, // state 411
-		{LexState: 3, ExternalLexState: 4}, // state 412
-		{LexState: 125, ExternalLexState: 5}, // state 413
-		{LexState: 3, ExternalLexState: 4}, // state 414
-		{LexState: 125, ExternalLexState: 5}, // state 415
-		{LexState: 125, ExternalLexState: 5}, // state 416
-		{LexState: 3, ExternalLexState: 4}, // state 417
-		{LexState: 125, ExternalLexState: 2}, // state 418
-		{LexState: 125, ExternalLexState: 2}, // state 419
-		{LexState: 125, ExternalLexState: 2}, // state 420
-		{LexState: 125, ExternalLexState: 2}, // state 421
-		{LexState: 125, ExternalLexState: 2}, // state 422
-		{LexState: 125, ExternalLexState: 2}, // state 423
-		{LexState: 125, ExternalLexState: 2}, // state 424
-		{LexState: 125, ExternalLexState: 2}, // state 425
-		{LexState: 125, ExternalLexState: 2}, // state 426
-		{LexState: 125, ExternalLexState: 2}, // state 427
-		{LexState: 125, ExternalLexState: 2}, // state 428
-		{LexState: 125, ExternalLexState: 2}, // state 429
-		{LexState: 125, ExternalLexState: 2}, // state 430
-		{LexState: 125, ExternalLexState: 2}, // state 431
-		{LexState: 125, ExternalLexState: 2}, // state 432
-		{LexState: 125, ExternalLexState: 2}, // state 433
-		{LexState: 125, ExternalLexState: 2}, // state 434
-		{LexState: 125, ExternalLexState: 2}, // state 435
-		{LexState: 125, ExternalLexState: 2}, // state 436
-		{LexState: 125, ExternalLexState: 2}, // state 437
-		{LexState: 125, ExternalLexState: 2}, // state 438
-		{LexState: 125, ExternalLexState: 2}, // state 439
-		{LexState: 125, ExternalLexState: 2}, // state 440
-		{LexState: 125, ExternalLexState: 2}, // state 441
-		{LexState: 125, ExternalLexState: 2}, // state 442
-		{LexState: 125, ExternalLexState: 2}, // state 443
-		{LexState: 125, ExternalLexState: 2}, // state 444
-		{LexState: 125, ExternalLexState: 2}, // state 445
-		{LexState: 125, ExternalLexState: 2}, // state 446
-		{LexState: 125, ExternalLexState: 2}, // state 447
-		{LexState: 125, ExternalLexState: 2}, // state 448
-		{LexState: 125, ExternalLexState: 2}, // state 449
-		{LexState: 125, ExternalLexState: 2}, // state 450
-		{LexState: 125, ExternalLexState: 2}, // state 451
-		{LexState: 125, ExternalLexState: 2}, // state 452
-		{LexState: 125, ExternalLexState: 2}, // state 453
-		{LexState: 125, ExternalLexState: 2}, // state 454
-		{LexState: 125, ExternalLexState: 2}, // state 455
-		{LexState: 125, ExternalLexState: 2}, // state 456
-		{LexState: 125, ExternalLexState: 2}, // state 457
-		{LexState: 125, ExternalLexState: 2}, // state 458
-		{LexState: 125, ExternalLexState: 2}, // state 459
-		{LexState: 125, ExternalLexState: 2}, // state 460
-		{LexState: 125, ExternalLexState: 2}, // state 461
-		{LexState: 125, ExternalLexState: 2}, // state 462
-		{LexState: 125, ExternalLexState: 2}, // state 463
-		{LexState: 125, ExternalLexState: 2}, // state 464
-		{LexState: 125, ExternalLexState: 2}, // state 465
-		{LexState: 125, ExternalLexState: 2}, // state 466
-		{LexState: 125, ExternalLexState: 2}, // state 467
-		{LexState: 125, ExternalLexState: 2}, // state 468
-		{LexState: 125, ExternalLexState: 2}, // state 469
-		{LexState: 125, ExternalLexState: 2}, // state 470
-		{LexState: 125, ExternalLexState: 2}, // state 471
-		{LexState: 125, ExternalLexState: 2}, // state 472
-		{LexState: 125, ExternalLexState: 2}, // state 473
-		{LexState: 125, ExternalLexState: 2}, // state 474
-		{LexState: 125, ExternalLexState: 2}, // state 475
-		{LexState: 125, ExternalLexState: 2}, // state 476
-		{LexState: 125, ExternalLexState: 2}, // state 477
-		{LexState: 125, ExternalLexState: 2}, // state 478
-		{LexState: 125, ExternalLexState: 2}, // state 479
-		{LexState: 125, ExternalLexState: 2}, // state 480
-		{LexState: 125, ExternalLexState: 2}, // state 481
-		{LexState: 125, ExternalLexState: 2}, // state 482
-		{LexState: 125, ExternalLexState: 2}, // state 483
-		{LexState: 125, ExternalLexState: 2}, // state 484
-		{LexState: 125, ExternalLexState: 2}, // state 485
-		{LexState: 125, ExternalLexState: 2}, // state 486
-		{LexState: 125, ExternalLexState: 2}, // state 487
-		{LexState: 3, ExternalLexState: 4}, // state 488
-		{LexState: 3, ExternalLexState: 3}, // state 489
+		{LexState: 3, ExternalLexState: 4, ReservedWordSetID: 8}, // state 366
+		{LexState: 3, ExternalLexState: 4, ReservedWordSetID: 8}, // state 367
+		{LexState: 3, ExternalLexState: 3, ReservedWordSetID: 9}, // state 368
+		{LexState: 125, ExternalLexState: 5, ReservedWordSetID: 10}, // state 369
+		{LexState: 3, ExternalLexState: 3, ReservedWordSetID: 9}, // state 370
+		{LexState: 3, ExternalLexState: 3, ReservedWordSetID: 8}, // state 371
+		{LexState: 3, ExternalLexState: 3, ReservedWordSetID: 8}, // state 372
+		{LexState: 3, ExternalLexState: 3, ReservedWordSetID: 1}, // state 373
+		{LexState: 125, ExternalLexState: 5, ReservedWordSetID: 10}, // state 374
+		{LexState: 3, ExternalLexState: 3, ReservedWordSetID: 8}, // state 375
+		{LexState: 3, ExternalLexState: 3, ReservedWordSetID: 8}, // state 376
+		{LexState: 3, ExternalLexState: 3, ReservedWordSetID: 8}, // state 377
+		{LexState: 3, ExternalLexState: 4, ReservedWordSetID: 8}, // state 378
+		{LexState: 3, ExternalLexState: 4, ReservedWordSetID: 8}, // state 379
+		{LexState: 3, ExternalLexState: 3, ReservedWordSetID: 9}, // state 380
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 10}, // state 381
+		{LexState: 3, ExternalLexState: 4, ReservedWordSetID: 8}, // state 382
+		{LexState: 3, ExternalLexState: 4, ReservedWordSetID: 1}, // state 383
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 10}, // state 384
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 10}, // state 385
+		{LexState: 3, ExternalLexState: 4, ReservedWordSetID: 8}, // state 386
+		{LexState: 3, ExternalLexState: 4, ReservedWordSetID: 1}, // state 387
+		{LexState: 3, ExternalLexState: 3, ReservedWordSetID: 8}, // state 388
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 11}, // state 389
+		{LexState: 3, ExternalLexState: 3, ReservedWordSetID: 8}, // state 390
+		{LexState: 125, ExternalLexState: 5, ReservedWordSetID: 12}, // state 391
+		{LexState: 125, ExternalLexState: 5, ReservedWordSetID: 12}, // state 392
+		{LexState: 3, ExternalLexState: 4, ReservedWordSetID: 1}, // state 393
+		{LexState: 125, ExternalLexState: 5, ReservedWordSetID: 12}, // state 394
+		{LexState: 125, ExternalLexState: 5, ReservedWordSetID: 12}, // state 395
+		{LexState: 3, ExternalLexState: 3, ReservedWordSetID: 9}, // state 396
+		{LexState: 3, ExternalLexState: 3, ReservedWordSetID: 9}, // state 397
+		{LexState: 125, ExternalLexState: 5, ReservedWordSetID: 12}, // state 398
+		{LexState: 125, ExternalLexState: 5, ReservedWordSetID: 12}, // state 399
+		{LexState: 125, ExternalLexState: 5, ReservedWordSetID: 12}, // state 400
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 11}, // state 401
+		{LexState: 125, ExternalLexState: 5, ReservedWordSetID: 12}, // state 402
+		{LexState: 125, ExternalLexState: 5, ReservedWordSetID: 12}, // state 403
+		{LexState: 125, ExternalLexState: 5, ReservedWordSetID: 12}, // state 404
+		{LexState: 125, ExternalLexState: 5, ReservedWordSetID: 12}, // state 405
+		{LexState: 3, ExternalLexState: 4, ReservedWordSetID: 8}, // state 406
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 11}, // state 407
+		{LexState: 125, ExternalLexState: 5, ReservedWordSetID: 12}, // state 408
+		{LexState: 125, ExternalLexState: 5, ReservedWordSetID: 12}, // state 409
+		{LexState: 3, ExternalLexState: 4, ReservedWordSetID: 8}, // state 410
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 411
+		{LexState: 3, ExternalLexState: 4, ReservedWordSetID: 8}, // state 412
+		{LexState: 125, ExternalLexState: 5, ReservedWordSetID: 12}, // state 413
+		{LexState: 3, ExternalLexState: 4, ReservedWordSetID: 1}, // state 414
+		{LexState: 125, ExternalLexState: 5, ReservedWordSetID: 12}, // state 415
+		{LexState: 125, ExternalLexState: 5, ReservedWordSetID: 12}, // state 416
+		{LexState: 3, ExternalLexState: 4, ReservedWordSetID: 1}, // state 417
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 418
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 419
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 420
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 421
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 422
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 423
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 424
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 425
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 426
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 427
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 428
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 429
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 430
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 431
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 432
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 433
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 434
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 435
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 436
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 437
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 438
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 439
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 440
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 441
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 442
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 443
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 444
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 445
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 446
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 447
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 448
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 449
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 450
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 451
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 452
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 453
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 454
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 455
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 456
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 457
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 458
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 459
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 460
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 461
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 462
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 463
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 464
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 465
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 466
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 467
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 468
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 469
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 470
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 471
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 472
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 473
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 474
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 475
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 476
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 477
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 478
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 479
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 480
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 481
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 482
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 483
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 484
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 485
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 486
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 12}, // state 487
+		{LexState: 3, ExternalLexState: 4, ReservedWordSetID: 1}, // state 488
+		{LexState: 3, ExternalLexState: 3, ReservedWordSetID: 9}, // state 489
 		{LexState: 3, ExternalLexState: 3}, // state 490
 		{LexState: 3, ExternalLexState: 4}, // state 491
 		{LexState: 3, ExternalLexState: 3}, // state 492
@@ -10189,27 +10189,27 @@ func JavascriptLanguage() *ts.Language {
 		{LexState: 3, ExternalLexState: 4}, // state 502
 		{LexState: 3, ExternalLexState: 4}, // state 503
 		{LexState: 3, ExternalLexState: 4}, // state 504
-		{LexState: 3, ExternalLexState: 4}, // state 505
-		{LexState: 125, ExternalLexState: 2}, // state 506
+		{LexState: 3, ExternalLexState: 4, ReservedWordSetID: 1}, // state 505
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 506
 		{LexState: 3, ExternalLexState: 4}, // state 507
-		{LexState: 125, ExternalLexState: 2}, // state 508
-		{LexState: 125, ExternalLexState: 2}, // state 509
-		{LexState: 125, ExternalLexState: 2}, // state 510
-		{LexState: 125, ExternalLexState: 2}, // state 511
-		{LexState: 125, ExternalLexState: 2}, // state 512
-		{LexState: 125, ExternalLexState: 2}, // state 513
-		{LexState: 125, ExternalLexState: 2}, // state 514
-		{LexState: 125, ExternalLexState: 2}, // state 515
-		{LexState: 125, ExternalLexState: 2}, // state 516
-		{LexState: 125, ExternalLexState: 2}, // state 517
-		{LexState: 125, ExternalLexState: 2}, // state 518
-		{LexState: 125, ExternalLexState: 2}, // state 519
-		{LexState: 125, ExternalLexState: 2}, // state 520
-		{LexState: 125, ExternalLexState: 2}, // state 521
-		{LexState: 125, ExternalLexState: 2}, // state 522
-		{LexState: 125, ExternalLexState: 2}, // state 523
-		{LexState: 125, ExternalLexState: 2}, // state 524
-		{LexState: 125, ExternalLexState: 2}, // state 525
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 508
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 509
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 510
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 511
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 512
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 513
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 514
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 515
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 516
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 517
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 518
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 519
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 520
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 521
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 522
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 523
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 4}, // state 524
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 525
 		{LexState: 3, ExternalLexState: 3}, // state 526
 		{LexState: 3, ExternalLexState: 3}, // state 527
 		{LexState: 3, ExternalLexState: 3}, // state 528
@@ -10828,68 +10828,68 @@ func JavascriptLanguage() *ts.Language {
 		{LexState: 3, ExternalLexState: 2}, // state 1141
 		{LexState: 3, ExternalLexState: 2}, // state 1142
 		{LexState: 3, ExternalLexState: 2}, // state 1143
-		{LexState: 3, ExternalLexState: 2}, // state 1144
-		{LexState: 31, ExternalLexState: 2}, // state 1145
+		{LexState: 3, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1144
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1145
 		{LexState: 9, ExternalLexState: 6}, // state 1146
-		{LexState: 31, ExternalLexState: 2}, // state 1147
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1147
 		{LexState: 9, ExternalLexState: 6}, // state 1148
 		{LexState: 9, ExternalLexState: 6}, // state 1149
 		{LexState: 9, ExternalLexState: 6}, // state 1150
-		{LexState: 31, ExternalLexState: 2}, // state 1151
-		{LexState: 31, ExternalLexState: 2}, // state 1152
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1151
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1152
 		{LexState: 9, ExternalLexState: 6}, // state 1153
 		{LexState: 9, ExternalLexState: 6}, // state 1154
 		{LexState: 9, ExternalLexState: 6}, // state 1155
 		{LexState: 9, ExternalLexState: 6}, // state 1156
-		{LexState: 31, ExternalLexState: 2}, // state 1157
-		{LexState: 31, ExternalLexState: 2}, // state 1158
-		{LexState: 31, ExternalLexState: 2}, // state 1159
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1157
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1158
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1159
 		{LexState: 9, ExternalLexState: 6}, // state 1160
-		{LexState: 31, ExternalLexState: 2}, // state 1161
-		{LexState: 31, ExternalLexState: 2}, // state 1162
-		{LexState: 31, ExternalLexState: 2}, // state 1163
-		{LexState: 31, ExternalLexState: 2}, // state 1164
-		{LexState: 31, ExternalLexState: 2}, // state 1165
-		{LexState: 31, ExternalLexState: 2}, // state 1166
-		{LexState: 31, ExternalLexState: 2}, // state 1167
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1161
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1162
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1163
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1164
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1165
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1166
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1167
 		{LexState: 125, ExternalLexState: 2}, // state 1168
-		{LexState: 125, ExternalLexState: 2}, // state 1169
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1169
 		{LexState: 125, ExternalLexState: 2}, // state 1170
-		{LexState: 31, ExternalLexState: 2}, // state 1171
-		{LexState: 125, ExternalLexState: 2}, // state 1172
-		{LexState: 31, ExternalLexState: 2}, // state 1173
-		{LexState: 31, ExternalLexState: 2}, // state 1174
-		{LexState: 31, ExternalLexState: 2}, // state 1175
-		{LexState: 31, ExternalLexState: 2}, // state 1176
-		{LexState: 31, ExternalLexState: 2}, // state 1177
-		{LexState: 31, ExternalLexState: 2}, // state 1178
-		{LexState: 31, ExternalLexState: 2}, // state 1179
-		{LexState: 31, ExternalLexState: 2}, // state 1180
-		{LexState: 31, ExternalLexState: 2}, // state 1181
-		{LexState: 31, ExternalLexState: 2}, // state 1182
-		{LexState: 31, ExternalLexState: 2}, // state 1183
-		{LexState: 31, ExternalLexState: 2}, // state 1184
-		{LexState: 31, ExternalLexState: 2}, // state 1185
-		{LexState: 31, ExternalLexState: 2}, // state 1186
-		{LexState: 31, ExternalLexState: 2}, // state 1187
-		{LexState: 31, ExternalLexState: 2}, // state 1188
-		{LexState: 31, ExternalLexState: 2}, // state 1189
-		{LexState: 31, ExternalLexState: 2}, // state 1190
-		{LexState: 125, ExternalLexState: 2}, // state 1191
-		{LexState: 125, ExternalLexState: 2}, // state 1192
-		{LexState: 125, ExternalLexState: 2}, // state 1193
-		{LexState: 125, ExternalLexState: 2}, // state 1194
-		{LexState: 125, ExternalLexState: 2}, // state 1195
-		{LexState: 125, ExternalLexState: 2}, // state 1196
-		{LexState: 125, ExternalLexState: 2}, // state 1197
-		{LexState: 125, ExternalLexState: 2}, // state 1198
-		{LexState: 125, ExternalLexState: 2}, // state 1199
-		{LexState: 125, ExternalLexState: 2}, // state 1200
-		{LexState: 125, ExternalLexState: 2}, // state 1201
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1171
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1172
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1173
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1174
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1175
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1176
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1177
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1178
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1179
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1180
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1181
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1182
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1183
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1184
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1185
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1186
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1187
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1188
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1189
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1190
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1191
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1192
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1193
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1194
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1195
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1196
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1197
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1198
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1199
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1200
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1201
 		{LexState: 125, ExternalLexState: 5}, // state 1202
-		{LexState: 125, ExternalLexState: 2}, // state 1203
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1203
 		{LexState: 125, ExternalLexState: 2}, // state 1204
-		{LexState: 125, ExternalLexState: 2}, // state 1205
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1205
 		{LexState: 125, ExternalLexState: 2}, // state 1206
 		{LexState: 125, ExternalLexState: 2}, // state 1207
 		{LexState: 125, ExternalLexState: 5}, // state 1208
@@ -10897,24 +10897,24 @@ func JavascriptLanguage() *ts.Language {
 		{LexState: 125, ExternalLexState: 2}, // state 1210
 		{LexState: 125, ExternalLexState: 2}, // state 1211
 		{LexState: 125, ExternalLexState: 2}, // state 1212
-		{LexState: 125, ExternalLexState: 2}, // state 1213
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1213
 		{LexState: 125, ExternalLexState: 2}, // state 1214
-		{LexState: 31, ExternalLexState: 2}, // state 1215
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1215
 		{LexState: 125, ExternalLexState: 5}, // state 1216
 		{LexState: 125, ExternalLexState: 2}, // state 1217
 		{LexState: 125, ExternalLexState: 2}, // state 1218
 		{LexState: 125, ExternalLexState: 2}, // state 1219
 		{LexState: 125, ExternalLexState: 2}, // state 1220
-		{LexState: 125, ExternalLexState: 2}, // state 1221
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1221
 		{LexState: 125, ExternalLexState: 2}, // state 1222
-		{LexState: 125, ExternalLexState: 2}, // state 1223
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1223
 		{LexState: 125, ExternalLexState: 2}, // state 1224
-		{LexState: 31, ExternalLexState: 2}, // state 1225
-		{LexState: 31, ExternalLexState: 2}, // state 1226
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1225
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1226
 		{LexState: 125, ExternalLexState: 5}, // state 1227
 		{LexState: 125, ExternalLexState: 5}, // state 1228
 		{LexState: 16, ExternalLexState: 7}, // state 1229
-		{LexState: 31, ExternalLexState: 2}, // state 1230
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1230
 		{LexState: 125, ExternalLexState: 5}, // state 1231
 		{LexState: 125, ExternalLexState: 5}, // state 1232
 		{LexState: 16, ExternalLexState: 7}, // state 1233
@@ -10923,7 +10923,7 @@ func JavascriptLanguage() *ts.Language {
 		{LexState: 125, ExternalLexState: 2}, // state 1236
 		{LexState: 125, ExternalLexState: 2}, // state 1237
 		{LexState: 125, ExternalLexState: 5}, // state 1238
-		{LexState: 125, ExternalLexState: 2}, // state 1239
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1239
 		{LexState: 16, ExternalLexState: 7}, // state 1240
 		{LexState: 125, ExternalLexState: 5}, // state 1241
 		{LexState: 16, ExternalLexState: 7}, // state 1242
@@ -10934,80 +10934,80 @@ func JavascriptLanguage() *ts.Language {
 		{LexState: 125, ExternalLexState: 5}, // state 1247
 		{LexState: 125, ExternalLexState: 5}, // state 1248
 		{LexState: 125, ExternalLexState: 5}, // state 1249
-		{LexState: 125, ExternalLexState: 2}, // state 1250
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1250
 		{LexState: 125, ExternalLexState: 5}, // state 1251
-		{LexState: 125, ExternalLexState: 2}, // state 1252
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1252
 		{LexState: 125, ExternalLexState: 2}, // state 1253
 		{LexState: 9, ExternalLexState: 6}, // state 1254
 		{LexState: 9, ExternalLexState: 6}, // state 1255
-		{LexState: 31, ExternalLexState: 2}, // state 1256
-		{LexState: 31, ExternalLexState: 2}, // state 1257
-		{LexState: 31, ExternalLexState: 2}, // state 1258
-		{LexState: 31, ExternalLexState: 2}, // state 1259
-		{LexState: 31, ExternalLexState: 2}, // state 1260
-		{LexState: 125, ExternalLexState: 2}, // state 1261
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1256
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1257
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1258
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1259
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1260
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 13}, // state 1261
 		{LexState: 125, ExternalLexState: 2}, // state 1262
-		{LexState: 31, ExternalLexState: 2}, // state 1263
-		{LexState: 31, ExternalLexState: 2}, // state 1264
-		{LexState: 31, ExternalLexState: 2}, // state 1265
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1263
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1264
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1265
 		{LexState: 9, ExternalLexState: 6}, // state 1266
 		{LexState: 125, ExternalLexState: 2}, // state 1267
-		{LexState: 125, ExternalLexState: 2}, // state 1268
-		{LexState: 31, ExternalLexState: 2}, // state 1269
-		{LexState: 31, ExternalLexState: 2}, // state 1270
-		{LexState: 125, ExternalLexState: 2}, // state 1271
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 13}, // state 1268
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1269
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1270
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 13}, // state 1271
 		{LexState: 9, ExternalLexState: 6}, // state 1272
-		{LexState: 125, ExternalLexState: 2}, // state 1273
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 13}, // state 1273
 		{LexState: 125, ExternalLexState: 5}, // state 1274
 		{LexState: 9, ExternalLexState: 6}, // state 1275
-		{LexState: 31, ExternalLexState: 2}, // state 1276
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1276
 		{LexState: 125, ExternalLexState: 2}, // state 1277
 		{LexState: 9, ExternalLexState: 6}, // state 1278
-		{LexState: 31, ExternalLexState: 2}, // state 1279
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1279
 		{LexState: 125, ExternalLexState: 2}, // state 1280
 		{LexState: 9, ExternalLexState: 6}, // state 1281
 		{LexState: 125, ExternalLexState: 2}, // state 1282
 		{LexState: 125, ExternalLexState: 5}, // state 1283
-		{LexState: 125, ExternalLexState: 2}, // state 1284
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 13}, // state 1284
 		{LexState: 125, ExternalLexState: 5}, // state 1285
-		{LexState: 125, ExternalLexState: 2}, // state 1286
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 13}, // state 1286
 		{LexState: 9, ExternalLexState: 6}, // state 1287
-		{LexState: 31, ExternalLexState: 2}, // state 1288
-		{LexState: 125, ExternalLexState: 2}, // state 1289
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1288
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 13}, // state 1289
 		{LexState: 9, ExternalLexState: 6}, // state 1290
-		{LexState: 31, ExternalLexState: 2}, // state 1291
-		{LexState: 31, ExternalLexState: 2}, // state 1292
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1291
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1292
 		{LexState: 125, ExternalLexState: 2}, // state 1293
 		{LexState: 9, ExternalLexState: 6}, // state 1294
-		{LexState: 31, ExternalLexState: 2}, // state 1295
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1295
 		{LexState: 125, ExternalLexState: 2}, // state 1296
 		{LexState: 125, ExternalLexState: 2}, // state 1297
-		{LexState: 125, ExternalLexState: 2}, // state 1298
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 13}, // state 1298
 		{LexState: 9, ExternalLexState: 6}, // state 1299
 		{LexState: 9, ExternalLexState: 6}, // state 1300
 		{LexState: 9, ExternalLexState: 6}, // state 1301
 		{LexState: 9, ExternalLexState: 6}, // state 1302
-		{LexState: 31, ExternalLexState: 2}, // state 1303
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1303
 		{LexState: 125, ExternalLexState: 5}, // state 1304
-		{LexState: 31, ExternalLexState: 2}, // state 1305
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1305
 		{LexState: 125, ExternalLexState: 2}, // state 1306
 		{LexState: 125, ExternalLexState: 2}, // state 1307
 		{LexState: 9, ExternalLexState: 6}, // state 1308
 		{LexState: 9, ExternalLexState: 6}, // state 1309
 		{LexState: 125, ExternalLexState: 2}, // state 1310
 		{LexState: 125, ExternalLexState: 5}, // state 1311
-		{LexState: 31, ExternalLexState: 2}, // state 1312
-		{LexState: 31, ExternalLexState: 2}, // state 1313
-		{LexState: 31, ExternalLexState: 2}, // state 1314
-		{LexState: 31, ExternalLexState: 2}, // state 1315
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1312
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1313
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1314
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1315
 		{LexState: 125, ExternalLexState: 5}, // state 1316
 		{LexState: 9, ExternalLexState: 6}, // state 1317
-		{LexState: 31, ExternalLexState: 2}, // state 1318
-		{LexState: 31, ExternalLexState: 2}, // state 1319
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1318
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1319
 		{LexState: 10, ExternalLexState: 2}, // state 1320
 		{LexState: 125, ExternalLexState: 5}, // state 1321
 		{LexState: 125, ExternalLexState: 2}, // state 1322
-		{LexState: 125, ExternalLexState: 2}, // state 1323
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1323
 		{LexState: 125, ExternalLexState: 2}, // state 1324
 		{LexState: 125, ExternalLexState: 5}, // state 1325
 		{LexState: 3, ExternalLexState: 2}, // state 1326
@@ -11020,7 +11020,7 @@ func JavascriptLanguage() *ts.Language {
 		{LexState: 3, ExternalLexState: 2}, // state 1333
 		{LexState: 20, ExternalLexState: 8}, // state 1334
 		{LexState: 125, ExternalLexState: 5}, // state 1335
-		{LexState: 125, ExternalLexState: 2}, // state 1336
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1336
 		{LexState: 125, ExternalLexState: 2}, // state 1337
 		{LexState: 125, ExternalLexState: 2}, // state 1338
 		{LexState: 12, ExternalLexState: 8}, // state 1339
@@ -11058,11 +11058,11 @@ func JavascriptLanguage() *ts.Language {
 		{LexState: 125, ExternalLexState: 2}, // state 1371
 		{LexState: 125, ExternalLexState: 5}, // state 1372
 		{LexState: 125, ExternalLexState: 2}, // state 1373
-		{LexState: 125, ExternalLexState: 2}, // state 1374
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1374
 		{LexState: 16, ExternalLexState: 7}, // state 1375
-		{LexState: 125, ExternalLexState: 2}, // state 1376
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1376
 		{LexState: 125, ExternalLexState: 2}, // state 1377
-		{LexState: 125, ExternalLexState: 2}, // state 1378
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1378
 		{LexState: 125, ExternalLexState: 5}, // state 1379
 		{LexState: 125, ExternalLexState: 5}, // state 1380
 		{LexState: 125, ExternalLexState: 2}, // state 1381
@@ -11070,22 +11070,22 @@ func JavascriptLanguage() *ts.Language {
 		{LexState: 125, ExternalLexState: 2}, // state 1383
 		{LexState: 10, ExternalLexState: 2}, // state 1384
 		{LexState: 125, ExternalLexState: 5}, // state 1385
-		{LexState: 125, ExternalLexState: 2}, // state 1386
-		{LexState: 125, ExternalLexState: 2}, // state 1387
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1386
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1387
 		{LexState: 125, ExternalLexState: 2}, // state 1388
 		{LexState: 125, ExternalLexState: 5}, // state 1389
 		{LexState: 125, ExternalLexState: 5}, // state 1390
 		{LexState: 125, ExternalLexState: 5}, // state 1391
 		{LexState: 125, ExternalLexState: 2}, // state 1392
-		{LexState: 125, ExternalLexState: 2}, // state 1393
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1393
 		{LexState: 125, ExternalLexState: 2}, // state 1394
 		{LexState: 12, ExternalLexState: 8}, // state 1395
 		{LexState: 20, ExternalLexState: 8}, // state 1396
 		{LexState: 125, ExternalLexState: 2}, // state 1397
 		{LexState: 18, ExternalLexState: 2}, // state 1398
-		{LexState: 125, ExternalLexState: 2}, // state 1399
-		{LexState: 125, ExternalLexState: 2}, // state 1400
-		{LexState: 125, ExternalLexState: 2}, // state 1401
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1399
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1400
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1401
 		{LexState: 125, ExternalLexState: 2}, // state 1402
 		{LexState: 125, ExternalLexState: 2}, // state 1403
 		{LexState: 3, ExternalLexState: 2}, // state 1404
@@ -11130,7 +11130,7 @@ func JavascriptLanguage() *ts.Language {
 		{LexState: 125, ExternalLexState: 2}, // state 1443
 		{LexState: 6, ExternalLexState: 2}, // state 1444
 		{LexState: 125, ExternalLexState: 2}, // state 1445
-		{LexState: 125, ExternalLexState: 5}, // state 1446
+		{LexState: 125, ExternalLexState: 5, ReservedWordSetID: 1}, // state 1446
 		{LexState: 125, ExternalLexState: 5}, // state 1447
 		{LexState: 125, ExternalLexState: 2}, // state 1448
 		{LexState: 125, ExternalLexState: 2}, // state 1449
@@ -11140,13 +11140,13 @@ func JavascriptLanguage() *ts.Language {
 		{LexState: 125, ExternalLexState: 5}, // state 1453
 		{LexState: 125, ExternalLexState: 2}, // state 1454
 		{LexState: 125, ExternalLexState: 2}, // state 1455
-		{LexState: 125, ExternalLexState: 5}, // state 1456
+		{LexState: 125, ExternalLexState: 5, ReservedWordSetID: 1}, // state 1456
 		{LexState: 125, ExternalLexState: 2}, // state 1457
 		{LexState: 125, ExternalLexState: 2}, // state 1458
 		{LexState: 125, ExternalLexState: 2}, // state 1459
 		{LexState: 125, ExternalLexState: 2}, // state 1460
 		{LexState: 125, ExternalLexState: 2}, // state 1461
-		{LexState: 125, ExternalLexState: 2}, // state 1462
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1462
 		{LexState: 125, ExternalLexState: 2}, // state 1463
 		{LexState: 125, ExternalLexState: 2}, // state 1464
 		{LexState: 125, ExternalLexState: 2}, // state 1465
@@ -11154,16 +11154,16 @@ func JavascriptLanguage() *ts.Language {
 		{LexState: 125, ExternalLexState: 2}, // state 1467
 		{LexState: 125, ExternalLexState: 5}, // state 1468
 		{LexState: 125, ExternalLexState: 5}, // state 1469
-		{LexState: 125, ExternalLexState: 2}, // state 1470
-		{LexState: 125, ExternalLexState: 2}, // state 1471
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1470
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1471
 		{LexState: 125, ExternalLexState: 2}, // state 1472
-		{LexState: 125, ExternalLexState: 2}, // state 1473
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1473
 		{LexState: 125, ExternalLexState: 2}, // state 1474
 		{LexState: 125, ExternalLexState: 2}, // state 1475
 		{LexState: 125, ExternalLexState: 2}, // state 1476
 		{LexState: 125, ExternalLexState: 2}, // state 1477
 		{LexState: 3, ExternalLexState: 2}, // state 1478
-		{LexState: 125, ExternalLexState: 2}, // state 1479
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1479
 		{LexState: 125, ExternalLexState: 2}, // state 1480
 		{LexState: 125, ExternalLexState: 2}, // state 1481
 		{LexState: 125, ExternalLexState: 5}, // state 1482
@@ -11176,7 +11176,7 @@ func JavascriptLanguage() *ts.Language {
 		{LexState: 125, ExternalLexState: 2}, // state 1489
 		{LexState: 125, ExternalLexState: 2}, // state 1490
 		{LexState: 125, ExternalLexState: 2}, // state 1491
-		{LexState: 125, ExternalLexState: 2}, // state 1492
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1492
 		{LexState: 125, ExternalLexState: 5}, // state 1493
 		{LexState: 125, ExternalLexState: 2}, // state 1494
 		{LexState: 125, ExternalLexState: 5}, // state 1495
@@ -11338,8 +11338,8 @@ func JavascriptLanguage() *ts.Language {
 		{LexState: 125, ExternalLexState: 2}, // state 1651
 		{LexState: 125, ExternalLexState: 2}, // state 1652
 		{LexState: 125, ExternalLexState: 2}, // state 1653
-		{LexState: 125, ExternalLexState: 2}, // state 1654
-		{LexState: 125, ExternalLexState: 2}, // state 1655
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1654
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1655
 		{LexState: 125, ExternalLexState: 2}, // state 1656
 		{LexState: 125, ExternalLexState: 2}, // state 1657
 		{LexState: 125, ExternalLexState: 2}, // state 1658
@@ -11408,7 +11408,7 @@ func JavascriptLanguage() *ts.Language {
 		{LexState: 125, ExternalLexState: 2}, // state 1721
 		{LexState: 125, ExternalLexState: 2}, // state 1722
 		{LexState: 125, ExternalLexState: 2}, // state 1723
-		{LexState: 31, ExternalLexState: 2}, // state 1724
+		{LexState: 31, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1724
 		{LexState: 125, ExternalLexState: 2}, // state 1725
 		{LexState: 125, ExternalLexState: 2}, // state 1726
 		{LexState: 125, ExternalLexState: 5}, // state 1727
@@ -11435,7 +11435,7 @@ func JavascriptLanguage() *ts.Language {
 		{LexState: 125, ExternalLexState: 2}, // state 1748
 		{LexState: 125, ExternalLexState: 2}, // state 1749
 		{LexState: 125, ExternalLexState: 2}, // state 1750
-		{LexState: 125, ExternalLexState: 2}, // state 1751
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1751
 		{LexState: 125, ExternalLexState: 2}, // state 1752
 		{LexState: 125, ExternalLexState: 2}, // state 1753
 		{LexState: 125, ExternalLexState: 2}, // state 1754
@@ -11468,14 +11468,14 @@ func JavascriptLanguage() *ts.Language {
 		{LexState: 125, ExternalLexState: 2}, // state 1781
 		{LexState: 125, ExternalLexState: 2}, // state 1782
 		{LexState: 125, ExternalLexState: 2}, // state 1783
-		{LexState: 125, ExternalLexState: 2}, // state 1784
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1784
 		{LexState: 2, ExternalLexState: 9}, // state 1785
 		{LexState: 125, ExternalLexState: 2}, // state 1786
 		{LexState: 32, ExternalLexState: 2}, // state 1787
 		{LexState: 125, ExternalLexState: 2}, // state 1788
 		{LexState: 125, ExternalLexState: 2}, // state 1789
 		{LexState: 125, ExternalLexState: 2}, // state 1790
-		{LexState: 125, ExternalLexState: 2}, // state 1791
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1791
 		{LexState: 125, ExternalLexState: 2}, // state 1792
 		{LexState: 125, ExternalLexState: 2}, // state 1793
 		{LexState: 125, ExternalLexState: 2}, // state 1794
@@ -11509,7 +11509,7 @@ func JavascriptLanguage() *ts.Language {
 		{LexState: 32, ExternalLexState: 2}, // state 1822
 		{LexState: 125, ExternalLexState: 2}, // state 1823
 		{LexState: 125, ExternalLexState: 2}, // state 1824
-		{LexState: 125, ExternalLexState: 2}, // state 1825
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1825
 		{LexState: 125, ExternalLexState: 2}, // state 1826
 		{LexState: 125, ExternalLexState: 2}, // state 1827
 		{LexState: 125, ExternalLexState: 2}, // state 1828
@@ -11520,7 +11520,7 @@ func JavascriptLanguage() *ts.Language {
 		{LexState: 125, ExternalLexState: 2}, // state 1833
 		{LexState: 125, ExternalLexState: 2}, // state 1834
 		{LexState: 125, ExternalLexState: 2}, // state 1835
-		{LexState: 125, ExternalLexState: 2}, // state 1836
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1836
 		{LexState: 125, ExternalLexState: 2}, // state 1837
 		{LexState: 125, ExternalLexState: 2}, // state 1838
 		{LexState: 125, ExternalLexState: 2}, // state 1839
@@ -11532,19 +11532,19 @@ func JavascriptLanguage() *ts.Language {
 		{LexState: 125, ExternalLexState: 2}, // state 1845
 		{LexState: 125, ExternalLexState: 2}, // state 1846
 		{LexState: 125, ExternalLexState: 2}, // state 1847
-		{LexState: 125, ExternalLexState: 2}, // state 1848
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1848
 		{LexState: 125, ExternalLexState: 2}, // state 1849
 		{LexState: 125, ExternalLexState: 2}, // state 1850
 		{LexState: 125, ExternalLexState: 2}, // state 1851
 		{LexState: 125, ExternalLexState: 2}, // state 1852
 		{LexState: 125, ExternalLexState: 2}, // state 1853
 		{LexState: 125, ExternalLexState: 2}, // state 1854
-		{LexState: 125, ExternalLexState: 2}, // state 1855
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1855
 		{LexState: 125, ExternalLexState: 2}, // state 1856
 		{LexState: 125, ExternalLexState: 2}, // state 1857
 		{LexState: 125, ExternalLexState: 2}, // state 1858
 		{LexState: 125, ExternalLexState: 2}, // state 1859
-		{LexState: 125, ExternalLexState: 2}, // state 1860
+		{LexState: 125, ExternalLexState: 2, ReservedWordSetID: 1}, // state 1860
 		{LexState: 125, ExternalLexState: 2}, // state 1861
 		{LexState: 125, ExternalLexState: 2}, // state 1862
 		{LexState: 125, ExternalLexState: 2}, // state 1863
@@ -12698,6 +12698,103 @@ func JavascriptLanguage() *ts.Language {
 
 	externalSymbolMap := []ts.Symbol{129, 130, 131, 132, 78, 107, 112, 133, }
 
+	reservedWords := []bool{
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, false, true, 
+		false, false, false, false, true, false, true, true, false, true, false, false, false, true, true, true, true, false, false, false, 
+		true, true, true, true, true, true, true, true, true, false, true, true, true, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, true, true, false, true, false, false, true, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, true, false, false, true, true, true, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, true, true, true, true, true, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, 
+		true, true, false, true, false, false, false, true, true, true, true, false, false, false, false, true, true, true, true, true, 
+		true, true, true, false, true, true, true, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, true, false, false, false, false, false, false, true, false, false, false, false, false, false, false, false, false, false, true, 
+		true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, true, false, false, false, false, false, false, false, false, false, false, false, false, false, true, false, false, false, false, 
+		false, false, true, false, false, false, false, false, false, false, false, false, true, true, true, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, true, true, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, true, false, false, false, 
+		false, false, false, true, true, true, true, false, false, false, true, true, true, true, true, true, true, true, true, false, 
+		true, true, true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, true, false, false, false, false, false, false, true, true, false, true, false, false, false, true, true, true, 
+		true, false, false, false, true, true, true, true, true, true, true, true, true, false, true, true, true, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, false, false, 
+		false, false, true, false, true, true, false, true, false, false, false, true, true, true, true, false, false, false, false, true, 
+		true, true, true, true, true, true, true, false, true, true, true, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, true, true, false, false, false, false, true, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, true, true, true, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, true, true, true, true, true, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, true, false, true, false, false, false, false, true, false, true, true, 
+		false, true, false, false, false, true, true, true, true, false, false, false, false, true, true, true, true, true, true, true, 
+		true, false, true, true, true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		true, true, false, true, false, false, true, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, true, true, true, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, true, true, true, true, true, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, true, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		true, false, false, false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, false, false, false, false, false, 
+		false, false, false, false, false, true, true, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, true, false, true, false, false, false, false, true, false, true, true, false, true, false, false, 
+		false, true, true, true, true, false, false, false, true, true, true, true, true, true, true, true, true, false, true, true, 
+		true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, false, false, true, 
+		false, false, true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, 
+		false, false, true, true, true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, 
+		true, true, true, true, true, false, false, false, false, false, false, false, false, false, false, false, 
+	}
+
 	return &ts.Language{
 		Version:                14,
 		SymbolCount:            261,
@@ -12727,6 +12824,9 @@ func JavascriptLanguage() *ts.Language {
 		SupertypeSymbols:       supertypeSymbols,
 		ExternalScannerStates:  externalScannerStates,
 		ExternalSymbolMap:      externalSymbolMap,
+		ReservedWords:          reservedWords,
+		ReservedWordCount:      134,
+		ReservedWordSetCount:   14,
 	}
 }
 

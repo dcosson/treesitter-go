@@ -87,8 +87,9 @@ type SymbolMetadata struct {
 
 // LexMode describes the lex state for a given parse state.
 type LexMode struct {
-	LexState         uint16
-	ExternalLexState uint16
+	LexState          uint16
+	ExternalLexState  uint16
+	ReservedWordSetID uint16
 }
 
 // FieldMapSlice identifies a range within the field map entries array.

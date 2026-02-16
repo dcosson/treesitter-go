@@ -415,13 +415,27 @@ func (p *Parser) lexToken(version StackVersion, state StateID, position Length) 
 			origSymbol := p.lexer.ResultSymbol
 
 			p.lexer.Start(position)
-			if p.language.KeywordLexFn(p.lexer, 0) &&
-				p.lexer.CurrentPosition() == keywordEndPos {
-				p.lexer.TokenEndPosition = keywordEndPos
+			keywordMatched := p.language.KeywordLexFn(p.lexer, 0) &&
+				p.lexer.CurrentPosition() == keywordEndPos
+
+			if keywordMatched {
+				keywordSymbol := p.lexer.ResultSymbol
+				// A keyword is accepted if the parser has actions for it in
+				// the current state OR if it's a reserved word. This matches
+				// the C tree-sitter runtime: keywords with valid parse actions
+				// are always kept; reserved words are kept even without actions
+				// (for error recovery). Keywords with neither are reverted to
+				// the keyword capture token (e.g., `blank_identifier` → `identifier`).
+				if p.language.lookup(state, keywordSymbol) != 0 ||
+					p.language.IsReservedWord(uint32(lexMode.ReservedWordSetID), keywordSymbol) {
+					p.lexer.ResultSymbol = keywordSymbol
+				} else {
+					p.lexer.ResultSymbol = origSymbol
+				}
 			} else {
 				p.lexer.ResultSymbol = origSymbol
-				p.lexer.TokenEndPosition = keywordEndPos
 			}
+			p.lexer.TokenEndPosition = keywordEndPos
 		}
 
 		if !found && p.lexer.EOF() {
