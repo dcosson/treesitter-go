@@ -1,0 +1,32 @@
+{
+  "id": "tree-sitter-go-wcu.14",
+  "title": "Expand corpus tests to all ported grammars",
+  "description": "The corpus test runner (internal/corpustest/) currently only runs against JSON. Expand it to run corpus tests for ALL ported grammars: Go, JavaScript, Python, Bash, Rust, C, TypeScript, C++, CSS, HTML, Ruby, Perl, Java, Zsh. For each grammar: (1) ensure the grammar's test/corpus/ .txt files are fetched via make fetch-test-grammars, (2) add a TestCorpus\u003cLanguage\u003e function in corpus_test.go (or a separate file) that loads the grammar and runs all corpus tests, (3) track pass/fail counts per grammar and document any known failures. This is the single highest-value test expansion — it validates all scanner ports against real expected parse trees. Reference: docs/testing-strategy.md Section 2.",
+  "status": "open",
+  "priority": 2,
+  "type": "task",
+  "parent": "tree-sitter-go-wcu",
+  "dependencies": [
+    {
+      "id": "tree-sitter-go-wcu",
+      "type": "parent-child"
+    }
+  ],
+  "dependents": [
+    {
+      "id": "tree-sitter-go-wcu.16",
+      "type": "blocks"
+    },
+    {
+      "id": "tree-sitter-go-wcu.17",
+      "type": "blocks"
+    }
+  ],
+  "created_by": "Danny Cosson",
+  "owner": "dcosson@gmail.com",
+  "labels": [
+    "testing"
+  ],
+  "created_at": "2026-02-16T13:25:14.956094-08:00",
+  "updated_at": "2026-02-16T13:25:14.956094-08:00"
+}

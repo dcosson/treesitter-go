@@ -2,7 +2,7 @@
   "id": "tree-sitter-go-wcu.13",
   "title": "Generate grammar packages for remaining 11 languages",
   "description": "Generate grammar packages via tsgo-generate for: Go, JavaScript, TypeScript, Python, Bash, Rust, C, C++, Ruby, Perl. Each needs: 1) Run tsgo-generate on testdata/grammars/tree-sitter-\u003clang\u003e/src/parser.c, 2) Wire external scanner factory if applicable, 3) Write integration tests. TypeScript has two sub-grammars (typescript, tsx). Perl grammar needs to be fetched first (add to grammars.json + run fetch-grammars).",
-  "status": "open",
+  "status": "closed",
   "priority": 2,
   "type": "task",
   "parent": "tree-sitter-go-wcu",
@@ -18,5 +18,7 @@
     "grammar-generation"
   ],
   "created_at": "2026-02-16T07:31:18.022578-08:00",
-  "updated_at": "2026-02-16T07:31:18.022578-08:00"
+  "updated_at": "2026-02-16T13:26:53.222588-08:00",
+  "closed_at": "2026-02-16T13:26:53.222588-08:00",
+  "close_reason": "Closed"
 }
