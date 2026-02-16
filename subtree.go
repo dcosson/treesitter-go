@@ -223,6 +223,7 @@ const (
 	SubtreeFlagHasExternalTokens SubtreeFlags = 1 << 7
 	SubtreeFlagDependsOnColumn SubtreeFlags = 1 << 8
 	SubtreeFlagIsKeyword       SubtreeFlags = 1 << 9
+	SubtreeFlagHasExternalScannerStateChange SubtreeFlags = 1 << 10
 )
 
 // FirstLeaf stores the lex-mode-relevant data of the leftmost leaf token.
@@ -875,3 +876,52 @@ func SetParseState(s Subtree, arena *SubtreeArena, state StateID) {
 	}
 	arena.Get(s).ParseState = state
 }
+
+// HasExternalTokens returns true if the subtree has external tokens.
+func HasExternalTokens(s Subtree, arena *SubtreeArena) bool {
+	if s.IsInline() {
+		return false
+	}
+	return arena.Get(s).HasFlag(SubtreeFlagHasExternalTokens)
+}
+
+// GetExternalScannerState returns the external scanner state for a subtree.
+func GetExternalScannerState(s Subtree, arena *SubtreeArena) []byte {
+	if s.IsInline() || s.IsZero() {
+		return nil
+	}
+	return arena.Get(s).ExternalScannerState
+}
+
+// SetExternalScannerState sets the external scanner state on a heap-allocated subtree.
+func SetExternalScannerState(s Subtree, arena *SubtreeArena, state []byte) {
+	if s.IsInline() {
+		return
+	}
+	data := arena.Get(s)
+	if len(state) == 0 {
+		data.ExternalScannerState = nil
+	} else {
+		data.ExternalScannerState = make([]byte, len(state))
+		copy(data.ExternalScannerState, state)
+	}
+}
+
+// ExternalScannerStateEqual returns true if the subtree's external scanner
+// state matches the given buffer.
+func ExternalScannerStateEqual(s Subtree, arena *SubtreeArena, buf []byte, length uint32) bool {
+	state := GetExternalScannerState(s, arena)
+	if uint32(len(state)) != length {
+		return false
+	}
+	for i := uint32(0); i < length; i++ {
+		if state[i] != buf[i] {
+			return false
+		}
+	}
+	return true
+}
+
+// TreeSitterSerializationBufferSize is the max size of external scanner
+// serialization buffer (matches C TREE_SITTER_SERIALIZATION_BUFFER_SIZE).
+const TreeSitterSerializationBufferSize = 1024

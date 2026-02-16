@@ -569,3 +569,108 @@ func TestIntegrationParseFieldAccess(t *testing.T) {
 		t.Errorf("expected 'pair' in S-expression, got %q", sexpr)
 	}
 }
+
+// --- External Scanner Integration Tests ---
+
+func extScannerLanguageWithLex() *ts.Language {
+	return tg.ExtScannerLanguageWithLex()
+}
+
+func TestIntegrationExternalScannerNumber(t *testing.T) {
+	// Parse a simple number — no external scanner invoked.
+	p := ts.NewParser()
+	p.SetLanguage(extScannerLanguageWithLex())
+
+	tree := p.ParseString(context.Background(), []byte("42"))
+	if tree == nil {
+		t.Fatal("expected tree, got nil")
+	}
+	root := tree.RootNode()
+	if root.Type() != "program" {
+		t.Errorf("expected root type 'program', got %q", root.Type())
+	}
+	sexpr := root.String()
+	if !strings.Contains(sexpr, "number") {
+		t.Errorf("expected 'number' in S-expression, got %q", sexpr)
+	}
+}
+
+func TestIntegrationExternalScannerHeredoc(t *testing.T) {
+	// Parse a heredoc — exercises external scanner.
+	p := ts.NewParser()
+	p.SetLanguage(extScannerLanguageWithLex())
+
+	input := "<<\nhello world\nEND\n"
+	tree := p.ParseString(context.Background(), []byte(input))
+	if tree == nil {
+		t.Fatal("expected tree, got nil")
+	}
+	root := tree.RootNode()
+	if root.Type() != "program" {
+		t.Errorf("expected root type 'program', got %q", root.Type())
+	}
+	sexpr := root.String()
+	if !strings.Contains(sexpr, "heredoc") {
+		t.Errorf("expected 'heredoc' in S-expression, got %q", sexpr)
+	}
+	if !strings.Contains(sexpr, "heredoc_body") {
+		t.Errorf("expected 'heredoc_body' in S-expression, got %q", sexpr)
+	}
+}
+
+func TestIntegrationExternalScannerStateOnSubtree(t *testing.T) {
+	// Parse a heredoc and verify the scanner state is attached to the subtree.
+	p := ts.NewParser()
+	p.SetLanguage(extScannerLanguageWithLex())
+
+	input := "<<\nfoo\nEND\n"
+	tree := p.ParseString(context.Background(), []byte(input))
+	if tree == nil {
+		t.Fatal("expected tree, got nil")
+	}
+
+	// Walk the tree looking for the heredoc_body node.
+	root := tree.RootNode()
+	found := false
+	var walk func(n ts.Node)
+	walk = func(n ts.Node) {
+		if n.Type() == "heredoc_body" {
+			found = true
+		}
+		for i := uint32(0); i < n.ChildCount(); i++ {
+			child := n.Child(int(i))
+			if !child.IsNull() {
+				walk(child)
+			}
+		}
+	}
+	walk(root)
+
+	if !found {
+		t.Error("expected to find heredoc_body node in tree")
+	}
+}
+
+func TestIntegrationExternalScannerMultipleParses(t *testing.T) {
+	// Verify parser reuse with external scanner across multiple parses.
+	p := ts.NewParser()
+	p.SetLanguage(extScannerLanguageWithLex())
+
+	inputs := []string{
+		"42",
+		"<<\nfoo\nEND\n",
+		"99",
+		"<<\nbar\nbaz\nEND\n",
+	}
+	for _, input := range inputs {
+		tree := p.ParseString(context.Background(), []byte(input))
+		if tree == nil {
+			t.Errorf("parse %q: expected tree, got nil", input)
+			continue
+		}
+		root := tree.RootNode()
+		if root.Type() != "program" {
+			t.Errorf("parse %q: expected 'program', got %q", input, root.Type())
+		}
+	}
+}

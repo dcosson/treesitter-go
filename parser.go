@@ -27,6 +27,10 @@ type Parser struct {
 	cachedTokenPosition Length
 	cachedTokenValid    bool
 
+	// External scanner support.
+	externalScanner      ExternalScanner
+	serializationBuffer  [TreeSitterSerializationBufferSize]byte
+
 	// Error recovery state.
 	acceptCount     uint32
 	operationCount  uint32
@@ -71,8 +75,13 @@ func (p *Parser) SetDebug(on bool) {
 }
 
 // SetLanguage sets the language (grammar) for the parser.
+// If the language has an external scanner factory, a new scanner is created.
 func (p *Parser) SetLanguage(lang *Language) {
 	p.language = lang
+	p.externalScanner = nil
+	if lang != nil && lang.NewExternalScanner != nil {
+		p.externalScanner = lang.NewExternalScanner()
+	}
 }
 
 // Language returns the parser's current language.
@@ -179,7 +188,7 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 	position := p.stack.Position(version)
 
 	// Lex a token in the context of this parse state.
-	token := p.lexToken(state, position)
+	token := p.lexToken(version, state, position)
 	tokenSymbol := GetSymbol(token, p.arena)
 
 	// Inner reduce loop: keep reducing until we can shift or accept.
@@ -240,7 +249,8 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 
 // lexToken lexes the next token from the current position.
 // Uses caching to avoid re-lexing across multiple stack versions.
-func (p *Parser) lexToken(state StateID, position Length) Subtree {
+// The version parameter is needed for external scanner state (lastExternalToken).
+func (p *Parser) lexToken(version StackVersion, state StateID, position Length) Subtree {
 	lexMode := p.language.LexModes[state]
 
 	// Check cache: only valid if same lex state and position.
@@ -250,39 +260,78 @@ func (p *Parser) lexToken(state StateID, position Length) Subtree {
 		return p.cachedToken
 	}
 
-	p.lexer.Start(position)
+	foundExternalToken := false
+	var externalScannerStateLen uint32
+	var externalScannerStateChanged bool
 
-	// Run the main lex function.
-	found := false
-	if p.language.LexFn != nil {
-		found = p.language.LexFn(p.lexer, StateID(lexMode.LexState))
-	}
-
-	// If the result is the keyword capture token, try keyword lex.
-	if found && p.language.KeywordLexFn != nil && p.lexer.ResultSymbol == p.language.KeywordCaptureToken {
-		keywordEndPos := p.lexer.TokenEndPosition
-		origSymbol := p.lexer.ResultSymbol
-
+	// Try external scanner first if this state enables external tokens.
+	if lexMode.ExternalLexState != 0 && p.externalScanner != nil {
 		p.lexer.Start(position)
-		if p.language.KeywordLexFn(p.lexer, StateID(lexMode.LexState)) {
-			p.lexer.TokenEndPosition = keywordEndPos
-		} else {
-			p.lexer.ResultSymbol = origSymbol
-			p.lexer.TokenEndPosition = keywordEndPos
+
+		// Deserialize from the last external token for this version.
+		lastExtToken := p.stack.LastExternalToken(version)
+		p.externalScannerDeserialize(lastExtToken)
+
+		// Get valid symbols for this external lex state.
+		validSymbols := p.language.EnabledExternalTokens(lexMode.ExternalLexState)
+
+		// Call the external scanner.
+		if validSymbols != nil && p.externalScanner.Scan(p.lexer, validSymbols) {
+			// Scanner recognized a token. Serialize the new state.
+			externalScannerStateLen = p.externalScannerSerialize()
+
+			// Check if state changed from previous external token.
+			externalScannerStateChanged = !ExternalScannerStateEqual(
+				lastExtToken, p.arena,
+				p.serializationBuffer[:externalScannerStateLen],
+				externalScannerStateLen,
+			)
+
+			// Map the external token index to a grammar symbol.
+			extTokenIndex := p.lexer.ResultSymbol
+			if int(extTokenIndex) < len(p.language.ExternalSymbolMap) {
+				p.lexer.ResultSymbol = p.language.ExternalSymbolMap[extTokenIndex]
+			}
+
+			foundExternalToken = true
 		}
 	}
 
-	if !found && p.lexer.EOF() {
-		// At EOF — produce end-of-input token.
-		p.lexer.MarkEnd()
-		p.lexer.AcceptToken(SymbolEnd)
-	} else if !found {
-		// No token found — advance by one character and report error.
-		if !p.lexer.EOF() {
-			p.lexer.Advance(false)
+	// If no external token, run the internal lex function.
+	if !foundExternalToken {
+		p.lexer.Start(position)
+
+		found := false
+		if p.language.LexFn != nil {
+			found = p.language.LexFn(p.lexer, StateID(lexMode.LexState))
 		}
-		p.lexer.MarkEnd()
-		p.lexer.AcceptToken(SymbolError)
+
+		// If the result is the keyword capture token, try keyword lex.
+		if found && p.language.KeywordLexFn != nil && p.lexer.ResultSymbol == p.language.KeywordCaptureToken {
+			keywordEndPos := p.lexer.TokenEndPosition
+			origSymbol := p.lexer.ResultSymbol
+
+			p.lexer.Start(position)
+			if p.language.KeywordLexFn(p.lexer, StateID(lexMode.LexState)) {
+				p.lexer.TokenEndPosition = keywordEndPos
+			} else {
+				p.lexer.ResultSymbol = origSymbol
+				p.lexer.TokenEndPosition = keywordEndPos
+			}
+		}
+
+		if !found && p.lexer.EOF() {
+			// At EOF — produce end-of-input token.
+			p.lexer.MarkEnd()
+			p.lexer.AcceptToken(SymbolEnd)
+		} else if !found {
+			// No token found — advance by one character and report error.
+			if !p.lexer.EOF() {
+				p.lexer.Advance(false)
+			}
+			p.lexer.MarkEnd()
+			p.lexer.AcceptToken(SymbolError)
+		}
 	}
 
 	// Compute padding and size.
@@ -296,7 +345,6 @@ func (p *Parser) lexToken(state StateID, position Length) Subtree {
 
 	// Create the leaf subtree for this token.
 	isKeyword := false
-	hasExternalTokens := false
 	dependsOnColumn := padding.Point.Row > 0
 
 	token := NewLeafSubtree(
@@ -305,11 +353,22 @@ func (p *Parser) lexToken(state StateID, position Length) Subtree {
 		padding,
 		size,
 		state,
-		hasExternalTokens,
+		foundExternalToken,
 		dependsOnColumn,
 		isKeyword,
 		p.language,
 	)
+
+	// If this was an external token, attach the serialized scanner state.
+	if foundExternalToken {
+		SetExternalScannerState(
+			token, p.arena,
+			p.serializationBuffer[:externalScannerStateLen],
+		)
+		if externalScannerStateChanged && !token.IsInline() {
+			p.arena.Get(token).SetFlag(SubtreeFlagHasExternalScannerStateChange, true)
+		}
+	}
 
 	// Cache the token.
 	p.cachedToken = token
@@ -335,6 +394,11 @@ func (p *Parser) doShift(version StackVersion, action ParseActionEntry, token Su
 	newPosition := LengthAdd(LengthAdd(position, tokenPadding), tokenSize)
 
 	p.stack.Push(version, state, token, false, newPosition)
+
+	// Track external tokens for scanner state restoration.
+	if HasExternalTokens(token, p.arena) {
+		p.stack.SetLastExternalToken(version, token)
+	}
 
 	// Invalidate token cache after consuming.
 	p.cachedTokenValid = false
@@ -667,4 +731,26 @@ func (p *Parser) condenseStack() {
 
 	// Remove halted versions.
 	p.stack.CompactHaltedVersions()
+}
+
+// --- External scanner helpers ---
+
+// externalScannerSerialize serializes the external scanner's current state
+// into the parser's serialization buffer. Returns the number of bytes written.
+func (p *Parser) externalScannerSerialize() uint32 {
+	if p.externalScanner == nil {
+		return 0
+	}
+	return p.externalScanner.Serialize(p.serializationBuffer[:])
+}
+
+// externalScannerDeserialize restores the external scanner's state from
+// the given external token subtree. If the subtree is zero, deserializes
+// with empty data (default/initial state).
+func (p *Parser) externalScannerDeserialize(externalToken Subtree) {
+	if p.externalScanner == nil {
+		return
+	}
+	state := GetExternalScannerState(externalToken, p.arena)
+	p.externalScanner.Deserialize(state)
 }
