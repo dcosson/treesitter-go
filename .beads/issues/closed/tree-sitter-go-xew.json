@@ -2,7 +2,7 @@
   "id": "tree-sitter-go-xew",
   "title": "Fix Perl scanner P2 bugs: heredocContinue EOF infinite loop + missing MarkEnd() calls",
   "description": "Two medium-severity bugs in scanners/perl/scanner.go:\n\n1. Infinite loop in heredocContinue at EOF: TokenHeredocMiddle handler loop has no EOF check. If input ends mid-heredoc-continue without trailing newline, loop never exits (Lookahead=-1 doesn't match newline or interpolation escape).\n\nFix: Add lexer.EOF() check at top of loop, emit TokenHeredocMiddle if sawChars, else return false.\n\n2. Missing MarkEnd() before return true in 5 paths: TokenGobbledContent, TokenNonassoc, TokenCtrlZ, PerlySemicolon, TokenPod. Scanner sets ResultSymbol directly, so AcceptToken's markEndCalled fallback doesn't apply.\n\nFix: Add lexer.MarkEnd() before each return true in these paths.\n\nAlso P3: tspString.eq() only compares first 8 chars (increase maxTSPStringLen), skipChars infinite loop on negative maxLen.",
-  "status": "open",
+  "status": "closed",
   "priority": 2,
   "type": "task",
   "created_by": "Danny Cosson",
@@ -12,5 +12,7 @@
     "scanner"
   ],
   "created_at": "2026-02-16T07:25:41.752916-08:00",
-  "updated_at": "2026-02-16T07:25:41.752916-08:00"
+  "updated_at": "2026-02-16T08:34:06.650157-08:00",
+  "closed_at": "2026-02-16T08:34:06.650157-08:00",
+  "close_reason": "Closed"
 }
