@@ -6,7 +6,6 @@
 package html
 
 import (
-	"strings"
 	"unicode"
 )
 
@@ -279,7 +278,11 @@ func isAlnumOrDash(ch int32) bool {
 	return ch >= 0 && (unicode.IsLetter(rune(ch)) || unicode.IsDigit(rune(ch)) || ch == '-' || ch == ':')
 }
 
-// toUpper uppercases a rune if it's a letter.
+// toUpper uppercases a rune. HTML tag names are ASCII, so this
+// effectively maps 'a'-'z' to 'A'-'Z' and leaves everything else unchanged.
 func toUpper(ch int32) byte {
-	return byte(strings.ToUpper(string(rune(ch)))[0])
+	if ch >= 'a' && ch <= 'z' {
+		return byte(ch - 'a' + 'A')
+	}
+	return byte(ch)
 }

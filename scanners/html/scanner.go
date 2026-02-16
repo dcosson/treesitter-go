@@ -297,7 +297,7 @@ func (s *Scanner) scanImplicitEndTag(lexer *ts.Lexer) bool {
 
 		// Otherwise, dig deeper and queue implicit end tags.
 		for i := len(s.tags); i > 0; i-- {
-			if s.tags[i-1].Type == nextTag.Type {
+			if s.tags[i-1].eq(&nextTag) {
 				s.popTag()
 				lexer.ResultSymbol = ts.Symbol(ImplicitEndTag)
 				return true
@@ -323,6 +323,7 @@ func (s *Scanner) scanStartTagName(lexer *ts.Lexer) bool {
 
 	tag := tagForName(tagName)
 	s.tags = append(s.tags, tag)
+	lexer.MarkEnd()
 
 	switch tag.Type {
 	case Script:
@@ -343,6 +344,7 @@ func (s *Scanner) scanEndTagName(lexer *ts.Lexer) bool {
 	}
 
 	tag := tagForName(tagName)
+	lexer.MarkEnd()
 	if len(s.tags) > 0 && s.tags[len(s.tags)-1].eq(&tag) {
 		s.popTag()
 		lexer.ResultSymbol = ts.Symbol(EndTagName)
@@ -357,6 +359,7 @@ func (s *Scanner) scanSelfClosingTagDelimiter(lexer *ts.Lexer) bool {
 	lexer.Advance(false) // consume '/'
 	if lexer.Lookahead == '>' {
 		lexer.Advance(false) // consume '>'
+		lexer.MarkEnd()
 		if len(s.tags) > 0 {
 			s.popTag()
 			lexer.ResultSymbol = ts.Symbol(SelfClosingTagDelimiter)

@@ -378,6 +378,43 @@ func TestImplicitEndTagClosingTagDeep(t *testing.T) {
 	}
 }
 
+func TestImplicitEndTagClosingCustomElement(t *testing.T) {
+	// Closing </my-widget> should only match <my-widget>, not <other-widget>.
+	// Both are Custom type — must use eq() which compares CustomTagName.
+	lexer := newLexer("</my-widget")
+	s := New().(*Scanner)
+	s.tags = []Tag{
+		{Type: HTML},
+		{Type: Custom, CustomTagName: "MY-WIDGET"},
+		{Type: Custom, CustomTagName: "OTHER-WIDGET"},
+	}
+	v := onlyValid(ImplicitEndTag, StartTagName, EndTagName)
+	// Should pop OTHER-WIDGET (top) because MY-WIDGET is deeper.
+	if !s.Scan(lexer, v) {
+		t.Fatal("expected implicit end tag for custom element deep close")
+	}
+	if lexer.ResultSymbol != ts.Symbol(ImplicitEndTag) {
+		t.Errorf("ResultSymbol = %d, want %d", lexer.ResultSymbol, ImplicitEndTag)
+	}
+	if len(s.tags) != 2 {
+		t.Errorf("tags = %d, want 2 (popped OTHER-WIDGET)", len(s.tags))
+	}
+}
+
+func TestImplicitEndTagClosingCustomNoMatch(t *testing.T) {
+	// Closing </unknown-tag> should NOT match any custom tag with a different name.
+	lexer := newLexer("</unknown-tag")
+	s := New().(*Scanner)
+	s.tags = []Tag{
+		{Type: HTML},
+		{Type: Custom, CustomTagName: "MY-WIDGET"},
+	}
+	v := onlyValid(ImplicitEndTag, StartTagName, EndTagName)
+	if s.Scan(lexer, v) {
+		t.Error("expected no implicit end tag when custom names don't match")
+	}
+}
+
 func TestImplicitEndTagClosingMatchesTop(t *testing.T) {
 	lexer := newLexer("</div")
 	s := New().(*Scanner)
