@@ -151,26 +151,30 @@ func TestJSONLanguageSmallStateLookup(t *testing.T) {
 		symbol ts.Symbol
 		want   uint16
 	}{
-		// State 7 (small index 0): literal value.
+		// State 7 (small index 0): REDUCE(sym_object, 2) — empty object "{}"
+		// In C: ACTIONS(3) for comment, ACTIONS(37) for all other terminals.
 		{"state7 comment -> extra", 7, SymComment, 3},
-		{"state7 end -> reduce", 7, SymEnd, 26},
-		{"state7 comma -> reduce", 7, SymComma, 26},
-		{"state7 } -> reduce", 7, SymRBrace, 26},
-		{"state7 ] -> reduce", 7, SymRBrack, 26},
-		{"state7 { -> no action", 7, SymLBrace, 0},
+		{"state7 end -> reduce", 7, SymEnd, 37},
+		{"state7 comma -> reduce", 7, SymComma, 37},
+		{"state7 } -> reduce", 7, SymRBrace, 37},
+		{"state7 ] -> reduce", 7, SymRBrack, 37},
+		{"state7 { -> reduce", 7, SymLBrace, 37},
 
-		// State 9 (small index 2): inside object.
+		// State 9 (small index 2): REDUCE(sym_array, 2) — empty array "[]"
+		// In C: ACTIONS(3) for comment, ACTIONS(41) for all other terminals.
 		{"state9 comment -> extra", 9, SymComment, 3},
-		{"state9 } -> close empty obj", 9, SymRBrace, 36},
-		{"state9 quote -> pair key", 9, SymDQuote, 11},
-		{"state9 [ -> no action", 9, SymLBrack, 0},
+		{"state9 } -> reduce", 9, SymRBrace, 41},
+		{"state9 ] -> reduce", 9, SymRBrack, 41},
+		{"state9 [ -> reduce", 9, SymLBrack, 41},
 
-		// State 11 (small index 4): after pair key.
-		{"state11 colon -> shift", 11, SymColon, 48},
+		// State 11 (small index 4): REDUCE(sym_object, 3) — object with pairs
+		// In C: ACTIONS(3) for comment, ACTIONS(43) for all other terminals.
 		{"state11 comment -> extra", 11, SymComment, 3},
+		{"state11 end -> reduce", 11, SymEnd, 43},
 
-		// State 15 (small index 8): accept state.
-		{"state15 end -> accept", 15, SymEnd, 30},
+		// State 30 (small index 23): accept state
+		// In C: SMALL_STATE(30) at offset 346: ACTIONS(3) for comment, ACTIONS(92) for end.
+		{"state30 end -> accept", 30, SymEnd, 92},
 	}
 
 	for _, tt := range tests {
@@ -213,8 +217,8 @@ func TestJSONLanguageTableEntry(t *testing.T) {
 		t.Errorf("reduce child count = %d, want 0", entry.Actions[0].ReduceChildCount)
 	}
 
-	// State 15 (small), end -> accept.
-	entry = lang.ExportTableEntry(15, SymEnd)
+	// State 30 (small), end -> accept.
+	entry = lang.ExportTableEntry(30, SymEnd)
 	if entry.ActionCount != 1 {
 		t.Fatalf("ActionCount = %d, want 1", entry.ActionCount)
 	}

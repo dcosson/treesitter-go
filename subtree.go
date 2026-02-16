@@ -413,9 +413,12 @@ func NewLeafSubtree(
 	isKeyword bool,
 	lang *Language,
 ) Subtree {
-	meta := lang.SymbolMetadata[symbol]
-	visible := meta.Visible
-	named := meta.Named
+	var visible, named bool
+	if int(symbol) < len(lang.SymbolMetadata) {
+		meta := lang.SymbolMetadata[symbol]
+		visible = meta.Visible
+		named = meta.Named
+	}
 
 	if subtreeCanInline(padding, size, symbol, hasExternalTokens) {
 		return newInlineSubtree(symbol, parseState, padding, size, visible, named, false, isKeyword)
@@ -660,7 +663,12 @@ func NewNodeSubtree(
 	productionID uint16,
 	lang *Language,
 ) Subtree {
-	meta := lang.SymbolMetadata[symbol]
+	var visible, named bool
+	if int(symbol) < len(lang.SymbolMetadata) {
+		meta := lang.SymbolMetadata[symbol]
+		visible = meta.Visible
+		named = meta.Named
+	}
 
 	st, data := arena.Alloc()
 	*data = SubtreeHeapData{
@@ -669,8 +677,8 @@ func NewNodeSubtree(
 		Children:     children,
 		ProductionID: productionID,
 	}
-	data.SetFlag(SubtreeFlagVisible, meta.Visible)
-	data.SetFlag(SubtreeFlagNamed, meta.Named)
+	data.SetFlag(SubtreeFlagVisible, visible)
+	data.SetFlag(SubtreeFlagNamed, named)
 	return st
 }
 
@@ -737,6 +745,10 @@ func SummarizeChildren(s Subtree, arena *SubtreeArena, lang *Language) {
 			if childNamed {
 				namedChildCount++
 			}
+		} else if !childVisible {
+			// Hidden node: its visible children bubble up as this node's children.
+			visibleChildCount += GetVisibleChildCount(child, arena)
+			namedChildCount += GetNamedChildCount(child, arena)
 		}
 
 		// Accumulate visible descendant counts.

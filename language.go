@@ -140,6 +140,12 @@ func (l *Language) nextState(state StateID, symbol Symbol) StateID {
 	if symbol == SymbolError || symbol == SymbolErrorRepeat {
 		return 0
 	}
+	// For non-terminal symbols (>= token_count), the parse table stores
+	// raw state IDs (goto targets), not action indices.
+	if uint32(symbol) >= l.TokenCount {
+		return StateID(l.lookup(state, symbol))
+	}
+	// For terminal symbols, look up through the action table.
 	actionIndex := l.lookup(state, symbol)
 	if actionIndex == 0 {
 		return 0
