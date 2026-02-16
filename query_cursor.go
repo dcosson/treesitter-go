@@ -445,37 +445,50 @@ func (qc *QueryCursor) advanceStates(node Node) {
 }
 
 // checkFinishedStates moves completed states to finishedStates.
+// P2.5 FIX: Uses index-based access (not pointer-to-element) for safety.
 func (qc *QueryCursor) checkFinishedStates() {
 	i := 0
 	for i < len(qc.states) {
-		state := &qc.states[i]
-
 		// Check if the pattern is done based on depth.
-		step := &qc.query.steps[state.stepIndex]
+		step := &qc.query.steps[qc.states[i].stepIndex]
 		if step.depth != patternDoneMarker {
 			// Check if we've ascended past this state's expected depth.
-			expectedDepth := state.startDepth + step.depth
+			expectedDepth := qc.states[i].startDepth + step.depth
 			if uint32(expectedDepth) > qc.depth+1 {
 				// We've ascended past where this step would match.
-				// For optional steps (with alternativeIndex), skip to the alternative
-				// instead of killing the state.
-				if step.alternativeIndex != noneValue && !step.isPassThrough() && !step.isDeadEnd() {
-					state.stepIndex = step.alternativeIndex
-					// Re-check this state with the new step (don't increment i).
-					continue
+				// For optional steps (with alternativeIndex), follow the alternative
+				// chain. P2.6 FIX: Limit iterations to prevent infinite loops.
+				skipped := false
+				for hops := 0; hops < len(qc.query.steps); hops++ {
+					s := &qc.query.steps[qc.states[i].stepIndex]
+					if s.alternativeIndex == noneValue || s.isPassThrough() || s.isDeadEnd() {
+						break
+					}
+					qc.states[i].stepIndex = s.alternativeIndex
+					skipped = true
+					// Re-check depth with new step.
+					s2 := &qc.query.steps[qc.states[i].stepIndex]
+					if s2.depth == patternDoneMarker || uint32(qc.states[i].startDepth+s2.depth) <= qc.depth+1 {
+						break
+					}
 				}
-				if step.isLastChild() || (step.depth > 0 && uint32(state.startDepth+step.depth) > qc.depth+1) {
+				if skipped {
+					continue // Re-check this state from the top.
+				}
+
+				step = &qc.query.steps[qc.states[i].stepIndex]
+				if step.isLastChild() || (step.depth > 0 && uint32(qc.states[i].startDepth+step.depth) > qc.depth+1) {
 					// Pattern expected more children; mark dead.
-					state.dead = true
-					qc.capturePool.release(state.captureListID)
+					qc.states[i].dead = true
+					qc.capturePool.release(qc.states[i].captureListID)
 					qc.states = append(qc.states[:i], qc.states[i+1:]...)
 					continue
 				}
 			}
 		}
 
-		if qc.isStepDone(state.stepIndex) {
-			qc.finishedStates = append(qc.finishedStates, *state)
+		if qc.isStepDone(qc.states[i].stepIndex) {
+			qc.finishedStates = append(qc.finishedStates, qc.states[i])
 			qc.states = append(qc.states[:i], qc.states[i+1:]...)
 			continue
 		}

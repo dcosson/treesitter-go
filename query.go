@@ -201,6 +201,22 @@ func NewQuery(language *Language, source string) (*Query, error) {
 		return nil, err
 	}
 
+	// P2.4 FIX: Bounds check for uint16 overflow.
+	if len(q.steps) > int(noneValue) {
+		return nil, &QueryError{
+			Offset:  0,
+			Type:    QueryErrorStructure,
+			Message: fmt.Sprintf("query too complex: %d steps exceeds uint16 limit (%d)", len(q.steps), noneValue),
+		}
+	}
+	if len(q.patterns) > int(noneValue) {
+		return nil, &QueryError{
+			Offset:  0,
+			Type:    QueryErrorStructure,
+			Message: fmt.Sprintf("query too complex: %d patterns exceeds uint16 limit (%d)", len(q.patterns), noneValue),
+		}
+	}
+
 	q.buildPatternMap()
 	q.analyzePatterns()
 
