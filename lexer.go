@@ -73,6 +73,11 @@ type Lexer struct {
 	currentIncludedRangeIndex int
 	atIncludedRangeStart     bool
 
+	// markEndCalled tracks whether MarkEnd was called during the current
+	// lex invocation. Used by AcceptToken to decide whether to default
+	// TokenEndPosition to currentPosition.
+	markEndCalled bool
+
 	// logger is reserved for future debug logging support.
 	debugEnabled bool
 }
@@ -105,6 +110,7 @@ func (l *Lexer) Reset() {
 	l.lookaheadSize = 0
 	l.currentIncludedRangeIndex = 0
 	l.atIncludedRangeStart = false
+	l.markEndCalled = false
 }
 
 // SetIncludedRanges sets the byte ranges the lexer should scan.
@@ -134,6 +140,7 @@ func (l *Lexer) Start(position Length) {
 	l.tokenStartPosition = position
 	l.TokenEndPosition = Length{}
 	l.ResultSymbol = 0
+	l.markEndCalled = false
 	l.currentPosition = position
 
 	// Find the included range that contains or follows this position.
@@ -226,6 +233,7 @@ func (l *Lexer) Skip() {
 // and wants to remember this position in case longer matches fail.
 func (l *Lexer) MarkEnd() {
 	l.TokenEndPosition = l.currentPosition
+	l.markEndCalled = true
 }
 
 // AcceptToken records that a token with the given symbol has been recognized.
@@ -234,7 +242,7 @@ func (l *Lexer) MarkEnd() {
 func (l *Lexer) AcceptToken(symbol Symbol) {
 	l.ResultSymbol = symbol
 	// If MarkEnd wasn't called, default the end position to current.
-	if l.TokenEndPosition.Bytes == 0 && l.currentPosition.Bytes > 0 {
+	if !l.markEndCalled {
 		l.TokenEndPosition = l.currentPosition
 	}
 }
@@ -369,10 +377,3 @@ func utf8ByteLength(lead byte) int {
 	return 4
 }
 
-// min returns the smaller of a and b.
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
