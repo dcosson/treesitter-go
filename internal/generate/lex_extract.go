@@ -192,10 +192,8 @@ func parseCaseBlock(id int, body string, symbolEnum map[string]int) (LexState, e
 
 		// Standard if-chain transitions.
 		if strings.HasPrefix(line, "if (") || strings.HasPrefix(line, "if(") {
-			transition := parseIfTransition(line, lines, &i)
-			if transition != nil {
-				state.Transitions = append(state.Transitions, *transition)
-			}
+			transitions := parseIfTransitions(line, lines, &i)
+			state.Transitions = append(state.Transitions, transitions...)
 			continue
 		}
 	}
@@ -251,8 +249,10 @@ func parseAdvanceMap(block string) []LexTransition {
 	return transitions
 }
 
-// parseIfTransition parses an if-statement transition.
-func parseIfTransition(line string, lines []string, idx *int) *LexTransition {
+// parseIfTransitions parses an if-statement into one or more transitions.
+// A single if with ||–chained conditions (ranges and chars) produces multiple
+// transitions that all share the same target/skip.
+func parseIfTransitions(line string, lines []string, idx *int) []LexTransition {
 	// Combine multi-line if conditions.
 	fullLine := line
 	for !strings.Contains(fullLine, "ADVANCE(") && !strings.Contains(fullLine, "SKIP(") &&
@@ -277,48 +277,47 @@ func parseIfTransition(line string, lines []string, idx *int) *LexTransition {
 		return nil
 	}
 
-	// Parse the condition.
-	t := LexTransition{
-		Target: target,
-		Skip:   skip,
-	}
-
-	// Single char: if (lookahead == 'c')
-	if m := regexp.MustCompile(`lookahead\s*==\s*'([^']*)'`).FindStringSubmatch(fullLine); m != nil {
-		t.Char = parseCChar("'" + m[1] + "'")
-		return &t
-	}
+	base := LexTransition{Target: target, Skip: skip}
 
 	// Negated: if (lookahead != 0)
-	if strings.Contains(fullLine, "lookahead != 0") {
+	if strings.Contains(fullLine, "lookahead != 0") && !strings.Contains(fullLine, "||") {
+		t := base
 		t.IsNegated = true
 		t.Char = 0
-		return &t
+		return []LexTransition{t}
 	}
 
-	// Complex negation with multiple conditions.
-	if strings.Contains(fullLine, "lookahead !=") {
+	// Complex negation: if (lookahead != 'c')
+	if strings.Contains(fullLine, "lookahead !=") && !strings.Contains(fullLine, "||") {
 		re := regexp.MustCompile(`lookahead\s*!=\s*'([^']*)'`)
 		m := re.FindStringSubmatch(fullLine)
 		if m != nil {
+			t := base
 			t.IsNegated = true
 			t.Char = parseCChar("'" + m[1] + "'")
-			return &t
+			return []LexTransition{t}
 		}
 	}
 
-	// Range: ('a' <= lookahead && lookahead <= 'z')
+	// For || chains (or single conditions), extract all conditions as transitions.
 	rangeRe := regexp.MustCompile(`'([^']*)'\s*<=\s*lookahead\s*&&\s*lookahead\s*<=\s*'([^']*)'`)
-	if m := rangeRe.FindStringSubmatch(fullLine); m != nil {
+	hexRangeRe := regexp.MustCompile(`(0x[0-9a-fA-F]+)\s*<=\s*lookahead\s*&&\s*lookahead\s*<=\s*(?:'([^']*)'|(0x[0-9a-fA-F]+))`)
+	charRe := regexp.MustCompile(`lookahead\s*==\s*'([^']*)'`)
+
+	var result []LexTransition
+
+	// Find all char-range matches: ('a' <= lookahead && lookahead <= 'z')
+	for _, m := range rangeRe.FindAllStringSubmatch(fullLine, -1) {
+		t := base
 		t.IsRange = true
 		t.Low = parseCChar("'" + m[1] + "'")
 		t.High = parseCChar("'" + m[2] + "'")
-		return &t
+		result = append(result, t)
 	}
 
-	// Range with hex: (0xNN <= lookahead && lookahead <= 0xNN)
-	hexRangeRe := regexp.MustCompile(`(0x[0-9a-fA-F]+)\s*<=\s*lookahead\s*&&\s*lookahead\s*<=\s*(?:'([^']*)'|(0x[0-9a-fA-F]+))`)
-	if m := hexRangeRe.FindStringSubmatch(fullLine); m != nil {
+	// Find all hex-range matches: (0xNN <= lookahead && lookahead <= 0xNN)
+	for _, m := range hexRangeRe.FindAllStringSubmatch(fullLine, -1) {
+		t := base
 		t.IsRange = true
 		low, _ := strconv.ParseInt(m[1], 0, 32)
 		t.Low = rune(low)
@@ -328,34 +327,22 @@ func parseIfTransition(line string, lines []string, idx *int) *LexTransition {
 			high, _ := strconv.ParseInt(m[3], 0, 32)
 			t.High = rune(high)
 		}
-		return &t
+		result = append(result, t)
 	}
 
-	// Parenthesized char tests: e.g. (lookahead == '\t' || lookahead == ' ')
-	if strings.Contains(fullLine, "||") {
-		// Extract all character comparisons.
-		charRe := regexp.MustCompile(`lookahead\s*==\s*'([^']*)'`)
-		chars := charRe.FindAllStringSubmatch(fullLine, -1)
-		if len(chars) > 0 {
-			// If this is a set of chars, we use the first one and the rest will
-			// be separate entries. For simplicity, generate individual transitions.
-			// But we should check if there's also a range embedded.
-			if rangeRe.MatchString(fullLine) {
-				// Has range + char tests. Return range, skip chars for now.
-				if m := rangeRe.FindStringSubmatch(fullLine); m != nil {
-					t.IsRange = true
-					t.Low = parseCChar("'" + m[1] + "'")
-					t.High = parseCChar("'" + m[2] + "'")
-					return &t
-				}
-			}
-			// Use first char match.
-			t.Char = parseCChar("'" + chars[0][1] + "'")
-			return &t
-		}
+	// Find all single-char matches: lookahead == 'c'
+	for _, m := range charRe.FindAllStringSubmatch(fullLine, -1) {
+		t := base
+		t.Char = parseCChar("'" + m[1] + "'")
+		result = append(result, t)
 	}
 
-	return &t
+	if len(result) > 0 {
+		return result
+	}
+
+	// Fallback: return the base transition (might have Char=0 which is valid for eof checks).
+	return []LexTransition{base}
 }
 
 // detectDefault detects if the last transition is a catch-all default.
@@ -373,9 +360,12 @@ func detectDefault(state *LexState) {
 	}
 }
 
-// parseCChar parses a C character literal.
+// parseCChar parses a C character literal like 'x', '\'', '\\', '\n'.
 func parseCChar(s string) rune {
-	s = strings.Trim(s, "'")
+	// Strip only the outermost single quotes (not all of them like strings.Trim).
+	if len(s) >= 2 && s[0] == '\'' && s[len(s)-1] == '\'' {
+		s = s[1 : len(s)-1]
+	}
 	if s == "" {
 		return 0
 	}
@@ -425,25 +415,42 @@ func parseCChar(s string) rune {
 	return 0
 }
 
-// splitCSV splits a comma-separated string, respecting nested parens/quotes.
+// splitCSV splits a comma-separated string, respecting nested parens and
+// C character literals. Properly handles escaped chars like '\'' and '\\'.
 func splitCSV(s string) []string {
 	var parts []string
 	var current strings.Builder
 	depth := 0
-	inQuote := false
 
 	for i := 0; i < len(s); i++ {
 		c := s[i]
-		if c == '\'' && (i == 0 || s[i-1] != '\\') {
-			inQuote = !inQuote
-			current.WriteByte(c)
-		} else if !inQuote && c == '(' {
+		if c == '\'' {
+			// C char literal: consume everything through closing quote.
+			// Handles: 'x', '\'', '\\', '\n', '\xNN'
+			current.WriteByte(c) // opening '
+			i++
+			for i < len(s) {
+				cc := s[i]
+				current.WriteByte(cc)
+				if cc == '\\' {
+					// Escape: consume next char unconditionally.
+					i++
+					if i < len(s) {
+						current.WriteByte(s[i])
+					}
+				} else if cc == '\'' {
+					// Closing quote.
+					break
+				}
+				i++
+			}
+		} else if c == '(' {
 			depth++
 			current.WriteByte(c)
-		} else if !inQuote && c == ')' {
+		} else if c == ')' {
 			depth--
 			current.WriteByte(c)
-		} else if !inQuote && depth == 0 && c == ',' {
+		} else if depth == 0 && c == ',' {
 			parts = append(parts, current.String())
 			current.Reset()
 		} else {
