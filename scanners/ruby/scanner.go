@@ -16,6 +16,7 @@ package ruby
 import (
 	"strings"
 	"unicode"
+	"unicode/utf8"
 
 	ts "github.com/treesitter-go/treesitter"
 )
@@ -93,6 +94,7 @@ func New() ts.ExternalScanner {
 }
 
 // Serialize writes the scanner state to buf and returns the number of bytes written.
+// P2.6 fix: Delimiters are now stored as 4 bytes (little-endian int32) instead of 1 byte.
 func (s *Scanner) Serialize(buf []byte) uint32 {
 	size := uint32(0)
 
@@ -102,8 +104,9 @@ func (s *Scanner) Serialize(buf []byte) uint32 {
 	}
 
 	// Check if the literal stack would overflow the buffer.
-	// Each literal takes 5 bytes, plus 1 byte for count, plus at least 1 byte for heredoc count.
-	if uint32(len(s.literalStack))*5+2 >= uint32(len(buf)) {
+	// Each literal takes 11 bytes (1 tokenType + 4 openDelimiter + 4 closeDelimiter + 1 nestingDepth + 1 interp),
+	// plus 1 byte for count, plus at least 1 byte for heredoc count.
+	if uint32(len(s.literalStack))*11+2 >= uint32(len(buf)) {
 		return 0
 	}
 
@@ -114,9 +117,15 @@ func (s *Scanner) Serialize(buf []byte) uint32 {
 		buf[size] = byte(lit.tokenType)
 		size++
 		buf[size] = byte(lit.openDelimiter)
-		size++
+		buf[size+1] = byte(lit.openDelimiter >> 8)
+		buf[size+2] = byte(lit.openDelimiter >> 16)
+		buf[size+3] = byte(lit.openDelimiter >> 24)
+		size += 4
 		buf[size] = byte(lit.closeDelimiter)
-		size++
+		buf[size+1] = byte(lit.closeDelimiter >> 8)
+		buf[size+2] = byte(lit.closeDelimiter >> 16)
+		buf[size+3] = byte(lit.closeDelimiter >> 24)
+		size += 4
 		buf[size] = byte(lit.nestingDepth)
 		size++
 		buf[size] = boolByte(lit.allowsInterpolation)
@@ -150,6 +159,7 @@ func (s *Scanner) Serialize(buf []byte) uint32 {
 }
 
 // Deserialize restores the scanner state from data.
+// P2.6 fix: Delimiters are now read as 4 bytes (little-endian int32) instead of 1 byte.
 func (s *Scanner) Deserialize(data []byte) {
 	s.hasLeadingWhitespace = false
 	s.literalStack = nil
@@ -162,14 +172,20 @@ func (s *Scanner) Deserialize(data []byte) {
 	size := 0
 	literalDepth := int(data[size])
 	size++
-	for j := 0; j < literalDepth && size+5 <= len(data); j++ {
+	for j := 0; j < literalDepth && size+11 <= len(data); j++ {
 		lit := literal{}
 		lit.tokenType = int(data[size])
 		size++
-		lit.openDelimiter = int32(uint8(data[size]))
-		size++
-		lit.closeDelimiter = int32(uint8(data[size]))
-		size++
+		lit.openDelimiter = int32(uint8(data[size])) |
+			int32(uint8(data[size+1]))<<8 |
+			int32(uint8(data[size+2]))<<16 |
+			int32(uint8(data[size+3]))<<24
+		size += 4
+		lit.closeDelimiter = int32(uint8(data[size])) |
+			int32(uint8(data[size+1]))<<8 |
+			int32(uint8(data[size+2]))<<16 |
+			int32(uint8(data[size+3]))<<24
+		size += 4
 		lit.nestingDepth = int32(uint8(data[size]))
 		size++
 		lit.allowsInterpolation = data[size] != 0
@@ -633,6 +649,7 @@ func (s *Scanner) scanOpenDelimiter(lexer *ts.Lexer, lit *literal, validSymbols 
 }
 
 // scanHeredocWord scans the delimiter word of a heredoc.
+// P2.3 fix: Uses utf8.EncodeRune instead of byte() to avoid truncating non-ASCII codepoints.
 func scanHeredocWord(lexer *ts.Lexer, h *heredoc) {
 	var word []byte
 	var quote int32
@@ -642,17 +659,22 @@ func scanHeredocWord(lexer *ts.Lexer, h *heredoc) {
 		quote = lexer.Lookahead
 		advance(lexer)
 		for lexer.Lookahead != quote && !lexer.EOF() {
-			word = append(word, byte(lexer.Lookahead))
+			var encBuf [4]byte
+			n := utf8.EncodeRune(encBuf[:], rune(lexer.Lookahead))
+			word = append(word, encBuf[:n]...)
 			advance(lexer)
 		}
 		advance(lexer)
 
 	default:
 		if isAlnum(lexer.Lookahead) || lexer.Lookahead == '_' {
-			word = append(word, byte(lexer.Lookahead))
+			var encBuf [4]byte
+			n := utf8.EncodeRune(encBuf[:], rune(lexer.Lookahead))
+			word = append(word, encBuf[:n]...)
 			advance(lexer)
 			for isAlnum(lexer.Lookahead) || lexer.Lookahead == '_' {
-				word = append(word, byte(lexer.Lookahead))
+				n = utf8.EncodeRune(encBuf[:], rune(lexer.Lookahead))
+				word = append(word, encBuf[:n]...)
 				advance(lexer)
 			}
 		}
@@ -663,6 +685,7 @@ func scanHeredocWord(lexer *ts.Lexer, h *heredoc) {
 }
 
 // scanShortInterpolation handles #@var and #$var short interpolation inside strings/heredocs.
+// P2.4 fix: Added EOF guard before ContainsRune to avoid passing -1 (EOF).
 func scanShortInterpolation(lexer *ts.Lexer, hasContent bool, contentSymbol int) bool {
 	start := lexer.Lookahead
 	if start == '@' || start == '$' {
@@ -674,7 +697,7 @@ func scanShortInterpolation(lexer *ts.Lexer, hasContent bool, contentSymbol int)
 		advance(lexer)
 		isShortInterp := false
 		if start == '$' {
-			if strings.ContainsRune("!@&`'+~=/\\,;.<>*$?:\"", rune(lexer.Lookahead)) {
+			if !lexer.EOF() && strings.ContainsRune("!@&`'+~=/\\,;.<>*$?:\"", rune(lexer.Lookahead)) {
 				isShortInterp = true
 			} else {
 				if lexer.Lookahead == '-' {
@@ -795,6 +818,7 @@ func (s *Scanner) scanHeredocContent(lexer *ts.Lexer) bool {
 }
 
 // scanLiteralContent scans the body content of a string/regex/etc literal.
+// P2.2 fix: Removed dead advance() call at EOF.
 func (s *Scanner) scanLiteralContent(lexer *ts.Lexer) bool {
 	lit := &s.literalStack[len(s.literalStack)-1]
 	hasContent := false
@@ -859,7 +883,6 @@ func (s *Scanner) scanLiteralContent(lexer *ts.Lexer) bool {
 			advance(lexer)
 
 		} else if lexer.EOF() {
-			advance(lexer)
 			lexer.MarkEnd()
 			return false
 		} else {
@@ -871,6 +894,7 @@ func (s *Scanner) scanLiteralContent(lexer *ts.Lexer) bool {
 }
 
 // scan is the main scanning entrypoint.
+// P3.1 fix: Added MarkEnd() before return true in operator disambiguation paths.
 func (s *Scanner) scan(lexer *ts.Lexer, validSymbols []bool) bool {
 	s.hasLeadingWhitespace = false
 
@@ -899,6 +923,7 @@ func (s *Scanner) scan(lexer *ts.Lexer, validSymbols []bool) bool {
 			advance(lexer)
 			if lexer.Lookahead != '&' && lexer.Lookahead != '.' && lexer.Lookahead != '=' &&
 				!isSpace(lexer.Lookahead) {
+				lexer.MarkEnd()
 				lexer.ResultSymbol = ts.Symbol(BlockAmpersand)
 				return true
 			}
@@ -910,6 +935,7 @@ func (s *Scanner) scan(lexer *ts.Lexer, validSymbols []bool) bool {
 			advance(lexer)
 			if lexer.Lookahead == '<' {
 				advance(lexer)
+				lexer.MarkEnd()
 				lexer.ResultSymbol = ts.Symbol(SingletonClassLeftAngleLeftAngle)
 				return true
 			}
@@ -929,6 +955,7 @@ func (s *Scanner) scan(lexer *ts.Lexer, validSymbols []bool) bool {
 					if lexer.Lookahead == '=' {
 						return false
 					}
+					lexer.MarkEnd()
 					if validSymbols[BinaryStarStar] && !s.hasLeadingWhitespace {
 						lexer.ResultSymbol = ts.Symbol(BinaryStarStar)
 						return true
@@ -949,6 +976,7 @@ func (s *Scanner) scan(lexer *ts.Lexer, validSymbols []bool) bool {
 				}
 				return false
 			}
+			lexer.MarkEnd()
 			if validSymbols[BinaryStar] && !s.hasLeadingWhitespace {
 				lexer.ResultSymbol = ts.Symbol(BinaryStar)
 				return true
@@ -972,6 +1000,7 @@ func (s *Scanner) scan(lexer *ts.Lexer, validSymbols []bool) bool {
 		if validSymbols[UnaryMinus] || validSymbols[UnaryMinusNum] || validSymbols[BinaryMinus] {
 			advance(lexer)
 			if lexer.Lookahead != '=' && lexer.Lookahead != '>' {
+				lexer.MarkEnd()
 				if validSymbols[UnaryMinusNum] &&
 					(!validSymbols[BinaryStar] || s.hasLeadingWhitespace) &&
 					isDigit(lexer.Lookahead) {
@@ -1034,6 +1063,7 @@ func (s *Scanner) scan(lexer *ts.Lexer, validSymbols []bool) bool {
 		if validSymbols[ElementReferenceBracket] &&
 			(!s.hasLeadingWhitespace || !validSymbols[StringStart]) {
 			advance(lexer)
+			lexer.MarkEnd()
 			lexer.ResultSymbol = ts.Symbol(ElementReferenceBracket)
 			return true
 		}
