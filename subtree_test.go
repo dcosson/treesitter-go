@@ -465,3 +465,427 @@ func TestSubtreeSize(t *testing.T) {
 		t.Errorf("Subtree size = %d bytes, want 8", size)
 	}
 }
+
+// makeSubtreeTestLanguage creates a minimal Language for testing.
+func makeSubtreeTestLanguage() *Language {
+	return &Language{
+		SymbolMetadata: []SymbolMetadata{
+			{Visible: false, Named: false}, // 0: end
+			{Visible: true, Named: false},  // 1: "{"
+			{Visible: true, Named: false},  // 2: "}"
+			{Visible: true, Named: true},   // 3: object
+			{Visible: true, Named: true},   // 4: pair
+			{Visible: true, Named: true},   // 5: string
+			{Visible: true, Named: false},  // 6: ":"
+			{Visible: true, Named: true},   // 7: number
+			{Visible: true, Named: true},   // 8: document
+			{Visible: false, Named: false}, // 9: _value (hidden)
+			{Visible: true, Named: false},  // 10: ","
+			{Visible: true, Named: true},   // 11: comment (extra)
+		},
+		SymbolNames: []string{
+			"end", "{", "}", "object", "pair", "string",
+			":", "number", "document", "_value", ",", "comment",
+		},
+		FieldNames: []string{
+			"",    // 0: no field
+			"key", // 1
+			"value", // 2
+		},
+		FieldMapSlices: []FieldMapSlice{
+			{}, // prodID 0: no fields
+			{Index: 0, Length: 2}, // prodID 1: pair -> key:0 value:2
+		},
+		FieldMapEntries: []FieldMapEntry{
+			{FieldID: 1, ChildIndex: 0}, // key -> child 0
+			{FieldID: 2, ChildIndex: 2}, // value -> child 2
+		},
+	}
+}
+
+func TestNewNodeSubtree(t *testing.T) {
+	arena := NewSubtreeArena(32)
+	lang := makeSubtreeTestLanguage()
+
+	// Create leaf children: { and }
+	lbrace := NewLeafSubtree(arena, Symbol(1), Length{Bytes: 0, Point: Point{Column: 0}}, Length{Bytes: 1, Point: Point{Column: 1}}, StateID(1), false, false, false, lang)
+	rbrace := NewLeafSubtree(arena, Symbol(2), Length{Bytes: 0, Point: Point{Column: 0}}, Length{Bytes: 1, Point: Point{Column: 1}}, StateID(2), false, false, false, lang)
+
+	// Create an internal node: object -> { }
+	children := []Subtree{lbrace, rbrace}
+	obj := NewNodeSubtree(arena, Symbol(3), children, 0, lang)
+
+	if obj.IsInline() {
+		t.Fatal("internal node should not be inline")
+	}
+	if GetSymbol(obj, arena) != 3 {
+		t.Errorf("symbol = %d, want 3", GetSymbol(obj, arena))
+	}
+	if GetChildCount(obj, arena) != 2 {
+		t.Errorf("childCount = %d, want 2", GetChildCount(obj, arena))
+	}
+	if !IsVisible(obj, arena) {
+		t.Error("object should be visible")
+	}
+	if !IsNamed(obj, arena) {
+		t.Error("object should be named")
+	}
+
+	// Verify children are accessible.
+	gotChildren := GetChildren(obj, arena)
+	if len(gotChildren) != 2 {
+		t.Fatalf("children len = %d, want 2", len(gotChildren))
+	}
+	if GetSymbol(gotChildren[0], arena) != 1 {
+		t.Errorf("child[0] symbol = %d, want 1", GetSymbol(gotChildren[0], arena))
+	}
+	if GetSymbol(gotChildren[1], arena) != 2 {
+		t.Errorf("child[1] symbol = %d, want 2", GetSymbol(gotChildren[1], arena))
+	}
+}
+
+func TestSummarizeChildrenEmpty(t *testing.T) {
+	arena := NewSubtreeArena(32)
+	lang := makeSubtreeTestLanguage()
+
+	// Create an internal node with no children.
+	node := NewNodeSubtree(arena, Symbol(3), nil, 0, lang)
+	SummarizeChildren(node, arena, lang)
+
+	if GetPadding(node, arena) != LengthZero {
+		t.Errorf("padding = %+v, want zero", GetPadding(node, arena))
+	}
+	if GetSize(node, arena) != LengthZero {
+		t.Errorf("size = %+v, want zero", GetSize(node, arena))
+	}
+}
+
+func TestSummarizeChildrenSimple(t *testing.T) {
+	arena := NewSubtreeArena(32)
+	lang := makeSubtreeTestLanguage()
+
+	// Build: object -> "{" "}"
+	// "{" at byte 0, size 1
+	// "}" at byte 1, size 1 (padding=0 after "{")
+	lbrace := NewLeafSubtree(arena, Symbol(1),
+		Length{Bytes: 0, Point: Point{Column: 0}},
+		Length{Bytes: 1, Point: Point{Column: 1}},
+		StateID(1), false, false, false, lang)
+	rbrace := NewLeafSubtree(arena, Symbol(2),
+		Length{Bytes: 0, Point: Point{Column: 0}},
+		Length{Bytes: 1, Point: Point{Column: 1}},
+		StateID(2), false, false, false, lang)
+
+	children := []Subtree{lbrace, rbrace}
+	obj := NewNodeSubtree(arena, Symbol(3), children, 0, lang)
+	SummarizeChildren(obj, arena, lang)
+
+	data := arena.Get(obj)
+
+	// Padding should be first child's padding (0).
+	if data.Padding != (Length{Bytes: 0, Point: Point{Column: 0}}) {
+		t.Errorf("padding = %+v, want zero", data.Padding)
+	}
+
+	// Size should span both children: 1 + 0 + 1 = 2 bytes.
+	if data.Size.Bytes != 2 {
+		t.Errorf("size.Bytes = %d, want 2", data.Size.Bytes)
+	}
+	if data.Size.Point.Column != 2 {
+		t.Errorf("size.Point.Column = %d, want 2", data.Size.Point.Column)
+	}
+
+	// Both children are visible and non-extra, non-named.
+	if data.VisibleChildCount != 2 {
+		t.Errorf("visibleChildCount = %d, want 2", data.VisibleChildCount)
+	}
+	// "{" and "}" are visible but not named.
+	if data.NamedChildCount != 0 {
+		t.Errorf("namedChildCount = %d, want 0", data.NamedChildCount)
+	}
+	// Each visible child contributes 1 to visible descendants.
+	if data.VisibleDescendantCount != 2 {
+		t.Errorf("visibleDescendantCount = %d, want 2", data.VisibleDescendantCount)
+	}
+
+	// FirstLeaf should come from the first child.
+	if data.FirstLeaf.Symbol != 1 {
+		t.Errorf("firstLeaf.Symbol = %d, want 1", data.FirstLeaf.Symbol)
+	}
+	if data.FirstLeaf.ParseState != 1 {
+		t.Errorf("firstLeaf.ParseState = %d, want 1", data.FirstLeaf.ParseState)
+	}
+}
+
+func TestSummarizeChildrenWithPadding(t *testing.T) {
+	arena := NewSubtreeArena(32)
+	lang := makeSubtreeTestLanguage()
+
+	// Build: object -> "{" "}"
+	// "{" at byte 2 (2 bytes padding), size 1
+	// "}" at byte 4 (1 byte padding after "{"), size 1
+	lbrace := NewLeafSubtree(arena, Symbol(1),
+		Length{Bytes: 2, Point: Point{Column: 2}},
+		Length{Bytes: 1, Point: Point{Column: 1}},
+		StateID(1), false, false, false, lang)
+	rbrace := NewLeafSubtree(arena, Symbol(2),
+		Length{Bytes: 1, Point: Point{Column: 1}},
+		Length{Bytes: 1, Point: Point{Column: 1}},
+		StateID(2), false, false, false, lang)
+
+	children := []Subtree{lbrace, rbrace}
+	obj := NewNodeSubtree(arena, Symbol(3), children, 0, lang)
+	SummarizeChildren(obj, arena, lang)
+
+	data := arena.Get(obj)
+
+	// Node's padding = first child's padding.
+	if data.Padding.Bytes != 2 {
+		t.Errorf("padding.Bytes = %d, want 2", data.Padding.Bytes)
+	}
+
+	// Node's size = first child size + second child (padding + size) = 1 + 1 + 1 = 3.
+	if data.Size.Bytes != 3 {
+		t.Errorf("size.Bytes = %d, want 3", data.Size.Bytes)
+	}
+}
+
+func TestSummarizeChildrenMultiline(t *testing.T) {
+	arena := NewSubtreeArena(32)
+	lang := makeSubtreeTestLanguage()
+
+	// Build a node whose children span multiple lines:
+	// "{" at (0,0) size 1
+	// "\n" implicit via padding
+	// "}" at (1,0) padding crosses newline, size 1
+	lbrace := NewLeafSubtree(arena, Symbol(1),
+		Length{Bytes: 0, Point: Point{Row: 0, Column: 0}},
+		Length{Bytes: 1, Point: Point{Row: 0, Column: 1}},
+		StateID(1), false, false, false, lang)
+	// "}" has padding that spans a newline: 1 byte (\n), row+1, col back to 0.
+	rbrace := NewLeafSubtree(arena, Symbol(2),
+		Length{Bytes: 1, Point: Point{Row: 1, Column: 0}},
+		Length{Bytes: 1, Point: Point{Row: 0, Column: 1}},
+		StateID(2), false, false, false, lang)
+
+	children := []Subtree{lbrace, rbrace}
+	obj := NewNodeSubtree(arena, Symbol(3), children, 0, lang)
+	SummarizeChildren(obj, arena, lang)
+
+	data := arena.Get(obj)
+
+	// Total size = child0.size(1b, col1) + child1.padding(1b, row1 col0) + child1.size(1b, col1)
+	// = 3 bytes, row 1, column 1
+	if data.Size.Bytes != 3 {
+		t.Errorf("size.Bytes = %d, want 3", data.Size.Bytes)
+	}
+	if data.Size.Point.Row != 1 {
+		t.Errorf("size.Point.Row = %d, want 1", data.Size.Point.Row)
+	}
+	if data.Size.Point.Column != 1 {
+		t.Errorf("size.Point.Column = %d, want 1", data.Size.Point.Column)
+	}
+}
+
+func TestSummarizeChildrenNestedVisibleDescendants(t *testing.T) {
+	arena := NewSubtreeArena(64)
+	lang := makeSubtreeTestLanguage()
+
+	// Build: object -> "{" pair "}"
+	// pair -> string ":" number
+	// This tests that visible descendant counting works through nesting.
+
+	// Leaf tokens
+	lbrace := NewLeafSubtree(arena, Symbol(1),
+		Length{Bytes: 0, Point: Point{Column: 0}},
+		Length{Bytes: 1, Point: Point{Column: 1}},
+		StateID(1), false, false, false, lang)
+
+	strKey := NewLeafSubtree(arena, Symbol(5),
+		Length{Bytes: 0, Point: Point{Column: 0}},
+		Length{Bytes: 3, Point: Point{Column: 3}},
+		StateID(3), false, false, false, lang)
+
+	colon := NewLeafSubtree(arena, Symbol(6),
+		Length{Bytes: 0, Point: Point{Column: 0}},
+		Length{Bytes: 1, Point: Point{Column: 1}},
+		StateID(4), false, false, false, lang)
+
+	numVal := NewLeafSubtree(arena, Symbol(7),
+		Length{Bytes: 0, Point: Point{Column: 0}},
+		Length{Bytes: 1, Point: Point{Column: 1}},
+		StateID(5), false, false, false, lang)
+
+	rbrace := NewLeafSubtree(arena, Symbol(2),
+		Length{Bytes: 0, Point: Point{Column: 0}},
+		Length{Bytes: 1, Point: Point{Column: 1}},
+		StateID(6), false, false, false, lang)
+
+	// Build pair -> string ":" number
+	pairChildren := []Subtree{strKey, colon, numVal}
+	pair := NewNodeSubtree(arena, Symbol(4), pairChildren, 1, lang)
+	SummarizeChildren(pair, arena, lang)
+
+	pairData := arena.Get(pair)
+	// pair has 3 children: string(visible,named), ":"(visible), number(visible,named)
+	if pairData.VisibleChildCount != 3 {
+		t.Errorf("pair.visibleChildCount = %d, want 3", pairData.VisibleChildCount)
+	}
+	if pairData.NamedChildCount != 2 {
+		t.Errorf("pair.namedChildCount = %d, want 2", pairData.NamedChildCount)
+	}
+	// Visible descendants: 3 (the three visible children, none of which have visible descendants of their own)
+	if pairData.VisibleDescendantCount != 3 {
+		t.Errorf("pair.visibleDescendantCount = %d, want 3", pairData.VisibleDescendantCount)
+	}
+
+	// Build object -> "{" pair "}"
+	objChildren := []Subtree{lbrace, pair, rbrace}
+	obj := NewNodeSubtree(arena, Symbol(3), objChildren, 0, lang)
+	SummarizeChildren(obj, arena, lang)
+
+	objData := arena.Get(obj)
+	// object has 3 children: "{"(visible), pair(visible,named), "}"(visible)
+	if objData.VisibleChildCount != 3 {
+		t.Errorf("obj.visibleChildCount = %d, want 3", objData.VisibleChildCount)
+	}
+	if objData.NamedChildCount != 1 {
+		t.Errorf("obj.namedChildCount = %d, want 1 (pair)", objData.NamedChildCount)
+	}
+	// Visible descendants: 3 (direct) + pair's 3 visible descendants = 6
+	if objData.VisibleDescendantCount != 6 {
+		t.Errorf("obj.visibleDescendantCount = %d, want 6", objData.VisibleDescendantCount)
+	}
+
+	// pair size should be 3 + 1 + 1 = 5 bytes
+	if pairData.Size.Bytes != 5 {
+		t.Errorf("pair.size.Bytes = %d, want 5", pairData.Size.Bytes)
+	}
+}
+
+func TestSummarizeChildrenRepeatDepth(t *testing.T) {
+	arena := NewSubtreeArena(32)
+	lang := makeSubtreeTestLanguage()
+
+	// Simulate left-recursive repetition: object -> object ","  number
+	// The inner object also has symbol 3, so repeat depth should increment.
+
+	inner := NewLeafSubtree(arena, Symbol(7),
+		Length{Bytes: 0, Point: Point{Column: 0}},
+		Length{Bytes: 1, Point: Point{Column: 1}},
+		StateID(1), false, false, false, lang)
+
+	// Inner "object" node wrapping a single number.
+	innerObj := NewNodeSubtree(arena, Symbol(3), []Subtree{inner}, 0, lang)
+	SummarizeChildren(innerObj, arena, lang)
+
+	comma := NewLeafSubtree(arena, Symbol(10),
+		Length{Bytes: 0, Point: Point{Column: 0}},
+		Length{Bytes: 1, Point: Point{Column: 1}},
+		StateID(2), false, false, false, lang)
+
+	num := NewLeafSubtree(arena, Symbol(7),
+		Length{Bytes: 0, Point: Point{Column: 0}},
+		Length{Bytes: 1, Point: Point{Column: 1}},
+		StateID(3), false, false, false, lang)
+
+	// Outer "object" node: object -> object "," number
+	outerObj := NewNodeSubtree(arena, Symbol(3), []Subtree{innerObj, comma, num}, 0, lang)
+	SummarizeChildren(outerObj, arena, lang)
+
+	outerData := arena.Get(outerObj)
+	// First child (innerObj) has same symbol (3), so repeat depth = innerObj's depth + 1.
+	// innerObj's first child is a number (sym 7), so innerObj's repeat depth = 0.
+	// outerObj's repeat depth should be 1.
+	if outerData.RepeatDepth != 1 {
+		t.Errorf("repeatDepth = %d, want 1", outerData.RepeatDepth)
+	}
+}
+
+func TestSummarizeChildrenHiddenChild(t *testing.T) {
+	arena := NewSubtreeArena(32)
+	lang := makeSubtreeTestLanguage()
+
+	// "_value" (symbol 9) is hidden (Visible: false).
+	// When counting visible children, hidden children should not be counted.
+	value := NewLeafSubtree(arena, Symbol(9),
+		Length{Bytes: 0, Point: Point{Column: 0}},
+		Length{Bytes: 3, Point: Point{Column: 3}},
+		StateID(1), false, false, false, lang)
+
+	parent := NewNodeSubtree(arena, Symbol(8), []Subtree{value}, 0, lang)
+	SummarizeChildren(parent, arena, lang)
+
+	data := arena.Get(parent)
+	// _value is not visible, so it should not be counted.
+	if data.VisibleChildCount != 0 {
+		t.Errorf("visibleChildCount = %d, want 0", data.VisibleChildCount)
+	}
+}
+
+func TestSummarizeChildrenFirstLeaf(t *testing.T) {
+	arena := NewSubtreeArena(32)
+	lang := makeSubtreeTestLanguage()
+
+	// Build a nested tree and verify FirstLeaf propagates from leftmost leaf.
+	leaf := NewLeafSubtree(arena, Symbol(5),
+		Length{Bytes: 1, Point: Point{Column: 1}},
+		Length{Bytes: 3, Point: Point{Column: 3}},
+		StateID(42), false, false, false, lang)
+
+	innerNode := NewNodeSubtree(arena, Symbol(4), []Subtree{leaf}, 0, lang)
+	SummarizeChildren(innerNode, arena, lang)
+
+	outerNode := NewNodeSubtree(arena, Symbol(3), []Subtree{innerNode}, 0, lang)
+	SummarizeChildren(outerNode, arena, lang)
+
+	outerData := arena.Get(outerNode)
+	if outerData.FirstLeaf.Symbol != 5 {
+		t.Errorf("firstLeaf.Symbol = %d, want 5", outerData.FirstLeaf.Symbol)
+	}
+	if outerData.FirstLeaf.ParseState != 42 {
+		t.Errorf("firstLeaf.ParseState = %d, want 42", outerData.FirstLeaf.ParseState)
+	}
+}
+
+func TestSubtreeAccessorsMissing(t *testing.T) {
+	arena := NewSubtreeArena(16)
+
+	st, data := arena.Alloc()
+	data.Symbol = Symbol(5)
+	data.SetFlag(SubtreeFlagMissing, true)
+
+	if !IsMissing(st, arena) {
+		t.Error("expected missing")
+	}
+
+	// Inline subtrees are never missing.
+	inl := newInlineSubtree(Symbol(5), StateID(0), Length{}, Length{Bytes: 1, Point: Point{Column: 1}}, true, false, false, false)
+	if IsMissing(inl, arena) {
+		t.Error("inline should not be missing")
+	}
+}
+
+func TestSubtreeAccessorsFragile(t *testing.T) {
+	arena := NewSubtreeArena(16)
+
+	st, data := arena.Alloc()
+	data.SetFlag(SubtreeFlagFragileLeft, true)
+	data.SetFlag(SubtreeFlagFragileRight, true)
+
+	if !IsFragileLeft(st, arena) {
+		t.Error("expected fragile left")
+	}
+	if !IsFragileRight(st, arena) {
+		t.Error("expected fragile right")
+	}
+
+	// Inline subtrees are never fragile.
+	inl := newInlineSubtree(Symbol(1), StateID(0), Length{}, Length{Bytes: 1, Point: Point{Column: 1}}, true, false, false, false)
+	if IsFragileLeft(inl, arena) {
+		t.Error("inline should not be fragile left")
+	}
+	if IsFragileRight(inl, arena) {
+		t.Error("inline should not be fragile right")
+	}
+}
