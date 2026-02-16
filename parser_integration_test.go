@@ -674,3 +674,264 @@ func TestIntegrationExternalScannerMultipleParses(t *testing.T) {
 		}
 	}
 }
+
+// --- Incremental Parsing Integration Tests ---
+
+// incrementalParseTest is a helper that:
+//  1. Parses the original source from scratch
+//  2. Applies an edit to the tree
+//  3. Re-parses the new source with the old (edited) tree
+//  4. Parses the new source from scratch
+//  5. Verifies both produce the same S-expression
+func incrementalParseTest(t *testing.T, lang *ts.Language, oldSource, newSource string, edit *ts.InputEdit) {
+	t.Helper()
+	ctx := context.Background()
+
+	// Step 1: Parse original from scratch.
+	p := ts.NewParser()
+	p.SetLanguage(lang)
+	tree1 := p.ParseString(ctx, []byte(oldSource))
+	if tree1 == nil {
+		t.Fatal("initial parse returned nil")
+	}
+
+	// Step 2: Apply edit to the tree.
+	editedTree := tree1.Edit(edit)
+
+	// Step 3: Re-parse new source with old tree (incremental).
+	p2 := ts.NewParser()
+	p2.SetLanguage(lang)
+	tree2 := p2.ParseString(ctx, []byte(newSource), editedTree)
+	if tree2 == nil {
+		t.Fatal("incremental parse returned nil")
+	}
+
+	// Step 4: Parse new source from scratch.
+	p3 := ts.NewParser()
+	p3.SetLanguage(lang)
+	tree3 := p3.ParseString(ctx, []byte(newSource))
+	if tree3 == nil {
+		t.Fatal("from-scratch parse of new source returned nil")
+	}
+
+	// Step 5: Compare S-expressions.
+	sexpr2 := tree2.RootNode().String()
+	sexpr3 := tree3.RootNode().String()
+	if sexpr2 != sexpr3 {
+		t.Errorf("incremental vs from-scratch mismatch:\n  incremental: %s\n  from-scratch: %s", sexpr2, sexpr3)
+	}
+
+	// Also verify byte spans match.
+	if tree2.RootNode().EndByte() != tree3.RootNode().EndByte() {
+		t.Errorf("end byte mismatch: incremental=%d, from-scratch=%d",
+			tree2.RootNode().EndByte(), tree3.RootNode().EndByte())
+	}
+}
+
+func TestIncrementalReplaceValue(t *testing.T) {
+	// "null" -> "true"
+	incrementalParseTest(t, jsonLanguageWithLex(),
+		"null", "true",
+		&ts.InputEdit{
+			StartByte: 0, OldEndByte: 4, NewEndByte: 4,
+			StartPoint:  ts.Point{Row: 0, Column: 0},
+			OldEndPoint: ts.Point{Row: 0, Column: 4},
+			NewEndPoint: ts.Point{Row: 0, Column: 4},
+		})
+}
+
+func TestIncrementalInsertInObject(t *testing.T) {
+	// {"a": 1} -> {"a": 12}  (insert '2' at position 7)
+	incrementalParseTest(t, jsonLanguageWithLex(),
+		`{"a": 1}`, `{"a": 12}`,
+		&ts.InputEdit{
+			StartByte: 7, OldEndByte: 7, NewEndByte: 8,
+			StartPoint:  ts.Point{Row: 0, Column: 7},
+			OldEndPoint: ts.Point{Row: 0, Column: 7},
+			NewEndPoint: ts.Point{Row: 0, Column: 8},
+		})
+}
+
+func TestIncrementalDeleteInArray(t *testing.T) {
+	// [1, 2, 3] -> [1, 3]  (delete ", 2")
+	incrementalParseTest(t, jsonLanguageWithLex(),
+		`[1, 2, 3]`, `[1, 3]`,
+		&ts.InputEdit{
+			StartByte: 2, OldEndByte: 5, NewEndByte: 2,
+			StartPoint:  ts.Point{Row: 0, Column: 2},
+			OldEndPoint: ts.Point{Row: 0, Column: 5},
+			NewEndPoint: ts.Point{Row: 0, Column: 2},
+		})
+}
+
+func TestIncrementalInsertNewPair(t *testing.T) {
+	// {"a": 1} -> {"a": 1, "b": 2}
+	incrementalParseTest(t, jsonLanguageWithLex(),
+		`{"a": 1}`, `{"a": 1, "b": 2}`,
+		&ts.InputEdit{
+			StartByte: 7, OldEndByte: 7, NewEndByte: 15,
+			StartPoint:  ts.Point{Row: 0, Column: 7},
+			OldEndPoint: ts.Point{Row: 0, Column: 7},
+			NewEndPoint: ts.Point{Row: 0, Column: 15},
+		})
+}
+
+func TestIncrementalNoopEdit(t *testing.T) {
+	// "42" -> "42" (no change, noop edit)
+	incrementalParseTest(t, jsonLanguageWithLex(),
+		"42", "42",
+		&ts.InputEdit{
+			StartByte: 1, OldEndByte: 1, NewEndByte: 1,
+			StartPoint:  ts.Point{Row: 0, Column: 1},
+			OldEndPoint: ts.Point{Row: 0, Column: 1},
+			NewEndPoint: ts.Point{Row: 0, Column: 1},
+		})
+}
+
+func TestIncrementalReplaceEntireSource(t *testing.T) {
+	// "null" -> "[1, 2]"
+	incrementalParseTest(t, jsonLanguageWithLex(),
+		"null", "[1, 2]",
+		&ts.InputEdit{
+			StartByte: 0, OldEndByte: 4, NewEndByte: 6,
+			StartPoint:  ts.Point{Row: 0, Column: 0},
+			OldEndPoint: ts.Point{Row: 0, Column: 4},
+			NewEndPoint: ts.Point{Row: 0, Column: 6},
+		})
+}
+
+func TestIncrementalEditNestedJSON(t *testing.T) {
+	// {"a": [1, 2]} -> {"a": [1, 2, 3]}
+	old := `{"a": [1, 2]}`
+	new_ := `{"a": [1, 2, 3]}`
+	incrementalParseTest(t, jsonLanguageWithLex(),
+		old, new_,
+		&ts.InputEdit{
+			StartByte: 11, OldEndByte: 11, NewEndByte: 14,
+			StartPoint:  ts.Point{Row: 0, Column: 11},
+			OldEndPoint: ts.Point{Row: 0, Column: 11},
+			NewEndPoint: ts.Point{Row: 0, Column: 14},
+		})
+}
+
+func TestIncrementalEditPreservesUnchanged(t *testing.T) {
+	// Verify that the incremental parse tree has has_changes on the root
+	// but the structure matches from-scratch.
+	ctx := context.Background()
+	lang := jsonLanguageWithLex()
+
+	p := ts.NewParser()
+	p.SetLanguage(lang)
+	tree := p.ParseString(ctx, []byte(`{"a": 1, "b": 2}`))
+	if tree == nil {
+		t.Fatal("initial parse returned nil")
+	}
+
+	// Edit: change value of "a" from 1 to 99
+	// {"a": 1, "b": 2} -> {"a": 99, "b": 2}
+	editedTree := tree.Edit(&ts.InputEdit{
+		StartByte: 6, OldEndByte: 7, NewEndByte: 8,
+		StartPoint:  ts.Point{Row: 0, Column: 6},
+		OldEndPoint: ts.Point{Row: 0, Column: 7},
+		NewEndPoint: ts.Point{Row: 0, Column: 8},
+	})
+
+	// The edited tree should have has_changes on root.
+	if !editedTree.RootNode().HasChanges() {
+		t.Error("edited tree root should have has_changes")
+	}
+
+	// Re-parse incrementally.
+	p2 := ts.NewParser()
+	p2.SetLanguage(lang)
+	tree2 := p2.ParseString(ctx, []byte(`{"a": 99, "b": 2}`), editedTree)
+	if tree2 == nil {
+		t.Fatal("incremental parse returned nil")
+	}
+
+	// From-scratch parse.
+	p3 := ts.NewParser()
+	p3.SetLanguage(lang)
+	tree3 := p3.ParseString(ctx, []byte(`{"a": 99, "b": 2}`))
+	if tree3 == nil {
+		t.Fatal("from-scratch parse returned nil")
+	}
+
+	if tree2.RootNode().String() != tree3.RootNode().String() {
+		t.Errorf("mismatch:\n  incremental: %s\n  from-scratch: %s",
+			tree2.RootNode().String(), tree3.RootNode().String())
+	}
+}
+
+func TestIncrementalMultipleEdits(t *testing.T) {
+	// Apply two sequential edits and verify final parse matches from-scratch.
+	ctx := context.Background()
+	lang := jsonLanguageWithLex()
+
+	// Parse "null"
+	p := ts.NewParser()
+	p.SetLanguage(lang)
+	tree1 := p.ParseString(ctx, []byte("null"))
+	if tree1 == nil {
+		t.Fatal("initial parse returned nil")
+	}
+
+	// Edit 1: "null" -> "42"
+	edited1 := tree1.Edit(&ts.InputEdit{
+		StartByte: 0, OldEndByte: 4, NewEndByte: 2,
+		StartPoint:  ts.Point{Row: 0, Column: 0},
+		OldEndPoint: ts.Point{Row: 0, Column: 4},
+		NewEndPoint: ts.Point{Row: 0, Column: 2},
+	})
+
+	p2 := ts.NewParser()
+	p2.SetLanguage(lang)
+	tree2 := p2.ParseString(ctx, []byte("42"), edited1)
+	if tree2 == nil {
+		t.Fatal("first incremental parse returned nil")
+	}
+
+	// Edit 2: "42" -> "420"
+	edited2 := tree2.Edit(&ts.InputEdit{
+		StartByte: 2, OldEndByte: 2, NewEndByte: 3,
+		StartPoint:  ts.Point{Row: 0, Column: 2},
+		OldEndPoint: ts.Point{Row: 0, Column: 2},
+		NewEndPoint: ts.Point{Row: 0, Column: 3},
+	})
+
+	p3 := ts.NewParser()
+	p3.SetLanguage(lang)
+	tree3 := p3.ParseString(ctx, []byte("420"), edited2)
+	if tree3 == nil {
+		t.Fatal("second incremental parse returned nil")
+	}
+
+	// From-scratch parse of "420".
+	p4 := ts.NewParser()
+	p4.SetLanguage(lang)
+	tree4 := p4.ParseString(ctx, []byte("420"))
+	if tree4 == nil {
+		t.Fatal("from-scratch parse returned nil")
+	}
+
+	if tree3.RootNode().String() != tree4.RootNode().String() {
+		t.Errorf("mismatch after 2 edits:\n  incremental: %s\n  from-scratch: %s",
+			tree3.RootNode().String(), tree4.RootNode().String())
+	}
+}
+
+func TestIncrementalWithNilOldTree(t *testing.T) {
+	// ParseString with explicit nil old tree should work identically to no old tree.
+	ctx := context.Background()
+	lang := jsonLanguageWithLex()
+
+	p := ts.NewParser()
+	p.SetLanguage(lang)
+	tree := p.ParseString(ctx, []byte("null"), nil)
+	if tree == nil {
+		t.Fatal("expected tree with nil old tree")
+	}
+	if tree.RootNode().Type() != "document" {
+		t.Errorf("expected 'document', got %q", tree.RootNode().Type())
+	}
+}

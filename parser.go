@@ -31,9 +31,13 @@ type Parser struct {
 	serializationBuffer  [TreeSitterSerializationBufferSize]byte
 
 	// Error recovery state.
-	acceptCount     uint32
-	operationCount  uint32
+	acceptCount       uint32
+	operationCount    uint32
 	skippedErrorTrees []Subtree
+
+	// Incremental parsing state.
+	reusableNode *ReusableNode
+	oldTree      *Tree
 
 	// Cancellation check interval.
 	cancellationCheckInterval uint32
@@ -98,18 +102,32 @@ func (p *Parser) Reset() {
 	p.acceptCount = 0
 	p.operationCount = 0
 	p.skippedErrorTrees = p.skippedErrorTrees[:0]
+	p.reusableNode = nil
+	p.oldTree = nil
 }
 
 // Parse parses the input and returns a Tree. If ctx is cancelled, the
-// parser stops and returns nil.
-func (p *Parser) Parse(ctx context.Context, input Input) *Tree {
+// parser stops and returns nil. If oldTree is non-nil, the parser performs
+// incremental parsing by reusing unchanged subtrees from the old tree.
+func (p *Parser) Parse(ctx context.Context, input Input, oldTree *Tree) *Tree {
 	if p.language == nil {
 		return nil
 	}
 
 	p.Reset()
 	p.lexer.SetInput(input)
-	p.arena = NewSubtreeArena(0)
+
+	// Set up arena: if we have an old tree, fork its arena so old subtree
+	// references remain valid and new allocations go into fresh blocks.
+	if oldTree != nil && oldTree.Arena() != nil {
+		p.arena = oldTree.Arena().Fork()
+		p.oldTree = oldTree
+		p.reusableNode = NewReusableNode(oldTree.root, p.arena)
+	} else {
+		p.arena = NewSubtreeArena(0)
+		p.oldTree = nil
+		p.reusableNode = nil
+	}
 	p.stack = NewStack(p.arena)
 
 	// Initialize the stack with a single version at state 1.
@@ -154,8 +172,13 @@ func (p *Parser) Parse(ctx context.Context, input Input) *Tree {
 }
 
 // ParseString is a convenience method that parses a []byte string.
-func (p *Parser) ParseString(ctx context.Context, source []byte) *Tree {
-	return p.Parse(ctx, NewStringInput(source))
+// If oldTree is non-nil, incremental parsing is performed.
+func (p *Parser) ParseString(ctx context.Context, source []byte, oldTree ...*Tree) *Tree {
+	var old *Tree
+	if len(oldTree) > 0 {
+		old = oldTree[0]
+	}
+	return p.Parse(ctx, NewStringInput(source), old)
 }
 
 // findActiveVersion returns the index of the first active version,
@@ -185,8 +208,46 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 	state := p.stack.State(version)
 	position := p.stack.Position(version)
 
-	// Lex a token in the context of this parse state.
-	token := p.lexToken(version, state, position)
+	// Step 1: Try to reuse a node from the old tree (incremental parsing).
+	// Only attempt reuse when there's a single active version (no GLR ambiguity).
+	allowReuse := p.reusableNode != nil && p.stack.ActiveVersionCount() == 1
+	var token Subtree
+	reused := false
+
+	if allowReuse {
+		token, reused = p.tryReuseNode(version, state, position)
+	}
+
+	// If we reused a non-terminal subtree (one with children), push it
+	// directly using the GOTO state transition. Non-terminals can't go
+	// through the normal action loop because the action table only has
+	// SHIFT/REDUCE entries for terminal symbols. Non-terminals use GOTO.
+	if reused {
+		children := GetChildren(token, p.arena)
+		if children != nil && len(children) > 0 {
+			sym := GetSymbol(token, p.arena)
+			gotoState := p.language.nextState(state, sym)
+			if gotoState != 0 {
+				tokenPadding := GetPadding(token, p.arena)
+				tokenSize := GetSize(token, p.arena)
+				newPosition := LengthAdd(LengthAdd(position, tokenPadding), tokenSize)
+				p.stack.Push(version, gotoState, token, false, newPosition)
+				if HasExternalTokens(token, p.arena) {
+					p.stack.SetLastExternalToken(version, token)
+				}
+				p.cachedTokenValid = false
+				return true
+			}
+			// No valid GOTO — can't reuse; fall through to lex.
+			reused = false
+		}
+	}
+
+	// Step 2: If no reuse, lex a token.
+	if !reused {
+		token = p.lexToken(version, state, position)
+	}
+
 	tokenSymbol := GetSymbol(token, p.arena)
 
 	// Inner reduce loop: keep reducing until we can shift or accept.
@@ -355,6 +416,16 @@ func (p *Parser) lexToken(version StackVersion, state StateID, position Length) 
 		p.language,
 	)
 
+	// Set lookahead bytes: how far the lexer scanned past the token end.
+	// This is needed for incremental parsing: if an edit falls within the
+	// lookahead range, the token must be re-lexed.
+	if !token.IsInline() {
+		lookahead := p.lexer.CurrentPosition().Bytes - tokenEnd.Bytes
+		if lookahead > 0 {
+			p.arena.Get(token).LookaheadBytes = lookahead
+		}
+	}
+
 	// If this was an external token, attach the serialized scanner state.
 	if foundExternalToken {
 		SetExternalScannerState(
@@ -372,6 +443,115 @@ func (p *Parser) lexToken(version StackVersion, state StateID, position Length) 
 	p.cachedTokenValid = true
 
 	return token
+}
+
+// tryReuseNode attempts to reuse a subtree from the old tree at the current
+// parse position. Returns (subtree, true) if a reusable node was found,
+// or (SubtreeZero, false) if the parser should fall back to lexing.
+func (p *Parser) tryReuseNode(version StackVersion, state StateID, position Length) (Subtree, bool) {
+	rn := p.reusableNode
+
+	// Advance the reusable node iterator to the current position.
+	rn.AdvanceToByteOffset(position.Bytes)
+
+	for !rn.Done() {
+		candidate := rn.Tree()
+		byteOffset := rn.ByteOffset()
+
+		// Skip past nodes that end before the current position.
+		candidatePadding := GetPadding(candidate, p.arena)
+		candidateSize := GetSize(candidate, p.arena)
+		candidateEnd := byteOffset + candidatePadding.Bytes + candidateSize.Bytes
+
+		if candidateEnd <= position.Bytes {
+			rn.Advance()
+			continue
+		}
+
+		// No reusable node at this position — node starts after current position.
+		if byteOffset > position.Bytes {
+			break
+		}
+
+		// Node starts at current position. Check reusability.
+		sym := GetSymbol(candidate, p.arena)
+
+		// Check basic reusability conditions.
+		if HasChanges(candidate, p.arena) ||
+			sym == SymbolError || sym == SymbolErrorRepeat ||
+			IsMissing(candidate, p.arena) ||
+			IsFragileLeft(candidate, p.arena) || IsFragileRight(candidate, p.arena) {
+			// Not reusable — descend into children.
+			rn.Descend()
+			continue
+		}
+
+		// For non-terminal subtrees (with children), check GOTO validity.
+		children := GetChildren(candidate, p.arena)
+		if children != nil && len(children) > 0 {
+			gotoState := p.language.nextState(state, sym)
+			if gotoState == 0 {
+				// No GOTO for this non-terminal in current state. Descend.
+				rn.Descend()
+				continue
+			}
+		} else {
+			// Terminal/leaf: check the action table.
+			leafSym := sym
+			if !candidate.IsInline() {
+				firstLeaf := GetFirstLeaf(candidate, p.arena)
+				leafSym = firstLeaf.Symbol
+			}
+			entry := p.language.tableEntry(state, leafSym)
+			if entry.ActionCount == 0 || !entry.Reusable {
+				rn.Advance()
+				break
+			}
+
+			// Check lex mode compatibility.
+			if !candidate.IsInline() {
+				firstLeaf := GetFirstLeaf(candidate, p.arena)
+				if firstLeaf.ParseState != 0 {
+					currentLexMode := p.language.LexModes[state]
+					origLexMode := p.language.LexModes[StateID(firstLeaf.ParseState)]
+					if origLexMode.LexState != currentLexMode.LexState {
+						rn.Advance()
+						break
+					}
+				}
+			}
+		}
+
+		// Check external scanner state match.
+		if p.externalScanner != nil {
+			lastExtToken := p.stack.LastExternalToken(version)
+			candidateExtState := GetExternalScannerState(candidate, p.arena)
+			lastExtState := GetExternalScannerState(lastExtToken, p.arena)
+			if !bytesEqual(candidateExtState, lastExtState) {
+				rn.Descend()
+				continue
+			}
+		}
+
+		// Reuse! Advance the iterator past this node.
+		rn.Advance()
+		return candidate, true
+	}
+
+	return SubtreeZero, false
+}
+
+// bytesEqual compares two byte slices for equality.
+func bytesEqual(a, b []byte) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			return false
+		}
+	}
+	return true
 }
 
 // doShift pushes a token onto the stack and transitions to a new state.
