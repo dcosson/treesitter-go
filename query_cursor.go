@@ -244,7 +244,9 @@ func (qc *QueryCursor) introduceNewStates(node Node) {
 	isNamed := node.IsNamed()
 
 	// Find patterns in the pattern map that could match this symbol.
-	for _, entry := range qc.query.patternMap {
+	// Uses binary search since patternMap is sorted by symbol.
+	// Pattern map entries point to resolved content steps (not pass-through/dead-end).
+	for _, entry := range qc.findMatchingPatternEntries(sym) {
 		step := &qc.query.steps[entry.stepIndex]
 
 		// Check if the step matches this node.
@@ -270,11 +272,24 @@ func (qc *QueryCursor) introduceNewStates(node Node) {
 			})
 		}
 
+		// Compute next step. If the next step is an alternation branch pass-through
+		// (pointing forward to another alternative), skip all remaining alternatives
+		// and jump to the pattern's DONE marker. Quantifier repeat pass-throughs
+		// (pointing backward) are NOT skipped — they need normal processing.
+		nextStepIdx := entry.stepIndex + 1
+		if int(nextStepIdx) < len(qc.query.steps) {
+			ns := &qc.query.steps[nextStepIdx]
+			if ns.isPassThrough() && (ns.alternativeIndex == noneValue || ns.alternativeIndex > nextStepIdx) {
+				pat := qc.query.patterns[entry.patternIndex]
+				nextStepIdx = uint16(pat.stepsOffset + pat.stepsLength - 1) // DONE marker
+			}
+		}
+
 		state := queryState{
 			id:            qc.nextStateID,
 			captureListID: listID,
 			startDepth:    uint16(qc.depth),
-			stepIndex:     entry.stepIndex + 1, // advance past the matched first step
+			stepIndex:     nextStepIdx,
 			patternIndex:  entry.patternIndex,
 		}
 		qc.nextStateID++
@@ -289,23 +304,24 @@ func (qc *QueryCursor) introduceNewStates(node Node) {
 }
 
 // advanceStates tries to advance all active query states with the current node.
+// P1 FIX: Use index-based access throughout to avoid pointer invalidation
+// when append() reallocates qc.states.
 func (qc *QueryCursor) advanceStates(node Node) {
 	sym := node.Symbol()
 	isNamed := node.IsNamed()
 
 	i := 0
 	for i < len(qc.states) {
-		state := &qc.states[i]
-		if state.dead {
-			qc.capturePool.release(state.captureListID)
+		if qc.states[i].dead {
+			qc.capturePool.release(qc.states[i].captureListID)
 			qc.states = append(qc.states[:i], qc.states[i+1:]...)
 			continue
 		}
 
-		step := &qc.query.steps[state.stepIndex]
+		step := &qc.query.steps[qc.states[i].stepIndex]
 
 		// Check depth: the step's depth should match the current relative depth.
-		expectedDepth := state.startDepth + step.depth
+		expectedDepth := qc.states[i].startDepth + step.depth
 		if uint32(expectedDepth) != qc.depth {
 			i++
 			continue
@@ -315,35 +331,36 @@ func (qc *QueryCursor) advanceStates(node Node) {
 		if step.isPassThrough() {
 			// Split: one state continues to next step, one goes to alternative.
 			if step.alternativeIndex != noneValue {
-				altListID, ok := qc.capturePool.clone(state.captureListID)
+				altListID, ok := qc.capturePool.clone(qc.states[i].captureListID)
 				if ok {
-					altState := *state
+					altState := qc.states[i]
 					altState.stepIndex = step.alternativeIndex
 					altState.captureListID = altListID
 					altState.id = qc.nextStateID
 					qc.nextStateID++
 					qc.states = append(qc.states, altState)
+					// Re-read step since append may have reallocated.
+					step = &qc.query.steps[qc.states[i].stepIndex]
 				}
 			}
-			state.stepIndex++
+			qc.states[i].stepIndex++
 			continue
 		}
 
 		// Handle dead-end steps (redirect only).
 		if step.isDeadEnd() {
 			if step.alternativeIndex != noneValue {
-				state.stepIndex = step.alternativeIndex
+				qc.states[i].stepIndex = step.alternativeIndex
 			} else {
-				state.dead = true
+				qc.states[i].dead = true
 			}
 			continue
 		}
 
 		// Try to match this step against the current node.
 		if !qc.stepMatchesNode(step, node, sym, isNamed) {
-			// Check if this is an immediate step that can't be skipped.
-			if state.seekingImmediateMatch {
-				state.dead = true
+			if qc.states[i].seekingImmediateMatch {
+				qc.states[i].dead = true
 			}
 			i++
 			continue
@@ -376,37 +393,49 @@ func (qc *QueryCursor) advanceStates(node Node) {
 			}
 		}
 
-		// Match! Add captures.
-		for ci := 0; ci < maxStepCaptureCount; ci++ {
-			if step.captureIDs[ci] == noneValue {
-				break
-			}
-			qc.capturePool.addCapture(state.captureListID, QueryCapture{
-				Node:  node,
-				Index: uint32(step.captureIDs[ci]),
-			})
-		}
-
-		// Handle alternatives for this step (split).
+		// P2 FIX: Clone capture list for alternatives BEFORE adding captures,
+		// so the alternative path doesn't get this step's captures.
 		if step.alternativeIndex != noneValue && !step.isDeadEnd() {
-			altListID, ok := qc.capturePool.clone(state.captureListID)
+			altListID, ok := qc.capturePool.clone(qc.states[i].captureListID)
 			if ok {
-				altState := *state
+				altState := qc.states[i]
 				altState.stepIndex = step.alternativeIndex
 				altState.captureListID = altListID
 				altState.id = qc.nextStateID
 				qc.nextStateID++
 				qc.states = append(qc.states, altState)
+				// Re-read step since append may have reallocated.
+				step = &qc.query.steps[qc.states[i].stepIndex]
 			}
 		}
 
-		// Advance the step.
-		state.stepIndex++
-		state.seekingImmediateMatch = step.isImmediate()
+		// Match! Add captures (after cloning for alternatives).
+		for ci := 0; ci < maxStepCaptureCount; ci++ {
+			if step.captureIDs[ci] == noneValue {
+				break
+			}
+			qc.capturePool.addCapture(qc.states[i].captureListID, QueryCapture{
+				Node:  node,
+				Index: uint32(step.captureIDs[ci]),
+			})
+		}
+
+		// Advance the step. If the next step is an alternation branch pass-through
+		// (pointing forward), skip to the pattern's DONE marker. Quantifier repeat
+		// pass-throughs (pointing backward) are processed normally.
+		qc.states[i].stepIndex++
+		if int(qc.states[i].stepIndex) < len(qc.query.steps) {
+			ns := &qc.query.steps[qc.states[i].stepIndex]
+			if ns.isPassThrough() && (ns.alternativeIndex == noneValue || ns.alternativeIndex > qc.states[i].stepIndex) {
+				pat := qc.query.patterns[qc.states[i].patternIndex]
+				qc.states[i].stepIndex = uint16(pat.stepsOffset + pat.stepsLength - 1)
+			}
+		}
+		qc.states[i].seekingImmediateMatch = step.isImmediate()
 
 		// Check if pattern is done.
-		if qc.isStepDone(state.stepIndex) {
-			qc.finishedStates = append(qc.finishedStates, *state)
+		if qc.isStepDone(qc.states[i].stepIndex) {
+			qc.finishedStates = append(qc.finishedStates, qc.states[i])
 			qc.states = append(qc.states[:i], qc.states[i+1:]...)
 			continue
 		}
@@ -427,8 +456,14 @@ func (qc *QueryCursor) checkFinishedStates() {
 			// Check if we've ascended past this state's expected depth.
 			expectedDepth := state.startDepth + step.depth
 			if uint32(expectedDepth) > qc.depth+1 {
-				// We've ascended past where this step would match — check if
-				// there are alternatives or if this state is dead.
+				// We've ascended past where this step would match.
+				// For optional steps (with alternativeIndex), skip to the alternative
+				// instead of killing the state.
+				if step.alternativeIndex != noneValue && !step.isPassThrough() && !step.isDeadEnd() {
+					state.stepIndex = step.alternativeIndex
+					// Re-check this state with the new step (don't increment i).
+					continue
+				}
 				if step.isLastChild() || (step.depth > 0 && uint32(state.startDepth+step.depth) > qc.depth+1) {
 					// Pattern expected more children; mark dead.
 					state.dead = true
@@ -471,6 +506,53 @@ func (qc *QueryCursor) stepMatchesNode(step *queryStep, node Node, sym Symbol, i
 	return true
 }
 
+// findMatchingPatternEntries returns pattern entries whose first step could
+// match the given symbol. Uses binary search on the sorted patternMap, plus
+// includes wildcard patterns (symbol=0) that always match.
+func (qc *QueryCursor) findMatchingPatternEntries(sym Symbol) []patternEntry {
+	pm := qc.query.patternMap
+	if len(pm) == 0 {
+		return nil
+	}
+
+	// Collect wildcard entries (symbol=0, at the front since map is sorted).
+	var result []patternEntry
+	wildcardEnd := 0
+	for wildcardEnd < len(pm) {
+		step := &qc.query.steps[pm[wildcardEnd].stepIndex]
+		if step.symbol != wildcardSymbol {
+			break
+		}
+		wildcardEnd++
+	}
+	if wildcardEnd > 0 {
+		result = append(result, pm[:wildcardEnd]...)
+	}
+
+	// Binary search for the target symbol in the non-wildcard portion.
+	lo, hi := wildcardEnd, len(pm)
+	for lo < hi {
+		mid := lo + (hi-lo)/2
+		midSym := qc.query.steps[pm[mid].stepIndex].symbol
+		if midSym < sym {
+			lo = mid + 1
+		} else {
+			hi = mid
+		}
+	}
+	// Collect all entries with matching symbol.
+	for lo < len(pm) {
+		step := &qc.query.steps[pm[lo].stepIndex]
+		if step.symbol != sym {
+			break
+		}
+		result = append(result, pm[lo])
+		lo++
+	}
+
+	return result
+}
+
 // isStepDone checks if a step index points to a DONE marker.
 func (qc *QueryCursor) isStepDone(stepIndex uint16) bool {
 	if int(stepIndex) >= len(qc.query.steps) {
@@ -480,9 +562,33 @@ func (qc *QueryCursor) isStepDone(stepIndex uint16) bool {
 }
 
 // currentFieldID returns the field ID of the current cursor position.
+// It looks up the parent node's production ID, then finds the field map entry
+// matching the current child's structural child index.
 func (qc *QueryCursor) currentFieldID() FieldID {
-	// The TreeCursor doesn't currently expose field IDs directly.
-	// This would need a CurrentFieldID() method on TreeCursor.
-	// For now, return 0 (no field).
+	stack := qc.cursor.stack
+	if len(stack) < 2 {
+		return 0
+	}
+	// Walk up through hidden nodes to find the visible parent and child indices.
+	arena := qc.cursor.tree.Arena()
+	childStructuralIndex := stack[len(stack)-1].structuralChildIndex
+
+	// Find the nearest visible ancestor with a production ID.
+	for depth := len(stack) - 2; depth >= 0; depth-- {
+		parentEntry := &stack[depth]
+		if !IsVisible(parentEntry.subtree, arena) && depth > 0 {
+			// Hidden node: accumulate structuralChildIndex and keep going up.
+			childStructuralIndex += parentEntry.structuralChildIndex
+			continue
+		}
+		prodID := GetProductionID(parentEntry.subtree, arena)
+		fieldEntries := qc.query.language.FieldMapForProduction(prodID)
+		for _, entry := range fieldEntries {
+			if uint16(childStructuralIndex) == entry.ChildIndex {
+				return entry.FieldID
+			}
+		}
+		break
+	}
 	return 0
 }

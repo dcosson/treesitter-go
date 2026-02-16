@@ -468,3 +468,175 @@ func TestQueryCursorWildcard(t *testing.T) {
 		t.Errorf("expected at least 1 match for wildcard in array, got %d", count)
 	}
 }
+
+// --- P2.3: Alternation, field, and quantifier matching tests ---
+
+func TestQueryCursorAlternation(t *testing.T) {
+	// Test that alternation [pattern1 pattern2] correctly matches either alternative.
+	tree := parseJSON(t, `{"key": [1, true, null]}`)
+	lang := queryTestLanguage()
+	q, err := ts.NewQuery(lang, `[(number) (true) (null)] @val`)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cursor := ts.NewQueryCursor(q)
+	cursor.Exec(tree.RootNode())
+
+	var matchTypes []string
+	for {
+		match, ok := cursor.NextMatch()
+		if !ok {
+			break
+		}
+		for _, cap := range match.Captures {
+			matchTypes = append(matchTypes, cap.Node.Type())
+		}
+	}
+
+	if len(matchTypes) != 3 {
+		t.Errorf("expected 3 matches from alternation, got %d: %v", len(matchTypes), matchTypes)
+	}
+}
+
+func TestQueryCursorAlternationDoesNotFalseMatch(t *testing.T) {
+	// Alternation should NOT match nodes that aren't in the alternatives.
+	tree := parseJSON(t, `{"key": "value"}`)
+	lang := queryTestLanguage()
+	q, err := ts.NewQuery(lang, `[(number) (true)] @val`)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cursor := ts.NewQueryCursor(q)
+	cursor.Exec(tree.RootNode())
+
+	count := 0
+	for {
+		_, ok := cursor.NextMatch()
+		if !ok {
+			break
+		}
+		count++
+	}
+
+	if count != 0 {
+		t.Errorf("alternation should not match strings, got %d matches", count)
+	}
+}
+
+func TestQueryCursorFieldMatching(t *testing.T) {
+	// Test field constraint matching — pair has key: and value: fields.
+	tree := parseJSON(t, `{"name": "Alice", "age": 42}`)
+	lang := queryTestLanguage()
+
+	// Match only the key field of a pair.
+	q, err := ts.NewQuery(lang, `(pair key: (string) @key)`)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cursor := ts.NewQueryCursor(q)
+	cursor.Exec(tree.RootNode())
+
+	var keys []string
+	for {
+		match, ok := cursor.NextMatch()
+		if !ok {
+			break
+		}
+		for _, cap := range match.Captures {
+			keys = append(keys, cap.Node.Type())
+		}
+	}
+
+	if len(keys) != 2 {
+		t.Errorf("expected 2 key matches, got %d: %v", len(keys), keys)
+	}
+}
+
+func TestQueryCursorQuantifierPlus(t *testing.T) {
+	// Test '+' quantifier (one or more).
+	tree := parseJSON(t, `[1, 2, 3]`)
+	lang := queryTestLanguage()
+	q, err := ts.NewQuery(lang, `(array (number)+ @num)`)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cursor := ts.NewQueryCursor(q)
+	cursor.Exec(tree.RootNode())
+
+	count := 0
+	for {
+		match, ok := cursor.NextMatch()
+		if !ok {
+			break
+		}
+		count += len(match.Captures)
+	}
+
+	if count < 3 {
+		t.Errorf("expected at least 3 number captures with '+', got %d", count)
+	}
+}
+
+func TestQueryCursorQuantifierOptional(t *testing.T) {
+	// Test '?' quantifier (optional) — should match even when element is absent.
+	tree := parseJSON(t, `[1]`)
+	lang := queryTestLanguage()
+	q, err := ts.NewQuery(lang, `(array (number) @first (number)? @second)`)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cursor := ts.NewQueryCursor(q)
+	cursor.Exec(tree.RootNode())
+
+	matchCount := 0
+	for {
+		_, ok := cursor.NextMatch()
+		if !ok {
+			break
+		}
+		matchCount++
+	}
+
+	// Should get at least 1 match (first number matches, optional second is absent).
+	if matchCount < 1 {
+		t.Errorf("expected at least 1 match with optional quantifier, got %d", matchCount)
+	}
+}
+
+func TestQueryCursorMultipleAlternationPatterns(t *testing.T) {
+	// Regression: alternation pass-through steps should NOT match all nodes.
+	tree := parseJSON(t, `{"a": 1, "b": "hello"}`)
+	lang := queryTestLanguage()
+
+	// Only match number or true — should NOT match strings, objects, pairs, etc.
+	q, err := ts.NewQuery(lang, `[(number) (true)] @val`)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cursor := ts.NewQueryCursor(q)
+	cursor.Exec(tree.RootNode())
+
+	count := 0
+	for {
+		match, ok := cursor.NextMatch()
+		if !ok {
+			break
+		}
+		for _, cap := range match.Captures {
+			if cap.Node.Type() != "number" && cap.Node.Type() != "true" {
+				t.Errorf("unexpected capture type %q — alternation leaked", cap.Node.Type())
+			}
+		}
+		count++
+	}
+
+	if count != 1 {
+		t.Errorf("expected 1 match (the number), got %d", count)
+	}
+}

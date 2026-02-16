@@ -76,12 +76,14 @@ func (c *TreeCursor) GotoFirstChild() bool {
 // nodes onto the stack.
 func (c *TreeCursor) findFirstVisibleChild(children []Subtree, startPos Length, arena *SubtreeArena) bool {
 	pos := startPos
+	var structuralIdx uint32
 	for i, child := range children {
 		if IsVisible(child, arena) {
 			c.stack = append(c.stack, TreeCursorEntry{
-				subtree:    child,
-				position:   pos,
-				childIndex: uint32(i),
+				subtree:              child,
+				position:             pos,
+				childIndex:           uint32(i),
+				structuralChildIndex: structuralIdx,
 			})
 			return true
 		}
@@ -89,9 +91,10 @@ func (c *TreeCursor) findFirstVisibleChild(children []Subtree, startPos Length, 
 		grandchildren := GetChildren(child, arena)
 		if len(grandchildren) > 0 {
 			c.stack = append(c.stack, TreeCursorEntry{
-				subtree:    child,
-				position:   pos,
-				childIndex: uint32(i),
+				subtree:              child,
+				position:             pos,
+				childIndex:           uint32(i),
+				structuralChildIndex: structuralIdx,
 			})
 			gcStartPos := pos // hidden node's children start at the same position
 			if c.findFirstVisibleChild(grandchildren, gcStartPos, arena) {
@@ -99,6 +102,9 @@ func (c *TreeCursor) findFirstVisibleChild(children []Subtree, startPos Length, 
 			}
 			// No visible child found in this hidden subtree; pop it.
 			c.stack = c.stack[:len(c.stack)-1]
+		}
+		if !IsExtra(child, arena) {
+			structuralIdx++
 		}
 		pos = advancePosition(pos, child, arena)
 	}
@@ -121,15 +127,20 @@ func (c *TreeCursor) GotoNextSibling() bool {
 		// Advance position past the current child.
 		pos := advancePosition(current.position, current.subtree, arena)
 		nextIdx := int(current.childIndex) + 1
+		structuralIdx := current.structuralChildIndex
+		if !IsExtra(current.subtree, arena) {
+			structuralIdx++
+		}
 
 		// Look for the next visible sibling, recursively descending into hidden nodes.
 		for i := nextIdx; i < len(parentChildren); i++ {
 			child := parentChildren[i]
 			if IsVisible(child, arena) {
 				c.stack[len(c.stack)-1] = TreeCursorEntry{
-					subtree:    child,
-					position:   pos,
-					childIndex: uint32(i),
+					subtree:              child,
+					position:             pos,
+					childIndex:           uint32(i),
+					structuralChildIndex: structuralIdx,
 				}
 				return true
 			}
@@ -137,14 +148,18 @@ func (c *TreeCursor) GotoNextSibling() bool {
 			grandchildren := GetChildren(child, arena)
 			if len(grandchildren) > 0 {
 				c.stack[len(c.stack)-1] = TreeCursorEntry{
-					subtree:    child,
-					position:   pos,
-					childIndex: uint32(i),
+					subtree:              child,
+					position:             pos,
+					childIndex:           uint32(i),
+					structuralChildIndex: structuralIdx,
 				}
 				if c.findFirstVisibleChild(grandchildren, pos, arena) {
 					return true
 				}
 				// No visible child found; restore stack entry for continued search.
+			}
+			if !IsExtra(child, arena) {
+				structuralIdx++
 			}
 			pos = advancePosition(pos, child, arena)
 		}

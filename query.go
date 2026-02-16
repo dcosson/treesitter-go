@@ -264,6 +264,8 @@ func (q *Query) StringValueForID(id uint32) string {
 }
 
 // buildPatternMap creates a sorted lookup table for pattern starts by symbol.
+// For alternation patterns (whose first step is a pass-through), this resolves
+// through the pass-through chain to add entries for each actual content step.
 func (q *Query) buildPatternMap() {
 	q.patternMap = q.patternMap[:0]
 	q.wildcardRootPatternCount = 0
@@ -272,9 +274,8 @@ func (q *Query) buildPatternMap() {
 		if pat.stepsLength == 0 {
 			continue
 		}
-		step := &q.steps[pat.stepsOffset]
 
-		isRooted := pat.stepsLength > 0 && step.depth == 0
+		isRooted := pat.stepsLength > 0 && q.steps[pat.stepsOffset].depth == 0
 		for j := uint32(1); j < pat.stepsLength; j++ {
 			if q.steps[pat.stepsOffset+j].depth == 0 {
 				isRooted = false
@@ -282,19 +283,87 @@ func (q *Query) buildPatternMap() {
 			}
 		}
 
-		q.patternMap = append(q.patternMap, patternEntry{
-			stepIndex:    uint16(pat.stepsOffset),
-			patternIndex: uint16(i),
-			isRooted:     isRooted,
-		})
+		// Resolve through pass-through/dead-end chains to find all actual
+		// content steps that could start this pattern.
+		contentSteps := q.resolvePatternStartSteps(uint16(pat.stepsOffset))
 
-		if step.symbol == wildcardSymbol {
-			q.wildcardRootPatternCount++
+		// Propagate captures from the pattern's first step (which may be a
+		// pass-through with captures like @val from [(number) (true)] @val)
+		// to all resolved content steps.
+		firstStep := &q.steps[pat.stepsOffset]
+		if firstStep.isPassThrough() || firstStep.isDeadEnd() {
+			for _, stepIdx := range contentSteps {
+				for ci := 0; ci < maxStepCaptureCount; ci++ {
+					if firstStep.captureIDs[ci] == noneValue {
+						break
+					}
+					addCaptureID(&q.steps[stepIdx], firstStep.captureIDs[ci])
+				}
+			}
+		}
+
+		for _, stepIdx := range contentSteps {
+			q.patternMap = append(q.patternMap, patternEntry{
+				stepIndex:    stepIdx,
+				patternIndex: uint16(i),
+				isRooted:     isRooted,
+			})
+
+			if q.steps[stepIdx].symbol == wildcardSymbol {
+				q.wildcardRootPatternCount++
+			}
 		}
 	}
 
 	// Sort by first step symbol for binary search lookup.
 	sortPatternEntries(q.patternMap, q.steps)
+}
+
+// resolvePatternStartSteps follows pass-through/dead-end chains from a starting
+// step index and returns all the actual content step indices that could be
+// reached. For a simple pattern this returns just the start step. For an
+// alternation, it returns each alternative's content step.
+func (q *Query) resolvePatternStartSteps(startIdx uint16) []uint16 {
+	var result []uint16
+	visited := make(map[uint16]bool)
+
+	var resolve func(idx uint16)
+	resolve = func(idx uint16) {
+		if visited[idx] {
+			return
+		}
+		visited[idx] = true
+
+		if int(idx) >= len(q.steps) {
+			return
+		}
+		step := &q.steps[idx]
+
+		if step.isPassThrough() {
+			// Follow both paths: next step and alternative.
+			resolve(idx + 1)
+			if step.alternativeIndex != noneValue {
+				resolve(step.alternativeIndex)
+			}
+			return
+		}
+
+		if step.isDeadEnd() {
+			// Follow alternative only.
+			if step.alternativeIndex != noneValue {
+				resolve(step.alternativeIndex)
+			}
+			return
+		}
+
+		// This is an actual content step.
+		if step.depth != patternDoneMarker {
+			result = append(result, idx)
+		}
+	}
+
+	resolve(startIdx)
+	return result
 }
 
 // sortPatternEntries sorts pattern entries by their first step's symbol.
@@ -802,13 +871,8 @@ func (p *queryParser) parseAlternation(depth uint16) error {
 	for i := 0; i < len(altStepIndices)-1; i++ {
 		p.query.steps[altStepIndices[i]].alternativeIndex = uint16(altStepIndices[i+1])
 	}
-	// Last alternative is a dead-end (no further alternatives).
-	if len(altStepIndices) > 0 {
-		lastIdx := altStepIndices[len(altStepIndices)-1]
-		p.query.steps[lastIdx].flags &^= stepFlagIsPassThrough
-		p.query.steps[lastIdx].flags |= stepFlagIsDeadEnd
-		p.query.steps[lastIdx].alternativeIndex = noneValue
-	}
+	// Last alternative keeps pass-through flag but has no alternative to branch to.
+	// It will advance to its content step (idx+1) without splitting.
 
 	return nil
 }
