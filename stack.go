@@ -1,6 +1,9 @@
 package treesitter
 
-import "sync"
+import (
+	"bytes"
+	"sync"
+)
 
 // Graph-Structured Stack (GSS) for GLR parsing.
 //
@@ -76,7 +79,7 @@ type StackVersion int
 type StackHead struct {
 	node    *StackNode
 	status  StackStatus
-	summary StackSummary
+	summary []StackSummaryEntry
 	// lastExternalToken tracks external scanner state for this version.
 	lastExternalToken Subtree
 	// nodeCountAtLastError records the node count when the last error
@@ -84,6 +87,9 @@ type StackHead struct {
 	// the number of nodes parsed since the last error, which is used
 	// by compareVersions for cost amplification.
 	nodeCountAtLastError uint32
+	// lookaheadWhenPaused stores the token that caused the error, so
+	// that handleError can use it when the version is resumed.
+	lookaheadWhenPaused Subtree
 }
 
 // StackStatus indicates whether a version is active, paused, or halted.
@@ -95,11 +101,14 @@ const (
 	StackStatusHalted
 )
 
-// StackSummary accumulates metadata for a version's parse history.
-type StackSummary struct {
-	errorCost         uint32
-	nodeCount         uint32
-	dynamicPrecedence int32
+// StackSummaryEntry records a parse state reachable by walking back through
+// the stack from the current head. Used by error recovery to find previous
+// states where the lookahead token might be valid.
+// Mirrors C tree-sitter's StackSummaryEntry.
+type StackSummaryEntry struct {
+	Position Length
+	Depth    uint32
+	State    StateID
 }
 
 // StackIterator holds the result of one pop path.
@@ -351,8 +360,9 @@ func (s *Stack) Pop(version StackVersion, count uint32) []StackIterator {
 			newSubtrees[len(frame.subtrees)] = link.subtree
 
 			// Extra subtrees don't count toward the pop depth.
+			// SubtreeZero links (from ERROR_STATE push) are not extras.
 			newDepth := frame.depth
-			if !IsExtra(link.subtree, s.arena) {
+			if !link.subtree.IsZero() && !IsExtra(link.subtree, s.arena) {
 				newDepth++
 			}
 
@@ -413,9 +423,9 @@ func (s *Stack) Split(version StackVersion) StackVersion {
 	s.heads = append(s.heads, StackHead{
 		node:                 head.node,
 		status:               head.status,
-		summary:              head.summary,
 		lastExternalToken:    head.lastExternalToken,
 		nodeCountAtLastError: head.nodeCountAtLastError,
+		lookaheadWhenPaused:  head.lookaheadWhenPaused,
 	})
 	return newVersion
 }
@@ -489,11 +499,8 @@ func (s *Stack) Merge(target, source StackVersion) bool {
 }
 
 // CanMerge returns true if two versions can be merged.
-// C's ts_stack_can_merge additionally requires same position, same error
-// cost, and same external scanner state. We relax those requirements
-// because our parse loop structure (advance-one-at-a-time) differs from
-// C's (advance-all-in-order), and the stricter checks cause regressions
-// in that context. The active status check matches C.
+// Matches C tree-sitter's ts_stack_can_merge: requires same state, both
+// active, same position, same error cost, and same external scanner state.
 func (s *Stack) CanMerge(v1, v2 StackVersion) bool {
 	if int(v1) >= len(s.heads) || int(v2) >= len(s.heads) {
 		return false
@@ -503,27 +510,52 @@ func (s *Stack) CanMerge(v1, v2 StackVersion) bool {
 	if h1.node == nil || h2.node == nil {
 		return false
 	}
-	return h1.status == StackStatusActive &&
-		h2.status == StackStatusActive &&
-		h1.node.state == h2.node.state
+	if h1.status != StackStatusActive || h2.status != StackStatusActive {
+		return false
+	}
+	if h1.node.state != h2.node.state {
+		return false
+	}
+	if h1.node.position.Bytes != h2.node.position.Bytes {
+		return false
+	}
+	if h1.node.errorCost != h2.node.errorCost {
+		return false
+	}
+	// Compare external scanner states.
+	state1 := GetExternalScannerState(h1.lastExternalToken, s.arena)
+	state2 := GetExternalScannerState(h2.lastExternalToken, s.arena)
+	if !bytes.Equal(state1, state2) {
+		return false
+	}
+	return true
 }
 
-// Pause pauses a version (for error recovery exploration).
-func (s *Stack) Pause(version StackVersion) {
+// Pause pauses a version (for error recovery exploration) and stores
+// the lookahead token that triggered the error. The token is returned
+// when the version is resumed.
+// Mirrors C tree-sitter's ts_stack_pause.
+func (s *Stack) Pause(version StackVersion, lookahead Subtree) {
 	if int(version) >= len(s.heads) {
 		return
 	}
 	s.heads[version].status = StackStatusPaused
+	s.heads[version].lookaheadWhenPaused = lookahead
 }
 
-// Resume resumes a paused version.
-func (s *Stack) Resume(version StackVersion) {
+// Resume resumes a paused version and returns the stored lookahead token.
+// Mirrors C tree-sitter's ts_stack_resume.
+func (s *Stack) Resume(version StackVersion) Subtree {
 	if int(version) >= len(s.heads) {
-		return
+		return SubtreeZero
 	}
-	if s.heads[version].status == StackStatusPaused {
-		s.heads[version].status = StackStatusActive
+	head := &s.heads[version]
+	if head.status == StackStatusPaused {
+		head.status = StackStatusActive
 	}
+	lookahead := head.lookaheadWhenPaused
+	head.lookaheadWhenPaused = SubtreeZero
+	return lookahead
 }
 
 // Halt discards a version.
@@ -661,4 +693,129 @@ func (s *Stack) PopCount(version StackVersion, count uint32) int {
 	}
 
 	return resultCount
+}
+
+// summaryIterator tracks a single path through the stack during summary recording.
+// Matches C tree-sitter's StackIterator struct used in ts_stack__iter.
+type summaryIterator struct {
+	node  *StackNode
+	depth uint32
+}
+
+// RecordSummary walks back through the stack from the given version's head,
+// recording states and positions at each depth up to maxDepth. The resulting
+// summary is used by error recovery to find previous states where the
+// lookahead token might be valid.
+//
+// Uses C tree-sitter's iterative BFS approach with MaxIteratorCount (64) cap
+// on concurrent iterators to prevent worst-case blowup on merged stack DAGs.
+// Additionally uses a visited set (not in C) for extra efficiency — preventing
+// redundant walking of shared subgraphs even within the 64-iterator budget.
+func (s *Stack) RecordSummary(version StackVersion, maxDepth uint32) {
+	if int(version) >= len(s.heads) {
+		return
+	}
+	head := &s.heads[version]
+	head.summary = nil
+	if head.node == nil || head.node.linkCount == 0 {
+		return
+	}
+
+	position := head.node.position
+
+	// Iterative BFS with iterator array, matching C's ts_stack__iter pattern.
+	// Start with one iterator at the head node.
+	iterators := make([]summaryIterator, 0, MaxIteratorCount)
+	iterators = append(iterators, summaryIterator{node: head.node, depth: 0})
+
+	// Visited set: memoization layer on top of C's approach.
+	// Prevents re-walking shared subgraph paths that the 64-cap alone
+	// would still explore redundantly.
+	visited := make(map[*StackNode]bool)
+
+	var entries []StackSummaryEntry
+
+	for len(iterators) > 0 {
+		// Process iterators in FIFO order (BFS). Pop first element.
+		iter := iterators[0]
+		iterators = iterators[1:]
+
+		node := iter.node
+		if node == nil || node.linkCount == 0 || iter.depth > maxDepth {
+			continue
+		}
+
+		for i := uint16(0); i < node.linkCount; i++ {
+			link := &node.links[i]
+			next := link.node
+			if next == nil {
+				continue
+			}
+
+			// Memoization: skip already-visited nodes.
+			if visited[next] {
+				continue
+			}
+			visited[next] = true
+
+			newDepth := iter.depth
+			// SubtreeZero links (from ERROR_STATE push with null subtree) are not extras.
+			if !link.subtree.IsZero() && !IsExtra(link.subtree, s.arena) {
+				newDepth++
+			}
+
+			// Record entry for non-error states at different positions.
+			if next.state != 0 && next.position.Bytes != position.Bytes {
+				entry := StackSummaryEntry{
+					Position: next.position,
+					Depth:    newDepth,
+					State:    next.state,
+				}
+				// Deduplicate by (state, depth) — matches C's callback dedup.
+				found := false
+				for _, e := range entries {
+					if e.State == entry.State && e.Depth == entry.Depth {
+						found = true
+						break
+					}
+				}
+				if !found {
+					entries = append(entries, entry)
+				}
+			}
+
+			// Enqueue next node if within depth and iterator budget.
+			if newDepth <= maxDepth {
+				if len(iterators) < MaxIteratorCount {
+					iterators = append(iterators, summaryIterator{node: next, depth: newDepth})
+				}
+				// If at cap, silently skip — matches C's behavior.
+			}
+		}
+	}
+
+	head.summary = entries
+}
+
+// GetSummary returns the recorded summary for a version.
+func (s *Stack) GetSummary(version StackVersion) []StackSummaryEntry {
+	if int(version) >= len(s.heads) {
+		return nil
+	}
+	return s.heads[version].summary
+}
+
+// RenumberVersion replaces version 'to' with version 'from', then removes
+// 'from'. Requires from > to. Used during error recovery when multiple pop
+// paths need to be consolidated.
+// Mirrors C tree-sitter's ts_stack_renumber_version.
+func (s *Stack) RenumberVersion(from, to StackVersion) {
+	if from == to {
+		return
+	}
+	if int(from) >= len(s.heads) || int(to) >= len(s.heads) {
+		return
+	}
+	s.heads[to] = s.heads[from]
+	s.RemoveVersion(from)
 }

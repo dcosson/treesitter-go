@@ -225,7 +225,7 @@ func TestStackPauseResume(t *testing.T) {
 		t.Error("should be active initially")
 	}
 
-	stack.Pause(v0)
+	stack.Pause(v0, SubtreeZero)
 	if !stack.IsPaused(v0) {
 		t.Error("should be paused")
 	}
@@ -233,9 +233,12 @@ func TestStackPauseResume(t *testing.T) {
 		t.Error("should not be active when paused")
 	}
 
-	stack.Resume(v0)
+	lookahead := stack.Resume(v0)
 	if !stack.IsActive(v0) {
 		t.Error("should be active after resume")
+	}
+	if !lookahead.IsZero() {
+		t.Error("expected zero lookahead from resume with zero pause")
 	}
 }
 
@@ -431,7 +434,7 @@ func TestStackActiveVersionCount(t *testing.T) {
 		t.Errorf("active = %d, want 3", stack.ActiveVersionCount())
 	}
 
-	stack.Pause(StackVersion(1))
+	stack.Pause(StackVersion(1), SubtreeZero)
 	if stack.ActiveVersionCount() != 2 {
 		t.Errorf("active = %d, want 2", stack.ActiveVersionCount())
 	}
