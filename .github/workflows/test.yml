@@ -85,6 +85,18 @@ jobs:
             echo "⚠️ Corpus tests have known failures — this job is informational and does not block CI." >> "$GITHUB_STEP_SUMMARY"
           fi
 
+  diff-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Install tree-sitter CLI
+        run: npm install -g tree-sitter-cli
+      - name: Run differential tests
+        run: make diff-test
+
   benchmarks:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request'
@@ -96,6 +108,8 @@ jobs:
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+      - name: Install tree-sitter CLI
+        run: npm install -g tree-sitter-cli
       - name: Run benchmarks
         run: make bench
       - name: Store benchmark result

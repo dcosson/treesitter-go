@@ -1,0 +1,16 @@
+{
+  "id": "tree-sitter-go-ivi",
+  "title": "Bash scanner Deserialize panics on short input (fuzz finding)",
+  "description": "FuzzScannerSerializeRoundTrip found that bash.Scanner.Deserialize panics with index out of range [1] with length 1 at scanner.go:134 when given []byte(\"0\") (single byte 0x30). Needs bounds check before accessing data[1].",
+  "status": "open",
+  "priority": 2,
+  "type": "task",
+  "created_by": "Danny Cosson",
+  "owner": "dcosson@gmail.com",
+  "labels": [
+    "bug",
+    "P2"
+  ],
+  "created_at": "2026-02-16T18:41:10.319789-08:00",
+  "updated_at": "2026-02-16T18:41:10.319789-08:00"
+}

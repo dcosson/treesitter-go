@@ -2,7 +2,7 @@
   "id": "tree-sitter-go-860.9",
   "title": "Implement make deps target and update CI",
   "description": "Add make deps target to Makefile (brew \u003e cargo \u003e npm fallback for tree-sitter CLI installation). Update .github/workflows/test.yml to use make deps before diff-test and bench jobs. Add TREE_SITTER_CLI variable to Makefile. Update make bench to use -ts-cli flag.",
-  "status": "open",
+  "status": "closed",
   "priority": 2,
   "type": "task",
   "parent": "tree-sitter-go-860",
@@ -24,5 +24,7 @@
     "P2"
   ],
   "created_at": "2026-02-16T15:32:24.541053-08:00",
-  "updated_at": "2026-02-16T15:32:24.541053-08:00"
+  "updated_at": "2026-02-16T18:40:48.752127-08:00",
+  "closed_at": "2026-02-16T18:40:48.752127-08:00",
+  "close_reason": "Closed"
 }

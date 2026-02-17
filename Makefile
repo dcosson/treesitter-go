@@ -1,4 +1,6 @@
-.PHONY: build test bench fetch-test-grammars test-corpus test-corpus-json
+TREE_SITTER_CLI := $(shell which tree-sitter 2>/dev/null)
+
+.PHONY: build test bench fetch-test-grammars test-corpus test-corpus-json deps diff-test
 
 build:
 	go build ./...
@@ -15,5 +17,31 @@ test-corpus:
 test-corpus-json:
 	go test ./... -run TestCorpus/json -v
 
+deps:
+	@if command -v brew >/dev/null 2>&1; then \
+		brew install tree-sitter; \
+	elif command -v cargo >/dev/null 2>&1; then \
+		cargo install tree-sitter-cli; \
+	elif command -v npm >/dev/null 2>&1; then \
+		npm install -g tree-sitter-cli; \
+	else \
+		echo "Install tree-sitter CLI: https://tree-sitter.github.io/tree-sitter/"; \
+		exit 1; \
+	fi
+
+diff-test:
+ifdef TREE_SITTER_CLI
+	go test ./internal/difftest/... -ts-cli=$(TREE_SITTER_CLI) -v -timeout 15m
+else
+	@echo "tree-sitter CLI not found. Run 'make deps' to install."
+	@exit 1
+endif
+
 bench:
+ifdef TREE_SITTER_CLI
+	go test ./... -bench=. -benchmem -count=5 -timeout 10m \
+		-ts-cli=$(TREE_SITTER_CLI) | tee bench-results.txt
+else
 	go test ./... -bench=. -benchmem -count=5 -timeout 10m | tee bench-results.txt
+	@echo "Note: tree-sitter CLI not found, Go-vs-C comparison skipped."
+endif
