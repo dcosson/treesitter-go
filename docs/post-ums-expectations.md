@@ -334,3 +334,72 @@ by ums, it would be the next target (~0-2 remaining tests).
 
 > **UPDATE**: Previously said qualified identifier truncation was the next fix.
 > Investigation showed it shares ums root cause — reclassified as ums-fixable.
+
+---
+
+## Post-UMS Actual Results (2026-02-16, main at 48e73ff)
+
+**Actual: 1532 pass / 102 fail / 1634 total (93.8%)**
+
+Note: 15 new test cases added since baseline (1619→1634), so raw numbers aren't
+directly comparable. Net improvement: +6 (9 improvements - 3 regressions).
+
+### Prediction vs Actual
+
+| Category | Predicted Fixes | Actual Fixes | Notes |
+|----------|:-:|:-:|-------|
+| Timeout (C++) | 8 | **6** | Concept_definition still times out; Parameter_pack_expansions became structural |
+| Structural — GLR ambiguity | 20-30 | **0** | NONE of the predicted GLR fixes happened |
+| Structural — Cluster C | 5-7 | **0** | Needs soft preferences (not just decisive kills) |
+| Structural — non-GLR | 0-3 | **3** | Ruby nested_strings, HTML comment, Java type_arguments |
+| Empty/nil parse tree | 2-5 | **0** | None fixed |
+| Internal name leaking | 0 | **0** | As predicted |
+| **Total improvements** | **35-53** | **9** | Significantly below prediction |
+| **Regressions** | 0 | **3** | 1 true (Complex_fold_expression), 2 pre-existing |
+| **Net** | +35-53 | **+6** | |
+
+### HIGH Confidence Predictions: 6/8 Correct
+
+| Test | Predicted | Actual | Notes |
+|------|-----------|--------|-------|
+| C++ casts_vs_multiplications | PASS | **PASS** | Correct |
+| C++ Noreturn_Type_Qualifier | PASS | **PASS** | Correct |
+| C++ For_loops | PASS | **PASS** | Correct |
+| C++ Switch_statements | PASS | **PASS** | Correct |
+| C++ Concept_definition | PASS | **FAIL** | Still times out (wrong) |
+| C++ Compound_literals_without_parentheses | PASS | **PASS** | Correct |
+| C++ Template_calls | PASS | **PASS** | Correct |
+| C++ Parameter_pack_expansions | PASS | **FAIL** | Now structural instead of timeout (partial) |
+
+### MEDIUM Confidence: 3/31 Correct (10% hit rate!)
+
+Surprise improvements not predicted at MEDIUM:
+- Ruby nested_strings_with_different_delimiters (predicted NONE → actually PASS)
+- HTML comment (predicted NONE → actually PASS)
+- Java type_arguments_with_generic_types (predicted MEDIUM → PASS, correct)
+
+All other MEDIUM predictions (Go call/type_conv, C type_id, C++ Cluster C,
+Python print, Perl function_call) did NOT improve. The decisive-kills-only
+approach cannot resolve dynamic-precedence-based ambiguities.
+
+### Regressions (PASS → FAIL)
+
+| Test | Type | Root Cause |
+|------|------|-----------|
+| C++ Complex_fold_expression | **True UMS regression** | Error recovery infinite loop (findActiveVersion starvation) |
+| C++ template_functions_vs_relational | **Severity worsened** | Structural → timeout (same root cause) |
+| HTML Void_tags | Pre-existing | Was already failing |
+| Java method_references | Pre-existing | Was already failing |
+
+### Key Takeaway
+
+The decisive-kills-only UMS approach was highly effective at resolving
+**cost-based version explosion** (timeouts) but has no effect on
+**dynamic-precedence-based ambiguity resolution** (structural mismatches).
+The predicted 35-53 improvements assumed soft preferences would also work,
+but those were deliberately deferred due to findActiveVersion regressions.
+
+The remaining 102 failures require a different approach:
+1. **Soft preference handling** (for Cluster C, call vs type_conv, etc.)
+2. **Scanner/lex fixes** (for empty trees, internal name leaking)
+3. **Per-grammar investigation** (for unique structural issues)
