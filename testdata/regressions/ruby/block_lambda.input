@@ -1,0 +1,6 @@
+[1, 2, 3].each do |x|
+  puts x
+end
+
+square = ->(n) { n * n }
+puts square.call(5)

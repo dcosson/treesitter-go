@@ -1,0 +1,7 @@
+sub greet {
+    my ($name) = @_;
+    return "Hello, $name!";
+}
+
+my $msg = greet("world");
+print $msg;

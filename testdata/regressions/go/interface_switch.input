@@ -1,0 +1,16 @@
+package main
+
+type Stringer interface {
+	String() string
+}
+
+func describe(i interface{}) string {
+	switch v := i.(type) {
+	case int:
+		return "int"
+	case string:
+		return v
+	default:
+		return "unknown"
+	}
+}

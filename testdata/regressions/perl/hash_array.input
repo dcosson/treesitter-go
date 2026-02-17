@@ -1,0 +1,3 @@
+my @colors = ("red", "green", "blue");
+my %ages = ("Alice" => 30, "Bob" => 25);
+print $ages{"Alice"};

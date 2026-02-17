@@ -1,0 +1,8 @@
+interface User {
+    name: string;
+    age: number;
+}
+
+const data: any = { name: "Alice", age: 30 };
+const user = data as User;
+const name: string = user.name;

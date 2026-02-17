@@ -1,0 +1,1 @@
+(program (module (constant) (body_statement (method (identifier) (body_statement (string (string_content)))))) (class (constant) (body_statement (call (identifier) (argument_list (constant))) (method (identifier) (method_parameters (identifier)) (body_statement (assignment (instance_variable) (identifier)))))))

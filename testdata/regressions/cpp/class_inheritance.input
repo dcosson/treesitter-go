@@ -1,0 +1,12 @@
+class Base {
+public:
+    virtual void speak() const = 0;
+    virtual ~Base() = default;
+};
+
+class Derived : public Base {
+public:
+    void speak() const override {
+        std::cout << "hello";
+    }
+};

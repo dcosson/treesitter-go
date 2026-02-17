@@ -1,0 +1,9 @@
+int add(int a, int b) {
+    return a + b;
+}
+
+int main() {
+    int (*fn)(int, int) = add;
+    int result = fn(3, 4);
+    return 0;
+}

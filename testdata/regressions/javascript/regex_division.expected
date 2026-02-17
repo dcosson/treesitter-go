@@ -1,0 +1,1 @@
+(program (variable_declaration (variable_declarator (identifier) (binary_expression (number) (number)))) (variable_declaration (variable_declarator (identifier) (regex (regex_pattern) (regex_flags)))) (variable_declaration (variable_declarator (identifier) (binary_expression (identifier) (member_expression (identifier) (property_identifier))))))

@@ -1,0 +1,14 @@
+if [ -f "test.txt" ]; then
+    echo "exists"
+elif [ -d "test" ]; then
+    echo "directory"
+fi
+
+case "$1" in
+    start)
+        echo "starting"
+        ;;
+    stop)
+        echo "stopping"
+        ;;
+esac
