@@ -209,6 +209,10 @@ func TestStackMergeDifferentStates(t *testing.T) {
 	if ok {
 		t.Error("merge of different states should fail")
 	}
+	// Failed merge should not remove versions.
+	if stack.VersionCount() != 2 {
+		t.Errorf("version count after failed merge = %d, want 2", stack.VersionCount())
+	}
 }
 
 func TestStackPauseResume(t *testing.T) {
@@ -435,6 +439,111 @@ func TestStackActiveVersionCount(t *testing.T) {
 	stack.Halt(StackVersion(2))
 	if stack.ActiveVersionCount() != 1 {
 		t.Errorf("active = %d, want 1", stack.ActiveVersionCount())
+	}
+}
+
+func TestStackSwapVersions(t *testing.T) {
+	arena := NewSubtreeArena(32)
+	stack := NewStack(arena)
+
+	stack.AddVersion(StateID(10), Length{Bytes: 0})
+	stack.AddVersion(StateID(20), Length{Bytes: 0})
+	stack.AddVersion(StateID(30), Length{Bytes: 0})
+
+	// Swap v0 and v2.
+	stack.SwapVersions(StackVersion(0), StackVersion(2))
+
+	if stack.State(StackVersion(0)) != 30 {
+		t.Errorf("v0 state after swap = %d, want 30", stack.State(StackVersion(0)))
+	}
+	if stack.State(StackVersion(2)) != 10 {
+		t.Errorf("v2 state after swap = %d, want 10", stack.State(StackVersion(2)))
+	}
+	// v1 should be unchanged.
+	if stack.State(StackVersion(1)) != 20 {
+		t.Errorf("v1 state after swap = %d, want 20", stack.State(StackVersion(1)))
+	}
+}
+
+func TestStackNodeCountSinceError(t *testing.T) {
+	arena := NewSubtreeArena(32)
+	lang := makeSubtreeTestLanguage()
+	stack := NewStack(arena)
+
+	v0 := stack.AddVersion(StateID(1), Length{Bytes: 0})
+
+	// Initially, nodeCountAtLastError is 0, so nodeCountSinceError = nodeCount.
+	// After AddVersion, nodeCount is 1 (from AddVersion).
+	if got := stack.NodeCountSinceError(v0); got != 1 {
+		t.Errorf("initial nodeCountSinceError = %d, want 1", got)
+	}
+
+	// Push a few nodes.
+	for i := 0; i < 5; i++ {
+		leaf := NewLeafSubtree(arena, Symbol(1),
+			Length{Bytes: 0}, Length{Bytes: 1, Point: Point{Column: 1}},
+			StateID(1), false, false, false, lang)
+		stack.Push(v0, StateID(2), leaf, false, Length{Bytes: uint32(i + 1)})
+	}
+
+	// nodeCount should be 6 (1 initial + 5 pushes), nodeCountSinceError = 6.
+	if got := stack.NodeCountSinceError(v0); got != 6 {
+		t.Errorf("nodeCountSinceError after 5 pushes = %d, want 6", got)
+	}
+
+	// Add error cost — this should record the current nodeCount as baseline.
+	stack.AddErrorCost(v0, 100)
+
+	// nodeCountSinceError should now be 0 (just had an error).
+	if got := stack.NodeCountSinceError(v0); got != 0 {
+		t.Errorf("nodeCountSinceError after error = %d, want 0", got)
+	}
+
+	// Push more nodes after error.
+	for i := 0; i < 3; i++ {
+		leaf := NewLeafSubtree(arena, Symbol(1),
+			Length{Bytes: 0}, Length{Bytes: 1, Point: Point{Column: 1}},
+			StateID(1), false, false, false, lang)
+		stack.Push(v0, StateID(2), leaf, false, Length{Bytes: uint32(10 + i)})
+	}
+
+	// nodeCountSinceError should be 3.
+	if got := stack.NodeCountSinceError(v0); got != 3 {
+		t.Errorf("nodeCountSinceError after 3 post-error pushes = %d, want 3", got)
+	}
+}
+
+func TestStackNodeCountSinceErrorPropagatesOnSplit(t *testing.T) {
+	arena := NewSubtreeArena(32)
+	lang := makeSubtreeTestLanguage()
+	stack := NewStack(arena)
+
+	v0 := stack.AddVersion(StateID(1), Length{Bytes: 0})
+
+	// Push some nodes and add error.
+	for i := 0; i < 3; i++ {
+		leaf := NewLeafSubtree(arena, Symbol(1),
+			Length{Bytes: 0}, Length{Bytes: 1, Point: Point{Column: 1}},
+			StateID(1), false, false, false, lang)
+		stack.Push(v0, StateID(2), leaf, false, Length{Bytes: uint32(i + 1)})
+	}
+	stack.AddErrorCost(v0, 100)
+
+	// Push 2 more after error.
+	for i := 0; i < 2; i++ {
+		leaf := NewLeafSubtree(arena, Symbol(1),
+			Length{Bytes: 0}, Length{Bytes: 1, Point: Point{Column: 1}},
+			StateID(1), false, false, false, lang)
+		stack.Push(v0, StateID(2), leaf, false, Length{Bytes: uint32(10 + i)})
+	}
+
+	// Split should preserve the error baseline.
+	v1 := stack.Split(v0)
+
+	countV0 := stack.NodeCountSinceError(v0)
+	countV1 := stack.NodeCountSinceError(v1)
+	if countV0 != countV1 {
+		t.Errorf("split should preserve nodeCountSinceError: v0=%d v1=%d", countV0, countV1)
 	}
 }
 

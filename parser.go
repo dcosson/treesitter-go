@@ -58,7 +58,7 @@ const (
 	ErrorCostPerSkippedChar = 1
 
 	MaxVersionCount     = 6
-	MaxCostDifference   = 1800
+	MaxCostDifference   = 16 * ErrorCostPerSkippedTree // = 1600, matches C
 	MaxSummaryDepth     = 16
 
 	defaultCancellationInterval = 100
@@ -1050,9 +1050,105 @@ func (p *Parser) createMissingToken(symbol Symbol) Subtree {
 	return st
 }
 
-// condenseStack merges compatible versions and prunes costly versions.
+// errorStatus captures the quality metrics for a parse version,
+// used by compareVersions to determine which version to keep.
+// Mirrors C tree-sitter's ErrorStatus struct.
+type errorStatus struct {
+	cost              uint32
+	nodeCount         uint32
+	dynamicPrecedence int32
+	isInError         bool
+}
+
+// errorComparison is the result of comparing two version statuses.
+// Mirrors C tree-sitter's ErrorComparison enum.
+type errorComparison int
+
+const (
+	errorComparisonTakeLeft    errorComparison = iota // left is decisively better — kill right
+	errorComparisonPreferLeft                         // left is better, but try merge first
+	errorComparisonNone                               // equivalent, try merge
+	errorComparisonPreferRight                        // right is better, swap or merge
+	errorComparisonTakeRight                          // right is decisively better — kill left
+)
+
+// versionStatus builds an errorStatus for a stack version.
+// Mirrors ts_parser__version_status in C.
+func (p *Parser) versionStatus(version StackVersion) errorStatus {
+	cost := p.stack.ErrorCost(version)
+	isPaused := p.stack.IsPaused(version)
+	if isPaused {
+		cost += ErrorCostPerSkippedTree
+	}
+	return errorStatus{
+		cost:              cost,
+		nodeCount:         p.stack.NodeCountSinceError(version),
+		dynamicPrecedence: p.stack.DynamicPrecedence(version),
+		isInError:         isPaused || p.stack.State(version) == 0,
+	}
+}
+
+// compareVersions compares two version statuses to determine which
+// version should be kept. This is the core GLR version pruning logic.
+// Mirrors ts_parser__compare_versions in C.
+//
+// The comparison uses 4 dimensions:
+//  1. Error state: non-error versions strongly beat in-error versions
+//  2. Cost with node_count amplification: (cost_diff) * (1 + node_count)
+//     This ensures slightly-worse versions die quickly as they accumulate nodes
+//  3. Dynamic precedence: breaks ties when costs are equal
+func (p *Parser) compareVersions(a, b errorStatus) errorComparison {
+	// Rule 1: Non-error vs in-error — strong preference for non-error.
+	if !a.isInError && b.isInError {
+		if a.cost < b.cost {
+			return errorComparisonTakeLeft
+		}
+		return errorComparisonPreferLeft
+	}
+	if a.isInError && !b.isInError {
+		if b.cost < a.cost {
+			return errorComparisonTakeRight
+		}
+		return errorComparisonPreferRight
+	}
+
+	// Rule 2: Cost comparison with node_count amplification.
+	if a.cost < b.cost {
+		if uint64(b.cost-a.cost)*uint64(1+a.nodeCount) > uint64(MaxCostDifference) {
+			return errorComparisonTakeLeft
+		}
+		return errorComparisonPreferLeft
+	}
+	if b.cost < a.cost {
+		if uint64(a.cost-b.cost)*uint64(1+b.nodeCount) > uint64(MaxCostDifference) {
+			return errorComparisonTakeRight
+		}
+		return errorComparisonPreferRight
+	}
+
+	// Rule 3: Equal cost — break ties by dynamic precedence.
+	if a.dynamicPrecedence > b.dynamicPrecedence {
+		return errorComparisonPreferLeft
+	}
+	if b.dynamicPrecedence > a.dynamicPrecedence {
+		return errorComparisonPreferRight
+	}
+
+	return errorComparisonNone
+}
+
+// condenseStack merges compatible versions and prunes inferior ones using
+// pair-wise comparison with cost amplification. This matches C tree-sitter's
+// ts_parser__condense_stack algorithm.
+//
+// The algorithm:
+//  1. Remove halted versions immediately
+//  2. Compare each version against all prior versions using compareVersions
+//  3. Decisive kills (TakeLeft/TakeRight) remove versions regardless of state
+//  4. Soft preferences try merge (same state) or swap positions
+//  5. Hard cap removes from the end (relying on ordering from swaps)
 func (p *Parser) condenseStack() {
-	// Merge compatible versions (same state).
+	// Phase 1: Merge compatible versions (same state).
 	for i := 0; i < p.stack.VersionCount(); i++ {
 		vi := StackVersion(i)
 		if !p.stack.IsActive(vi) {
@@ -1069,7 +1165,41 @@ func (p *Parser) condenseStack() {
 		}
 	}
 
-	// Prune by cost.
+	// Phase 2: Pair-wise version comparison for decisive kills.
+	// Unlike C's single-pass condenseStack, we use a phased approach that
+	// separates merging (Phase 1), comparison-based kills (Phase 2), cost
+	// pruning (Phase 3), and hard cap (Phase 4). Only decisive kills
+	// (TakeLeft/TakeRight) are applied here — soft preferences and swaps
+	// are not used because they interact badly with our phased approach
+	// (swaps change findActiveVersion tie-breaking, causing regressions).
+	for i := 0; i < p.stack.VersionCount(); i++ {
+		vi := StackVersion(i)
+		if !p.stack.IsActive(vi) {
+			continue
+		}
+		statusI := p.versionStatus(vi)
+
+		for j := 0; j < i; j++ {
+			vj := StackVersion(j)
+			if !p.stack.IsActive(vj) {
+				continue
+			}
+			statusJ := p.versionStatus(vj)
+
+			switch p.compareVersions(statusJ, statusI) {
+			case errorComparisonTakeLeft:
+				// j is decisively better — kill i.
+				p.stack.Halt(vi)
+				goto nextVersion // vi is dead, no more comparisons needed
+			case errorComparisonTakeRight:
+				// i is decisively better — kill j.
+				p.stack.Halt(vj)
+			}
+		}
+	nextVersion:
+	}
+
+	// Phase 3: Prune by absolute cost (original behavior).
 	if p.stack.ActiveVersionCount() > 1 {
 		bestCost := uint32(0)
 		first := true
@@ -1096,10 +1226,7 @@ func (p *Parser) condenseStack() {
 		}
 	}
 
-	// Enforce max version count. When too many active versions exist,
-	// halt the ones with the worst scores (highest error cost, then
-	// lowest dynamic precedence). This prevents version explosion in
-	// grammars with many GLR ambiguities while preserving the best paths.
+	// Phase 4: Hard cap — search for worst version.
 	activeCount := p.stack.ActiveVersionCount()
 	if activeCount > MaxVersionCount {
 		toHalt := activeCount - MaxVersionCount
@@ -1131,7 +1258,7 @@ func (p *Parser) condenseStack() {
 		}
 	}
 
-	// Remove halted versions.
+	// Phase 5: Remove halted versions.
 	p.stack.CompactHaltedVersions()
 }
 

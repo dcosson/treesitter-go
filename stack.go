@@ -79,6 +79,11 @@ type StackHead struct {
 	summary StackSummary
 	// lastExternalToken tracks external scanner state for this version.
 	lastExternalToken Subtree
+	// nodeCountAtLastError records the node count when the last error
+	// occurred on this version. Used by NodeCountSinceError to compute
+	// the number of nodes parsed since the last error, which is used
+	// by compareVersions for cost amplification.
+	nodeCountAtLastError uint32
 }
 
 // StackStatus indicates whether a version is active, paused, or halted.
@@ -192,6 +197,35 @@ func (s *Stack) DynamicPrecedence(version StackVersion) int32 {
 		return 0
 	}
 	return head.node.dynamicPrecedence
+}
+
+// NodeCountSinceError returns the number of nodes parsed since the last
+// error on this version. Mirrors ts_stack_node_count_since_error in C.
+func (s *Stack) NodeCountSinceError(version StackVersion) uint32 {
+	if int(version) >= len(s.heads) {
+		return 0
+	}
+	head := &s.heads[version]
+	if head.node == nil {
+		return 0
+	}
+	// If the node count dropped below the error marker (e.g. after a pop),
+	// reset the marker to the current count.
+	if head.node.nodeCount < head.nodeCountAtLastError {
+		head.nodeCountAtLastError = head.node.nodeCount
+	}
+	return head.node.nodeCount - head.nodeCountAtLastError
+}
+
+// SwapVersions swaps two version heads. Used by condenseStack when a
+// higher-indexed version is preferred over a lower-indexed one, to maintain
+// the ordering invariant that better versions occupy lower indices.
+// Mirrors ts_stack_swap_versions in C.
+func (s *Stack) SwapVersions(v1, v2 StackVersion) {
+	if int(v1) >= len(s.heads) || int(v2) >= len(s.heads) {
+		return
+	}
+	s.heads[v1], s.heads[v2] = s.heads[v2], s.heads[v1]
 }
 
 // Status returns the status of a version.
@@ -377,10 +411,11 @@ func (s *Stack) Split(version StackVersion) StackVersion {
 	head := s.heads[version]
 	newVersion := StackVersion(len(s.heads))
 	s.heads = append(s.heads, StackHead{
-		node:              head.node,
-		status:            head.status,
-		summary:           head.summary,
-		lastExternalToken: head.lastExternalToken,
+		node:                 head.node,
+		status:               head.status,
+		summary:              head.summary,
+		lastExternalToken:    head.lastExternalToken,
+		nodeCountAtLastError: head.nodeCountAtLastError,
 	})
 	return newVersion
 }
@@ -551,13 +586,18 @@ func (s *Stack) LastExternalToken(version StackVersion) Subtree {
 	return s.heads[version].lastExternalToken
 }
 
-// AddErrorCost adds to the error cost of a version's top node.
+// AddErrorCost adds to the error cost of a version's top node and records
+// the current node count as the error baseline for NodeCountSinceError.
 func (s *Stack) AddErrorCost(version StackVersion, cost uint32) {
 	if int(version) >= len(s.heads) {
 		return
 	}
-	if s.heads[version].node != nil {
-		s.heads[version].node.errorCost += cost
+	head := &s.heads[version]
+	if head.node != nil {
+		head.node.errorCost += cost
+		// Record the current node count as the "last error" baseline.
+		// NodeCountSinceError will measure from this point forward.
+		head.nodeCountAtLastError = head.node.nodeCount
 	}
 }
 

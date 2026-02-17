@@ -337,3 +337,98 @@ func TestParserReset(t *testing.T) {
 		t.Error("expected finishedTree zero")
 	}
 }
+
+func TestCompareVersions(t *testing.T) {
+	p := NewParser()
+
+	tests := []struct {
+		name string
+		a, b errorStatus
+		want errorComparison
+	}{
+		{
+			name: "non-error beats in-error with lower cost",
+			a:    errorStatus{cost: 50, isInError: false},
+			b:    errorStatus{cost: 100, isInError: true},
+			want: errorComparisonTakeLeft,
+		},
+		{
+			name: "non-error beats in-error with equal cost",
+			a:    errorStatus{cost: 100, isInError: false},
+			b:    errorStatus{cost: 100, isInError: true},
+			want: errorComparisonPreferLeft,
+		},
+		{
+			name: "non-error beats in-error with higher cost",
+			a:    errorStatus{cost: 200, isInError: false},
+			b:    errorStatus{cost: 100, isInError: true},
+			want: errorComparisonPreferLeft,
+		},
+		{
+			name: "in-error loses to non-error (symmetric)",
+			a:    errorStatus{cost: 100, isInError: true},
+			b:    errorStatus{cost: 200, isInError: false},
+			want: errorComparisonPreferRight,
+		},
+		{
+			name: "cost amplification - decisive kill",
+			// cost_diff=100, nodeCount=20: 100 * 21 = 2100 > 1600
+			a: errorStatus{cost: 100, nodeCount: 20},
+			b: errorStatus{cost: 200, nodeCount: 0},
+			want: errorComparisonTakeLeft,
+		},
+		{
+			name: "cost amplification - soft preference",
+			// cost_diff=100, nodeCount=5: 100 * 6 = 600 < 1600
+			a: errorStatus{cost: 100, nodeCount: 5},
+			b: errorStatus{cost: 200, nodeCount: 0},
+			want: errorComparisonPreferLeft,
+		},
+		{
+			name: "cost amplification - symmetric decisive kill",
+			// cost_diff=100, nodeCount=20: 100 * 21 = 2100 > 1600
+			a: errorStatus{cost: 200, nodeCount: 0},
+			b: errorStatus{cost: 100, nodeCount: 20},
+			want: errorComparisonTakeRight,
+		},
+		{
+			name: "equal cost - dynamic precedence tiebreak left",
+			a:    errorStatus{cost: 50, dynamicPrecedence: 10},
+			b:    errorStatus{cost: 50, dynamicPrecedence: 5},
+			want: errorComparisonPreferLeft,
+		},
+		{
+			name: "equal cost - dynamic precedence tiebreak right",
+			a:    errorStatus{cost: 50, dynamicPrecedence: 5},
+			b:    errorStatus{cost: 50, dynamicPrecedence: 10},
+			want: errorComparisonPreferRight,
+		},
+		{
+			name: "completely equal",
+			a:    errorStatus{cost: 50, nodeCount: 10, dynamicPrecedence: 5},
+			b:    errorStatus{cost: 50, nodeCount: 10, dynamicPrecedence: 5},
+			want: errorComparisonNone,
+		},
+		{
+			name: "both in error - cost decides",
+			a:    errorStatus{cost: 50, isInError: true},
+			b:    errorStatus{cost: 200, isInError: true},
+			want: errorComparisonPreferLeft,
+		},
+		{
+			name: "zero cost difference with large nodeCount",
+			a:    errorStatus{cost: 0, nodeCount: 1000},
+			b:    errorStatus{cost: 0, nodeCount: 0},
+			want: errorComparisonNone,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := p.compareVersions(tt.a, tt.b)
+			if got != tt.want {
+				t.Errorf("compareVersions(%+v, %+v) = %d, want %d", tt.a, tt.b, got, tt.want)
+			}
+		})
+	}
+}
