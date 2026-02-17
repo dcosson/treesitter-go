@@ -1,8 +1,8 @@
 # Corpus Test Failure Analysis
 
-Updated: 2026-02-16 (post all P1 fixes through ef86aca)
+Updated: 2026-02-16 (post scanner result variable fix 9bdafd3)
 
-## Current State: 1474/1619 passing (91.0%)
+## Current State: 1511/1619 passing (93.3%)
 
 Key fixes applied (cumulative):
 - Alias sequence extraction (9e978d1): resolved ~167 alias-related failures
@@ -10,6 +10,7 @@ Key fixes applied (cumulative):
 - Dynamic precedence handling (65c6252): Go 55→57, C++ +27
 - Alias-aware visibility (044e755): +95 tests across 10 languages
 - Comment extras placement (b5dc3bc): +103 tests across 12 languages
+- Scanner result variable / END_STATE (9bdafd3): +37 tests, CSS→100%, Rust→99.3%
 
 The corpus test runner strips field annotations, so field mismatches are not counted.
 
@@ -18,110 +19,118 @@ The corpus test runner strips field annotations, so field mismatches are not cou
 | Language    | Total | Pass | Fail | Pass Rate |
 |-------------|------:|-----:|-----:|----------:|
 | JSON        |     6 |    6 |    0 |   100.0%  |
+| CSS         |    38 |   38 |    0 |   100.0%  |
+| Rust        |   147 |  146 |    1 |    99.3%  |
 | TypeScript  |   112 |  110 |    2 |    98.2%  |
+| Ruby        |   290 |  282 |    8 |    97.2%  |
 | Lua         |    37 |   36 |    1 |    97.3%  |
-| Ruby        |   290 |  279 |   11 |    96.2%  |
-| Bash        |   100 |   95 |    5 |    95.0%  |
-| Java        |   108 |  101 |    7 |    93.5%  |
-| JavaScript  |   116 |  108 |    8 |    93.1%  |
-| Rust        |   147 |  134 |   13 |    91.2%  |
-| C           |    85 |   77 |    8 |    90.6%  |
-| CSS         |    38 |   34 |    4 |    89.5%  |
-| Python      |   115 |  103 |   12 |    89.6%  |
+| Java        |   108 |  105 |    3 |    97.2%  |
+| JavaScript  |   116 |  112 |    4 |    96.6%  |
+| Bash        |   100 |   96 |    4 |    96.0%  |
+| C           |    85 |   78 |    7 |    91.8%  |
+| Python      |   115 |  104 |   11 |    90.4%  |
 | Go          |    67 |   59 |    8 |    88.1%  |
-| Perl        |   199 |  171 |   28 |    85.9%  |
-| C++         |   179 |  153 |   26 |    85.5%  |
-| HTML        |    20 |    8 |   12 |    40.0%  |
+| Perl        |   199 |  172 |   27 |    86.4%  |
+| C++         |   179 |  154 |   25 |    86.0%  |
+| HTML        |    20 |   13 |    7 |    65.0%  |
 
-## Remaining Failures (145 total)
+## Remaining Failures (108 total)
 
-All comment placement, alias visibility, and trailing extras issues have been
-resolved. The remaining 145 failures break down into four categories:
+All comment placement, alias visibility, trailing extras, and scanner END_STATE
+issues have been resolved. The remaining 108 failures break down into four categories:
 
-| Category                          | Count | % of 145 |
+| Category                          | Count | % of 108 |
 |-----------------------------------|------:|---------:|
-| Structural mismatch               |    85 |    58.6% |
-| Empty/nil parse tree              |    50 |    34.5% |
-| Timeout/infinite loop             |     8 |     5.5% |
-| Missing alias content             |     2 |     1.4% |
+| Structural mismatch               |    69 |    63.9% |
+| Empty/nil parse tree              |    19 |    17.6% |
+| Internal name leaking             |    12 |    11.1% |
+| Timeout/infinite loop             |     8 |     7.4% |
 
-Comment misplacement is now **zero** — the b5dc3bc fix resolved all of them.
+Comment misplacement is **zero**. The scanner result variable fix (9bdafd3)
+resolved 37 failures caused by codegen generating `return false` for
+non-accepting lex states even when a prior state had accepted.
 
 ### Per-Language Failure Breakdown
 
-| Language | Failures | Empty | Structural | Timeout | Missing Alias |
-|----------|----------|-------|------------|---------|---------------|
-| Perl     |       28 |     4 |         24 |       0 |             0 |
-| C++      |       26 |     1 |         17 |       8 |             0 |
-| Rust     |       13 |    11 |          2 |       0 |             0 |
-| HTML     |       12 |    10 |          2 |       0 |             0 |
-| Python   |       12 |     1 |         10 |       0 |             1 |
-| Ruby     |       11 |     5 |          6 |       0 |             0 |
-| C        |        8 |     2 |          6 |       0 |             0 |
-| Go       |        8 |     2 |          6 |       0 |             0 |
-| JS       |        8 |     6 |          2 |       0 |             0 |
-| Java     |        7 |     4 |          3 |       0 |             0 |
-| Bash     |        5 |     1 |          3 |       0 |             1 |
-| CSS      |        4 |     3 |          1 |       0 |             0 |
-| TS       |        2 |     1 |          1 |       0 |             0 |
-| Lua      |        1 |     0 |          1 |       0 |             0 |
-| **Total**| **145** | **50**|      **85**|    **8**|         **2** |
+| Language | Failures | Empty | Internal | Structural | Timeout |
+|----------|----------|-------|----------|------------|---------|
+| Perl     |       27 |     2 |        8 |         17 |       0 |
+| C++      |       25 |     0 |        0 |         17 |       8 |
+| Python   |       11 |     1 |        1 |          9 |       0 |
+| Go       |        8 |     2 |        0 |          6 |       0 |
+| Ruby     |        8 |     3 |        3 |          2 |       0 |
+| C        |        7 |     1 |        0 |          6 |       0 |
+| HTML     |        7 |     5 |        0 |          2 |       0 |
+| Bash     |        4 |     1 |        0 |          3 |       0 |
+| JS       |        4 |     2 |        0 |          2 |       0 |
+| Java     |        3 |     1 |        0 |          2 |       0 |
+| TS       |        2 |     1 |        0 |          1 |       0 |
+| Rust     |        1 |     0 |        0 |          1 |       0 |
+| Lua      |        1 |     0 |        0 |          1 |       0 |
+| **Total**| **108** | **19**|     **12**|     **69**|    **8**|
 
 ## Failure Category Details
 
-### Category 1: Empty/Nil Parse Tree (50)
+### Category 1: Empty/Nil Parse Tree (19)
 
-The parser returns no output at all. Sub-patterns:
+The parser returns no output or a wrong root type.
 
-**HTML implicit close tags (10)**: All 10 remaining HTML failures produce empty
-trees. The external scanner's `scanImplicitEndTag` doesn't handle many HTML5
-optional-close rules. Tests: Nested_tags, Custom_tags, LI/DT/P/Ruby/TR/TD
-elements without close tags, named/numeric/multiple entities.
+**Blank output (15)**: Parser produced nothing. Includes:
+- HTML (2): DT/DL elements, Ruby annotation elements without close tags
+- Ruby (3): basic_heredocs, heredocs_with_in_args, newline-delimited_strings
+- JS (2): Alphabetical_infix_operators_split_across_lines, Extra_complex_literals
+- Go (2): Error_detected_at_globally_reserved_keyword, String_literals
+- Perl (2): Double_dollar_edge_cases, range_ops (both expect ERROR nodes)
+- C (1): Typedefs
+- Java (1): switch_with_unnamed_pattern_variable
+- Python (1): An_error_before_a_string_literal (expects ERROR)
+- TS (1): Type_arguments_in_JSX
 
-**String content/alias nodes (8)**: Expected trees contain alias nodes like
-`string_content`, `string_fragment`, `template_expression` that require the
-NonTerminalAliasMap to be emitted. Affects Go (String_literals), Java
-(string_interpolation, text_block), JavaScript (Class_Decorators, Classes,
-Extra_complex_literals, JSX_entities), Ruby (newline-delimited_strings).
+**Wrong/garbage root type (4)**: Parser returned a token fragment:
+- Bash: File_redirects → `heredoc_redirect_token1`
+- HTML (3): LI/P/TR elements → `>` (scanner not emitting implicit end tags)
 
-**External scanner patterns (4)**: Tests involving `command_substitution`
-(Bash), `token_tree`/attribute macros (Rust) that depend on external scanner
-features.
+### Category 2: Internal Name Leaking (12)
 
-**Ruby heredocs (2)**: basic_heredocs, heredocs_with_in_args.
+Internal `_`-prefixed rule names appear as the root parse result instead of
+the proper `source_file`/`module`/`program` root. This is the
+**NonTerminalAliasMap** issue (bead qkj).
 
-**Other empty (26)**: Various root causes including multi-example corpus tests
-where parser fails on earlier example, missing grammar features (Rust generics,
-Perl edge cases), external scanner dependencies. Spans C, C++, CSS, Go, Java,
-JS, Perl, Ruby, Rust, TS.
+**Perl (8)**: Scanner-based string/heredoc internal nodes:
+- `_q_string_content`: ''_strings, qw()_lists
+- `_qq_string_content`: ""_strings, Interpolation_in_""_strings,
+  Array/Hash_element_interpolation, Space_skips_interpolation
+- `_heredoc_delimiter`: Indented_heredocs
 
-### Category 2: Structural Mismatch (85)
+**Ruby (3)**: Scanner-based heredoc/string internal nodes:
+- `_heredoc_body_start`: heredocs_in_context, heredocs_with_interpolation
+- `_line_break`: nested_strings_with_different_delimiters
 
-Parser produces output but tree structure differs from expected.
+**Python (1)**: Indent/dedent internal node:
+- `_dedent`: Function_definitions
 
-**Internal/underscore node names leaking (12)**: Internal rule names like
-`_qq_string_content`, `_q_string_content`, `_heredoc_delimiter`,
-`_heredoc_body_start`, `_line_break`, `_dedent` appear where the grammar
-expects them aliased to public names. This is the **NonTerminalAliasMap** issue
-(bead qkj). Affects Perl (8), Python (1), Ruby (3).
+### Category 3: Structural Mismatch (69)
 
-**type_identifier confusion (10)**: `type_identifier` appears where expected
-tree has `identifier` or different type. Suggests keyword/identifier extraction
-misclassification. Affects C (4: Common_constants, Identifiers,
-Primitive-typed_variable_declarations, Type_modifiers), C++ (4: same tests),
-Go (2: For_statements, Select_statements).
+Parser produces a tree but structure differs from expected.
+
+**Perl ambiguous function calls (5+)**: `function_call_expression` vs
+`ambiguous_function_call_expression` disambiguation. Perl-specific issue.
+
+**C/C++ type_identifier confusion (6)**: `type_identifier` where `identifier`
+expected. C: Common_constants, Identifiers, Primitive-typed_variable_declarations,
+Type_modifiers. C++ inherits same issues.
 
 **Python keyword/print issues (4)**: Python 2 `print_statement` vs Python 3
-`call` confusion, `tuple` vs `parenthesized_expression` classification.
+`call` confusion, `tuple` vs `parenthesized_expression`.
 
 **Go type_conversion_expression (1)**: `type_conversion_expression` vs
-`call_expression` ambiguity in Type_switch_statements.
+`call_expression` in Type_switch_statements.
 
-**Remaining structural (58)**: Various GLR resolution, precedence handling,
-and ambiguity resolution differences across all languages. This is the long
-tail of parser correctness.
+**Remaining structural (53)**: Various GLR resolution, precedence handling,
+and ambiguity resolution differences across all languages. The long tail of
+parser correctness issues.
 
-### Category 3: Timeout/Infinite Loop (8)
+### Category 4: Timeout/Infinite Loop (8)
 
 All **C++ only**, all at exactly 10.00s (test timeout). Parser gets stuck in
 GLR ambiguity resolution: casts_vs_multiplications, Noreturn_Type_Qualifier,
@@ -129,12 +138,6 @@ For_loops, Switch_statements, Concept_definition,
 Compound_literals_without_parentheses, Template_calls, Parameter_pack_expansions.
 
 Likely related to `ts_parser__compare_versions` gap (bead ums/wcu.18).
-
-### Category 4: Missing Alias Content (2)
-
-Expected nodes present in expected tree but absent from actual:
-Bash/File_redirects (string_content), Python/An_error_before_a_string_literal
-(string_content).
 
 ## Remaining High-Impact Fix Priorities
 
@@ -176,74 +179,61 @@ appear where `identifier` is expected. Needs investigation.
 
 ---
 
-## Per-Language Breakdown (Post ef86aca)
+## Per-Language Breakdown (Post 9bdafd3)
 
-### C (85 tests: 77 pass, 8 fail)
+### C (85 tests: 78 pass, 7 fail)
 
 - **type_identifier confusion (4)**: Common_constants, Identifiers,
   Primitive-typed_variable_declarations, Type_modifiers
-- **Empty parse (2)**: Object-like_macro_definitions, Typedefs
+- **Empty parse (1)**: Typedefs
 - **Other structural (2)**: Call_expressions_vs_empty_declarations,
   Comments_after_for_loops
 
-### C++ (179 tests: 153 pass, 26 fail)
+### C++ (179 tests: 154 pass, 25 fail)
 
 - **Timeout (8)**: casts_vs_multiplications, Noreturn_Type_Qualifier,
   For_loops, Switch_statements, Concept_definition,
   Compound_literals_without_parentheses, Template_calls,
   Parameter_pack_expansions
-- **type_identifier confusion (4)**: Same tests as C
-- **Empty parse (1)**: Object-like_macro_definitions
-- **Other structural (13)**: Template parsing, structured binding, declaration
-  vs expression ambiguity
+- **Structural (17)**: type_identifier confusion, template parsing,
+  structured binding, declaration vs expression ambiguity
 
-### Rust (147 tests: 134 pass, 13 fail)
+### Rust (147 tests: 146 pass, 1 fail)
 
-- **Empty parse (11)**: Attribute_macros, Immediate_inner_attribute,
-  Macro_invocation, For_expressions, Function_types, GATs, Generic_types,
-  Inherent_Impls, Loop_expressions, Trait_impls, Where_clauses
-- **Structural (2)**: Minor differences
+- **Structural (1)**: Minor difference
 
-### Bash (100 tests: 95 pass, 5 fail)
+### Bash (100 tests: 96 pass, 4 fail)
 
 - **Empty parse (1)**: Command_substitutions
-- **Missing alias (1)**: File_redirects (string_content)
-- **Structural (3)**: Various redirections/expansions
+- **Structural (3)**: File_redirects (wrong root), other redirections
 
-### Ruby (290 tests: 279 pass, 11 fail)
+### Ruby (290 tests: 282 pass, 8 fail)
 
-- **Empty parse (5)**: basic_heredocs, heredocs_with_in_args, newline_strings,
-  calls_on_negated_literals, minus_call_exponential_range
+- **Empty parse (3)**: basic_heredocs, heredocs_with_in_args, newline_strings
 - **Internal names leaking (3)**: heredocs_with_interpolation, nested_strings,
   heredocs_in_context_starting_with_dot
-- **Other structural (3)**: Various
+- **Structural (2)**: Various
 
-### Perl (199 tests: 171 pass, 28 fail)
+### Perl (199 tests: 172 pass, 27 fail)
 
-- **Internal names leaking (8)**: `_qq_string_content`, `_q_string_content`
-  in ""_strings, ''_strings, Array/Hash_element_interpolation,
-  Indented_heredocs, Interpolation, Space_skips, qw()_lists
-- **Structural (16)**: Signatures, ambiguous function call resolution,
+- **Internal names leaking (8)**: `_qq_string_content`, `_q_string_content`,
+  `_heredoc_delimiter` in string/heredoc tests
+- **Structural (17)**: Signatures, ambiguous function call resolution,
   stub_expression differences
-- **Empty parse (4)**: Double_dollar_edge_cases, Labels, autoquote_edge_cases,
-  range_ops
+- **Empty parse (2)**: Double_dollar_edge_cases, range_ops
 
-### CSS (38 tests: 34 pass, 4 fail)
+### CSS (38 tests: 38 pass, 0 fail) -- 100%
 
-- **Empty parse (3)**: Numbers, Binary_arithmetic, Comments_after_numbers
-- **Structural (1)**: Media statements
+### HTML (20 tests: 13 pass, 7 fail)
 
-### HTML (20 tests: 8 pass, 12 fail)
-
-- **Empty parse (10)**: Implicit close tags not handled for LI, DT, P, Ruby,
-  TR/TD/TH elements, entities
+- **Empty parse (5)**: DT/DL, Ruby annotations, LI, P, TR/TD/TH elements
+  (implicit close tags not handled)
 - **Structural (2)**: COLGROUP, comment
 
-### Java (108 tests: 101 pass, 7 fail)
+### Java (108 tests: 105 pass, 3 fail)
 
-- **Empty parse (4)**: string_interpolation, text_block,
-  record_declaration_inside_class, switch_with_unnamed_pattern
-- **Structural (3)**: Minor differences
+- **Empty parse (1)**: switch_with_unnamed_pattern_variable
+- **Structural (2)**: Minor differences
 
 ### Go (67 tests: 59 pass, 8 fail)
 
@@ -252,17 +242,15 @@ appear where `identifier` is expected. Needs investigation.
 - **Empty parse (2)**: Error_at_reserved_keyword, String_literals
 - **Other structural (3)**: Various
 
-### Python (115 tests: 103 pass, 12 fail)
+### Python (115 tests: 104 pass, 11 fail)
 
-- **Structural (10)**: print_statement/call confusion, match/case, patterns,
-  _dedent internal name
-- **Missing alias (1)**: string_content in error context
-- **Empty parse (1)**: Various
+- **Structural (9)**: print_statement/call confusion, match/case, patterns
+- **Internal name (1)**: _dedent in Function_definitions
+- **Empty parse (1)**: An_error_before_a_string_literal
 
-### JavaScript (116 tests: 108 pass, 8 fail)
+### JavaScript (116 tests: 112 pass, 4 fail)
 
-- **Empty parse (6)**: Class_Decorators, Classes, Extra_complex_literals,
-  Class_Property_Fields, Private_Class_Property_Fields, JSX_entities
+- **Empty parse (2)**: Alphabetical_infix_operators, Extra_complex_literals
 - **Structural (2)**: Minor
 
 ### TypeScript (112 tests: 110 pass, 2 fail)
@@ -285,15 +273,16 @@ appear where `identifier` is expected. Needs investigation.
 | + Dynamic precedence (65c6252)          |           ~10   |        79.4% |
 | + Alias visibility (044e755)            |           ~95   |        84.7% |
 | + Comment extras (b5dc3bc)              |          ~103   |        91.0% |
-| **Current**                             |               — |    **91.0%** |
+| + Scanner result variable (9bdafd3)     |           ~37   |        93.3% |
+| **Current**                             |               — |    **93.3%** |
 
 ## Remaining High-Impact Fixes
 
 | Fix                                     | Est. Tests | New Overall Rate |
 |-----------------------------------------|-----------:|-----------------:|
-| Negated range lex extraction (w3k)      |     ~20-40 |          ~92-94% |
-| NonTerminalAliasMap emission (qkj)      |      ~5-15 |          ~93-95% |
-| HTML implicit close tags                |       ~10  |          ~94-96% |
+| Negated range lex extraction (w3k)      |     ~15-30 |          ~94-96% |
+| NonTerminalAliasMap emission (qkj)      |      ~5-15 |          ~95-97% |
+| HTML implicit close tags                |       ~5-7 |          ~96-97% |
 
 ## Beads Tracking Remaining Fixes
 
