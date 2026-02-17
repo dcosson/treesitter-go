@@ -1,8 +1,8 @@
 # Corpus Test Failure Analysis
 
-Updated: 2026-02-16 (post scanner result variable fix 9bdafd3)
+Updated: 2026-02-16 (post GLR version pruning fix e9aeaa3)
 
-## Current State: 1511/1619 passing (93.3%)
+## Current State: 1532/1634 passing (93.8%)
 
 Key fixes applied (cumulative):
 - Alias sequence extraction (9e978d1): resolved ~167 alias-related failures
@@ -11,6 +11,7 @@ Key fixes applied (cumulative):
 - Alias-aware visibility (044e755): +95 tests across 10 languages
 - Comment extras placement (b5dc3bc): +103 tests across 12 languages
 - Scanner result variable / END_STATE (9bdafd3): +37 tests, CSS→100%, Rust→99.3%
+- GLR version pruning / ums (e9aeaa3): +9 tests (6 C++ timeouts, Ruby, HTML, Java), -3 regressions
 
 The corpus test runner strips field annotations, so field mismatches are not counted.
 
@@ -272,27 +273,38 @@ Perl-specific GLR ambiguity issue.
 | + Alias visibility (044e755)            |           ~95   |        84.7% |
 | + Comment extras (b5dc3bc)              |          ~103   |        91.0% |
 | + Scanner result variable (9bdafd3)     |           ~37   |        93.3% |
-| **Current**                             |               — |    **93.3%** |
+| + GLR version pruning (e9aeaa3)         |     +9/-3 (~+6) |        93.8% |
+| **Current**                             |               — |    **93.8%** |
 
-## Remaining High-Impact Fixes (Projected)
+## UMS Fix Details (e9aeaa3)
 
-| Fix                                     | Est. Tests | New Overall Rate |
-|-----------------------------------------|-----------:|-----------------:|
-| NonTerminalAliasMap emission (qkj)      |     ~12-20 |          ~94-95% |
-| C++ GLR timeout (ums)                   |         ~8 |          ~95-96% |
-| HTML implicit close tags                |         ~5 |          ~96%    |
-| type_identifier confusion               |         ~6 |          ~96-97% |
+Improvements (9): 6 C++ timeouts (casts_vs_mult, Noreturn, For_loops,
+Switch_statements, Compound_literals_without_parens, Template_calls),
+Ruby nested_strings, HTML comment, Java type_args_with_generics.
+
+Regressions (3): C++ Complex_fold_expression (NEW timeout), HTML Void_tags
+(NEW structural), Java method_references (NEW structural). Under investigation.
+
+## Remaining High-Impact Fixes
+
+| Fix                                     | Est. Tests | Notes |
+|-----------------------------------------|-----------:|-------|
+| Fix ums regressions                     |         +3 | Must fix to keep net gain |
+| wcu.19 (Perl/Ruby wrong-root)           |     ~12    | Parser/scanner interaction |
+| Soft preference GLR behavior            |    ~20-30  | Blocked by Python regression |
+| HTML implicit close tags                |       ~5   | Scanner work needed |
 
 ## Beads Tracking Remaining Fixes
 
-- **tree-sitter-go-w3k** (P1): Fix negated range extraction in lex DFA parser — in progress
-- **tree-sitter-go-qkj** (P2): Emit NonTerminalAliasMap in generated language.go
-- **tree-sitter-go-ums** (P2): Port ts_parser__compare_versions for GLR correctness
-- **tree-sitter-go-nlb** (P2): Call vs type_conversion_expression ambiguity
+- **tree-sitter-go-wcu.19** (P2): Perl/Ruby wrong-root production investigation
 - **tree-sitter-go-wcu.18** (P3): Merge link ordering to match C reference
+- **tree-sitter-go-nlb** (P2): Call vs type_conversion_expression ambiguity
 
 ## Closed Beads (Fixes Merged)
 
 - **tree-sitter-go-dhw**: Alias sequence extraction (9e978d1)
 - **tree-sitter-go-vuv**: Comment extras placement (b5dc3bc)
 - **tree-sitter-go-4cw**: Alias-aware visibility (044e755)
+- **tree-sitter-go-w3k**: Negated range lex (closed — not needed)
+- **tree-sitter-go-qkj**: NonTerminalAliasMap emission (d50fe7a)
+- **tree-sitter-go-ums**: GLR version pruning (e9aeaa3)
