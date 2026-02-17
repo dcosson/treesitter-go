@@ -2,7 +2,7 @@
   "id": "tree-sitter-go-860.10",
   "title": "Write pre-release manual QA procedure",
   "description": "Implement Section 11 of testing-strategy.md. Create docs/qa/ directory. Write QA template with the 6-item checklist (corpus pass rate gate, error recovery spot check, visual S-expression diff review, smoke test each language, performance sanity check, incremental parse spot check). Create testdata/smoke/ and testdata/review/ fixture directories.",
-  "status": "open",
+  "status": "closed",
   "priority": 2,
   "type": "task",
   "parent": "tree-sitter-go-860",
@@ -18,5 +18,7 @@
     "P3"
   ],
   "created_at": "2026-02-16T15:32:34.942149-08:00",
-  "updated_at": "2026-02-16T15:32:34.942149-08:00"
+  "updated_at": "2026-02-16T21:27:49.200204-08:00",
+  "closed_at": "2026-02-16T21:21:11.214422-08:00",
+  "close_reason": "Closed"
 }

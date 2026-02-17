@@ -1,0 +1,23 @@
+{
+  "id": "tree-sitter-go-wcu.21",
+  "title": "Investigate and fix empty/nil parse tree failures (19 tests)",
+  "description": "19 corpus tests produce empty output or wrong root type. Includes HTML implicit close tags (5), Ruby heredocs (3), JS operators (2), Go reserved keywords (2), Perl edge cases (2), and others. Investigate root causes, group by fixability, and implement fixes for the most tractable subset.",
+  "status": "in_progress",
+  "priority": 2,
+  "type": "bug",
+  "parent": "tree-sitter-go-wcu",
+  "dependencies": [
+    {
+      "id": "tree-sitter-go-wcu",
+      "type": "parent-child"
+    }
+  ],
+  "created_by": "Danny Cosson",
+  "owner": "dcosson@gmail.com",
+  "labels": [
+    "P2"
+  ],
+  "assignee": "Danny Cosson",
+  "created_at": "2026-02-16T21:30:01.179954-08:00",
+  "updated_at": "2026-02-16T21:30:53.968966-08:00"
+}

@@ -1,0 +1,22 @@
+{
+  "id": "tree-sitter-go-wcu.20",
+  "title": "Investigate type_identifier vs identifier confusion (Cluster E, 6 tests)",
+  "description": "",
+  "status": "open",
+  "priority": 2,
+  "type": "bug",
+  "parent": "tree-sitter-go-wcu",
+  "dependencies": [
+    {
+      "id": "tree-sitter-go-wcu",
+      "type": "parent-child"
+    }
+  ],
+  "created_by": "Danny Cosson",
+  "owner": "dcosson@gmail.com",
+  "labels": [
+    "P2"
+  ],
+  "created_at": "2026-02-16T21:29:52.871929-08:00",
+  "updated_at": "2026-02-16T21:29:52.871929-08:00"
+}
