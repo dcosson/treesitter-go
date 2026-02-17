@@ -1,1 +1,1 @@
-(_newline (identifier) (parameters) (expression_statement (call (identifier) (argument_list (string (string_start) (string_content) (string_end))))))
+(module (function_definition (identifier) (parameters) (block (print_statement (parenthesized_expression (string (string_start) (string_content) (string_end)))))))
