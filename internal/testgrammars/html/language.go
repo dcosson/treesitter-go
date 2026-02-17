@@ -729,6 +729,18 @@ func HtmlLanguage() *ts.Language {
 
 	externalSymbolMap := []ts.Symbol{17, 18, 19, 20, 21, 6, 22, 23, 24, }
 
+	publicSymbolMap := []ts.Symbol{
+		0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 
+		10, 11, 12, 10, 14, 10, 16, 17, 17, 17, 
+		17, 21, 22, 23, 24, 25, 26, 27, 28, 29, 
+		30, 31, 31, 31, 34, 35, 36, 37, 38, 39, 
+		40, 
+	}
+
+	nonTerminalAliasMap := []uint16{
+		0, 
+	}
+
 	return &ts.Language{
 		Version:                14,
 		SymbolCount:            41,
@@ -752,6 +764,8 @@ func HtmlLanguage() *ts.Language {
 		AliasSequences:         aliasSequences,
 		ExternalScannerStates:  externalScannerStates,
 		ExternalSymbolMap:      externalSymbolMap,
+		PublicSymbolMap:        publicSymbolMap,
+		NonTerminalAliasMap:    nonTerminalAliasMap,
 	}
 }
 

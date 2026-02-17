@@ -71,6 +71,12 @@ func GenerateGo(g *Grammar, packageName string) string {
 	// Reserved words (ABI v15).
 	writeReservedWords(&b, g)
 
+	// Public symbol map.
+	writePublicSymbolMap(&b, g)
+
+	// Non-terminal alias map.
+	writeNonTerminalAliasMap(&b, g)
+
 	// Build the Language struct.
 	fmt.Fprintf(&b, "\treturn &ts.Language{\n")
 	fmt.Fprintf(&b, "\t\tVersion:                14,\n")
@@ -123,6 +129,12 @@ func GenerateGo(g *Grammar, packageName string) string {
 		fmt.Fprintf(&b, "\t\tReservedWords:          reservedWords,\n")
 		fmt.Fprintf(&b, "\t\tReservedWordCount:      %d,\n", g.TokenCount)
 		fmt.Fprintf(&b, "\t\tReservedWordSetCount:   %d,\n", g.ReservedWordSetCount)
+	}
+	if len(g.PublicSymbolMap) > 0 {
+		fmt.Fprintf(&b, "\t\tPublicSymbolMap:        publicSymbolMap,\n")
+	}
+	if len(g.NonTerminalAliasMap) > 0 {
+		fmt.Fprintf(&b, "\t\tNonTerminalAliasMap:    nonTerminalAliasMap,\n")
 	}
 	fmt.Fprintf(&b, "\t}\n")
 	fmt.Fprintf(&b, "}\n\n")
@@ -405,6 +417,36 @@ func writeReservedWords(b *strings.Builder, g *Grammar) {
 		} else {
 			fmt.Fprintf(b, "false, ")
 		}
+	}
+	fmt.Fprintf(b, "\n\t}\n\n")
+}
+
+// writePublicSymbolMap writes the public symbol map array.
+func writePublicSymbolMap(b *strings.Builder, g *Grammar) {
+	if len(g.PublicSymbolMap) == 0 {
+		return
+	}
+	fmt.Fprintf(b, "\tpublicSymbolMap := []ts.Symbol{")
+	for i, v := range g.PublicSymbolMap {
+		if i%10 == 0 {
+			fmt.Fprintf(b, "\n\t\t")
+		}
+		fmt.Fprintf(b, "%d, ", v)
+	}
+	fmt.Fprintf(b, "\n\t}\n\n")
+}
+
+// writeNonTerminalAliasMap writes the non-terminal alias map array.
+func writeNonTerminalAliasMap(b *strings.Builder, g *Grammar) {
+	if len(g.NonTerminalAliasMap) == 0 {
+		return
+	}
+	fmt.Fprintf(b, "\tnonTerminalAliasMap := []uint16{")
+	for i, v := range g.NonTerminalAliasMap {
+		if i%10 == 0 {
+			fmt.Fprintf(b, "\n\t\t")
+		}
+		fmt.Fprintf(b, "%d, ", v)
 	}
 	fmt.Fprintf(b, "\n\t}\n\n")
 }

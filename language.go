@@ -63,6 +63,17 @@ type Language struct {
 	// Supertypes (ABI v15)
 	SupertypeSymbols []Symbol
 
+	// Public symbol map: maps internal symbol -> public (canonical) symbol.
+	// Many internal variants (e.g., sym__declare_scalar) map to a single public
+	// symbol (e.g., sym_scalar). Used by Node.Symbol() and Node.Type().
+	PublicSymbolMap []Symbol
+
+	// Non-terminal alias map: flat array encoding which non-terminals can be
+	// aliased to different visible symbols in different production contexts.
+	// Format: [symbol, count, alias1, alias2, ..., symbol2, count2, ..., 0]
+	// Used during SummarizeChildren to determine non-terminal visibility.
+	NonTerminalAliasMap []uint16
+
 	// External scanner
 	ExternalScannerStates []bool   // [extLexState * extTokenCount + tokenIdx]
 	ExternalSymbolMap     []Symbol // maps external token index -> grammar symbol
@@ -158,6 +169,53 @@ func (l *Language) nextState(state StateID, symbol Symbol) StateID {
 		}
 	}
 	return 0
+}
+
+// PublicSymbol maps an internal symbol to its public (canonical) symbol.
+// This normalizes internal variants (e.g., sym__declare_scalar -> sym_scalar)
+// to their public representation. Mirrors ts_language_public_symbol in C.
+func (l *Language) PublicSymbol(s Symbol) Symbol {
+	if s == SymbolErrorRepeat {
+		return SymbolErrorRepeat
+	}
+	if len(l.PublicSymbolMap) > 0 && int(s) < len(l.PublicSymbolMap) {
+		return l.PublicSymbolMap[s]
+	}
+	return s
+}
+
+// NonTerminalAliases returns the set of alias symbols for a non-terminal.
+// The non-terminal alias map encodes: [symbol, count, alias1, alias2, ..., 0]
+// Returns nil if the symbol has no aliases.
+func (l *Language) NonTerminalAliases(s Symbol) []Symbol {
+	m := l.NonTerminalAliasMap
+	for i := 0; i < len(m) && m[i] != 0; {
+		sym := Symbol(m[i])
+		count := int(m[i+1])
+		if sym == s {
+			aliases := make([]Symbol, count)
+			for j := 0; j < count; j++ {
+				aliases[j] = Symbol(m[i+2+j])
+			}
+			return aliases
+		}
+		i += 2 + count
+	}
+	return nil
+}
+
+// HasNonTerminalAliases returns true if the given symbol has entries in the
+// non-terminal alias map (meaning it can appear as different visible symbols
+// depending on production context).
+func (l *Language) HasNonTerminalAliases(s Symbol) bool {
+	m := l.NonTerminalAliasMap
+	for i := 0; i < len(m) && m[i] != 0; {
+		if Symbol(m[i]) == s {
+			return true
+		}
+		i += 2 + int(m[i+1])
+	}
+	return false
 }
 
 // SymbolName returns the name of a symbol.

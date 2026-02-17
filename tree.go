@@ -147,14 +147,18 @@ func (n Node) Type() string {
 
 // Symbol returns the grammar symbol of this node.
 // If the node has an alias, the alias symbol is returned.
+// The symbol is mapped through PublicSymbolMap to normalize internal variants.
 func (n Node) Symbol() Symbol {
 	if n.IsNull() {
 		return 0
 	}
+	var sym Symbol
 	if n.context[3] != 0 {
-		return Symbol(n.context[3])
+		sym = Symbol(n.context[3])
+	} else {
+		sym = GetSymbol(n.subtree, n.tree.Arena())
 	}
-	return GetSymbol(n.subtree, n.tree.Arena())
+	return n.tree.language.PublicSymbol(sym)
 }
 
 // StartByte returns the byte offset where this node starts.

@@ -324,6 +324,106 @@ func TestLanguageAliasForProduction(t *testing.T) {
 	}
 }
 
+func TestLanguagePublicSymbol(t *testing.T) {
+	lang := &Language{
+		PublicSymbolMap: []Symbol{
+			0, // 0 -> 0 (identity)
+			1, // 1 -> 1 (identity)
+			1, // 2 -> 1 (sym__declare_scalar -> sym_scalar)
+			3, // 3 -> 3 (identity)
+			3, // 4 -> 3 (another variant)
+		},
+		SymbolNames: []string{"end", "scalar", "_declare_scalar", "array", "_declare_array"},
+	}
+
+	// Identity mapping.
+	if got := lang.PublicSymbol(0); got != 0 {
+		t.Errorf("PublicSymbol(0) = %d, want 0", got)
+	}
+	if got := lang.PublicSymbol(1); got != 1 {
+		t.Errorf("PublicSymbol(1) = %d, want 1", got)
+	}
+
+	// Non-identity: internal variant -> public symbol.
+	if got := lang.PublicSymbol(2); got != 1 {
+		t.Errorf("PublicSymbol(2) = %d, want 1 (scalar)", got)
+	}
+	if got := lang.PublicSymbol(4); got != 3 {
+		t.Errorf("PublicSymbol(4) = %d, want 3 (array)", got)
+	}
+
+	// SymbolErrorRepeat is always preserved.
+	if got := lang.PublicSymbol(SymbolErrorRepeat); got != SymbolErrorRepeat {
+		t.Errorf("PublicSymbol(SymbolErrorRepeat) = %d, want %d", got, SymbolErrorRepeat)
+	}
+
+	// Out-of-range falls back to identity.
+	if got := lang.PublicSymbol(99); got != 99 {
+		t.Errorf("PublicSymbol(99) = %d, want 99", got)
+	}
+
+	// Nil map falls back to identity.
+	lang2 := &Language{}
+	if got := lang2.PublicSymbol(5); got != 5 {
+		t.Errorf("PublicSymbol(5) with nil map = %d, want 5", got)
+	}
+}
+
+func TestLanguageNonTerminalAliases(t *testing.T) {
+	// Perl-like alias map:
+	// sym_block (10) has 3 aliases: 10, 20, 30
+	// sym__term (40) has 2 aliases: 40, 50
+	// terminated by 0
+	lang := &Language{
+		NonTerminalAliasMap: []uint16{
+			10, 3, 10, 20, 30,
+			40, 2, 40, 50,
+			0,
+		},
+	}
+
+	// sym_block has aliases.
+	aliases := lang.NonTerminalAliases(10)
+	if len(aliases) != 3 {
+		t.Fatalf("NonTerminalAliases(10) = %v, want 3 aliases", aliases)
+	}
+	if aliases[0] != 10 || aliases[1] != 20 || aliases[2] != 30 {
+		t.Errorf("NonTerminalAliases(10) = %v, want [10, 20, 30]", aliases)
+	}
+
+	// sym__term has aliases.
+	aliases = lang.NonTerminalAliases(40)
+	if len(aliases) != 2 {
+		t.Fatalf("NonTerminalAliases(40) = %v, want 2 aliases", aliases)
+	}
+	if aliases[0] != 40 || aliases[1] != 50 {
+		t.Errorf("NonTerminalAliases(40) = %v, want [40, 50]", aliases)
+	}
+
+	// Unknown symbol has no aliases.
+	aliases = lang.NonTerminalAliases(99)
+	if aliases != nil {
+		t.Errorf("NonTerminalAliases(99) = %v, want nil", aliases)
+	}
+
+	// HasNonTerminalAliases.
+	if !lang.HasNonTerminalAliases(10) {
+		t.Error("HasNonTerminalAliases(10) should be true")
+	}
+	if !lang.HasNonTerminalAliases(40) {
+		t.Error("HasNonTerminalAliases(40) should be true")
+	}
+	if lang.HasNonTerminalAliases(99) {
+		t.Error("HasNonTerminalAliases(99) should be false")
+	}
+
+	// Nil map.
+	lang2 := &Language{}
+	if lang2.HasNonTerminalAliases(10) {
+		t.Error("HasNonTerminalAliases with nil map should be false")
+	}
+}
+
 func TestLanguageReservedWords(t *testing.T) {
 	lang := &Language{
 		ReservedWordCount:    3,
