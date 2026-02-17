@@ -11,7 +11,13 @@ import (
 
 	"github.com/treesitter-go/treesitter/scanners/bash"
 	"github.com/treesitter-go/treesitter/scanners/cpp"
+	"github.com/treesitter-go/treesitter/scanners/css"
+	"github.com/treesitter-go/treesitter/scanners/html"
+	"github.com/treesitter-go/treesitter/scanners/javascript"
+	"github.com/treesitter-go/treesitter/scanners/lua"
+	"github.com/treesitter-go/treesitter/scanners/perl"
 	"github.com/treesitter-go/treesitter/scanners/python"
+	"github.com/treesitter-go/treesitter/scanners/ruby"
 	"github.com/treesitter-go/treesitter/scanners/rust"
 	"github.com/treesitter-go/treesitter/scanners/typescript"
 )
@@ -175,6 +181,434 @@ func TestTypescriptSerializationRoundtrip(t *testing.T) {
 	}
 }
 
+// TestHTMLSerializationRoundtrip verifies HTML scanner state (tag stack)
+// survives serialization roundtrip.
+func TestHTMLSerializationRoundtrip(t *testing.T) {
+	s1 := html.New()
+	buf := make([]byte, serializationBufSize)
+
+	// Scan a start tag to push it onto the tag stack.
+	lexer := newTestLexer("div")
+	v := htmlValidStartTagName()
+	s1.Scan(lexer, v)
+
+	// Serialize with tag on the stack.
+	n := s1.Serialize(buf)
+	if n < 4 {
+		t.Fatalf("expected >=4 bytes for HTML with tag on stack, got %d", n)
+	}
+
+	// Deserialize into fresh scanner.
+	s2 := html.New()
+	s2.Deserialize(buf[:n])
+
+	// Re-serialize and verify identical bytes.
+	buf2 := make([]byte, serializationBufSize)
+	n2 := s2.Serialize(buf2)
+	if n != n2 {
+		t.Fatalf("serialize size mismatch: first=%d second=%d", n, n2)
+	}
+	for i := uint32(0); i < n; i++ {
+		if buf[i] != buf2[i] {
+			t.Fatalf("byte %d mismatch: first=%d second=%d", i, buf[i], buf2[i])
+		}
+	}
+
+	// Both scanners should produce identical results scanning an end tag.
+	lexer1 := newTestLexer("div")
+	lexer2 := newTestLexer("div")
+	vEnd := htmlValidEndTagName()
+
+	r1 := s1.Scan(lexer1, vEnd)
+	r2 := s2.Scan(lexer2, vEnd)
+	if r1 != r2 {
+		t.Errorf("Scan result mismatch after roundtrip: s1=%v s2=%v", r1, r2)
+	}
+	if lexer1.ResultSymbol != lexer2.ResultSymbol {
+		t.Errorf("ResultSymbol mismatch: s1=%d s2=%d", lexer1.ResultSymbol, lexer2.ResultSymbol)
+	}
+}
+
+// TestHTMLSerializationRoundtripCustomTag verifies HTML scanner preserves custom
+// (non-builtin) tag names through serialization.
+func TestHTMLSerializationRoundtripCustomTag(t *testing.T) {
+	s1 := html.New()
+	buf := make([]byte, serializationBufSize)
+
+	// Scan a custom tag name (not a built-in HTML tag).
+	lexer := newTestLexer("my-component")
+	v := htmlValidStartTagName()
+	s1.Scan(lexer, v)
+
+	// Serialize.
+	n := s1.Serialize(buf)
+	if n < 5 {
+		t.Fatalf("expected >=5 bytes for HTML with custom tag, got %d", n)
+	}
+
+	// Deserialize into fresh scanner.
+	s2 := html.New()
+	s2.Deserialize(buf[:n])
+
+	// Re-serialize and verify identical bytes.
+	buf2 := make([]byte, serializationBufSize)
+	n2 := s2.Serialize(buf2)
+	if n != n2 {
+		t.Fatalf("serialize size mismatch: first=%d second=%d", n, n2)
+	}
+	for i := uint32(0); i < n; i++ {
+		if buf[i] != buf2[i] {
+			t.Fatalf("byte %d mismatch: first=%d second=%d", i, buf[i], buf2[i])
+		}
+	}
+}
+
+// TestHTMLSerializationRoundtripMultipleTags verifies tag stack ordering is preserved.
+func TestHTMLSerializationRoundtripMultipleTags(t *testing.T) {
+	s1 := html.New()
+	buf := make([]byte, serializationBufSize)
+
+	// Push multiple tags: html > body > div
+	for _, tag := range []string{"html", "body", "div"} {
+		lexer := newTestLexer(tag)
+		v := htmlValidStartTagName()
+		s1.Scan(lexer, v)
+	}
+
+	// Serialize.
+	n := s1.Serialize(buf)
+	if n < 7 { // 4 header + 3 tag bytes
+		t.Fatalf("expected >=7 bytes for HTML with 3 tags, got %d", n)
+	}
+
+	// Deserialize into fresh scanner.
+	s2 := html.New()
+	s2.Deserialize(buf[:n])
+
+	// Re-serialize and verify identical bytes.
+	buf2 := make([]byte, serializationBufSize)
+	n2 := s2.Serialize(buf2)
+	if n != n2 {
+		t.Fatalf("serialize size mismatch: first=%d second=%d", n, n2)
+	}
+	for i := uint32(0); i < n; i++ {
+		if buf[i] != buf2[i] {
+			t.Fatalf("byte %d mismatch: first=%d second=%d", i, buf[i], buf2[i])
+		}
+	}
+
+	// Both should handle closing the innermost tag identically.
+	lexer1 := newTestLexer("div")
+	lexer2 := newTestLexer("div")
+	vEnd := htmlValidEndTagName()
+
+	r1 := s1.Scan(lexer1, vEnd)
+	r2 := s2.Scan(lexer2, vEnd)
+	if r1 != r2 {
+		t.Errorf("Scan result mismatch after roundtrip: s1=%v s2=%v", r1, r2)
+	}
+	if lexer1.ResultSymbol != lexer2.ResultSymbol {
+		t.Errorf("ResultSymbol mismatch: s1=%d s2=%d", lexer1.ResultSymbol, lexer2.ResultSymbol)
+	}
+}
+
+// TestLuaSerializationRoundtrip verifies Lua scanner state (endingChar, levelCount)
+// survives serialization roundtrip.
+func TestLuaSerializationRoundtrip(t *testing.T) {
+	s1 := lua.New()
+	buf := make([]byte, serializationBufSize)
+
+	// Scan a block string start to set the level count.
+	lexer := newTestLexer("[==[")
+	v := luaValidBlockStringStart()
+	s1.Scan(lexer, v)
+
+	// Serialize.
+	n := s1.Serialize(buf)
+	if n != 2 {
+		t.Fatalf("expected 2 bytes for Lua serialization, got %d", n)
+	}
+
+	// Deserialize into fresh scanner.
+	s2 := lua.New()
+	s2.Deserialize(buf[:n])
+
+	// Re-serialize and verify identical bytes.
+	buf2 := make([]byte, serializationBufSize)
+	n2 := s2.Serialize(buf2)
+	if n != n2 {
+		t.Fatalf("serialize size mismatch: first=%d second=%d", n, n2)
+	}
+	for i := uint32(0); i < n; i++ {
+		if buf[i] != buf2[i] {
+			t.Fatalf("byte %d mismatch: first=%d second=%d", i, buf[i], buf2[i])
+		}
+	}
+
+	// Both should scan block string content identically.
+	lexer1 := newTestLexer("some content]==]")
+	lexer2 := newTestLexer("some content]==]")
+	vContent := luaValidBlockStringContent()
+
+	r1 := s1.Scan(lexer1, vContent)
+	r2 := s2.Scan(lexer2, vContent)
+	if r1 != r2 {
+		t.Errorf("Scan result mismatch after roundtrip: s1=%v s2=%v", r1, r2)
+	}
+	if lexer1.ResultSymbol != lexer2.ResultSymbol {
+		t.Errorf("ResultSymbol mismatch: s1=%d s2=%d", lexer1.ResultSymbol, lexer2.ResultSymbol)
+	}
+}
+
+// TestLuaSerializationRoundtripDifferentLevels verifies different level counts
+// are preserved through serialization.
+func TestLuaSerializationRoundtripDifferentLevels(t *testing.T) {
+	for _, tc := range []struct {
+		name  string
+		input string
+		level int
+	}{
+		{"level-0", "[[", 0},
+		{"level-1", "[=[", 1},
+		{"level-3", "[===[", 3},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			s := lua.New()
+			lexer := newTestLexer(tc.input)
+			v := luaValidBlockStringStart()
+			s.Scan(lexer, v)
+
+			buf1 := make([]byte, serializationBufSize)
+			n1 := s.Serialize(buf1)
+
+			s2 := lua.New()
+			s2.Deserialize(buf1[:n1])
+
+			buf2 := make([]byte, serializationBufSize)
+			n2 := s2.Serialize(buf2)
+
+			if n1 != n2 {
+				t.Errorf("serialize size mismatch: first=%d second=%d", n1, n2)
+			}
+			for i := uint32(0); i < n1; i++ {
+				if buf1[i] != buf2[i] {
+					t.Errorf("byte %d mismatch: first=%d second=%d", i, buf1[i], buf2[i])
+				}
+			}
+		})
+	}
+}
+
+// TestCSSSerializationRoundtrip verifies CSS stateless roundtrip.
+func TestCSSSerializationRoundtrip(t *testing.T) {
+	s1 := css.New()
+	buf := make([]byte, serializationBufSize)
+
+	// Stateless: serialize should return 0.
+	n := s1.Serialize(buf)
+	if n != 0 {
+		t.Fatalf("CSS serialize should return 0, got %d", n)
+	}
+
+	s2 := css.New()
+	s2.Deserialize(buf[:n])
+
+	// Both should produce identical results.
+	lexer1 := newTestLexer(" div")
+	lexer2 := newTestLexer(" div")
+	v := cssValidDescendantOp()
+
+	r1 := s1.Scan(lexer1, v)
+	r2 := s2.Scan(lexer2, v)
+	if r1 != r2 {
+		t.Errorf("Scan result mismatch: s1=%v s2=%v", r1, r2)
+	}
+	if lexer1.ResultSymbol != lexer2.ResultSymbol {
+		t.Errorf("ResultSymbol mismatch: s1=%d s2=%d", lexer1.ResultSymbol, lexer2.ResultSymbol)
+	}
+}
+
+// TestJavaScriptSerializationRoundtrip verifies JavaScript stateless roundtrip.
+func TestJavaScriptSerializationRoundtrip(t *testing.T) {
+	s1 := javascript.New()
+	buf := make([]byte, serializationBufSize)
+
+	// Stateless: serialize should return 0.
+	n := s1.Serialize(buf)
+	if n != 0 {
+		t.Fatalf("JavaScript serialize should return 0, got %d", n)
+	}
+
+	s2 := javascript.New()
+	s2.Deserialize(buf[:n])
+
+	// Both should produce identical results scanning template chars.
+	lexer1 := newTestLexer("hello world`")
+	lexer2 := newTestLexer("hello world`")
+	v := jsValidTemplateChars()
+
+	r1 := s1.Scan(lexer1, v)
+	r2 := s2.Scan(lexer2, v)
+	if r1 != r2 {
+		t.Errorf("Scan result mismatch: s1=%v s2=%v", r1, r2)
+	}
+	if lexer1.ResultSymbol != lexer2.ResultSymbol {
+		t.Errorf("ResultSymbol mismatch: s1=%d s2=%d", lexer1.ResultSymbol, lexer2.ResultSymbol)
+	}
+}
+
+// TestPerlSerializationRoundtrip verifies Perl scanner state (quotes, heredoc)
+// survives serialization roundtrip.
+func TestPerlSerializationRoundtrip(t *testing.T) {
+	s1 := perl.New()
+	buf := make([]byte, serializationBufSize)
+
+	// Serialize empty state — Perl always writes at least 1 byte (quote count).
+	n := s1.Serialize(buf)
+	if n == 0 {
+		t.Fatal("empty Perl serialization should produce non-zero bytes")
+	}
+
+	// Deserialize into fresh scanner.
+	s2 := perl.New()
+	s2.Deserialize(buf[:n])
+
+	// Re-serialize and verify identical bytes.
+	buf2 := make([]byte, serializationBufSize)
+	n2 := s2.Serialize(buf2)
+	if n != n2 {
+		t.Fatalf("serialize size mismatch: first=%d second=%d", n, n2)
+	}
+	for i := uint32(0); i < n; i++ {
+		if buf[i] != buf2[i] {
+			t.Fatalf("byte %d mismatch: first=%d second=%d", i, buf[i], buf2[i])
+		}
+	}
+}
+
+// TestPerlSerializationRoundtripWithQuote verifies Perl quote state preservation.
+func TestPerlSerializationRoundtripWithQuote(t *testing.T) {
+	s1 := perl.New()
+	buf := make([]byte, serializationBufSize)
+
+	// Scan an apostrophe to push a quote onto the stack.
+	lexer := newTestLexer("'")
+	v := perlValidApostrophe()
+	s1.Scan(lexer, v)
+
+	// Serialize with quote state.
+	n := s1.Serialize(buf)
+	if n < 13 { // 1 (quote count) + 12 (one quote: open+close+count @ 4 bytes each)
+		t.Fatalf("expected >=13 bytes for Perl with quote, got %d", n)
+	}
+
+	// Deserialize into fresh scanner.
+	s2 := perl.New()
+	s2.Deserialize(buf[:n])
+
+	// Re-serialize and verify identical bytes.
+	buf2 := make([]byte, serializationBufSize)
+	n2 := s2.Serialize(buf2)
+	if n != n2 {
+		t.Fatalf("serialize size mismatch: first=%d second=%d", n, n2)
+	}
+	for i := uint32(0); i < n; i++ {
+		if buf[i] != buf2[i] {
+			t.Fatalf("byte %d mismatch: first=%d second=%d", i, buf[i], buf2[i])
+		}
+	}
+
+	// Both scanners should scan q-string content identically.
+	lexer1 := newTestLexer("hello world")
+	lexer2 := newTestLexer("hello world")
+	vContent := perlValidQStringContent()
+
+	r1 := s1.Scan(lexer1, vContent)
+	r2 := s2.Scan(lexer2, vContent)
+	if r1 != r2 {
+		t.Errorf("Scan result mismatch after roundtrip: s1=%v s2=%v", r1, r2)
+	}
+	if lexer1.ResultSymbol != lexer2.ResultSymbol {
+		t.Errorf("ResultSymbol mismatch: s1=%d s2=%d", lexer1.ResultSymbol, lexer2.ResultSymbol)
+	}
+}
+
+// TestRubySerializationRoundtrip verifies Ruby scanner state (literal stack)
+// survives serialization roundtrip.
+func TestRubySerializationRoundtrip(t *testing.T) {
+	s1 := ruby.New()
+	buf := make([]byte, serializationBufSize)
+
+	// Serialize empty state — Ruby writes at least 2 bytes (literal count + heredoc count).
+	n := s1.Serialize(buf)
+	if n < 2 {
+		t.Fatalf("expected >=2 bytes for empty Ruby serialization, got %d", n)
+	}
+
+	// Deserialize into fresh scanner.
+	s2 := ruby.New()
+	s2.Deserialize(buf[:n])
+
+	// Re-serialize and verify identical bytes.
+	buf2 := make([]byte, serializationBufSize)
+	n2 := s2.Serialize(buf2)
+	if n != n2 {
+		t.Fatalf("serialize size mismatch: first=%d second=%d", n, n2)
+	}
+	for i := uint32(0); i < n; i++ {
+		if buf[i] != buf2[i] {
+			t.Fatalf("byte %d mismatch: first=%d second=%d", i, buf[i], buf2[i])
+		}
+	}
+}
+
+// TestRubySerializationRoundtripWithLiteral verifies Ruby literal stack preservation.
+func TestRubySerializationRoundtripWithLiteral(t *testing.T) {
+	s1 := ruby.New()
+	buf := make([]byte, serializationBufSize)
+
+	// Scan a double quote to push a string literal onto the stack.
+	lexer := newTestLexer("\"")
+	v := rubyValidStringStart()
+	s1.Scan(lexer, v)
+
+	// Serialize with literal state.
+	n := s1.Serialize(buf)
+	if n < 13 { // 1 (lit count) + 11 (one literal) + 1 (heredoc count)
+		t.Fatalf("expected >=13 bytes for Ruby with literal, got %d", n)
+	}
+
+	// Deserialize into fresh scanner.
+	s2 := ruby.New()
+	s2.Deserialize(buf[:n])
+
+	// Re-serialize and verify identical bytes.
+	buf2 := make([]byte, serializationBufSize)
+	n2 := s2.Serialize(buf2)
+	if n != n2 {
+		t.Fatalf("serialize size mismatch: first=%d second=%d", n, n2)
+	}
+	for i := uint32(0); i < n; i++ {
+		if buf[i] != buf2[i] {
+			t.Fatalf("byte %d mismatch: first=%d second=%d", i, buf[i], buf2[i])
+		}
+	}
+
+	// Both scanners should scan string content identically.
+	lexer1 := newTestLexer("hello world\"")
+	lexer2 := newTestLexer("hello world\"")
+	vContent := rubyValidStringContent()
+
+	r1 := s1.Scan(lexer1, vContent)
+	r2 := s2.Scan(lexer2, vContent)
+	if r1 != r2 {
+		t.Errorf("Scan result mismatch after roundtrip: s1=%v s2=%v", r1, r2)
+	}
+	if lexer1.ResultSymbol != lexer2.ResultSymbol {
+		t.Errorf("ResultSymbol mismatch: s1=%d s2=%d", lexer1.ResultSymbol, lexer2.ResultSymbol)
+	}
+}
+
 // TestAllScannersDeserializeEmpty verifies all scanners handle empty data.
 func TestAllScannersDeserializeEmpty(t *testing.T) {
 	scanners := []struct {
@@ -186,6 +620,12 @@ func TestAllScannersDeserializeEmpty(t *testing.T) {
 		{"rust", rust.New()},
 		{"cpp", cpp.New()},
 		{"typescript", typescript.New()},
+		{"css", css.New()},
+		{"html", html.New()},
+		{"javascript", javascript.New()},
+		{"lua", lua.New()},
+		{"perl", perl.New()},
+		{"ruby", ruby.New()},
 	}
 
 	for _, sc := range scanners {
@@ -213,6 +653,12 @@ func TestAllScannersSerializeRoundtrip(t *testing.T) {
 		{"rust", rust.New()},
 		{"cpp", cpp.New()},
 		{"typescript", typescript.New()},
+		{"css", css.New()},
+		{"html", html.New()},
+		{"javascript", javascript.New()},
+		{"lua", lua.New()},
+		{"perl", perl.New()},
+		{"ruby", ruby.New()},
 	}
 
 	for _, sc := range scanners {
@@ -262,6 +708,18 @@ func newScanner(name string) ts.ExternalScanner {
 		return cpp.New()
 	case "typescript":
 		return typescript.New()
+	case "css":
+		return css.New()
+	case "html":
+		return html.New()
+	case "javascript":
+		return javascript.New()
+	case "lua":
+		return lua.New()
+	case "perl":
+		return perl.New()
+	case "ruby":
+		return ruby.New()
 	default:
 		panic("unknown scanner: " + name)
 	}
@@ -316,6 +774,67 @@ func cppValidContent() []bool {
 func tsValidTemplateChars() []bool {
 	v := make([]bool, 10) // ErrorRecovery=9
 	v[typescript.TemplateChars] = true
+	return v
+}
+
+func htmlValidStartTagName() []bool {
+	v := make([]bool, html.Comment+1)
+	v[html.StartTagName] = true
+	return v
+}
+
+func htmlValidEndTagName() []bool {
+	v := make([]bool, html.Comment+1)
+	v[html.EndTagName] = true
+	return v
+}
+
+func luaValidBlockStringStart() []bool {
+	v := make([]bool, lua.BlockStringEnd+1)
+	v[lua.BlockStringStart] = true
+	return v
+}
+
+func luaValidBlockStringContent() []bool {
+	v := make([]bool, lua.BlockStringEnd+1)
+	v[lua.BlockStringContent] = true
+	return v
+}
+
+func cssValidDescendantOp() []bool {
+	v := make([]bool, css.ErrorRecovery+1)
+	v[css.DescendantOp] = true
+	return v
+}
+
+func jsValidTemplateChars() []bool {
+	v := make([]bool, javascript.JSXText+1)
+	v[javascript.TemplateChars] = true
+	return v
+}
+
+func perlValidApostrophe() []bool {
+	v := make([]bool, perl.TokenError+1)
+	v[perl.TokenApostrophe] = true
+	return v
+}
+
+func perlValidQStringContent() []bool {
+	v := make([]bool, perl.TokenError+1)
+	v[perl.TokenQStringContent] = true
+	return v
+}
+
+func rubyValidStringStart() []bool {
+	v := make([]bool, ruby.None+1)
+	v[ruby.StringStart] = true
+	return v
+}
+
+func rubyValidStringContent() []bool {
+	v := make([]bool, ruby.None+1)
+	v[ruby.StringContent] = true
+	v[ruby.StringEnd] = true
 	return v
 }
 
@@ -386,6 +905,58 @@ func BenchmarkTypescriptScan(b *testing.B) {
 	}
 }
 
+func BenchmarkHTMLScan(b *testing.B) {
+	s := html.New()
+	v := htmlValidStartTagName()
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		lexer := newTestLexer("div")
+		s.Scan(lexer, v)
+	}
+}
+
+func BenchmarkLuaScan(b *testing.B) {
+	s := lua.New()
+	v := luaValidBlockStringStart()
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		lexer := newTestLexer("[==[")
+		s.Scan(lexer, v)
+	}
+}
+
+func BenchmarkJavaScriptScan(b *testing.B) {
+	s := javascript.New()
+	v := jsValidTemplateChars()
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		lexer := newTestLexer("hello world`")
+		s.Scan(lexer, v)
+	}
+}
+
+func BenchmarkCSSScan(b *testing.B) {
+	s := css.New()
+	v := cssValidDescendantOp()
+
+	b.ReportAllocs()
+	b.ResetTimer()
+
+	for i := 0; i < b.N; i++ {
+		lexer := newTestLexer(" div")
+		s.Scan(lexer, v)
+	}
+}
+
 func BenchmarkSerializeDeserialize(b *testing.B) {
 	scanners := []struct {
 		name string
@@ -396,6 +967,12 @@ func BenchmarkSerializeDeserialize(b *testing.B) {
 		{"rust", rust.New()},
 		{"cpp", cpp.New()},
 		{"typescript", typescript.New()},
+		{"css", css.New()},
+		{"html", html.New()},
+		{"javascript", javascript.New()},
+		{"lua", lua.New()},
+		{"perl", perl.New()},
+		{"ruby", ruby.New()},
 	}
 
 	for _, sc := range scanners {
@@ -431,6 +1008,12 @@ func TestScannerDeterminism(t *testing.T) {
 		{"rust-rawstring", "rust", `r##"content"##`, rustValidRawStart()},
 		{"cpp-delimiter", "cpp", "foo(", cppValidDelimiter()},
 		{"typescript-template", "typescript", "hello world`", tsValidTemplateChars()},
+		{"css-descendant", "css", " div", cssValidDescendantOp()},
+		{"html-starttag", "html", "div", htmlValidStartTagName()},
+		{"javascript-template", "javascript", "hello world`", jsValidTemplateChars()},
+		{"lua-blockstring", "lua", "[==[", luaValidBlockStringStart()},
+		{"perl-apostrophe", "perl", "'", perlValidApostrophe()},
+		{"ruby-stringstart", "ruby", "\"", rubyValidStringStart()},
 	}
 
 	for _, tc := range cases {
