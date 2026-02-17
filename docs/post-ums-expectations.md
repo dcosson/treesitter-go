@@ -15,12 +15,19 @@ to verify the fix has the expected impact.
 |----------|---------|---------------------|-----------|
 | Timeout (C++) | 8 | **8** (all) | 0 |
 | Structural — GLR ambiguity | ~35 | **20-30** | 5-15 |
-| Structural — non-GLR | ~34 | 0-3 | 31-34 |
+| Structural — Cluster C (qualified id) | 7 | **5-7** | 0-2 |
+| Structural — non-GLR | ~27 | 0-3 | 24-27 |
 | Empty/nil parse tree | 19 | **2-5** | 14-17 |
 | Internal name leaking | 12 | 0 | 12 |
-| **Total** | **108** | **30-46** | **62-78** |
+| **Total** | **108** | **35-53** | **55-73** |
 
-**Predicted post-ums pass rate: ~1541-1557 / 1619 (95.2-96.2%)**
+**Predicted post-ums pass rate: ~1546-1564 / 1619 (95.5-96.6%)**
+
+> **UPDATE 2026-02-16**: Investigation confirmed Cluster C (qualified identifier
+> truncation, 7 C++ tests) IS a GLR version comparison issue, not a separate
+> grammar bug. The C reference parser handles `a::b::c` correctly with the same
+> parse tables — our parser prematurely reduces `a::b` because condenseStack
+> picks the shorter/lower-cost version. Reclassified from NONE→MEDIUM confidence.
 
 ---
 
@@ -35,7 +42,7 @@ to verify the fix has the expected impact.
 
 ---
 
-### C++ (25 failures → predicted 15-20 fixed)
+### C++ (25 failures → predicted 15-27 fixed)
 
 #### Timeouts (8) — ALL should fix (HIGH confidence)
 
@@ -65,13 +72,13 @@ GLR forking on template/cast ambiguities.
 | Type_modifiers | E (type_id) | **PASS** | MEDIUM — declaration vs expression |
 | Primitive-typed_variable_declarations | E (type_id) | **PASS** | MEDIUM — declaration vs expression |
 | static_assert_declarations | A (GLR) | **PASS** | MEDIUM — qualified template |
-| Using_declarations | C (qualified id) | FAIL | NONE — truncation, not GLR |
-| Assignment | C (qualified id) | FAIL | NONE — truncation |
-| Cast_operator_overload_declarations | C (qualified id) | FAIL | NONE — truncation |
-| Class_scope_cast_operator_overload_declarations | C (qualified id) | FAIL | NONE — truncation |
-| Namespaced_types | C (qualified id) | FAIL | NONE — truncation |
-| Nested_template_calls | C (qualified id) | FAIL | NONE — truncation |
-| Templates_with_optional_anonymous_parameters | C (qualified id) | FAIL | NONE — truncation |
+| Using_declarations | C (qualified id) | **PASS** | MEDIUM — GLR version prunes nested qualified_id |
+| Assignment | C (qualified id) | **PASS** | MEDIUM — GLR version prunes `a::b::c` |
+| Cast_operator_overload_declarations | C (qualified id) | **PASS** | MEDIUM — GLR version prunes `A::B::operator` |
+| Class_scope_cast_operator_overload_declarations | C (qualified id) | **PASS** | MEDIUM — same pattern |
+| Namespaced_types | C (qualified id) | **PASS** | MEDIUM — GLR prunes `vector<int>::type` |
+| Nested_template_calls | C (qualified id) | **PASS** | MEDIUM — GLR prunes `T::template X<int>::type` |
+| Templates_with_optional_anonymous_parameters | C (qualified id) | **PASS** | MEDIUM — GLR prunes nested scope |
 | Noexcept_specifier | M (sizeof) | FAIL | LOW — sizeof scope |
 | Comments_after_for_loops | H (comment) | FAIL | NONE — extras placement |
 
@@ -277,11 +284,23 @@ After ums lands, run `go test -run TestCorpus -v -timeout 600s .` and check:
 **If fewer than 15 of these pass, the compareVersions dynamic precedence
 handling may need tuning.**
 
+### Should Also Pass (MEDIUM confidence, Cluster C reclassified) — 7 tests
+
+- [ ] C++ Using_declarations
+- [ ] C++ Assignment
+- [ ] C++ Cast_operator_overload_declarations
+- [ ] C++ Class_scope_cast_operator_overload_declarations
+- [ ] C++ Namespaced_types
+- [ ] C++ Nested_template_calls
+- [ ] C++ Templates_with_optional_anonymous_parameters
+
+**Verified via C reference parser**: same grammar tables produce correct nested
+qualified_identifiers. Our parser truncates at depth 2 due to GLR version pruning.
+
 ### Should Still Fail (unrelated to UMS)
 
 - All 12 internal-name failures (Perl/Ruby/Python scanner bugs)
 - All 7 HTML failures (implicit close tag scanner)
-- All 5+ C++ qualified identifier truncation (Cluster C)
 - Comment placement tests (Cluster H)
 - Most empty/nil parse trees (scanner/lex issues)
 
@@ -298,15 +317,20 @@ previously timing out silently (producing nil tree) due to version explosion:
 
 ## Post-UMS Remaining Fix Priorities
 
-After ums, the remaining ~62-78 failures will break down roughly as:
+After ums, the remaining ~55-73 failures will break down roughly as:
 
 | Category | Count | Fix |
 |----------|-------|-----|
 | Internal name leaking | 12 | Parser/scanner wrong-root bugs (wcu.19) |
 | Empty/nil parse tree | 14-17 | Mixed scanner/lex issues |
-| Qualified identifier truncation | 7 | Separate parsing depth fix |
+| Qualified identifier truncation | 0-2 | Should be mostly fixed by ums (reclassified) |
 | Comment placement | 3 | Alt GLR path extras stripping |
 | Long tail structural | 25-35 | Individual investigation |
 
-The next highest-impact fix after ums would be the **qualified identifier
-truncation** (~7 tests, likely a simpler parser change).
+The next highest-impact fix after ums would be **internal name leaking**
+(wcu.19, 12 tests) — investigating Perl/Ruby/Python scanner wrong-root
+production. If Cluster C qualified identifier truncation is NOT fully fixed
+by ums, it would be the next target (~0-2 remaining tests).
+
+> **UPDATE**: Previously said qualified identifier truncation was the next fix.
+> Investigation showed it shares ums root cause — reclassified as ums-fixable.
