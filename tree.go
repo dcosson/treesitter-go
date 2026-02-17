@@ -240,9 +240,10 @@ func (n Node) Child(index int) Node {
 func findVisibleChildByIndex(tree *Tree, children []Subtree, basePos Length, parentSubtree Subtree, arena *SubtreeArena, targetIndex int, currentIndex *int) (Node, Length) {
 	pos := basePos
 	structuralIdx := 0
+	lang := tree.language
 	for _, child := range children {
 		isExtra := IsExtra(child, arena)
-		if IsVisible(child, arena) {
+		if IsVisibleInContext(child, arena, parentSubtree, structuralIdx, lang) {
 			if *currentIndex == targetIndex {
 				return tree.nodeFromChildSubtree(child, pos, parentSubtree, structuralIdx, arena), pos
 			}
@@ -296,10 +297,11 @@ func (n Node) NamedChild(index int) Node {
 func findNamedChildByIndex(tree *Tree, children []Subtree, basePos Length, parentSubtree Subtree, arena *SubtreeArena, targetIndex int, currentIndex *int) (Node, Length) {
 	pos := basePos
 	structuralIdx := 0
+	lang := tree.language
 	for _, child := range children {
 		isExtra := IsExtra(child, arena)
-		if IsVisible(child, arena) {
-			if IsNamed(child, arena) && !isExtra {
+		if IsVisibleInContext(child, arena, parentSubtree, structuralIdx, lang) {
+			if IsNamedInContext(child, arena, parentSubtree, structuralIdx, lang) && !isExtra {
 				if *currentIndex == targetIndex {
 					return tree.nodeFromChildSubtree(child, pos, parentSubtree, structuralIdx, arena), pos
 				}

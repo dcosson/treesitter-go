@@ -837,3 +837,119 @@ func TestTreeCursorNonZeroFirstChildPadding(t *testing.T) {
 		t.Errorf("rbrace startByte = %d, want 4", rb.StartByte())
 	}
 }
+
+// buildHiddenChildAliasedToVisible builds a tree that models the real-world case
+// from Perl/Lua where a hidden symbol (e.g. _doublequote_string_content) is
+// aliased to a visible symbol (string_content) by the parent's production.
+//
+//	string_literal (prodID=1) -> _string_content (hidden, aliased to string_content)
+//
+// The _string_content symbol is intrinsically hidden but the parent string_literal's
+// production aliases it at structural index 0 to string_content (visible, named).
+// Without alias-aware visibility, _string_content would be skipped as hidden and
+// string_literal would appear to have no visible children.
+func buildHiddenChildAliasedToVisible() (*Tree, *SubtreeArena) {
+	arena := NewSubtreeArena(32)
+	lang := &Language{
+		SymbolMetadata: []SymbolMetadata{
+			{Visible: false, Named: false}, // 0: end
+			{Visible: false, Named: false}, // 1: _string_content (hidden)
+			{Visible: true, Named: true},   // 2: string_literal
+			{Visible: true, Named: true},   // 3: source_file
+			{Visible: true, Named: true},   // 4: string_content (alias target)
+		},
+		SymbolNames:            []string{"end", "_string_content", "string_literal", "source_file", "string_content"},
+		MaxAliasSequenceLength: 1,
+		AliasSequences: []Symbol{
+			// prodID 0: no aliases
+			0,
+			// prodID 1 (string_literal): child 0 -> string_content(4)
+			4,
+		},
+	}
+
+	// _string_content at byte 0, size 5 (e.g. "hello")
+	content := NewLeafSubtree(arena, Symbol(1),
+		Length{Bytes: 0, Point: Point{Column: 0}},
+		Length{Bytes: 5, Point: Point{Column: 5}},
+		StateID(1), false, false, false, lang)
+
+	// string_literal (prodID=1) -> _string_content
+	strLit := NewNodeSubtree(arena, Symbol(2), []Subtree{content}, 1, lang)
+	SummarizeChildren(strLit, arena, lang)
+
+	// source_file -> string_literal
+	root := NewNodeSubtree(arena, Symbol(3), []Subtree{strLit}, 0, lang)
+	SummarizeChildren(root, arena, lang)
+
+	tree := NewTree(root, lang, nil, []*SubtreeArena{arena})
+	return tree, arena
+}
+
+// TestHiddenChildAliasedToVisible verifies that a hidden child aliased to a
+// visible symbol by its parent's production is treated as visible in all
+// tree traversal methods. This is the core bug fixed by alias-aware visibility.
+func TestHiddenChildAliasedToVisible(t *testing.T) {
+	tree, arena := buildHiddenChildAliasedToVisible()
+	root := tree.RootNode()
+
+	// string_literal should report 1 visible child (the aliased _string_content).
+	strLit := root.Child(0)
+	if strLit.IsNull() {
+		t.Fatal("string_literal should not be null")
+	}
+	if strLit.Type() != "string_literal" {
+		t.Fatalf("root.Child(0) type = %q, want \"string_literal\"", strLit.Type())
+	}
+
+	// Check visible child count: SummarizeChildren should count the aliased child.
+	strLitData := arena.Get(strLit.subtree)
+	if strLitData.VisibleChildCount != 1 {
+		t.Errorf("string_literal.VisibleChildCount = %d, want 1", strLitData.VisibleChildCount)
+	}
+	if strLitData.NamedChildCount != 1 {
+		t.Errorf("string_literal.NamedChildCount = %d, want 1", strLitData.NamedChildCount)
+	}
+
+	// Node.Child(0) should find the aliased child as "string_content".
+	child := strLit.Child(0)
+	if child.IsNull() {
+		t.Fatal("string_literal.Child(0) should not be null")
+	}
+	if child.Type() != "string_content" {
+		t.Errorf("string_literal.Child(0) type = %q, want \"string_content\"", child.Type())
+	}
+	if child.Symbol() != 4 {
+		t.Errorf("string_literal.Child(0) symbol = %d, want 4 (string_content)", child.Symbol())
+	}
+
+	// Node.NamedChild(0) should also find it.
+	named := strLit.NamedChild(0)
+	if named.IsNull() {
+		t.Fatal("string_literal.NamedChild(0) should not be null")
+	}
+	if named.Type() != "string_content" {
+		t.Errorf("string_literal.NamedChild(0) type = %q, want \"string_content\"", named.Type())
+	}
+
+	// TreeCursor should also find it.
+	cursor := NewTreeCursor(root)
+	// Navigate to string_literal.
+	if !cursor.GotoFirstChild() {
+		t.Fatal("cursor: should find string_literal")
+	}
+	if cursor.CurrentNode().Type() != "string_literal" {
+		t.Fatalf("cursor: first child = %q, want \"string_literal\"", cursor.CurrentNode().Type())
+	}
+	// Navigate into string_literal's children.
+	if !cursor.GotoFirstChild() {
+		t.Fatal("cursor: should find aliased child inside string_literal")
+	}
+	current := cursor.CurrentNode()
+	if current.Type() != "string_content" {
+		t.Errorf("cursor: string_literal child type = %q, want \"string_content\"", current.Type())
+	}
+	if current.Symbol() != 4 {
+		t.Errorf("cursor: string_literal child symbol = %d, want 4", current.Symbol())
+	}
+}

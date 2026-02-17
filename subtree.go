@@ -519,6 +519,46 @@ func IsExtra(s Subtree, arena *SubtreeArena) bool {
 	return arena.Get(s).HasFlag(SubtreeFlagExtra)
 }
 
+// IsVisibleInContext checks if a child is visible considering alias resolution.
+// A child is visible if either:
+// 1. It is intrinsically visible (IsVisible returns true), or
+// 2. It is a non-extra child aliased to a visible symbol by the parent's production.
+// Extra nodes are never aliased.
+func IsVisibleInContext(child Subtree, arena *SubtreeArena, parent Subtree, structuralChildIndex int, lang *Language) bool {
+	if IsVisible(child, arena) {
+		return true
+	}
+	if IsExtra(child, arena) {
+		return false
+	}
+	if !parent.IsInline() {
+		prodID := GetProductionID(parent, arena)
+		if prodID > 0 {
+			alias := lang.AliasForProduction(prodID, structuralChildIndex)
+			if alias != 0 && lang.SymbolIsVisible(alias) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// IsNamedInContext returns whether a child is named considering alias resolution.
+// If the child is aliased by the parent's production, the alias symbol's named
+// property is used instead of the child's intrinsic named property.
+func IsNamedInContext(child Subtree, arena *SubtreeArena, parent Subtree, structuralChildIndex int, lang *Language) bool {
+	if !IsExtra(child, arena) && !parent.IsInline() {
+		prodID := GetProductionID(parent, arena)
+		if prodID > 0 {
+			alias := lang.AliasForProduction(prodID, structuralChildIndex)
+			if alias != 0 {
+				return lang.SymbolIsNamed(alias)
+			}
+		}
+	}
+	return IsNamed(child, arena)
+}
+
 // StructuralHash computes a hash for a subtree for O(1) change detection (AA-2).
 func StructuralHash(s Subtree, arena *SubtreeArena) uint32 {
 	if s.IsInline() {
@@ -719,6 +759,7 @@ func SummarizeChildren(s Subtree, arena *SubtreeArena, lang *Language) {
 	var dynamicPrecedence int32
 	var dependsOnColumn bool
 	var structuralHash uint32
+	var structuralChildIdx int
 
 	// The node's padding is the first child's padding.
 	// The node's size spans from after the first child's padding to the end
@@ -741,9 +782,11 @@ func SummarizeChildren(s Subtree, arena *SubtreeArena, lang *Language) {
 		}
 
 		// Count visible/named children and accumulate descendants.
-		childVisible := IsVisible(child, arena)
-		childNamed := IsNamed(child, arena)
+		// Use alias-aware visibility: a hidden child aliased to a visible
+		// symbol by this node's production should be counted as visible.
 		childExtra := IsExtra(child, arena)
+		childVisible := IsVisibleInContext(child, arena, s, structuralChildIdx, lang)
+		childNamed := IsNamedInContext(child, arena, s, structuralChildIdx, lang)
 
 		if childVisible {
 			visibleChildCount++
@@ -761,6 +804,10 @@ func SummarizeChildren(s Subtree, arena *SubtreeArena, lang *Language) {
 			visibleDescendantCount++
 		}
 		visibleDescendantCount += GetVisibleDescendantCount(child, arena)
+
+		if !childExtra {
+			structuralChildIdx++
+		}
 
 		// Accumulate error costs.
 		errorCost += GetErrorCost(child, arena)
