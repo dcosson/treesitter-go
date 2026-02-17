@@ -38,6 +38,13 @@ type Parser struct {
 	operationCount    uint32
 	skippedErrorTrees []Subtree
 
+	// Starvation detection for findActiveVersion round-robin.
+	// When the same version is selected repeatedly without any version making
+	// position progress, we rotate to the next version to prevent starvation.
+	lastActiveVersion    int
+	lastActivePosition   uint32
+	staleSelectionCount  uint32
+
 	// Incremental parsing state.
 	reusableNode *ReusableNode
 	oldTree      *Tree
@@ -109,6 +116,9 @@ func (p *Parser) Reset() {
 	p.skippedErrorTrees = p.skippedErrorTrees[:0]
 	p.reusableNode = nil
 	p.oldTree = nil
+	p.lastActiveVersion = -1
+	p.lastActivePosition = 0
+	p.staleSelectionCount = 0
 }
 
 // Parse parses the input and returns a Tree. If ctx is cancelled, the
@@ -186,9 +196,23 @@ func (p *Parser) ParseString(ctx context.Context, source []byte, oldTree ...*Tre
 	return p.Parse(ctx, NewStringInput(source), old)
 }
 
-// findActiveVersion returns the index of the first active version,
+// findActiveVersion returns the index of the active version to advance next,
 // prioritizing the version with the lowest position (furthest behind).
 // Returns -1 if no active versions exist.
+//
+// Includes starvation detection: when the same version is selected repeatedly
+// without making position progress, we rotate to the next active version.
+// This prevents scenarios where a stuck low-position version starves higher-
+// position versions that could actually make progress. In C tree-sitter,
+// PreferRight swaps handle this implicitly; our phased approach needs this
+// explicit mechanism instead.
+// maxStaleSelections is the number of consecutive times the same version can
+// be selected by findActiveVersion without advancing its position before
+// we rotate to the next version. This prevents starvation where a stuck
+// low-position version blocks higher-position versions from advancing.
+// In C tree-sitter, PreferRight swaps handle this implicitly.
+const maxStaleSelections = 4
+
 func (p *Parser) findActiveVersion() int {
 	bestVersion := -1
 	var bestPosition Length
@@ -204,6 +228,45 @@ func (p *Parser) findActiveVersion() int {
 			bestPosition = pos
 		}
 	}
+
+	if bestVersion < 0 {
+		return -1
+	}
+
+	// Starvation detection: if the same version keeps getting selected
+	// without advancing its position, rotate to give other versions a turn.
+	if bestVersion == p.lastActiveVersion && bestPosition.Bytes == p.lastActivePosition {
+		p.staleSelectionCount++
+		if p.staleSelectionCount >= maxStaleSelections {
+			// Find the next active version after bestVersion (round-robin).
+			for i := bestVersion + 1; i < p.stack.VersionCount(); i++ {
+				v := StackVersion(i)
+				if p.stack.IsActive(v) {
+					p.staleSelectionCount = 0
+					p.lastActiveVersion = i
+					p.lastActivePosition = p.stack.Position(v).Bytes
+					return i
+				}
+			}
+			// Wrap around.
+			for i := 0; i < bestVersion; i++ {
+				v := StackVersion(i)
+				if p.stack.IsActive(v) {
+					p.staleSelectionCount = 0
+					p.lastActiveVersion = i
+					p.lastActivePosition = p.stack.Position(v).Bytes
+					return i
+				}
+			}
+			// Only one version — reset counter, return it.
+			p.staleSelectionCount = 0
+		}
+	} else {
+		p.staleSelectionCount = 0
+	}
+
+	p.lastActiveVersion = bestVersion
+	p.lastActivePosition = bestPosition.Bytes
 	return bestVersion
 }
 
@@ -1172,11 +1235,19 @@ func (p *Parser) condenseStack() {
 	// (TakeLeft/TakeRight) are applied here — soft preferences and swaps
 	// are not used because they interact badly with our phased approach
 	// (swaps change findActiveVersion tie-breaking, causing regressions).
+	//
+	// Important: we only apply decisive kills between versions at the same
+	// byte position. Versions at different positions may be exploring different
+	// parse paths (e.g., error recovery versions that haven't caught up yet).
+	// Killing them prematurely can prevent the parser from making progress,
+	// causing infinite loops. Cross-position pruning is handled by Phase 3
+	// (absolute cost threshold) and Phase 4 (hard cap).
 	for i := 0; i < p.stack.VersionCount(); i++ {
 		vi := StackVersion(i)
 		if !p.stack.IsActive(vi) {
 			continue
 		}
+		posI := p.stack.Position(vi)
 		statusI := p.versionStatus(vi)
 
 		for j := 0; j < i; j++ {
@@ -1184,15 +1255,22 @@ func (p *Parser) condenseStack() {
 			if !p.stack.IsActive(vj) {
 				continue
 			}
+
+			// Only compare versions at the same byte position. Versions at
+			// different positions may be exploring different parse paths (e.g.,
+			// error recovery). Killing them prematurely prevents progress.
+			// Phase 3 (absolute threshold) and Phase 4 (hard cap) handle
+			// cross-position pruning.
+			if p.stack.Position(vj).Bytes != posI.Bytes {
+				continue
+			}
 			statusJ := p.versionStatus(vj)
 
 			switch p.compareVersions(statusJ, statusI) {
 			case errorComparisonTakeLeft:
-				// j is decisively better — kill i.
 				p.stack.Halt(vi)
-				goto nextVersion // vi is dead, no more comparisons needed
+				goto nextVersion
 			case errorComparisonTakeRight:
-				// i is decisively better — kill j.
 				p.stack.Halt(vj)
 			}
 		}
