@@ -141,7 +141,7 @@ func (s *Scanner) Deserialize(data []byte) {
 	s.indents = []uint16{0} // Always starts with indent 0
 	s.insideInterpolatedString = false
 
-	if len(data) == 0 {
+	if len(data) < 2 {
 		return
 	}
 

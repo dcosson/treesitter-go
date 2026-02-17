@@ -123,12 +123,14 @@ func (s *Scanner) Serialize(buf []byte) uint32 {
 
 // Deserialize restores the scanner state from data.
 func (s *Scanner) Deserialize(data []byte) {
-	if len(data) == 0 {
+	if len(data) < 2 {
 		s.reset()
 		return
 	}
 
 	size := uint32(0)
+	n := uint32(len(data))
+
 	s.lastGlobParenDepth = data[size]
 	size++
 	heredocCount := int(data[size])
@@ -141,6 +143,10 @@ func (s *Scanner) Deserialize(data []byte) {
 	s.heredocs = s.heredocs[:heredocCount]
 
 	for i := 0; i < heredocCount; i++ {
+		if size+7 > n { // 3 bools + 4 byte delimLen
+			s.heredocs = s.heredocs[:i]
+			break
+		}
 		h := &s.heredocs[i]
 		h.isRaw = data[size] != 0
 		size++
@@ -151,6 +157,11 @@ func (s *Scanner) Deserialize(data []byte) {
 
 		delimLen := binary.LittleEndian.Uint32(data[size:])
 		size += 4
+		if delimLen > n-size {
+			h.delimiter = nil
+			s.heredocs = s.heredocs[:i+1]
+			break
+		}
 		if delimLen > 0 {
 			h.delimiter = make([]byte, delimLen)
 			copy(h.delimiter, data[size:size+delimLen])
