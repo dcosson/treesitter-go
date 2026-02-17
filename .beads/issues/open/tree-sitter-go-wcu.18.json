@@ -1,0 +1,22 @@
+{
+  "id": "tree-sitter-go-wcu.18",
+  "title": "Port ts_parser__compare_versions and fix Merge link ordering",
+  "description": "Dynamic precedence fix (65c6252) improves results but deviates from C reference in 2 ways: (1) Merge link swap - C tracks max prec on StackNode, doesn't reorder links. (2) condenseStack - C uses pair-wise ts_parser__compare_versions, our code uses a search loop. Port the C comparison logic for full correctness. Reviewer analysis in 0767a583.",
+  "status": "open",
+  "priority": 2,
+  "type": "task",
+  "parent": "tree-sitter-go-wcu",
+  "dependencies": [
+    {
+      "id": "tree-sitter-go-wcu",
+      "type": "parent-child"
+    }
+  ],
+  "created_by": "Danny Cosson",
+  "owner": "dcosson@gmail.com",
+  "labels": [
+    "P3"
+  ],
+  "created_at": "2026-02-16T16:05:33.338083-08:00",
+  "updated_at": "2026-02-16T16:05:33.338083-08:00"
+}
