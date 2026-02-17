@@ -1,8 +1,8 @@
 # Corpus Test Failure Analysis
 
-Updated: 2026-02-16 (post GLR version pruning fix e9aeaa3)
+Updated: 2026-02-16 (post starvation fix e5de4de)
 
-## Current State: 1532/1634 passing (93.8%)
+## Current State: 1519/1619 passing (93.9%)
 
 Key fixes applied (cumulative):
 - Alias sequence extraction (9e978d1): resolved ~167 alias-related failures
@@ -11,7 +11,8 @@ Key fixes applied (cumulative):
 - Alias-aware visibility (044e755): +95 tests across 10 languages
 - Comment extras placement (b5dc3bc): +103 tests across 12 languages
 - Scanner result variable / END_STATE (9bdafd3): +37 tests, CSS→100%, Rust→99.3%
-- GLR version pruning / ums (e9aeaa3): +9 tests (6 C++ timeouts, Ruby, HTML, Java), -3 regressions
+- GLR version pruning / ums (e9aeaa3): +6 net (9 improvements, 1 regression)
+- Starvation fix (e5de4de): +2 (round-robin findActiveVersion, same-position kills)
 
 The corpus test runner strips field annotations, so field mismatches are not counted.
 
@@ -23,29 +24,29 @@ The corpus test runner strips field annotations, so field mismatches are not cou
 | CSS         |    38 |   38 |    0 |   100.0%  |
 | Rust        |   147 |  146 |    1 |    99.3%  |
 | TypeScript  |   112 |  110 |    2 |    98.2%  |
-| Ruby        |   290 |  282 |    8 |    97.2%  |
+| Ruby        |   290 |  283 |    7 |    97.6%  |
 | Lua         |    37 |   36 |    1 |    97.3%  |
 | Java        |   108 |  105 |    3 |    97.2%  |
 | JavaScript  |   116 |  112 |    4 |    96.6%  |
 | Bash        |   100 |   96 |    4 |    96.0%  |
+| Python      |   115 |  105 |   10 |    91.3%  |
 | C           |    85 |   78 |    7 |    91.8%  |
-| Python      |   115 |  104 |   11 |    90.4%  |
+| C++         |   179 |  160 |   19 |    89.4%  |
 | Go          |    67 |   59 |    8 |    88.1%  |
 | Perl        |   199 |  172 |   27 |    86.4%  |
-| C++         |   179 |  154 |   25 |    86.0%  |
 | HTML        |    20 |   13 |    7 |    65.0%  |
 
-## Remaining Failures (108 total)
+## Remaining Failures (100 total)
 
 All comment placement, alias visibility, trailing extras, and scanner END_STATE
-issues have been resolved. The remaining 108 failures break down into four categories:
+issues have been resolved. The remaining 100 failures break down into four categories:
 
-| Category                          | Count | % of 108 |
+| Category                          | Count | % of 100 |
 |-----------------------------------|------:|---------:|
-| Structural mismatch               |    69 |    63.9% |
-| Empty/nil parse tree              |    19 |    17.6% |
-| Internal name leaking             |    12 |    11.1% |
-| Timeout/infinite loop             |     8 |     7.4% |
+| Structural mismatch               |    68 |    68.0% |
+| Empty/nil parse tree              |    19 |    19.0% |
+| Internal name leaking             |    11 |    11.0% |
+| Timeout/infinite loop             |     2 |     2.0% |
 
 Comment misplacement is **zero**. The scanner result variable fix (9bdafd3)
 resolved 37 failures caused by codegen generating `return false` for
@@ -56,10 +57,10 @@ non-accepting lex states even when a prior state had accepted.
 | Language | Failures | Empty | Internal | Structural | Timeout |
 |----------|----------|-------|----------|------------|---------|
 | Perl     |       27 |     2 |        8 |         17 |       0 |
-| C++      |       25 |     0 |        0 |         17 |       8 |
-| Python   |       11 |     1 |        1 |          9 |       0 |
+| C++      |       19 |     0 |        0 |         17 |       2 |
+| Python   |       10 |     1 |        1 |          8 |       0 |
 | Go       |        8 |     2 |        0 |          6 |       0 |
-| Ruby     |        8 |     3 |        3 |          2 |       0 |
+| Ruby     |        7 |     3 |        2 |          2 |       0 |
 | C        |        7 |     1 |        0 |          6 |       0 |
 | HTML     |        7 |     5 |        0 |          2 |       0 |
 | Bash     |        4 |     1 |        0 |          3 |       0 |
@@ -68,7 +69,7 @@ non-accepting lex states even when a prior state had accepted.
 | TS       |        2 |     1 |        0 |          1 |       0 |
 | Rust     |        1 |     0 |        0 |          1 |       0 |
 | Lua      |        1 |     0 |        0 |          1 |       0 |
-| **Total**| **108** | **19**|     **12**|     **69**|    **8**|
+| **Total**| **100** | **19**|     **11**|     **68**|    **2**|
 
 ## Failure Category Details
 
@@ -273,29 +274,36 @@ Perl-specific GLR ambiguity issue.
 | + Alias visibility (044e755)            |           ~95   |        84.7% |
 | + Comment extras (b5dc3bc)              |          ~103   |        91.0% |
 | + Scanner result variable (9bdafd3)     |           ~37   |        93.3% |
-| + GLR version pruning (e9aeaa3)         |     +9/-3 (~+6) |        93.8% |
-| **Current**                             |               — |    **93.8%** |
+| + GLR version pruning (e9aeaa3)         |            ~+6  |        93.7% |
+| + Starvation fix (e5de4de)              |             +2  |        93.9% |
+| **Current**                             |               — |    **93.9%** |
 
-## UMS Fix Details (e9aeaa3)
+## UMS + Starvation Fix Details
 
-Improvements (9): 6 C++ timeouts (casts_vs_mult, Noreturn, For_loops,
-Switch_statements, Compound_literals_without_parens, Template_calls),
-Ruby nested_strings, HTML comment, Java type_args_with_generics.
+**GLR version pruning (e9aeaa3)**: Ported ts_parser__compare_versions with
+cost amplification and error-state decisive kills. +6 net improvement.
 
-Regressions (3): C++ Complex_fold_expression (NEW timeout), HTML Void_tags
-(NEW structural), Java method_references (NEW structural). Under investigation.
+**Starvation fix (e5de4de)**: Two-part fix for ums regression:
+1. Same-position restriction on Phase 2 decisive kills (prevents premature
+   cross-position kills of error recovery versions)
+2. Round-robin findActiveVersion starvation detection (after 4 stale selections
+   of same version without position progress, rotates to next active version)
+
+Result: Complex_fold_expression regression resolved, template_functions_vs_relational
+restored to structural (not timeout). C++ timeouts reduced from 8 to 2.
 
 ## Remaining High-Impact Fixes
 
 | Fix                                     | Est. Tests | Notes |
 |-----------------------------------------|-----------:|-------|
-| Fix ums regressions                     |         +3 | Must fix to keep net gain |
-| wcu.19 (Perl/Ruby wrong-root)           |     ~12    | Parser/scanner interaction |
+| wcu.19 (Perl/Ruby wrong-root)           |     ~11    | Parser/scanner interaction |
 | Soft preference GLR behavior            |    ~20-30  | Blocked by Python regression |
 | HTML implicit close tags                |       ~5   | Scanner work needed |
+| C/C++ type_identifier confusion         |       ~6   | Keyword extraction issue |
 
 ## Beads Tracking Remaining Fixes
 
+- **tree-sitter-go-ot2** (P1): Post-UMS regression — RESOLVED (e5de4de)
 - **tree-sitter-go-wcu.19** (P2): Perl/Ruby wrong-root production investigation
 - **tree-sitter-go-wcu.18** (P3): Merge link ordering to match C reference
 - **tree-sitter-go-nlb** (P2): Call vs type_conversion_expression ambiguity
