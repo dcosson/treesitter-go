@@ -1,8 +1,8 @@
 # Corpus Test Failure Analysis
 
-Updated: 2026-02-16 (post starvation fix e5de4de)
+Updated: 2026-02-16 (post Phase 2 refinement 2b420b4)
 
-## Current State: 1519/1619 passing (93.9%)
+## Current State: 1520/1619 passing (93.9%)
 
 Key fixes applied (cumulative):
 - Alias sequence extraction (9e978d1): resolved ~167 alias-related failures
@@ -13,6 +13,7 @@ Key fixes applied (cumulative):
 - Scanner result variable / END_STATE (9bdafd3): +37 tests, CSS→100%, Rust→99.3%
 - GLR version pruning / ums (e9aeaa3): +6 net (9 improvements, 1 regression)
 - Starvation fix (e5de4de): +2 (round-robin findActiveVersion, same-position kills)
+- Phase 2 refinement (2b420b4): +1 (cost-threshold cross-position kills for Java)
 
 The corpus test runner strips field annotations, so field mismatches are not counted.
 
@@ -26,7 +27,7 @@ The corpus test runner strips field annotations, so field mismatches are not cou
 | TypeScript  |   112 |  110 |    2 |    98.2%  |
 | Ruby        |   290 |  283 |    7 |    97.6%  |
 | Lua         |    37 |   36 |    1 |    97.3%  |
-| Java        |   108 |  105 |    3 |    97.2%  |
+| Java        |   108 |  106 |    2 |    98.1%  |
 | JavaScript  |   116 |  112 |    4 |    96.6%  |
 | Bash        |   100 |   96 |    4 |    96.0%  |
 | Python      |   115 |  105 |   10 |    91.3%  |
@@ -36,16 +37,16 @@ The corpus test runner strips field annotations, so field mismatches are not cou
 | Perl        |   199 |  172 |   27 |    86.4%  |
 | HTML        |    20 |   13 |    7 |    65.0%  |
 
-## Remaining Failures (100 total)
+## Remaining Failures (99 total)
 
 All comment placement, alias visibility, trailing extras, and scanner END_STATE
-issues have been resolved. The remaining 100 failures break down into four categories:
+issues have been resolved. The remaining 99 failures break down into four categories:
 
-| Category                          | Count | % of 100 |
+| Category                          | Count | % of 99  |
 |-----------------------------------|------:|---------:|
-| Structural mismatch               |    68 |    68.0% |
-| Empty/nil parse tree              |    19 |    19.0% |
-| Internal name leaking             |    11 |    11.0% |
+| Structural mismatch               |    67 |    67.7% |
+| Empty/nil parse tree              |    19 |    19.2% |
+| Internal name leaking             |    11 |    11.1% |
 | Timeout/infinite loop             |     2 |     2.0% |
 
 Comment misplacement is **zero**. The scanner result variable fix (9bdafd3)
@@ -65,11 +66,11 @@ non-accepting lex states even when a prior state had accepted.
 | HTML     |        7 |     5 |        0 |          2 |       0 |
 | Bash     |        4 |     1 |        0 |          3 |       0 |
 | JS       |        4 |     2 |        0 |          2 |       0 |
-| Java     |        3 |     1 |        0 |          2 |       0 |
+| Java     |        2 |     1 |        0 |          1 |       0 |
 | TS       |        2 |     1 |        0 |          1 |       0 |
 | Rust     |        1 |     0 |        0 |          1 |       0 |
 | Lua      |        1 |     0 |        0 |          1 |       0 |
-| **Total**| **100** | **19**|     **11**|     **68**|    **2**|
+| **Total**|  **99** | **19**|     **11**|     **67**|    **2**|
 
 ## Failure Category Details
 
