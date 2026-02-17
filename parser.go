@@ -38,13 +38,6 @@ type Parser struct {
 	operationCount    uint32
 	skippedErrorTrees []Subtree
 
-	// Starvation detection for findActiveVersion round-robin.
-	// When the same version is selected repeatedly without any version making
-	// position progress, we rotate to the next version to prevent starvation.
-	lastActiveVersion    int
-	lastActivePosition   uint32
-	staleSelectionCount  uint32
-
 	// Incremental parsing state.
 	reusableNode *ReusableNode
 	oldTree      *Tree
@@ -116,9 +109,6 @@ func (p *Parser) Reset() {
 	p.skippedErrorTrees = p.skippedErrorTrees[:0]
 	p.reusableNode = nil
 	p.oldTree = nil
-	p.lastActiveVersion = -1
-	p.lastActivePosition = 0
-	p.staleSelectionCount = 0
 }
 
 // Parse parses the input and returns a Tree. If ctx is cancelled, the
@@ -200,19 +190,10 @@ func (p *Parser) ParseString(ctx context.Context, source []byte, oldTree ...*Tre
 // prioritizing the version with the lowest position (furthest behind).
 // Returns -1 if no active versions exist.
 //
-// Includes starvation detection: when the same version is selected repeatedly
-// without making position progress, we rotate to the next active version.
-// This prevents scenarios where a stuck low-position version starves higher-
-// position versions that could actually make progress. In C tree-sitter,
-// PreferRight swaps handle this implicitly; our phased approach needs this
-// explicit mechanism instead.
-// maxStaleSelections is the number of consecutive times the same version can
-// be selected by findActiveVersion without advancing its position before
-// we rotate to the next version. This prevents starvation where a stuck
-// low-position version blocks higher-position versions from advancing.
-// In C tree-sitter, PreferRight swaps handle this implicitly.
-const maxStaleSelections = 4
-
+// This matches C tree-sitter's ts_parser__select_next_version behavior.
+// With PreferRight swaps in condenseStack, the best version naturally
+// occupies the lowest index, so simple lowest-position selection works
+// correctly without starvation detection.
 func (p *Parser) findActiveVersion() int {
 	bestVersion := -1
 	var bestPosition Length
@@ -229,44 +210,6 @@ func (p *Parser) findActiveVersion() int {
 		}
 	}
 
-	if bestVersion < 0 {
-		return -1
-	}
-
-	// Starvation detection: if the same version keeps getting selected
-	// without advancing its position, rotate to give other versions a turn.
-	if bestVersion == p.lastActiveVersion && bestPosition.Bytes == p.lastActivePosition {
-		p.staleSelectionCount++
-		if p.staleSelectionCount >= maxStaleSelections {
-			// Find the next active version after bestVersion (round-robin).
-			for i := bestVersion + 1; i < p.stack.VersionCount(); i++ {
-				v := StackVersion(i)
-				if p.stack.IsActive(v) {
-					p.staleSelectionCount = 0
-					p.lastActiveVersion = i
-					p.lastActivePosition = p.stack.Position(v).Bytes
-					return i
-				}
-			}
-			// Wrap around.
-			for i := 0; i < bestVersion; i++ {
-				v := StackVersion(i)
-				if p.stack.IsActive(v) {
-					p.staleSelectionCount = 0
-					p.lastActiveVersion = i
-					p.lastActivePosition = p.stack.Position(v).Bytes
-					return i
-				}
-			}
-			// Only one version — reset counter, return it.
-			p.staleSelectionCount = 0
-		}
-	} else {
-		p.staleSelectionCount = 0
-	}
-
-	p.lastActiveVersion = bestVersion
-	p.lastActivePosition = bestPosition.Bytes
 	return bestVersion
 }
 
@@ -1200,153 +1143,62 @@ func (p *Parser) compareVersions(a, b errorStatus) errorComparison {
 	return errorComparisonNone
 }
 
-// condenseStack merges compatible versions and prunes inferior ones using
-// pair-wise comparison with cost amplification. This matches C tree-sitter's
-// ts_parser__condense_stack algorithm.
-//
-// The algorithm:
-//  1. Remove halted versions immediately
-//  2. Compare each version against all prior versions using compareVersions
-//  3. Decisive kills (TakeLeft/TakeRight) remove versions regardless of state
-//  4. Soft preferences try merge (same state) or swap positions
-//  5. Hard cap removes from the end (relying on ordering from swaps)
+// condenseStack merges compatible versions and prunes inferior ones.
+// This is a faithful port of C tree-sitter's ts_parser__condense_stack:
+// single-pass algorithm that handles all 5 comparison outcomes, uses
+// swaps for PreferRight when merge fails, and removes from the end
+// for hard cap.
 func (p *Parser) condenseStack() {
-	// Phase 1: Merge compatible versions (same state).
 	for i := 0; i < p.stack.VersionCount(); i++ {
-		vi := StackVersion(i)
-		if !p.stack.IsActive(vi) {
+		// Remove halted versions immediately.
+		if p.stack.IsHalted(StackVersion(i)) {
+			p.stack.RemoveVersion(StackVersion(i))
+			i--
 			continue
 		}
-		for j := i + 1; j < p.stack.VersionCount(); j++ {
-			vj := StackVersion(j)
-			if !p.stack.IsActive(vj) {
-				continue
-			}
-			if p.stack.CanMerge(vi, vj) {
-				p.stack.Merge(vi, vj)
-			}
-		}
-	}
 
-	// Phase 2: Pair-wise version comparison for decisive kills.
-	// Unlike C's single-pass condenseStack, we use a phased approach that
-	// separates merging (Phase 1), comparison-based kills (Phase 2), cost
-	// pruning (Phase 3), and hard cap (Phase 4). Only decisive kills
-	// (TakeLeft/TakeRight) are applied here — soft preferences and swaps
-	// are not used because they interact badly with our phased approach
-	// (swaps change findActiveVersion tie-breaking, causing regressions).
-	//
-	// Important: we only apply decisive kills between versions at the same
-	// byte position. Versions at different positions may be exploring different
-	// parse paths (e.g., error recovery versions that haven't caught up yet).
-	// Killing them prematurely can prevent the parser from making progress,
-	// causing infinite loops. Cross-position pruning is handled by Phase 3
-	// (absolute cost threshold) and Phase 4 (hard cap).
-	for i := 0; i < p.stack.VersionCount(); i++ {
-		vi := StackVersion(i)
-		if !p.stack.IsActive(vi) {
-			continue
-		}
-		posI := p.stack.Position(vi)
-		statusI := p.versionStatus(vi)
+		statusI := p.versionStatus(StackVersion(i))
 
+		// Compare version i against all prior versions j < i.
 		for j := 0; j < i; j++ {
-			vj := StackVersion(j)
-			if !p.stack.IsActive(vj) {
-				continue
-			}
-
-			statusJ := p.versionStatus(vj)
-
-			// Restrict cross-position decisive kills when either version has
-			// high error cost. High-cost versions at different positions are
-			// likely error recovery paths that need time to advance; killing
-			// them prematurely prevents progress, causing infinite loops
-			// (C++ Complex_fold_expression). Low-cost versions at different
-			// positions can be killed cross-position for GLR ambiguity
-			// resolution (Java type arguments vs comparison operators).
-			if p.stack.Position(vj).Bytes != posI.Bytes {
-				maxCost := statusI.cost
-				if statusJ.cost > maxCost {
-					maxCost = statusJ.cost
-				}
-				if maxCost > uint32(MaxCostDifference/4) {
-					continue
-				}
-			}
+			statusJ := p.versionStatus(StackVersion(j))
 
 			switch p.compareVersions(statusJ, statusI) {
 			case errorComparisonTakeLeft:
-				p.stack.Halt(vi)
+				// j is decisively better — kill i.
+				p.stack.RemoveVersion(StackVersion(i))
+				i--
 				goto nextVersion
+
+			case errorComparisonPreferLeft, errorComparisonNone:
+				// j is better or equal — try merge (requires same state).
+				if p.stack.Merge(StackVersion(j), StackVersion(i)) {
+					i--
+					goto nextVersion
+				}
+
+			case errorComparisonPreferRight:
+				// i is better — try merge, or swap positions.
+				if p.stack.Merge(StackVersion(j), StackVersion(i)) {
+					i--
+					goto nextVersion
+				}
+				p.stack.SwapVersions(StackVersion(i), StackVersion(j))
+
 			case errorComparisonTakeRight:
-				p.stack.Halt(vj)
+				// i is decisively better — kill j.
+				p.stack.RemoveVersion(StackVersion(j))
+				i--
+				j--
 			}
 		}
 	nextVersion:
 	}
 
-	// Phase 3: Prune by absolute cost (original behavior).
-	if p.stack.ActiveVersionCount() > 1 {
-		bestCost := uint32(0)
-		first := true
-		for i := 0; i < p.stack.VersionCount(); i++ {
-			v := StackVersion(i)
-			if !p.stack.IsActive(v) {
-				continue
-			}
-			cost := p.stack.ErrorCost(v)
-			if first || cost < bestCost {
-				bestCost = cost
-				first = false
-			}
-		}
-
-		for i := 0; i < p.stack.VersionCount(); i++ {
-			v := StackVersion(i)
-			if !p.stack.IsActive(v) {
-				continue
-			}
-			if p.stack.ErrorCost(v) > bestCost+MaxCostDifference {
-				p.stack.Halt(v)
-			}
-		}
+	// Hard cap: remove from the end (relies on swap ordering).
+	for p.stack.VersionCount() > MaxVersionCount {
+		p.stack.RemoveVersion(StackVersion(MaxVersionCount))
 	}
-
-	// Phase 4: Hard cap — search for worst version.
-	activeCount := p.stack.ActiveVersionCount()
-	if activeCount > MaxVersionCount {
-		toHalt := activeCount - MaxVersionCount
-		halted := 0
-		for halted < toHalt {
-			worstIdx := -1
-			var worstCost uint32
-			var worstPrec int32
-			for i := 0; i < p.stack.VersionCount(); i++ {
-				v := StackVersion(i)
-				if !p.stack.IsActive(v) {
-					continue
-				}
-				cost := p.stack.ErrorCost(v)
-				prec := p.stack.DynamicPrecedence(v)
-				if worstIdx < 0 || cost > worstCost ||
-					(cost == worstCost && prec < worstPrec) ||
-					(cost == worstCost && prec == worstPrec && i > worstIdx) {
-					worstIdx = i
-					worstCost = cost
-					worstPrec = prec
-				}
-			}
-			if worstIdx < 0 {
-				break
-			}
-			p.stack.Halt(StackVersion(worstIdx))
-			halted++
-		}
-	}
-
-	// Phase 5: Remove halted versions.
-	p.stack.CompactHaltedVersions()
 }
 
 // --- External scanner helpers ---

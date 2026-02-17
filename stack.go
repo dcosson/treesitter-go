@@ -432,8 +432,8 @@ func (s *Stack) ForkAtNode(node *StackNode) StackVersion {
 }
 
 // Merge combines two versions that have reached the same state.
-// The source version's top node is added as an additional link on the
-// target version's top node. The source version is halted.
+// The source version's links are added to the target version's node.
+// The source version is removed (matching C's ts_stack_merge).
 //
 // When the source has higher dynamic precedence than the target's first
 // link, the links are swapped so that links[0] (the default path) has
@@ -441,19 +441,18 @@ func (s *Stack) ForkAtNode(node *StackNode) StackVersion {
 //
 // Returns true if the merge was successful.
 func (s *Stack) Merge(target, source StackVersion) bool {
-	if int(target) >= len(s.heads) || int(source) >= len(s.heads) {
+	if !s.CanMerge(target, source) {
 		return false
 	}
+
 	targetHead := &s.heads[target]
 	sourceHead := &s.heads[source]
 
-	if targetHead.node == nil || sourceHead.node == nil {
-		return false
-	}
-
-	// States must match for merge.
-	if targetHead.node.state != sourceHead.node.state {
-		return false
+	// If merging in error state, update the error marker.
+	// Matches C: if (head1->node->state == ERROR_STATE)
+	//   head1->node_count_at_last_error = head1->node->node_count;
+	if targetHead.node.state == 0 {
+		targetHead.nodeCountAtLastError = targetHead.node.nodeCount
 	}
 
 	// Add source's links to target.
@@ -483,12 +482,18 @@ func (s *Stack) Merge(target, source StackVersion) bool {
 		}
 	}
 
-	// Halt the source version.
-	sourceHead.status = StackStatusHalted
+	// Remove the source version (matches C's ts_stack_merge behavior).
+	// After merge, the source version is gone and indices shift down.
+	s.RemoveVersion(source)
 	return true
 }
 
-// CanMerge returns true if two versions can be merged (same state).
+// CanMerge returns true if two versions can be merged.
+// C's ts_stack_can_merge additionally requires same position, same error
+// cost, and same external scanner state. We relax those requirements
+// because our parse loop structure (advance-one-at-a-time) differs from
+// C's (advance-all-in-order), and the stricter checks cause regressions
+// in that context. The active status check matches C.
 func (s *Stack) CanMerge(v1, v2 StackVersion) bool {
 	if int(v1) >= len(s.heads) || int(v2) >= len(s.heads) {
 		return false
@@ -498,7 +503,9 @@ func (s *Stack) CanMerge(v1, v2 StackVersion) bool {
 	if h1.node == nil || h2.node == nil {
 		return false
 	}
-	return h1.node.state == h2.node.state
+	return h1.status == StackStatusActive &&
+		h2.status == StackStatusActive &&
+		h1.node.state == h2.node.state
 }
 
 // Pause pauses a version (for error recovery exploration).

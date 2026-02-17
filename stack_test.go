@@ -176,9 +176,9 @@ func TestStackMerge(t *testing.T) {
 		t.Fatal("merge should succeed")
 	}
 
-	// Source version should be halted.
-	if !stack.IsHalted(v1) {
-		t.Error("source version should be halted after merge")
+	// Source version should be removed (matches C's ts_stack_merge).
+	if stack.VersionCount() != 1 {
+		t.Errorf("version count after merge = %d, want 1 (source removed)", stack.VersionCount())
 	}
 
 	// Pop from merged version should produce 2 paths.
