@@ -444,3 +444,60 @@ fail will need scanner-specific investigation:
 - Perl: External scanner string content token production
 - Ruby: Heredoc scanner interactions
 - Python: Indent/dedent scanner interactions
+
+---
+
+## Addendum: Post-UMS Regression Analysis (2026-02-16)
+
+### UMS Regression: Error Recovery Infinite Loop
+
+After merging ums (e9aeaa3), one test that previously passed now times out:
+
+| Test | Pre-UMS | Post-UMS | Root Cause |
+|------|---------|----------|------------|
+| C++ Complex_fold_expression | PASS (0.00s) | TIMEOUT (10s) | Error recovery infinite loop |
+| C++ template_functions_vs_relational | Structural fail (0.02s) | TIMEOUT (10s) | Same pattern (severity worsened) |
+| HTML Void_tags | Structural fail | Structural fail | **Not a regression** — unchanged |
+| Java method_references | Structural fail | Structural fail | **Not a regression** — unchanged |
+
+### Root Cause: findActiveVersion + Lagging Error Recovery
+
+Debug instrumentation of Complex_fold_expression revealed the infinite loop pattern.
+After ~20 ops, 3 active versions stabilize and never converge:
+
+```
+v0 (pos=58, state=7360, cost=0)   — main parse, blocked
+v1 (pos=58, state=2056, cost=110) — error recovery, blocked
+v2 (pos=53, state=3772, cost=110) — error recovery, stuck at lower position
+```
+
+`findActiveVersion` always picks v2 (lowest position = pos 53). v2 then spawns
+an error recovery child (state=982, same position), which gets killed by
+condenseStack, and the cycle repeats. Versions v0/v1 at pos=58 never advance.
+
+The parser spins through ~496,000 iterations before the 10s context timeout.
+
+### Why the C Reference Parser Doesn't Have This Problem
+
+The C reference parser's `condenseStack` uses `PreferRight`/`PreferLeft` soft
+preferences to **swap** versions, which changes the findActiveVersion tie-breaking.
+When v2 gets swapped to a higher index than v0, findActiveVersion will pick v0
+(same position, lower index), eventually advancing v0 past v2 and allowing the
+parse to complete.
+
+Our decisive-kills-only approach cannot kill v2 because:
+- Cost difference (0 vs 110) × node_count_amplification < MaxCostDifference (1600)
+- Neither version is in error state relative to the other
+
+### Potential Fixes
+
+1. **Implement soft preferences in condenseStack** (deferred from ums): The
+   proper fix, but requires solving the findActiveVersion tie-breaking regression
+   that coder-2 found.
+
+2. **Position-stall detection**: If a version hasn't advanced position in N
+   iterations, halt it. Simple heuristic that would catch this class of bug.
+
+3. **findActiveVersion tiebreak by dynamic precedence**: Break ties on lowest
+   position by highest dynamic precedence, then lowest index. This would allow
+   versions with better precedence to advance first.
