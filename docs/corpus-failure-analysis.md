@@ -143,35 +143,33 @@ Likely related to `ts_parser__compare_versions` gap (bead ums/wcu.18).
 
 ### 1. NonTerminalAliasMap emission (bead qkj, P1)
 
-Would fix 12 internal-name structural mismatches directly and likely contribute
-to fixing many of the 50 empty-tree cases where alias nodes are expected.
-Estimated impact: +15-25 tests.
+Would fix 12 internal-name failures where `_`-prefixed rule names appear as
+the root parse result instead of `source_file`/`module`. Directly affects
+Perl (8), Ruby (3), Python (1). May also unblock some of the 19 empty-tree
+failures. Estimated impact: +12-20 tests.
 
-Note: Originally predicted Perl +52 and Lua +10, but the comment extras fix
-(b5dc3bc) already resolved most of those. The qkj fix addresses a different
-subset — the 12 `_` prefixed internal names leaking through.
-
-### 2. Negated range lex extraction (bead w3k, P1)
-
-259+ unhandled `(lookahead < X || Y < lookahead)` patterns across 14 grammars.
-These cause incorrect lex transitions, producing wrong tokens or empty parses.
-Estimated impact: +20-40 tests.
-
-### 3. HTML implicit close tags (~10 tests)
-
-External scanner needs work on HTML5 optional-close rules. 10 of 12 HTML
-failures are empty trees due to this.
-
-### 4. C++ GLR timeout resolution (bead ums, P2)
+### 2. C++ GLR timeout resolution (bead ums, P2)
 
 8 C++ tests timeout in GLR ambiguity resolution. Porting
-`ts_parser__compare_versions` from C reference would fix the version pruning
-logic.
+`ts_parser__compare_versions` from C reference would fix version pruning
+and allow C++ to reach ~96%. Estimated impact: +8 tests.
 
-### 5. type_identifier confusion (10 tests across C, C++, Go)
+### 3. HTML implicit close tags (~5 tests)
+
+External scanner needs work on HTML5 optional-close rules. 5 of 7 remaining
+HTML failures are empty trees from unhandled implicit close tags (DT/DL,
+Ruby annotations, LI, P, TR/TD/TH). Estimated impact: +5 tests.
+
+### 4. C/C++ type_identifier confusion (~6 tests)
 
 Keyword extraction or symbol resolution issue causing `type_identifier` to
-appear where `identifier` is expected. Needs investigation.
+appear where `identifier` is expected. Affects Common_constants, Identifiers,
+Primitive-typed_variable_declarations, Type_modifiers in both C and C++.
+
+### 5. Perl function call disambiguation (~5 tests)
+
+`function_call_expression` vs `ambiguous_function_call_expression` resolution.
+Perl-specific GLR ambiguity issue.
 
 ### 6. Go type_conversion_expression (bead nlb, P2)
 
@@ -276,13 +274,14 @@ appear where `identifier` is expected. Needs investigation.
 | + Scanner result variable (9bdafd3)     |           ~37   |        93.3% |
 | **Current**                             |               — |    **93.3%** |
 
-## Remaining High-Impact Fixes
+## Remaining High-Impact Fixes (Projected)
 
 | Fix                                     | Est. Tests | New Overall Rate |
 |-----------------------------------------|-----------:|-----------------:|
-| Negated range lex extraction (w3k)      |     ~15-30 |          ~94-96% |
-| NonTerminalAliasMap emission (qkj)      |      ~5-15 |          ~95-97% |
-| HTML implicit close tags                |       ~5-7 |          ~96-97% |
+| NonTerminalAliasMap emission (qkj)      |     ~12-20 |          ~94-95% |
+| C++ GLR timeout (ums)                   |         ~8 |          ~95-96% |
+| HTML implicit close tags                |         ~5 |          ~96%    |
+| type_identifier confusion               |         ~6 |          ~96-97% |
 
 ## Beads Tracking Remaining Fixes
 
