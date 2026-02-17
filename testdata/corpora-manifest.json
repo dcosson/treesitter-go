@@ -1,0 +1,252 @@
+{
+  "description": "Version-pinned real-world source files for differential testing. The fetch-corpora tool downloads these files from GitHub and records resolved commit SHAs.",
+  "projects": [
+    {
+      "language": "go",
+      "extensions": [".go"],
+      "project": "kubernetes",
+      "repo": "kubernetes/kubernetes",
+      "ref": "v1.30.0",
+      "files": [
+        "pkg/api/v1/pod/util.go",
+        "staging/src/k8s.io/apimachinery/pkg/util/sets/set.go",
+        "staging/src/k8s.io/client-go/tools/cache/store.go",
+        "pkg/kubelet/kuberuntime/kuberuntime_manager.go"
+      ]
+    },
+    {
+      "language": "go",
+      "extensions": [".go"],
+      "project": "go-stdlib",
+      "repo": "golang/go",
+      "ref": "go1.22.0",
+      "files": [
+        "src/fmt/print.go",
+        "src/net/http/server.go",
+        "src/encoding/json/decode.go",
+        "src/os/file.go",
+        "src/sync/mutex.go"
+      ]
+    },
+    {
+      "language": "python",
+      "extensions": [".py"],
+      "project": "flask",
+      "repo": "pallets/flask",
+      "ref": "3.0.2",
+      "files": [
+        "src/flask/app.py",
+        "src/flask/blueprints.py",
+        "src/flask/config.py",
+        "src/flask/helpers.py",
+        "src/flask/wrappers.py"
+      ]
+    },
+    {
+      "language": "python",
+      "extensions": [".py"],
+      "project": "requests",
+      "repo": "psf/requests",
+      "ref": "v2.31.0",
+      "files": [
+        "requests/api.py",
+        "requests/models.py",
+        "requests/sessions.py",
+        "requests/utils.py",
+        "requests/auth.py"
+      ]
+    },
+    {
+      "language": "javascript",
+      "extensions": [".js"],
+      "project": "express",
+      "repo": "expressjs/express",
+      "ref": "4.21.0",
+      "files": [
+        "lib/application.js",
+        "lib/request.js",
+        "lib/response.js",
+        "lib/router/index.js",
+        "lib/router/route.js"
+      ]
+    },
+    {
+      "language": "javascript",
+      "extensions": [".js"],
+      "project": "lodash",
+      "repo": "lodash/lodash",
+      "ref": "4.17.21",
+      "files": [
+        "lodash.js"
+      ]
+    },
+    {
+      "language": "typescript",
+      "extensions": [".ts"],
+      "project": "typescript-compiler",
+      "repo": "microsoft/TypeScript",
+      "ref": "v5.4.2",
+      "files": [
+        "src/compiler/checker.ts",
+        "src/compiler/parser.ts",
+        "src/compiler/scanner.ts",
+        "src/compiler/utilities.ts"
+      ]
+    },
+    {
+      "language": "rust",
+      "extensions": [".rs"],
+      "project": "ripgrep",
+      "repo": "BurntSushi/ripgrep",
+      "ref": "14.1.0",
+      "files": [
+        "crates/core/main.rs",
+        "crates/searcher/src/searcher/mod.rs",
+        "crates/cli/src/decompress.rs"
+      ]
+    },
+    {
+      "language": "rust",
+      "extensions": [".rs"],
+      "project": "serde",
+      "repo": "serde-rs/serde",
+      "ref": "v1.0.197",
+      "files": [
+        "serde/src/ser/mod.rs",
+        "serde_derive/src/internals/attr.rs"
+      ]
+    },
+    {
+      "language": "c",
+      "extensions": [".c", ".h"],
+      "project": "redis",
+      "repo": "redis/redis",
+      "ref": "7.2.4",
+      "files": [
+        "src/server.c",
+        "src/networking.c",
+        "src/aof.c",
+        "src/dict.c",
+        "src/server.h"
+      ]
+    },
+    {
+      "language": "c",
+      "extensions": [".c", ".h"],
+      "project": "curl",
+      "repo": "curl/curl",
+      "ref": "curl-8_6_0",
+      "files": [
+        "lib/url.c",
+        "lib/transfer.c",
+        "lib/easy.c",
+        "include/curl/curl.h"
+      ]
+    },
+    {
+      "language": "cpp",
+      "extensions": [".cpp", ".h", ".cc"],
+      "project": "protobuf",
+      "repo": "protocolbuffers/protobuf",
+      "ref": "v25.3",
+      "files": [
+        "src/google/protobuf/descriptor.cc",
+        "src/google/protobuf/message.cc",
+        "src/google/protobuf/descriptor.h"
+      ]
+    },
+    {
+      "language": "java",
+      "extensions": [".java"],
+      "project": "guava",
+      "repo": "google/guava",
+      "ref": "v33.0.0",
+      "files": [
+        "guava/src/com/google/common/collect/ImmutableList.java",
+        "guava/src/com/google/common/collect/ImmutableMap.java",
+        "guava/src/com/google/common/base/Preconditions.java",
+        "guava/src/com/google/common/io/Files.java"
+      ]
+    },
+    {
+      "language": "ruby",
+      "extensions": [".rb"],
+      "project": "rails",
+      "repo": "rails/rails",
+      "ref": "v7.1.3",
+      "files": [
+        "activerecord/lib/active_record/base.rb",
+        "activesupport/lib/active_support/core_ext/hash/keys.rb",
+        "actionpack/lib/action_controller/metal.rb",
+        "activesupport/lib/active_support/inflector/methods.rb"
+      ]
+    },
+    {
+      "language": "bash",
+      "extensions": [".sh"],
+      "project": "nvm",
+      "repo": "nvm-sh/nvm",
+      "ref": "v0.39.7",
+      "files": [
+        "nvm.sh",
+        "bash_completion"
+      ]
+    },
+    {
+      "language": "json",
+      "extensions": [".json"],
+      "project": "schemastore",
+      "repo": "SchemaStore/schemastore",
+      "ref": "master",
+      "files": [
+        "src/schemas/json/package.json",
+        "src/schemas/json/tsconfig.json"
+      ]
+    },
+    {
+      "language": "css",
+      "extensions": [".css"],
+      "project": "normalize.css",
+      "repo": "necolas/normalize.css",
+      "ref": "8.0.1",
+      "files": [
+        "normalize.css"
+      ]
+    },
+    {
+      "language": "html",
+      "extensions": [".html"],
+      "project": "html5-boilerplate",
+      "repo": "h5bp/html5-boilerplate",
+      "ref": "v9.0.0",
+      "files": [
+        "src/index.html",
+        "src/404.html"
+      ]
+    },
+    {
+      "language": "lua",
+      "extensions": [".lua"],
+      "project": "neovim",
+      "repo": "neovim/neovim",
+      "ref": "v0.10.0",
+      "files": [
+        "runtime/lua/vim/lsp.lua",
+        "runtime/lua/vim/treesitter.lua",
+        "runtime/lua/vim/shared.lua"
+      ]
+    },
+    {
+      "language": "perl",
+      "extensions": [".pl", ".pm"],
+      "project": "perl5",
+      "repo": "Perl/perl5",
+      "ref": "v5.38.2",
+      "files": [
+        "lib/File/Copy.pm",
+        "dist/Carp/lib/Carp.pm",
+        "cpan/File-Path/lib/File/Path.pm"
+      ]
+    }
+  ]
+}
