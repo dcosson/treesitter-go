@@ -392,10 +392,55 @@ behind the wrong-alternative selection in Clusters A, E, F, G, and K (another
 ~25 tests). Many of the "wrong node type" issues are symptoms of the parser
 keeping the wrong GLR version alive and pruning the correct one.
 
-The **Qualified Identifier Truncation** (Cluster C, 7 tests) appears to be a
-separate issue from GLR — it looks like the recursive descent through `::` in
-qualified_identifier stops one level too early. This may be a simpler parsing
-rule issue.
+The **Qualified Identifier Truncation** (Cluster C, 7 tests) was initially
+thought to be a separate parsing rule issue, but investigation confirmed it
+IS a GLR version comparison issue (same root cause as ums). The C reference
+parser handles `a::b::c` correctly with the same grammar tables — our parser
+prematurely reduces `a::b` because condenseStack picks the shorter/lower-cost
+version over the deeper recursive one. Reclassified as MEDIUM confidence for
+ums fix. See post-ums-expectations.md for updated predictions.
 
 The **NonTerminalAliasMap** (bead qkj, 8 tests) is a clean, well-scoped fix
 that resolves a distinct category.
+
+---
+
+## Addendum: wcu.19 Internal Name Leaking Investigation
+
+**Date**: 2026-02-16 (reviewer agent)
+
+The 12 internal-name failures (wcu.19) where hidden non-terminals appear as
+root were investigated. Key findings:
+
+### Confirmed Internal Name Root Failures
+
+| Test | Root Produced | Expected Root |
+|------|--------------|---------------|
+| Perl qw()_lists | `_q_string_content` | `source_file` |
+| Perl Interpolation_in_""_strings | `_qq_string_content` | `source_file` |
+| Perl ''_strings | `_q_string_content` | `source_file` |
+| Perl ""_strings | `_qq_string_content` | `source_file` |
+| Python Function_definitions | `_dedent` | `module` |
+| Ruby heredocs_in_context | `_heredoc_*` (TBD) | `program` |
+
+### Root Cause
+
+These are NOT display issues (qkj/NonTerminalAliasMap wouldn't help). The
+parser's GLR version selection produces a tree rooted at a hidden scanner
+token instead of the start symbol. Verified: C reference parser produces
+correct `source_file`/`module` root with the same grammar tables.
+
+### Possible ums Overlap
+
+Coder-2 independently found that the ums condenseStack rewrite caused a
+similar regression: Python `_newline` becoming root due to PreferRight swap.
+This confirms the class of bug is version-selection-related. Some wcu.19
+failures may improve with the ums fix.
+
+### Post-UMS Assessment Needed
+
+After ums lands, re-test all 12 internal-name failures. Those that still
+fail will need scanner-specific investigation:
+- Perl: External scanner string content token production
+- Ruby: Heredoc scanner interactions
+- Python: Indent/dedent scanner interactions
