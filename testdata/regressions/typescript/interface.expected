@@ -1,0 +1,1 @@
+(program (interface_declaration (type_identifier) (interface_body (property_signature (property_identifier) (type_annotation (predefined_type))) (property_signature (property_identifier) (type_annotation (predefined_type))))))

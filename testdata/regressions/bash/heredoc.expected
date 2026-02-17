@@ -1,0 +1,1 @@
+(program (redirected_statement (command (command_name (word))) (heredoc_redirect (heredoc_start) (heredoc_body) (heredoc_end))))

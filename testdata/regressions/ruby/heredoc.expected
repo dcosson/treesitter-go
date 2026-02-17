@@ -1,0 +1,1 @@
+(program (assignment (identifier) (heredoc_beginning)) (heredoc_body (heredoc_content) (heredoc_end)))

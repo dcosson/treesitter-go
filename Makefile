@@ -1,6 +1,6 @@
 TREE_SITTER_CLI := $(shell which tree-sitter 2>/dev/null)
 
-.PHONY: build test bench fetch-test-grammars test-corpus test-corpus-json deps diff-test
+.PHONY: build test bench fetch-test-grammars test-corpus test-corpus-json test-regression deps diff-test
 
 build:
 	go build ./...
@@ -16,6 +16,9 @@ test-corpus:
 
 test-corpus-json:
 	go test ./... -run TestCorpus/json -v
+
+test-regression:
+	go test -v -race -run 'TestRegression' -count=1 -timeout 5m .
 
 deps:
 	@if command -v brew >/dev/null 2>&1; then \
