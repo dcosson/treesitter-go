@@ -1,0 +1,19 @@
+{
+  "id": "tree-sitter-go-wcu.19",
+  "title": "Investigate Perl/Ruby parser wrong-root production (hidden non-terminal as root)",
+  "description": "12 test failures show hidden internal names (_qq_string_content, _q_string_content, _heredoc_delimiter, etc.) as root production instead of source_file/module/program. Reviewer analysis shows these are parser/external scanner interaction issues, not display problems — the parser takes incorrect reduction paths ending at hidden non-terminal roots.\n\nAffected: Perl (8), Ruby (3), Python (1)\n\nRoot cause investigation needed:\n- Perl external scanner string_content token production causing wrong reductions\n- Ruby heredoc scanner interactions\n- Python indent/dedent scanner interactions\n\nSeparate from qkj (NonTerminalAliasMap) which handles correct-parse-wrong-display cases.",
+  "status": "open",
+  "priority": 2,
+  "type": "bug",
+  "parent": "tree-sitter-go-wcu",
+  "dependencies": [
+    {
+      "id": "tree-sitter-go-wcu",
+      "type": "parent-child"
+    }
+  ],
+  "created_by": "Danny Cosson",
+  "owner": "dcosson@gmail.com",
+  "created_at": "2026-02-16T19:15:37.326812-08:00",
+  "updated_at": "2026-02-16T19:15:51.125109-08:00"
+}

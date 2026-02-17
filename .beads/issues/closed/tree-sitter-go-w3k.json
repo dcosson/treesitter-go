@@ -2,7 +2,7 @@
   "id": "tree-sitter-go-w3k",
   "title": "Fix negated range extraction in lex DFA parser",
   "description": "Comprehensive lex DFA pattern audit found 537 unhandled if-patterns across 15 grammars.\n\nUNHANDLED (need fixes):\n1. Exclusion ranges (lookahead \u003c X || Y \u003c lookahead) in compound conditions — 259 occurrences across 14 grammars. Root cause: line 304 || check in parseIfTransitions prevents entering negation branch.\n2. lookahead \u003e X (standalone + compound with exclusion ranges) — 120 occurrences across 4 grammars (Ruby 81, TS 14, JS 11).\n3. !eof \u0026\u0026 set_contains() — 119 occurrences across 4 grammars (Bash 82, CSS 32, Perl 1, Python 4).\n4. !eof \u0026\u0026 non-set_contains — 2 occurrences in Python only.\n\nALREADY HANDLED (by f3e081a):\n- lookahead == 0xNN hex equality — handled by hexEqRe\n- lookahead != 0xNN hex negation — handled by neqHexRe\n\nPriority fix: Pattern 1 (exclusion ranges) is highest impact at 259 instances. Patterns 1 and 2 share root cause — the || bypass on line 304. Fix: parse (lookahead \u003c X || Y \u003c lookahead) as negated ranges within compound negation logic.\n\nCONFIRMED ABSENT (no instances found):\n\u003e=, !set_contains, else/else-if, nested ifs, goto, for/while, ACCEPT_TOKEN inside if, additional switch.",
-  "status": "open",
+  "status": "closed",
   "priority": 1,
   "type": "task",
   "parent": "tree-sitter-go-wcu",
@@ -19,5 +19,7 @@
     "high-impact"
   ],
   "created_at": "2026-02-16T15:18:54.003191-08:00",
-  "updated_at": "2026-02-16T15:19:53.555527-08:00"
+  "updated_at": "2026-02-16T19:13:58.386321-08:00",
+  "closed_at": "2026-02-16T19:13:30.295761-08:00",
+  "close_reason": "Closed"
 }
