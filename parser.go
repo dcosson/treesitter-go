@@ -1256,15 +1256,24 @@ func (p *Parser) condenseStack() {
 				continue
 			}
 
-			// Only compare versions at the same byte position. Versions at
-			// different positions may be exploring different parse paths (e.g.,
-			// error recovery). Killing them prematurely prevents progress.
-			// Phase 3 (absolute threshold) and Phase 4 (hard cap) handle
-			// cross-position pruning.
-			if p.stack.Position(vj).Bytes != posI.Bytes {
-				continue
-			}
 			statusJ := p.versionStatus(vj)
+
+			// Restrict cross-position decisive kills when either version has
+			// high error cost. High-cost versions at different positions are
+			// likely error recovery paths that need time to advance; killing
+			// them prematurely prevents progress, causing infinite loops
+			// (C++ Complex_fold_expression). Low-cost versions at different
+			// positions can be killed cross-position for GLR ambiguity
+			// resolution (Java type arguments vs comparison operators).
+			if p.stack.Position(vj).Bytes != posI.Bytes {
+				maxCost := statusI.cost
+				if statusJ.cost > maxCost {
+					maxCost = statusJ.cost
+				}
+				if maxCost > uint32(MaxCostDifference/4) {
+					continue
+				}
+			}
 
 			switch p.compareVersions(statusJ, statusI) {
 			case errorComparisonTakeLeft:
