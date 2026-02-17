@@ -1,0 +1,5 @@
+package main
+
+func add(a, b) int {
+	return a + b
+}
