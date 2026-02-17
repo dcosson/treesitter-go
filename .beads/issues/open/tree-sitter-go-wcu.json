@@ -133,6 +133,10 @@
     {
       "id": "tree-sitter-go-wcu.21",
       "type": "parent-child"
+    },
+    {
+      "id": "tree-sitter-go-9zr",
+      "type": "blocks"
     }
   ],
   "created_by": "Danny Cosson",
