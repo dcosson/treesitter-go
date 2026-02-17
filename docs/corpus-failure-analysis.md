@@ -1,12 +1,15 @@
 # Corpus Test Failure Analysis
 
-Updated: 2026-02-16 (post alias fix 9e978d1 + trailing newline fix d312604)
+Updated: 2026-02-16 (post all P1 fixes through ef86aca)
 
-## Current State: 1276/1619 passing (78.8%)
+## Current State: 1474/1619 passing (91.0%)
 
-Key fixes applied:
+Key fixes applied (cumulative):
 - Alias sequence extraction (9e978d1): resolved ~167 alias-related failures
-- Trailing newline preservation (d312604): resolved ~38 failures, especially Go grouped decls
+- Trailing newline preservation (d312604): resolved ~38 failures
+- Dynamic precedence handling (65c6252): Go 55→57, C++ +27
+- Alias-aware visibility (044e755): +95 tests across 10 languages
+- Comment extras placement (b5dc3bc): +103 tests across 12 languages
 
 The corpus test runner strips field annotations, so field mismatches are not counted.
 
@@ -15,34 +18,47 @@ The corpus test runner strips field annotations, so field mismatches are not cou
 | Language    | Total | Pass | Fail | Pass Rate |
 |-------------|------:|-----:|-----:|----------:|
 | JSON        |     6 |    6 |    0 |   100.0%  |
-| TypeScript  |   112 |  104 |    8 |    92.9%  |
-| Java        |   108 |   97 |   11 |    89.8%  |
-| Bash        |   100 |   89 |   11 |    89.0%  |
-| JavaScript  |   116 |   98 |   18 |    84.5%  |
-| CSS         |    38 |   32 |    6 |    84.2%  |
-| Rust        |   147 |  122 |   25 |    83.0%  |
-| Ruby        |   290 |  241 |   49 |    83.1%  |
-| Go          |    67 |   55 |   12 |    82.1%  |
-| Python      |   115 |   92 |   23 |    80.0%  |
-| C           |    85 |   66 |   19 |    77.6%  |
-| Lua         |    37 |   26 |   11 |    70.3%  |
-| C++         |   179 |  126 |   53 |    70.4%  |
-| Perl        |   199 |  115 |   84 |    57.8%  |
-| HTML        |    20 |    7 |   13 |    35.0%  |
+| TypeScript  |   112 |  110 |    2 |    98.2%  |
+| Lua         |    37 |   36 |    1 |    97.3%  |
+| Ruby        |   290 |  279 |   11 |    96.2%  |
+| Bash        |   100 |   95 |    5 |    95.0%  |
+| Java        |   108 |  101 |    7 |    93.5%  |
+| JavaScript  |   116 |  108 |    8 |    93.1%  |
+| Rust        |   147 |  134 |   13 |    91.2%  |
+| C           |    85 |   77 |    8 |    90.6%  |
+| CSS         |    38 |   34 |    4 |    89.5%  |
+| Python      |   115 |  103 |   12 |    89.6%  |
+| Go          |    67 |   59 |    8 |    88.1%  |
+| Perl        |   199 |  171 |   28 |    85.9%  |
+| C++         |   179 |  153 |   26 |    85.5%  |
+| HTML        |    20 |    8 |   12 |    40.0%  |
 
-## Failure Categories (343 total)
+## Remaining Failures (145 total)
 
-| Category                      | Count | % of Failures |
-|-------------------------------|------:|--------------:|
-| Other structural              |  ~100 |        ~29.2% |
-| Comment placement             |   ~60 |        ~17.5% |
-| String/regexp content missing |   ~67 |        ~19.5% |
-| Empty/truncated parse         |   ~65 |        ~19.0% |
-| Alias/node name mismatch     |   ~27 |         ~7.9% |
-| Preprocessor                  |    ~4 |         ~1.2% |
+Most comment, alias visibility, and trailing extras issues have been resolved.
+Remaining failures are primarily structural/parse differences, scanner gaps,
+and language-specific edge cases.
 
-Note: The trailing newline fix (d312604) resolved ~30 Go empty-parse failures
-(grouped declarations) and ~8 other failures across languages.
+| Language | Remaining Failures |
+|----------|-------------------:|
+| Perl     |                 28 |
+| C++      |                 26 |
+| Rust     |                 13 |
+| HTML     |                 12 |
+| Python   |                 12 |
+| C        |                  8 |
+| Go       |                  8 |
+| JS       |                  8 |
+| Java     |                  7 |
+| Bash     |                  5 |
+| CSS      |                  4 |
+| TS       |                  2 |
+| Lua      |                  1 |
+| JSON     |                  0 |
+
+Next highest-impact fix: negated range extraction in lex DFA (bead w3k) —
+500 unhandled lex patterns across 14 grammars, expected to improve Bash,
+Ruby, TypeScript, and others.
 
 ## High-Impact Fix Priorities
 
@@ -208,21 +224,35 @@ Comments with `\` continuation lines not recognized as continuing the comment.
 
 ---
 
-## Projected Impact of Top Fixes
+## Fix History and Impact
 
-| Fix                                     | Tests Recovered | New Overall Rate |
-|-----------------------------------------|----------------:|-----------------:|
-| Current baseline (post d312604)         |               — |            78.8% |
-| + Alias child visibility (4cw)          |           ~67   |            82.9% |
-| + Trailing extras in doReduce (vuv)     |           ~60   |            86.7% |
-| + Negated range lex extraction (w3k)    |         ~30-60  |          ~90-93% |
-| + Ruby call/bare_string aliases         |           ~17   |          ~91-94% |
-| + Rust doc comments                     |            ~8   |          ~92-95% |
-| + HTML implicit close tags              |           ~10   |          ~92-95% |
-| P1 fixes only (vuv+4cw+w3k)            |       ~160-190  |          ~91-93% |
+| Fix                                     | Tests Recovered | Overall Rate |
+|-----------------------------------------|----------------:|-------------:|
+| Initial baseline (alias seq 9e978d1)    |          ~167   |        76.5% |
+| + Trailing newline (d312604)            |           ~38   |        78.8% |
+| + Dynamic precedence (65c6252)          |           ~10   |        79.4% |
+| + Alias visibility (044e755)            |           ~95   |        84.7% |
+| + Comment extras (b5dc3bc)              |          ~103   |        91.0% |
+| **Current**                             |               — |    **91.0%** |
 
-## Beads Tracking These Fixes
+## Remaining High-Impact Fixes
 
-- **tree-sitter-go-vuv** (P1): Fix trailing extras stripping in doReduce
-- **tree-sitter-go-4cw** (P1): Fix alias-based child visibility in tree traversal
-- **tree-sitter-go-w3k** (P1): Fix negated range extraction in lex DFA parser
+| Fix                                     | Est. Tests | New Overall Rate |
+|-----------------------------------------|-----------:|-----------------:|
+| Negated range lex extraction (w3k)      |     ~20-40 |          ~92-94% |
+| NonTerminalAliasMap emission (qkj)      |      ~5-15 |          ~93-95% |
+| HTML implicit close tags                |       ~10  |          ~94-96% |
+
+## Beads Tracking Remaining Fixes
+
+- **tree-sitter-go-w3k** (P1): Fix negated range extraction in lex DFA parser — in progress
+- **tree-sitter-go-qkj** (P2): Emit NonTerminalAliasMap in generated language.go
+- **tree-sitter-go-ums** (P2): Port ts_parser__compare_versions for GLR correctness
+- **tree-sitter-go-nlb** (P2): Call vs type_conversion_expression ambiguity
+- **tree-sitter-go-wcu.18** (P3): Merge link ordering to match C reference
+
+## Closed Beads (Fixes Merged)
+
+- **tree-sitter-go-dhw**: Alias sequence extraction (9e978d1)
+- **tree-sitter-go-vuv**: Comment extras placement (b5dc3bc)
+- **tree-sitter-go-4cw**: Alias-aware visibility (044e755)
