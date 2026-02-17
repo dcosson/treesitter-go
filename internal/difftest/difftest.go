@@ -16,8 +16,9 @@ import (
 	"github.com/treesitter-go/treesitter/internal/corpustest"
 )
 
-// TreeSitterCLI is the name or path of the tree-sitter CLI binary.
-// Override this in tests if the binary is in a non-standard location.
+// TreeSitterCLI is the path to the tree-sitter CLI binary.
+// Set via -ts-cli flag, TS_CLI_PATH environment variable, or directly.
+// Defaults to "tree-sitter" (auto-discovered via PATH).
 var TreeSitterCLI = "tree-sitter"
 
 // Scope maps file extensions to tree-sitter --scope arguments.
