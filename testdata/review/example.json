@@ -1,0 +1,38 @@
+{
+  "users": [
+    {
+      "id": 1,
+      "name": "Alice",
+      "email": "alice@example.com",
+      "active": true,
+      "roles": ["admin", "user"],
+      "profile": {
+        "bio": "Software engineer",
+        "links": {
+          "github": "https://github.com/alice",
+          "website": null
+        }
+      }
+    },
+    {
+      "id": 2,
+      "name": "Bob",
+      "email": "bob@example.com",
+      "active": false,
+      "roles": ["user"],
+      "profile": {
+        "bio": "Designer",
+        "links": {
+          "github": null,
+          "website": "https://bob.example.com"
+        }
+      }
+    }
+  ],
+  "metadata": {
+    "total": 2,
+    "page": 1,
+    "perPage": 20,
+    "hasMore": false
+  }
+}

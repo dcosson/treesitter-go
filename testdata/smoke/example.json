@@ -1,0 +1,17 @@
+{
+  "name": "treesitter-go",
+  "version": "0.1.0",
+  "description": "Pure Go tree-sitter implementation",
+  "keywords": ["parser", "tree-sitter", "go"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/example/treesitter-go"
+  },
+  "license": "MIT",
+  "dependencies": {},
+  "config": {
+    "maxDepth": 100,
+    "timeout": 5000,
+    "enabled": true
+  }
+}
