@@ -2,7 +2,7 @@
   "id": "tree-sitter-go-qkj",
   "title": "Emit NonTerminalAliasMap to generated grammars for hidden alias resolution",
   "description": "The alias visibility fix (044e755/4cw) handles production-based alias sequences but NOT the NonTerminalAliasMap. Perl string_content (57 tests) and Lua quoted string_content (5+ tests) use hidden underlying symbols (_noninterpolated_string_content, _doublequote_string_content) that need the NonTerminalAliasMap to be recognized as visible via alias.\n\nThe map is extracted by extractNonTerminalAliasMap in internal/generate/extract.go:327 but never emitted to generated language.go files and has no corresponding field in the Language struct.\n\nFix: (1) Add NonTerminalAliasMap field to Language struct, (2) emit it in code generator, (3) consult it in SummarizeChildren/findVisibleChildByIndex/findNamedChildByIndex alongside production-based alias sequences.\n\nImpact: Perl 59%→86% (+52 tests), Lua 70%→97% (+10 tests)",
-  "status": "open",
+  "status": "closed",
   "priority": 1,
   "type": "task",
   "parent": "tree-sitter-go-wcu",
@@ -19,5 +19,7 @@
     "codegen"
   ],
   "created_at": "2026-02-16T16:12:02.645545-08:00",
-  "updated_at": "2026-02-16T16:12:02.645545-08:00"
+  "updated_at": "2026-02-16T19:48:16.832576-08:00",
+  "closed_at": "2026-02-16T19:42:34.688602-08:00",
+  "close_reason": "Closed"
 }

@@ -2,7 +2,7 @@
   "id": "tree-sitter-go-860.1",
   "title": "Implement differential testing harness (Go vs CLI)",
   "description": "Build internal/difftest package implementing Section 4 of testing-strategy.md. Uses tree-sitter CLI binary (passed via -ts-cli flag) for S-expression comparison. Implement RunDifferentialCorpus, RunDifferentialDir, RunDifferentialFile, and Compare functions. Add make diff-test target. Tests skip when CLI path not provided.",
-  "status": "open",
+  "status": "closed",
   "priority": 2,
   "type": "task",
   "parent": "tree-sitter-go-860",
@@ -32,5 +32,7 @@
     "P2"
   ],
   "created_at": "2026-02-16T15:31:06.46384-08:00",
-  "updated_at": "2026-02-16T15:31:06.46384-08:00"
+  "updated_at": "2026-02-16T19:48:16.851226-08:00",
+  "closed_at": "2026-02-16T19:42:27.448604-08:00",
+  "close_reason": "Closed"
 }
