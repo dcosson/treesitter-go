@@ -2,10 +2,13 @@ package treesitter_test
 
 import (
 	"context"
+	"fmt"
+	"strings"
 	"testing"
 	"time"
 
 	ts "github.com/treesitter-go/treesitter"
+	tg "github.com/treesitter-go/treesitter/internal/testgrammars"
 	golanggrammar "github.com/treesitter-go/treesitter/internal/testgrammars/golang"
 )
 
@@ -109,8 +112,11 @@ func TestTreeIncludedRanges(t *testing.T) {
 	tree := mustParseGo(t, src)
 
 	ranges := tree.IncludedRanges()
-	if len(ranges) == 0 {
-		t.Log("no included ranges (expected for default parse)")
+	// A default parse (no SetIncludedRanges) typically returns either an empty
+	// slice or a single range covering the full input. Both are valid behaviors.
+	t.Logf("included ranges count: %d", len(ranges))
+	for i, r := range ranges {
+		t.Logf("range[%d]: bytes [%d, %d]", i, r.StartByte, r.EndByte)
 	}
 }
 
@@ -137,8 +143,15 @@ func TestNodeIsExtra(t *testing.T) {
 }
 
 func TestNodeIsMissing(t *testing.T) {
-	src := "package\n"
-	tree := mustParseGo(t, src)
+	// Use JSON grammar which has reliable error recovery for malformed input.
+	src := `{"a": }`
+	lang := tg.JSONLanguage()
+	p := ts.NewParser()
+	p.SetLanguage(lang)
+	tree := p.ParseString(context.Background(), []byte(src))
+	if tree == nil {
+		t.Fatal("parse returned nil for malformed JSON")
+	}
 	root := tree.RootNode()
 
 	hasMissingOrError := false
@@ -162,7 +175,7 @@ func TestNodeIsMissing(t *testing.T) {
 	walkNode(root, 0)
 
 	if !hasMissingOrError {
-		t.Logf("no MISSING or ERROR node found: %s", root.String())
+		t.Errorf("expected MISSING or ERROR node for malformed input %q, got: %s", src, root.String())
 	}
 }
 
@@ -447,16 +460,21 @@ func TestParserTimeout(t *testing.T) {
 	p := ts.NewParser()
 	p.SetLanguage(lang)
 
+	// Generate a large input so parsing takes long enough to be cancelled.
+	var sb strings.Builder
+	sb.WriteString("package main\n\n")
+	for i := 0; i < 500; i++ {
+		fmt.Fprintf(&sb, "func f%d(x int) int {\n\treturn x + %d\n}\n\n", i, i)
+	}
+	largeInput := []byte(sb.String())
+
 	ctx, cancel := context.WithTimeout(context.Background(), time.Nanosecond)
 	defer cancel()
-	time.Sleep(time.Millisecond)
+	time.Sleep(time.Millisecond) // ensure timeout expires before parse starts
 
-	tree := p.ParseString(ctx, []byte("package main\n\nfunc main() {\n\tvar x = 1\n\tvar y = 2\n}\n"))
-
+	tree := p.ParseString(ctx, largeInput)
 	if tree != nil {
-		t.Log("parse completed despite expired timeout (input was small enough)")
-	} else {
-		t.Log("parse correctly returned nil due to timeout")
+		t.Error("expected nil tree from pre-expired timeout, but parse completed")
 	}
 }
 
@@ -465,15 +483,20 @@ func TestParserCancellation(t *testing.T) {
 	p := ts.NewParser()
 	p.SetLanguage(lang)
 
+	// Generate a large input so parsing takes long enough to be cancelled.
+	var sb strings.Builder
+	sb.WriteString("package main\n\n")
+	for i := 0; i < 500; i++ {
+		fmt.Fprintf(&sb, "func f%d(x int) int {\n\treturn x + %d\n}\n\n", i, i)
+	}
+	largeInput := []byte(sb.String())
+
 	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
+	cancel() // cancel immediately before parse starts
 
-	tree := p.ParseString(ctx, []byte("package main\n\nfunc main() {\n}\n"))
-
+	tree := p.ParseString(ctx, largeInput)
 	if tree != nil {
-		t.Log("parse completed despite cancellation (input was small enough)")
-	} else {
-		t.Log("parse correctly returned nil due to cancellation")
+		t.Error("expected nil tree from pre-cancelled context, but parse completed")
 	}
 }
 
