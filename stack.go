@@ -498,13 +498,131 @@ func (s *Stack) ForkAtNode(node *StackNode, sourceVersion StackVersion) StackVer
 	return newVersion
 }
 
-// Merge combines two versions that have reached the same state.
-// The source version's links are added to the target version's node.
-// The source version is removed (matching C's ts_stack_merge).
+// subtreeNodeCount returns the number of nodes in a subtree for progress
+// tracking. Matches C's stack__subtree_node_count.
+func subtreeNodeCount(s Subtree, arena *SubtreeArena) uint32 {
+	count := GetVisibleDescendantCount(s, arena)
+	if IsVisible(s, arena) {
+		count++
+	}
+	// Count intermediate error nodes even though they are not visible,
+	// because a stack version's node count is used to check whether it
+	// has made any progress since the last time it encountered an error.
+	if GetSymbol(s, arena) == SymbolErrorRepeat {
+		count++
+	}
+	return count
+}
+
+// subtreeIsEquivalent checks if two subtrees are equivalent for merge
+// deduplication purposes. Matches C's stack__subtree_is_equivalent.
+func (s *Stack) subtreeIsEquivalent(left, right Subtree) bool {
+	if left == right {
+		return true
+	}
+	if left.IsZero() || right.IsZero() {
+		return false
+	}
+
+	// Symbols must match.
+	if GetSymbol(left, s.arena) != GetSymbol(right, s.arena) {
+		return false
+	}
+
+	// If both have errors, don't bother keeping both.
+	if GetErrorCost(left, s.arena) > 0 && GetErrorCost(right, s.arena) > 0 {
+		return true
+	}
+
+	return GetPadding(left, s.arena).Bytes == GetPadding(right, s.arena).Bytes &&
+		GetSize(left, s.arena).Bytes == GetSize(right, s.arena).Bytes &&
+		GetChildCount(left, s.arena) == GetChildCount(right, s.arena) &&
+		IsExtra(left, s.arena) == IsExtra(right, s.arena) &&
+		bytes.Equal(GetExternalScannerState(left, s.arena), GetExternalScannerState(right, s.arena))
+}
+
+// nodeAddLink adds a link to a stack node, handling three cases for
+// deduplication. This is a faithful port of C's stack_node_add_link.
 //
-// When the source has higher dynamic precedence than the target's first
-// link, the links are swapped so that links[0] (the default path) has
-// the best dynamic precedence. This matches C tree-sitter behavior.
+// Case 1: If an existing link has an equivalent subtree AND the same target
+// node, replace the subtree if the new one has higher DynPrec (disambiguation).
+//
+// Case 2: If an existing link has an equivalent subtree AND the target node
+// has the same state/position/errorCost, recursively merge the target nodes.
+//
+// Case 3: Otherwise, add as a new link.
+//
+// In all cases, update the node's accumulated dynamicPrecedence.
+func (s *Stack) nodeAddLink(node *StackNode, link StackLink) {
+	// Prevent self-loops.
+	if link.node == node {
+		return
+	}
+
+	for i := uint16(0); i < node.linkCount; i++ {
+		existing := &node.links[i]
+		if s.subtreeIsEquivalent(existing.subtree, link.subtree) {
+			// Case 1: Same target node — disambiguation.
+			// Keep only the higher DynPrec subtree.
+			if existing.node == link.node {
+				if !link.subtree.IsZero() && !existing.subtree.IsZero() {
+					newPrec := GetDynamicPrecedence(link.subtree, s.arena)
+					oldPrec := GetDynamicPrecedence(existing.subtree, s.arena)
+					if newPrec > oldPrec {
+						existing.subtree = link.subtree
+						node.dynamicPrecedence = link.node.dynamicPrecedence +
+							GetDynamicPrecedence(link.subtree, s.arena)
+					}
+				}
+				return
+			}
+
+			// Case 2: Same state — recursive merge.
+			if existing.node.state == link.node.state &&
+				existing.node.position.Bytes == link.node.position.Bytes &&
+				existing.node.errorCost == link.node.errorCost {
+				for j := uint16(0); j < link.node.linkCount; j++ {
+					s.nodeAddLink(existing.node, link.node.links[j])
+				}
+				dynPrec := link.node.dynamicPrecedence
+				if !link.subtree.IsZero() {
+					dynPrec += GetDynamicPrecedence(link.subtree, s.arena)
+				}
+				if dynPrec > node.dynamicPrecedence {
+					node.dynamicPrecedence = dynPrec
+				}
+				return
+			}
+		}
+	}
+
+	// Case 3: No match — add as new link.
+	if node.linkCount >= MaxLinkCount {
+		return
+	}
+
+	nodeCount := link.node.nodeCount
+	dynPrec := link.node.dynamicPrecedence
+	node.links[node.linkCount] = link
+	node.linkCount++
+
+	if !link.subtree.IsZero() {
+		nodeCount += subtreeNodeCount(link.subtree, s.arena)
+		dynPrec += GetDynamicPrecedence(link.subtree, s.arena)
+	}
+
+	if nodeCount > node.nodeCount {
+		node.nodeCount = nodeCount
+	}
+	if dynPrec > node.dynamicPrecedence {
+		node.dynamicPrecedence = dynPrec
+	}
+}
+
+// Merge combines two versions that have reached the same state.
+// The source version's links are added to the target version's node
+// using nodeAddLink which handles deduplication and DynPrec updates.
+// The source version is removed (matching C's ts_stack_merge).
 //
 // Returns true if the merge was successful.
 func (s *Stack) Merge(target, source StackVersion) bool {
@@ -522,31 +640,11 @@ func (s *Stack) Merge(target, source StackVersion) bool {
 		targetHead.nodeCountAtLastError = targetHead.node.nodeCount
 	}
 
-	// Add source's links to target.
+	// Add source's links to target using the three-case add logic.
 	targetNode := targetHead.node
 	sourceNode := sourceHead.node
 	for i := uint16(0); i < sourceNode.linkCount; i++ {
-		if targetNode.linkCount >= MaxLinkCount {
-			break
-		}
-		targetNode.links[targetNode.linkCount] = sourceNode.links[i]
-		targetNode.linkCount++
-
-		// If the newly added link has higher dynamic precedence than
-		// the first link, swap them so links[0] is always the best path.
-		// This matches C tree-sitter's ts_stack__merge behavior.
-		newIdx := targetNode.linkCount - 1
-		if newIdx > 0 {
-			newLink := &targetNode.links[newIdx]
-			firstLink := &targetNode.links[0]
-			if !newLink.subtree.IsZero() && !firstLink.subtree.IsZero() {
-				newPrec := GetDynamicPrecedence(newLink.subtree, s.arena)
-				firstPrec := GetDynamicPrecedence(firstLink.subtree, s.arena)
-				if newPrec > firstPrec {
-					targetNode.links[0], targetNode.links[newIdx] = targetNode.links[newIdx], targetNode.links[0]
-				}
-			}
-		}
+		s.nodeAddLink(targetNode, sourceNode.links[i])
 	}
 
 	// Remove the source version (matches C's ts_stack_merge behavior).

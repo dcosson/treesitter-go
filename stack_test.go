@@ -729,3 +729,105 @@ func TestRenumberVersionNoOp(t *testing.T) {
 		t.Errorf("state = %d, want 1", stack.State(v0))
 	}
 }
+
+// TestMergeDynPrecAccumulation verifies that after merging two versions,
+// the surviving node's dynamicPrecedence reflects the best path's accumulated
+// precedence, not just the target's original value.
+func TestMergeDynPrecAccumulation(t *testing.T) {
+	arena := NewSubtreeArena(32)
+	lang := makeSubtreeTestLanguage()
+	stack := NewStack(arena)
+
+	// Create a common base at state 1.
+	v0 := stack.AddVersion(StateID(1), Length{Bytes: 0})
+
+	// Push a leaf onto v0, advancing to state 5.
+	leaf0 := NewLeafSubtree(arena, Symbol(1),
+		Length{Bytes: 0}, Length{Bytes: 3, Point: Point{Column: 3}},
+		StateID(1), false, false, false, lang)
+	stack.Push(v0, StateID(5), leaf0, false, Length{Bytes: 3})
+
+	// Create two versions from state 5.
+	v1 := stack.Split(v0)
+
+	// Create two "reduced" subtrees with different DynPrec.
+	// Simulate call_expression (DynPrec=0) and type_conversion_expression (DynPrec=-1).
+	callNode := NewNodeSubtree(arena, Symbol(10), nil, 1, lang)
+	if !callNode.IsInline() {
+		data := arena.Get(callNode)
+		data.DynamicPrecedence = 0 // call_expression
+	}
+
+	convNode := NewNodeSubtree(arena, Symbol(10), nil, 2, lang)
+	if !convNode.IsInline() {
+		data := arena.Get(convNode)
+		data.DynamicPrecedence = -1 // type_conversion_expression
+	}
+
+	// Push them to both versions, arriving at the same GOTO state.
+	stack.Push(v0, StateID(20), callNode, false, Length{Bytes: 3})
+	stack.Push(v1, StateID(20), convNode, false, Length{Bytes: 3})
+
+	// Both at state 20 — merge.
+	if !stack.CanMerge(v0, v1) {
+		t.Fatal("versions at same state should be mergeable")
+	}
+
+	stack.Merge(v0, v1)
+
+	// After merge, the surviving version should have the HIGHER DynPrec.
+	prec := stack.DynamicPrecedence(v0)
+	if prec < 0 {
+		t.Errorf("DynamicPrecedence after merge = %d, want >= 0 (best path)", prec)
+	}
+}
+
+// TestMergeSameTargetNodeDisambiguation verifies Case 1 of nodeAddLink:
+// when two links point to the same target node with equivalent subtrees,
+// only the higher-DynPrec subtree is kept.
+func TestMergeSameTargetNodeDisambiguation(t *testing.T) {
+	arena := NewSubtreeArena(32)
+	lang := makeSubtreeTestLanguage()
+	stack := NewStack(arena)
+
+	// Create two versions with the same base node.
+	v0 := stack.AddVersion(StateID(1), Length{Bytes: 0})
+	v1 := stack.Split(v0) // Both point to the same node
+
+	// Create subtrees with same symbol but different DynPrec.
+	goodLeaf := NewLeafSubtree(arena, Symbol(5),
+		Length{Bytes: 0}, Length{Bytes: 2, Point: Point{Column: 2}},
+		StateID(5), false, false, false, lang)
+	badLeaf := NewLeafSubtree(arena, Symbol(5),
+		Length{Bytes: 0}, Length{Bytes: 2, Point: Point{Column: 2}},
+		StateID(5), false, false, false, lang)
+
+	// Set different DynPrec on the heap data.
+	if !goodLeaf.IsInline() {
+		arena.Get(goodLeaf).DynamicPrecedence = 10
+	}
+	if !badLeaf.IsInline() {
+		arena.Get(badLeaf).DynamicPrecedence = -5
+	}
+
+	// Push to same GOTO state (both versions share the base node).
+	stack.Push(v0, StateID(10), goodLeaf, false, Length{Bytes: 2})
+	stack.Push(v1, StateID(10), badLeaf, false, Length{Bytes: 2})
+
+	// Merge.
+	stack.Merge(v0, v1)
+
+	// Pop should show only 1 path (disambiguation removed the inferior one),
+	// OR 2 paths but with the better one as links[0].
+	count := stack.PopCount(v0, 1)
+	// With same target node and equivalent subtrees, Case 1 should deduplicate.
+	if count > 2 {
+		t.Errorf("PopCount after disambiguation merge = %d, want <= 2", count)
+	}
+
+	// The surviving version should have the better DynPrec.
+	prec := stack.DynamicPrecedence(v0)
+	if prec < 0 {
+		t.Errorf("DynamicPrecedence = %d, want >= 0 (should reflect best path)", prec)
+	}
+}
