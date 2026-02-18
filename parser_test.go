@@ -433,31 +433,21 @@ func TestCompareVersions(t *testing.T) {
 	}
 }
 
-// TestAdvanceAllVersionOrdering verifies that the advance-all loop processes
-// versions in index order (0, 1, 2, ...) rather than picking by position.
-// This is a design property of the advance-all loop — findActiveVersion
-// was removed in favor of sequential iteration.
-func TestAdvanceAllVersionOrdering(t *testing.T) {
-	// With the advance-all loop, versions are processed in index order.
-	// This test validates the CanMerge strict checks work with advance-all.
+func TestFindActiveVersionLowestPosition(t *testing.T) {
 	p := NewParser()
 	p.arena = NewSubtreeArena(0)
 	p.stack = NewStack(p.arena)
 
-	// Create two versions at the same position and state — should be mergeable.
+	// Create two versions at different positions.
+	// v0 at position 10, v1 at position 20.
 	p.stack.AddVersion(1, Length{Bytes: 10, Point: Point{Row: 0, Column: 10}})
-	p.stack.AddVersion(1, Length{Bytes: 10, Point: Point{Row: 0, Column: 10}})
+	p.stack.AddVersion(2, Length{Bytes: 20, Point: Point{Row: 0, Column: 20}})
 
-	if !p.stack.CanMerge(0, 1) {
-		t.Error("same state+position versions should be mergeable with strict CanMerge")
-	}
-
-	// Different positions should NOT be mergeable (strict CanMerge).
-	p.stack.Clear()
-	p.stack.AddVersion(1, Length{Bytes: 10, Point: Point{Row: 0, Column: 10}})
-	p.stack.AddVersion(1, Length{Bytes: 20, Point: Point{Row: 0, Column: 20}})
-
-	if p.stack.CanMerge(0, 1) {
-		t.Error("different-position versions should NOT be mergeable with strict CanMerge")
+	// findActiveVersion should always pick v0 (lowest position).
+	for i := 0; i < 10; i++ {
+		v := p.findActiveVersion()
+		if v != 0 {
+			t.Fatalf("iteration %d: expected v0 (lowest position), got v%d", i, v)
+		}
 	}
 }

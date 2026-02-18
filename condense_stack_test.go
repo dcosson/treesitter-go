@@ -68,24 +68,27 @@ func TestCondenseStackTakeRight(t *testing.T) {
 	}
 }
 
-// TestCondenseStackPreferLeftNoMergeDiffCost verifies that when compareVersions
-// returns PreferLeft and versions share the same state but different error costs,
-// strict CanMerge prevents the merge — both versions survive.
-func TestCondenseStackPreferLeftNoMergeDiffCost(t *testing.T) {
+// TestCondenseStackPreferLeftMerge verifies that when compareVersions returns
+// PreferLeft and versions share the same state, they are merged.
+func TestCondenseStackPreferLeftMerge(t *testing.T) {
 	p := NewParser()
 	p.stack = NewStack(p.arena)
 
-	// v0 (j): cost=0, nodeCountSinceError=5 (low amplification)
-	// v1 (i): cost=200, nodeCountSinceError=0
-	// compareVersions(v0, v1): costDiff=200, 200*(1+5)=1200 < 1600 → PreferLeft
-	// Same state but different costs → strict CanMerge fails → both survive.
-	setupCondenseVersion(p.stack, 5, 0, 0, 5, 0)
-	setupCondenseVersion(p.stack, 5, 0, 200, 1, 0)
+	// Both versions must have same state, position, errorCost (CanMerge 5-condition).
+	// v0 (j): cost=100, nodeCountSinceError=5, dynPrec=10
+	// v1 (i): cost=100, nodeCountSinceError=5, dynPrec=0
+	// compareVersions(v0, v1): same cost → check dynPrec → v0 (10) > v1 (0) → PreferLeft
+	// Both at state 5, pos 0, errorCost 100 → can merge → v1 removed.
+	setupCondenseVersion(p.stack, 5, 0, 100, 5, 10)
+	setupCondenseVersion(p.stack, 5, 0, 100, 5, 0)
 
 	p.condenseStack()
 
-	if p.stack.VersionCount() != 2 {
-		t.Fatalf("expected 2 versions (PreferLeft, strict CanMerge diff cost), got %d", p.stack.VersionCount())
+	if p.stack.VersionCount() != 1 {
+		t.Fatalf("expected 1 version after PreferLeft merge, got %d", p.stack.VersionCount())
+	}
+	if p.stack.State(0) != 5 {
+		t.Errorf("surviving version state = %d, want 5", p.stack.State(0))
 	}
 }
 
@@ -164,32 +167,25 @@ func TestCondenseStackPreferRightSwap(t *testing.T) {
 	}
 }
 
-// TestCondenseStackPreferRightSwapDiffCost verifies that when compareVersions
-// returns PreferRight and versions have different error costs (strict CanMerge
-// prevents merge), a swap occurs to move the better version to a lower index.
-func TestCondenseStackPreferRightSwapDiffCost(t *testing.T) {
+// TestCondenseStackPreferRightMerge verifies that when compareVersions returns
+// PreferRight and versions share the same state, they merge (merge takes
+// priority over swap).
+func TestCondenseStackPreferRightMerge(t *testing.T) {
 	p := NewParser()
 	p.stack = NewStack(p.arena)
 
-	// v0 (j): cost=200, nodeCountSinceError=5, state=5
-	// v1 (i): cost=0, nodeCountSinceError=5, state=5
-	// compareVersions(v0, v1): costDiff=200, 200*(1+5)=1200 < 1600 → PreferRight
-	// Same state but different costs → strict CanMerge fails → SWAP.
-	setupCondenseVersion(p.stack, 5, 0, 200, 5, 0)
-	setupCondenseVersion(p.stack, 5, 0, 0, 5, 0)
+	// Both versions must have same state, position, errorCost (CanMerge 5-condition).
+	// v0 (j): cost=100, nodeCountSinceError=5, dynPrec=0
+	// v1 (i): cost=100, nodeCountSinceError=5, dynPrec=10
+	// compareVersions(v0, v1): same cost → check dynPrec → v1 (10) > v0 (0) → PreferRight
+	// Same state, pos, errorCost → merge instead of swap → v1 removed, links merged into v0.
+	setupCondenseVersion(p.stack, 5, 0, 100, 5, 0)
+	setupCondenseVersion(p.stack, 5, 0, 100, 5, 10)
 
 	p.condenseStack()
 
-	// Both survive but swapped — the better version (lower cost) moves to index 0.
-	if p.stack.VersionCount() != 2 {
-		t.Fatalf("expected 2 versions after PreferRight swap, got %d", p.stack.VersionCount())
-	}
-	// After swap, v0 should have the lower cost (0).
-	if p.stack.ErrorCost(0) != 0 {
-		t.Errorf("v0 error cost after swap = %d, want 0 (the better version)", p.stack.ErrorCost(0))
-	}
-	if p.stack.ErrorCost(1) != 200 {
-		t.Errorf("v1 error cost after swap = %d, want 200", p.stack.ErrorCost(1))
+	if p.stack.VersionCount() != 1 {
+		t.Fatalf("expected 1 version after PreferRight merge, got %d", p.stack.VersionCount())
 	}
 }
 

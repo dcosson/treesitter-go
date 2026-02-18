@@ -89,6 +89,7 @@ type StackHead struct {
 	nodeCountAtLastError uint32
 	// lookaheadWhenPaused stores the token that caused the error, so
 	// that handleError can use it when the version is resumed.
+	// Mirrors C tree-sitter's ts_stack_pause / ts_stack_resume.
 	lookaheadWhenPaused Subtree
 }
 
@@ -181,7 +182,17 @@ func (s *Stack) ErrorCost(version StackVersion) uint32 {
 	if head.node == nil {
 		return 0
 	}
-	return head.node.errorCost
+	cost := head.node.errorCost
+	// Add recovery bonus for paused versions or versions in ERROR_STATE
+	// that have SubtreeZero as their first link (just pushed ERROR_STATE).
+	// This matches C's ts_stack_error_cost which adds ERROR_COST_PER_RECOVERY
+	// (= 500) for versions in error recovery state.
+	if head.status == StackStatusPaused {
+		cost += ErrorCostPerRecovery
+	} else if head.node.state == 0 && head.node.linkCount > 0 && head.node.links[0].subtree.IsZero() {
+		cost += ErrorCostPerRecovery
+	}
+	return cost
 }
 
 // NodeCount returns the node count for a version.
@@ -224,6 +235,41 @@ func (s *Stack) NodeCountSinceError(version StackVersion) uint32 {
 		head.nodeCountAtLastError = head.node.nodeCount
 	}
 	return head.node.nodeCount - head.nodeCountAtLastError
+}
+
+// HasAdvancedSinceError returns true if the parser has made meaningful
+// progress since the last error on this version. It walks the primary
+// link chain looking for non-zero-width subtrees. If no error has
+// occurred (errorCost == 0), returns true.
+// Mirrors C tree-sitter's ts_stack_has_advanced_since_error.
+func (s *Stack) HasAdvancedSinceError(version StackVersion) bool {
+	if int(version) >= len(s.heads) {
+		return false
+	}
+	head := &s.heads[version]
+	node := head.node
+	if node == nil {
+		return false
+	}
+	if node.errorCost == 0 {
+		return true
+	}
+	for node != nil {
+		if node.linkCount > 0 {
+			subtree := node.links[0].subtree
+			if !subtree.IsZero() {
+				if GetTotalBytes(subtree, s.arena) > 0 {
+					return true
+				} else if node.nodeCount > head.nodeCountAtLastError &&
+					GetErrorCost(subtree, s.arena) == 0 {
+					node = node.links[0].node
+					continue
+				}
+			}
+		}
+		break
+	}
+	return false
 }
 
 // SwapVersions swaps two version heads. Used by condenseStack when a
@@ -360,9 +406,10 @@ func (s *Stack) Pop(version StackVersion, count uint32) []StackIterator {
 			newSubtrees[len(frame.subtrees)] = link.subtree
 
 			// Extra subtrees don't count toward the pop depth.
-			// SubtreeZero links (from ERROR_STATE push) are not extras.
+			// SubtreeZero links (from ERROR_STATE push with null subtree)
+			// always count toward depth.
 			newDepth := frame.depth
-			if !link.subtree.IsZero() && !IsExtra(link.subtree, s.arena) {
+			if link.subtree.IsZero() || !IsExtra(link.subtree, s.arena) {
 				newDepth++
 			}
 
@@ -402,7 +449,10 @@ func (s *Stack) PopAll(version StackVersion) []Subtree {
 	var subtrees []Subtree
 	node := head.node
 	for node != nil && node.linkCount > 0 {
-		subtrees = append(subtrees, node.links[0].subtree)
+		// Skip SubtreeZero entries (null placeholders from ERROR_STATE pushes).
+		if !node.links[0].subtree.IsZero() {
+			subtrees = append(subtrees, node.links[0].subtree)
+		}
 		node = node.links[0].node
 	}
 
@@ -423,6 +473,7 @@ func (s *Stack) Split(version StackVersion) StackVersion {
 	s.heads = append(s.heads, StackHead{
 		node:                 head.node,
 		status:               head.status,
+		summary:              nil, // Don't share summary reference; each version builds its own
 		lastExternalToken:    head.lastExternalToken,
 		nodeCountAtLastError: head.nodeCountAtLastError,
 		lookaheadWhenPaused:  head.lookaheadWhenPaused,
@@ -432,11 +483,17 @@ func (s *Stack) Split(version StackVersion) StackVersion {
 
 // ForkAtNode creates a new active version pointing at the given node.
 // Used during multi-path reduce to create versions for alt pop paths.
-func (s *Stack) ForkAtNode(node *StackNode) StackVersion {
+// Inherits lastExternalToken from the source version for correct scanner state.
+func (s *Stack) ForkAtNode(node *StackNode, sourceVersion StackVersion) StackVersion {
 	newVersion := StackVersion(len(s.heads))
+	var extToken Subtree
+	if int(sourceVersion) < len(s.heads) {
+		extToken = s.heads[sourceVersion].lastExternalToken
+	}
 	s.heads = append(s.heads, StackHead{
-		node:   node,
-		status: StackStatusActive,
+		node:              node,
+		status:            StackStatusActive,
+		lastExternalToken: extToken,
 	})
 	return newVersion
 }
@@ -531,16 +588,21 @@ func (s *Stack) CanMerge(v1, v2 StackVersion) bool {
 	return true
 }
 
-// Pause pauses a version (for error recovery exploration) and stores
-// the lookahead token that triggered the error. The token is returned
-// when the version is resumed.
+// Pause pauses a version and stores the lookahead token that triggered the error.
+// The token is returned when the version is resumed via Resume.
 // Mirrors C tree-sitter's ts_stack_pause.
 func (s *Stack) Pause(version StackVersion, lookahead Subtree) {
 	if int(version) >= len(s.heads) {
 		return
 	}
-	s.heads[version].status = StackStatusPaused
-	s.heads[version].lookaheadWhenPaused = lookahead
+	head := &s.heads[version]
+	head.status = StackStatusPaused
+	head.lookaheadWhenPaused = lookahead
+	// Record the current node count as the error point, matching C's
+	// ts_stack_pause which sets node_count_at_last_error.
+	if head.node != nil {
+		head.nodeCountAtLastError = head.node.nodeCount
+	}
 }
 
 // Resume resumes a paused version and returns the stored lookahead token.
@@ -696,7 +758,6 @@ func (s *Stack) PopCount(version StackVersion, count uint32) int {
 }
 
 // summaryIterator tracks a single path through the stack during summary recording.
-// Matches C tree-sitter's StackIterator struct used in ts_stack__iter.
 type summaryIterator struct {
 	node  *StackNode
 	depth uint32
@@ -709,8 +770,6 @@ type summaryIterator struct {
 //
 // Uses C tree-sitter's iterative BFS approach with MaxIteratorCount (64) cap
 // on concurrent iterators to prevent worst-case blowup on merged stack DAGs.
-// Additionally uses a visited set (not in C) for extra efficiency — preventing
-// redundant walking of shared subgraphs even within the 64-iterator budget.
 func (s *Stack) RecordSummary(version StackVersion, maxDepth uint32) {
 	if int(version) >= len(s.heads) {
 		return
@@ -724,19 +783,16 @@ func (s *Stack) RecordSummary(version StackVersion, maxDepth uint32) {
 	position := head.node.position
 
 	// Iterative BFS with iterator array, matching C's ts_stack__iter pattern.
-	// Start with one iterator at the head node.
 	iterators := make([]summaryIterator, 0, MaxIteratorCount)
 	iterators = append(iterators, summaryIterator{node: head.node, depth: 0})
 
-	// Visited set: memoization layer on top of C's approach.
-	// Prevents re-walking shared subgraph paths that the 64-cap alone
-	// would still explore redundantly.
+	// Visited set to prevent re-walking shared subgraph paths.
 	visited := make(map[*StackNode]bool)
 
 	var entries []StackSummaryEntry
 
 	for len(iterators) > 0 {
-		// Process iterators in FIFO order (BFS). Pop first element.
+		// Process in FIFO order (BFS).
 		iter := iterators[0]
 		iterators = iterators[1:]
 
@@ -752,14 +808,13 @@ func (s *Stack) RecordSummary(version StackVersion, maxDepth uint32) {
 				continue
 			}
 
-			// Memoization: skip already-visited nodes.
 			if visited[next] {
 				continue
 			}
 			visited[next] = true
 
 			newDepth := iter.depth
-			// SubtreeZero links (from ERROR_STATE push with null subtree) are not extras.
+			// SubtreeZero links (from ERROR_STATE push) don't count toward depth.
 			if !link.subtree.IsZero() && !IsExtra(link.subtree, s.arena) {
 				newDepth++
 			}
@@ -771,7 +826,7 @@ func (s *Stack) RecordSummary(version StackVersion, maxDepth uint32) {
 					Depth:    newDepth,
 					State:    next.state,
 				}
-				// Deduplicate by (state, depth) — matches C's callback dedup.
+				// Deduplicate by (state, depth).
 				found := false
 				for _, e := range entries {
 					if e.State == entry.State && e.Depth == entry.Depth {
@@ -789,7 +844,6 @@ func (s *Stack) RecordSummary(version StackVersion, maxDepth uint32) {
 				if len(iterators) < MaxIteratorCount {
 					iterators = append(iterators, summaryIterator{node: next, depth: newDepth})
 				}
-				// If at cap, silently skip — matches C's behavior.
 			}
 		}
 	}
@@ -815,6 +869,15 @@ func (s *Stack) RenumberVersion(from, to StackVersion) {
 	}
 	if int(from) >= len(s.heads) || int(to) >= len(s.heads) {
 		return
+	}
+	// If the target has a summary but the source doesn't, transfer it.
+	// This preserves recovery information when renumbering after pop.
+	// Matches C: if (target_head->summary && !source_head->summary)
+	sourceHead := &s.heads[from]
+	targetHead := &s.heads[to]
+	if targetHead.summary != nil && sourceHead.summary == nil {
+		sourceHead.summary = targetHead.summary
+		targetHead.summary = nil
 	}
 	s.heads[to] = s.heads[from]
 	s.RemoveVersion(from)

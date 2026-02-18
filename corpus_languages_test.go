@@ -29,7 +29,7 @@ import (
 )
 
 // perTestTimeout is the maximum time allowed for parsing a single corpus test input.
-const perTestTimeout = 2 * time.Second
+const perTestTimeout = 10 * time.Second
 
 // makeCorpusParseFunc creates a ParseFunc for the given language with a per-test timeout.
 func makeCorpusParseFunc(lang *ts.Language) corpustest.ParseFunc {

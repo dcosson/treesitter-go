@@ -100,6 +100,12 @@ func (l *Language) ExportTableEntry(state StateID, symbol Symbol) TableEntry {
 	return l.tableEntry(state, symbol)
 }
 
+// HasActions returns true if the parse table has any valid actions for
+// the given (state, symbol) pair. Equivalent to C's ts_language_has_actions.
+func (l *Language) HasActions(state StateID, symbol Symbol) bool {
+	return l.lookup(state, symbol) != 0
+}
+
 // lookup returns the action index for a (state, symbol) pair.
 // This mirrors ts_language_lookup() from the C implementation.
 func (l *Language) lookup(state StateID, symbol Symbol) uint16 {

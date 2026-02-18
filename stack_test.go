@@ -233,12 +233,9 @@ func TestStackPauseResume(t *testing.T) {
 		t.Error("should not be active when paused")
 	}
 
-	lookahead := stack.Resume(v0)
+	stack.Resume(v0)
 	if !stack.IsActive(v0) {
 		t.Error("should be active after resume")
-	}
-	if !lookahead.IsZero() {
-		t.Error("expected zero lookahead from resume with zero pause")
 	}
 }
 
@@ -565,5 +562,170 @@ func TestStackPopEmpty(t *testing.T) {
 	results = stack.Pop(v0, 1)
 	if len(results) != 0 {
 		t.Errorf("pop from version with no links = %d, want 0", len(results))
+	}
+}
+
+func TestHasAdvancedSinceErrorNoError(t *testing.T) {
+	arena := NewSubtreeArena(32)
+	stack := NewStack(arena)
+
+	v0 := stack.AddVersion(StateID(1), Length{Bytes: 0})
+
+	// No error cost — should return true.
+	if !stack.HasAdvancedSinceError(v0) {
+		t.Error("should return true when errorCost == 0")
+	}
+}
+
+func TestHasAdvancedSinceErrorWithProgress(t *testing.T) {
+	arena := NewSubtreeArena(32)
+	lang := makeSubtreeTestLanguage()
+	stack := NewStack(arena)
+
+	v0 := stack.AddVersion(StateID(1), Length{Bytes: 0})
+
+	// Push a non-zero-width subtree.
+	leaf := NewLeafSubtree(arena, Symbol(1),
+		Length{Bytes: 0}, Length{Bytes: 5, Point: Point{Column: 5}},
+		StateID(1), false, false, false, lang)
+	stack.Push(v0, StateID(2), leaf, false, Length{Bytes: 5})
+
+	// Add error cost so errorCost > 0.
+	stack.AddErrorCost(v0, 100)
+
+	// Push another non-zero-width subtree AFTER the error.
+	leaf2 := NewLeafSubtree(arena, Symbol(2),
+		Length{Bytes: 0}, Length{Bytes: 3, Point: Point{Column: 3}},
+		StateID(2), false, false, false, lang)
+	stack.Push(v0, StateID(3), leaf2, false, Length{Bytes: 8})
+
+	// Should return true — we advanced with a 3-byte subtree after the error.
+	if !stack.HasAdvancedSinceError(v0) {
+		t.Error("should return true when non-zero-width subtree pushed after error")
+	}
+}
+
+func TestHasAdvancedSinceErrorNoProgress(t *testing.T) {
+	arena := NewSubtreeArena(32)
+	lang := makeSubtreeTestLanguage()
+	stack := NewStack(arena)
+
+	v0 := stack.AddVersion(StateID(1), Length{Bytes: 0})
+
+	// Push a zero-width subtree.
+	leaf := NewLeafSubtree(arena, Symbol(1),
+		Length{Bytes: 0}, Length{Bytes: 0, Point: Point{}},
+		StateID(1), false, false, false, lang)
+	stack.Push(v0, StateID(2), leaf, false, Length{Bytes: 0})
+
+	// Add error cost.
+	stack.AddErrorCost(v0, 100)
+
+	// Push another zero-width subtree after error.
+	leaf2 := NewLeafSubtree(arena, Symbol(2),
+		Length{Bytes: 0}, Length{Bytes: 0, Point: Point{}},
+		StateID(2), false, false, false, lang)
+	stack.Push(v0, StateID(3), leaf2, false, Length{Bytes: 0})
+
+	// Should return false — no non-zero-width subtree after error.
+	if stack.HasAdvancedSinceError(v0) {
+		t.Error("should return false when only zero-width subtrees after error")
+	}
+}
+
+func TestHasAdvancedSinceErrorOutOfBounds(t *testing.T) {
+	arena := NewSubtreeArena(32)
+	stack := NewStack(arena)
+
+	// Non-existent version.
+	if stack.HasAdvancedSinceError(StackVersion(99)) {
+		t.Error("should return false for non-existent version")
+	}
+}
+
+func TestRenumberVersionPreservesSummary(t *testing.T) {
+	arena := NewSubtreeArena(32)
+	lang := makeSubtreeTestLanguage()
+	stack := NewStack(arena)
+
+	// Create two versions.
+	v0 := stack.AddVersion(StateID(1), Length{Bytes: 0})
+	v1 := stack.AddVersion(StateID(2), Length{Bytes: 0})
+
+	// Push a node on v0 so it has links for RecordSummary to walk.
+	leaf := NewLeafSubtree(arena, Symbol(1),
+		Length{Bytes: 0}, Length{Bytes: 1, Point: Point{Column: 1}},
+		StateID(1), false, false, false, lang)
+	stack.Push(v0, StateID(5), leaf, false, Length{Bytes: 1})
+
+	// Record a summary on v0 (the target that will be overwritten).
+	stack.RecordSummary(v0, 10)
+
+	// v1 (the source) has no summary.
+	if stack.GetSummary(v1) != nil {
+		t.Fatal("v1 should have no summary initially")
+	}
+
+	// v0 should have a summary.
+	if stack.GetSummary(v0) == nil {
+		t.Fatal("v0 should have a summary after RecordSummary")
+	}
+
+	// Renumber v1 -> v0. Since v0 has summary but v1 doesn't,
+	// v1 should inherit v0's summary before v0 is overwritten.
+	stack.RenumberVersion(v1, v0)
+
+	// After renumber, v0's head is now what was v1, but with v0's old summary.
+	summary := stack.GetSummary(v0)
+	if summary == nil {
+		t.Error("summary should be preserved on target after renumber")
+	}
+}
+
+func TestRenumberVersionSourceHasSummary(t *testing.T) {
+	arena := NewSubtreeArena(32)
+	lang := makeSubtreeTestLanguage()
+	stack := NewStack(arena)
+
+	// Create two versions.
+	v0 := stack.AddVersion(StateID(1), Length{Bytes: 0})
+
+	// Push some nodes so the summary has entries.
+	leaf := NewLeafSubtree(arena, Symbol(1),
+		Length{Bytes: 0}, Length{Bytes: 1, Point: Point{Column: 1}},
+		StateID(1), false, false, false, lang)
+	stack.Push(v0, StateID(2), leaf, false, Length{Bytes: 1})
+
+	v1 := stack.AddVersion(StateID(3), Length{Bytes: 0})
+
+	// Record summaries on both.
+	stack.RecordSummary(v0, 10)
+	stack.RecordSummary(v1, 10)
+
+	// When source already has a summary, target's summary is NOT transferred
+	// (matches C behavior: only transfer when source is nil).
+	stack.RenumberVersion(v1, v0)
+
+	// v0 should have v1's summary (which came from its own RecordSummary).
+	summary := stack.GetSummary(v0)
+	if summary == nil {
+		t.Error("source's own summary should be preserved")
+	}
+}
+
+func TestRenumberVersionNoOp(t *testing.T) {
+	arena := NewSubtreeArena(32)
+	stack := NewStack(arena)
+
+	v0 := stack.AddVersion(StateID(1), Length{Bytes: 0})
+
+	// Renumber to self is a no-op.
+	stack.RenumberVersion(v0, v0)
+
+	if stack.VersionCount() != 1 {
+		t.Errorf("version count = %d, want 1", stack.VersionCount())
+	}
+	if stack.State(v0) != 1 {
+		t.Errorf("state = %d, want 1", stack.State(v0))
 	}
 }
