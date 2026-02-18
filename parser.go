@@ -855,6 +855,11 @@ func (p *Parser) doReduce(version StackVersion, action ParseActionEntry, endOfNo
 			// Alternative version — different base node, create new version.
 			altBaseState := group.node.state
 			altGotoState := p.language.nextState(altBaseState, symbol)
+
+			if endOfNonTerminalExtra && altGotoState == altBaseState {
+				node = SetExtra(node, p.arena)
+			}
+
 			altBasePosition := group.node.position
 			altNodePadding := GetPadding(node, p.arena)
 			altNodeSize := GetSize(node, p.arena)
@@ -863,6 +868,15 @@ func (p *Parser) doReduce(version StackVersion, action ParseActionEntry, endOfNo
 			altVersion := p.stack.ForkAtNode(group.node, version)
 			if altVersion >= 0 {
 				p.stack.Push(altVersion, altGotoState, node, false, altNewPosition)
+
+				// Re-push trailing extras as siblings, matching C behavior.
+				for i := len(group.trailingExtras) - 1; i >= 0; i-- {
+					extra := group.trailingExtras[i]
+					extraPadding := GetPadding(extra, p.arena)
+					extraSize := GetSize(extra, p.arena)
+					altNewPosition = LengthAdd(LengthAdd(altNewPosition, extraPadding), extraSize)
+					p.stack.Push(altVersion, altGotoState, extra, false, altNewPosition)
+				}
 			}
 		}
 	}
