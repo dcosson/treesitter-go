@@ -158,3 +158,57 @@ func TestCorpusTypeScript(t *testing.T) {
 func TestCorpusLua(t *testing.T) {
 	runCorpusForLanguage(t, "tree-sitter-lua", luaLang())
 }
+
+// TestCppNestedQualifiedIdentifier tests that multi-level namespace
+// qualifications like a::b::c produce nested qualified_identifier nodes
+// rather than being flattened. This is a regression test for a bug where
+// doReduce unconditionally marked reduced nodes as "extra" when
+// gotoState == baseState, without checking endOfNonTerminalExtra.
+func TestCppNestedQualifiedIdentifier(t *testing.T) {
+	lang := cppgrammar.CppLanguage()
+	lang.NewExternalScanner = cppscanner.New
+	parseFn := makeCorpusParseFunc(lang)
+
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:  "two-level namespace",
+			input: "a::b::c = 1;",
+			expected: "(translation_unit (expression_statement (assignment_expression" +
+				" (qualified_identifier (namespace_identifier) (qualified_identifier (namespace_identifier) (identifier)))" +
+				" (number_literal))))",
+		},
+		{
+			name:  "three-level namespace in using",
+			input: "using ::e::f::g;",
+			expected: "(translation_unit (using_declaration" +
+				" (qualified_identifier (qualified_identifier (namespace_identifier) (qualified_identifier (namespace_identifier) (identifier))))))",
+		},
+		{
+			name:  "template in scope position",
+			input: "std::vector<int>::size_typ my_string;",
+			expected: "(translation_unit (declaration" +
+				" (qualified_identifier (namespace_identifier) (qualified_identifier (template_type (type_identifier) (template_argument_list (type_descriptor (primitive_type)))) (type_identifier)))" +
+				" (identifier)))",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			actual, err := parseFn([]byte(tc.input))
+			if err != nil {
+				t.Fatalf("parse error: %v", err)
+			}
+			normalizedActualRaw, _ := corpustest.NormalizeSExpression(actual)
+			normalizedActual := corpustest.StripFields(normalizedActualRaw)
+			normalizedExpected, _ := corpustest.NormalizeSExpression(tc.expected)
+			if normalizedActual != normalizedExpected {
+				t.Errorf("nested qualified_identifier mismatch\ninput: %s\nexpected: %s\nactual:   %s",
+					tc.input, normalizedExpected, normalizedActual)
+			}
+		})
+	}
+}

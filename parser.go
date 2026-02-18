@@ -328,7 +328,7 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 				}
 				p.doShift(splitVersion, extraAction, shiftToken)
 			case ParseActionTypeReduce:
-				p.doReduce(splitVersion, extraAction)
+				p.doReduce(splitVersion, extraAction, nullLookahead)
 			case ParseActionTypeAccept:
 				p.doAccept(splitVersion)
 			case ParseActionTypeRecover:
@@ -359,7 +359,7 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 			p.doShift(version, action, token)
 			return true
 		case ParseActionTypeReduce:
-			p.doReduce(version, action)
+			p.doReduce(version, action, nullLookahead)
 			if nullLookahead {
 				// After NTE reduce, return to re-lex with the new state.
 				return true
@@ -737,7 +737,13 @@ func (p *Parser) doShift(version StackVersion, action ParseActionEntry, token Su
 }
 
 // doReduce pops children from the stack and creates an internal node.
-func (p *Parser) doReduce(version StackVersion, action ParseActionEntry) {
+// endOfNonTerminalExtra indicates the reduction is happening during
+// non-terminal extra processing (null lookahead). Only when this is true
+// AND the goto state equals the base state should the node be marked as
+// extra. This matches C tree-sitter's ts_parser__reduce:
+//
+//	if (end_of_non_terminal_extra && next_state == state) parent->extra = true;
+func (p *Parser) doReduce(version StackVersion, action ParseActionEntry, endOfNonTerminalExtra bool) {
 	childCount := uint32(action.ReduceChildCount)
 	symbol := action.ReduceSymbol
 	productionID := action.ReduceProdID
@@ -788,11 +794,12 @@ func (p *Parser) doReduce(version StackVersion, action ParseActionEntry) {
 	baseState := p.stack.State(version)
 	gotoState := p.language.nextState(baseState, symbol)
 
-	// If the goto state equals the base state, this reduced node is an "extra"
-	// (like comments, whitespace, or heredoc_body in Ruby). Extra nodes don't
-	// change the parser state and are skipped during pop operations.
-	// This matches C tree-sitter's ts_parser__reduce behavior.
-	if gotoState == baseState {
+	// C tree-sitter: if (end_of_non_terminal_extra && next_state == state)
+	// Only mark as extra when BOTH conditions are true. Without the
+	// endOfNonTerminalExtra guard, left-recursive hidden rules like
+	// _scope_resolution in C++ get incorrectly marked as extra, causing
+	// multi-level qualified identifiers (a::b::c) to be flattened.
+	if endOfNonTerminalExtra && gotoState == baseState {
 		node = SetExtra(node, p.arena)
 	}
 
@@ -1148,7 +1155,7 @@ func (p *Parser) doAllPotentialReductionsUnfiltered(version StackVersion) {
 				continue
 			}
 
-			p.doReduce(testVersion, action)
+			p.doReduce(testVersion, action, false)
 		}
 	}
 }
