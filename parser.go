@@ -301,13 +301,22 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 			}
 			switch extraAction.Type {
 			case ParseActionTypeShift:
-				p.doShift(splitVersion, extraAction, token)
+				shiftToken := token
+				if GetChildCount(shiftToken, p.arena) > 0 {
+					p.breakdownLookahead(&shiftToken, state)
+					extraAction.ShiftState = p.language.nextState(state, GetSymbol(shiftToken, p.arena))
+				}
+				p.doShift(splitVersion, extraAction, shiftToken)
 			case ParseActionTypeReduce:
 				p.doReduce(splitVersion, extraAction)
 			case ParseActionTypeAccept:
 				p.doAccept(splitVersion)
 			case ParseActionTypeRecover:
-				p.recover(splitVersion, token)
+				recoverToken := token
+				if GetChildCount(recoverToken, p.arena) > 0 {
+					p.breakdownLookahead(&recoverToken, StateID(0))
+				}
+				p.recover(splitVersion, recoverToken)
 			}
 		}
 		// Execute the primary action.
@@ -317,6 +326,10 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 		}
 		switch action.Type {
 		case ParseActionTypeShift:
+			if GetChildCount(token, p.arena) > 0 {
+				p.breakdownLookahead(&token, state)
+				action.ShiftState = p.language.nextState(state, GetSymbol(token, p.arena))
+			}
 			p.doShift(version, action, token)
 			return true
 		case ParseActionTypeReduce:
@@ -331,6 +344,9 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 			// tries summary-based popback, or falls back to skipping the token.
 			// This matches C's ts_parser__advance which always calls
 			// ts_parser__recover for RECOVER actions, including at EOF.
+			if GetChildCount(token, p.arena) > 0 {
+				p.breakdownLookahead(&token, StateID(0))
+			}
 			p.recover(version, token)
 			return true
 		}
@@ -629,6 +645,27 @@ func (p *Parser) tryReuseNode(version StackVersion, state StateID, position Leng
 	}
 
 	return SubtreeZero, false
+}
+
+// breakdownLookahead decomposes a reused composite node back into individual
+// tokens when the node's parse state doesn't match the current parser state.
+// This is needed for incremental parsing + error recovery when a previously
+// reused non-terminal can't be shifted as-is.
+// Matches C: ts_parser__breakdown_lookahead
+func (p *Parser) breakdownLookahead(lookahead *Subtree, state StateID) {
+	if p.reusableNode == nil {
+		return
+	}
+	didDescend := false
+	tree := p.reusableNode.Tree()
+	for GetChildCount(tree, p.arena) > 0 && GetParseState(tree, p.arena) != state {
+		p.reusableNode.Descend()
+		tree = p.reusableNode.Tree()
+		didDescend = true
+	}
+	if didDescend {
+		*lookahead = tree
+	}
 }
 
 // doShift pushes a token onto the stack and transitions to a new state.
@@ -1028,7 +1065,10 @@ func (p *Parser) handleError(version StackVersion, token Subtree) {
 	// Step 4: Record stack summary for popback recovery.
 	p.stack.RecordSummary(version, MaxSummaryDepth)
 
-	// Step 5: Call recover.
+	// Step 5: Break down lookahead if composite, then call recover.
+	if GetChildCount(token, p.arena) > 0 {
+		p.breakdownLookahead(&token, StateID(0))
+	}
 	p.recover(version, token)
 }
 
