@@ -85,6 +85,14 @@ type SymbolMetadata struct {
 	Supertype bool
 }
 
+// LexStateNoLookahead is the sentinel value for lex states that should not
+// produce a token. In the C tree-sitter runtime, this is represented as
+// (TSStateId)(-1) in the lex modes array. When the parser encounters this,
+// it returns a null subtree, causing the parser to use SymbolEnd for action
+// lookup (triggering reductions from non-terminal extra end states like
+// heredoc_body) and then re-lex with the new state.
+const LexStateNoLookahead uint16 = 65535
+
 // LexMode describes the lex state for a given parse state.
 type LexMode struct {
 	LexState          uint16

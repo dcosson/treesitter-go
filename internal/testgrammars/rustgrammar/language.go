@@ -22957,13 +22957,13 @@ func RustLanguage() *ts.Language {
 		{LexState: 72}, // state 3813
 		{LexState: 17}, // state 3814
 		{LexState: 17}, // state 3815
-		{LexState: 0}, // state 3816
-		{LexState: 0}, // state 3817
-		{LexState: 0}, // state 3818
-		{LexState: 0}, // state 3819
-		{LexState: 0}, // state 3820
-		{LexState: 0}, // state 3821
-		{LexState: 0}, // state 3822
+		{LexState: ts.LexStateNoLookahead}, // state 3816 (no lookahead)
+		{LexState: ts.LexStateNoLookahead}, // state 3817 (no lookahead)
+		{LexState: ts.LexStateNoLookahead}, // state 3818 (no lookahead)
+		{LexState: ts.LexStateNoLookahead}, // state 3819 (no lookahead)
+		{LexState: ts.LexStateNoLookahead}, // state 3820 (no lookahead)
+		{LexState: ts.LexStateNoLookahead}, // state 3821 (no lookahead)
+		{LexState: ts.LexStateNoLookahead}, // state 3822 (no lookahead)
 	}
 
 	primaryStateIDs := []ts.StateID{

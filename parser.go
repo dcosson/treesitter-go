@@ -272,15 +272,17 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 		token = p.lexToken(version, state, position)
 	}
 
-	tokenSymbol := GetSymbol(token, p.arena)
-
-	if p.debug {
-		symName := ""
-		if p.language != nil && int(tokenSymbol) < len(p.language.SymbolNames) {
-			symName = p.language.SymbolNames[tokenSymbol]
-		}
-		fmt.Printf("[advance] v=%d state=%d pos=%d token=%d(%s)\n",
-			version, state, position.Bytes, tokenSymbol, symName)
+	// Check for null lookahead (non-terminal extra end state).
+	// When lexToken returns a zero Subtree, this state is at the end of a
+	// non-terminal extra rule (e.g., heredoc_body). The C runtime returns NULL
+	// from ts_parser__lex and uses ts_builtin_sym_end for action lookup,
+	// triggering reductions. After each reduce, it re-lexes with the new state.
+	nullLookahead := token.IsZero()
+	var tokenSymbol Symbol
+	if nullLookahead {
+		tokenSymbol = SymbolEnd
+	} else {
+		tokenSymbol = GetSymbol(token, p.arena)
 	}
 
 	// Inner reduce loop: keep reducing until we can shift or accept.
@@ -290,10 +292,12 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 		state = p.stack.State(version)
 		entry := p.language.tableEntry(state, tokenSymbol)
 		if entry.ActionCount == 0 {
-			// No valid action — pause this version for error recovery.
-			if p.debug {
-				fmt.Printf("[advance] v=%d PAUSE at state=%d token=%d\n", version, state, tokenSymbol)
+			if nullLookahead {
+				// No action for SymbolEnd after NTE reduction — need to re-lex
+				// with the current state (which should have a valid lex mode).
+				return true
 			}
+			// No valid action — pause this version for error recovery.
 			p.stack.Pause(version, token)
 			return true
 		}
@@ -307,6 +311,9 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 			// repeat optimization and should not be executed as actual shifts.
 			if extraAction.Type == ParseActionTypeShift && extraAction.ShiftRepetition {
 				continue
+			}
+			if nullLookahead && extraAction.Type == ParseActionTypeShift {
+				continue // Can't shift a null token
 			}
 			splitVersion := p.stack.Split(version)
 			if splitVersion < 0 {
@@ -325,11 +332,13 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 			case ParseActionTypeAccept:
 				p.doAccept(splitVersion)
 			case ParseActionTypeRecover:
-				recoverToken := token
-				if GetChildCount(recoverToken, p.arena) > 0 {
-					p.breakdownLookahead(&recoverToken, StateID(0))
+				if !nullLookahead {
+					recoverToken := token
+					if GetChildCount(recoverToken, p.arena) > 0 {
+						p.breakdownLookahead(&recoverToken, StateID(0))
+					}
+					p.recover(splitVersion, recoverToken)
 				}
-				p.recover(splitVersion, recoverToken)
 			}
 		}
 		// Execute the primary action.
@@ -337,12 +346,12 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 		if action.Type == ParseActionTypeShift && action.ShiftRepetition {
 			continue
 		}
-		if p.debug {
-			fmt.Printf("[action] v=%d state=%d type=%d shift_state=%d reduce_sym=%d reduce_count=%d\n",
-				version, state, action.Type, action.ShiftState, action.ReduceSymbol, action.ReduceChildCount)
-		}
 		switch action.Type {
 		case ParseActionTypeShift:
+			if nullLookahead {
+				// Can't shift a null token — return to re-lex with new state.
+				return true
+			}
 			if GetChildCount(token, p.arena) > 0 {
 				p.breakdownLookahead(&token, state)
 				action.ShiftState = p.language.nextState(state, GetSymbol(token, p.arena))
@@ -351,12 +360,20 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 			return true
 		case ParseActionTypeReduce:
 			p.doReduce(version, action)
+			if nullLookahead {
+				// After NTE reduce, return to re-lex with the new state.
+				return true
+			}
 			// Continue the inner loop to check the new state.
 			continue
 		case ParseActionTypeAccept:
 			p.doAccept(version)
 			return true
 		case ParseActionTypeRecover:
+			if nullLookahead {
+				// Can't recover with a null token — return to re-lex.
+				return true
+			}
 			// Call recover() which handles EOF (wraps in ERROR + accepts),
 			// tries summary-based popback, or falls back to skipping the token.
 			// This matches C's ts_parser__advance which always calls
@@ -379,6 +396,14 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 // The version parameter is needed for external scanner state (lastExternalToken).
 func (p *Parser) lexToken(version StackVersion, state StateID, position Length) Subtree {
 	lexMode := p.language.LexModes[state]
+
+	// No-lookahead sentinel: this state is at the end of a non-terminal extra
+	// rule (e.g., heredoc_body in Ruby). The C runtime returns NULL_SUBTREE here,
+	// causing the parser to use SymbolEnd for action lookup (triggering reductions)
+	// and then re-lex with the new state. We return a zero Subtree to signal this.
+	if lexMode.LexState == LexStateNoLookahead {
+		return Subtree{}
+	}
 
 	// Check cache: only valid if same lex state, external lex state, and position.
 	if p.cachedTokenValid &&
