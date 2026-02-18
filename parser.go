@@ -743,6 +743,12 @@ func (p *Parser) doShift(version StackVersion, action ParseActionEntry, token Su
 // extra. This matches C tree-sitter's ts_parser__reduce:
 //
 //	if (end_of_non_terminal_extra && next_state == state) parent->extra = true;
+//
+// When Pop returns multiple paths through a merged stack DAG, paths that
+// converge to the same base node represent alternative children for the
+// same reduction. These are resolved in-place using selectChildren (port
+// of C's ts_parser__select_children) rather than creating separate
+// versions. Only paths with different base nodes create new versions.
 func (p *Parser) doReduce(version StackVersion, action ParseActionEntry, endOfNonTerminalExtra bool) {
 	childCount := uint32(action.ReduceChildCount)
 	symbol := action.ReduceSymbol
@@ -756,109 +762,133 @@ func (p *Parser) doReduce(version StackVersion, action ParseActionEntry, endOfNo
 		return
 	}
 
-	// For the primary path (first result), create the internal node.
-	primary := results[0]
-
-	// The children come in stack order (top first). Reverse for tree order.
-	children := make([]Subtree, len(primary.subtrees))
-	for i, s := range primary.subtrees {
-		children[len(children)-1-i] = s
+	// Group pop results by base node. Paths that converge to the same
+	// base node are alternative children for the same reduction — use
+	// selectChildren to pick the best set in-place. Only paths with
+	// different base nodes create separate stack versions.
+	//
+	// This matches C tree-sitter's ts_parser__reduce which groups
+	// StackSlices by version (assigned by ts_stack__add_slice based
+	// on the base node identity).
+	type reduceGroup struct {
+		node           *StackNode
+		bestChildren   []Subtree
+		trailingExtras []Subtree
 	}
+	groups := make([]reduceGroup, 0, 1)
+	groupIndex := make(map[*StackNode]int)
 
-	// Remove trailing extras (e.g. comments) from children before creating
-	// the parent node. In C tree-sitter, ts_subtree_array_remove_trailing_extras
-	// strips extras from the end of the children array. They are then re-pushed
-	// onto the stack after the parent, so they become siblings of the parent
-	// rather than children - allowing them to float up to the correct level.
-	var trailingExtras []Subtree
-	for len(children) > 0 {
-		last := children[len(children)-1]
-		if !IsExtra(last, p.arena) {
-			break
+	for _, result := range results {
+		// Reverse subtrees from stack order to tree order.
+		children := make([]Subtree, len(result.subtrees))
+		for j, s := range result.subtrees {
+			children[len(children)-1-j] = s
 		}
-		trailingExtras = append(trailingExtras, last)
-		children = children[:len(children)-1]
+
+		// Remove trailing extras (e.g. comments) from children.
+		var extras []Subtree
+		for len(children) > 0 {
+			last := children[len(children)-1]
+			if !IsExtra(last, p.arena) {
+				break
+			}
+			extras = append(extras, last)
+			children = children[:len(children)-1]
+		}
+
+		if idx, ok := groupIndex[result.node]; ok {
+			// Same base node — compare using selectChildren.
+			if p.selectChildren(symbol, productionID, dynPrec,
+				groups[idx].bestChildren, children) {
+				groups[idx].bestChildren = children
+				groups[idx].trailingExtras = extras
+			}
+		} else {
+			groupIndex[result.node] = len(groups)
+			groups = append(groups, reduceGroup{
+				node:           result.node,
+				bestChildren:   children,
+				trailingExtras: extras,
+			})
+		}
 	}
 
-	// Create the internal node (without trailing extras).
-	node := NewNodeSubtree(p.arena, symbol, children, productionID, p.language)
-	SummarizeChildren(node, p.arena, p.language)
+	// Process each group. The first group is the primary version
+	// (Pop already moved the head to results[0].node).
+	for gIdx, group := range groups {
+		// Create the internal node from the best children.
+		node := NewNodeSubtree(p.arena, symbol, group.bestChildren, productionID, p.language)
+		SummarizeChildren(node, p.arena, p.language)
 
-	// Apply dynamic precedence.
-	if dynPrec != 0 && !node.IsInline() {
-		data := p.arena.Get(node)
+		// Apply dynamic precedence.
+		if dynPrec != 0 && !node.IsInline() {
+			data := p.arena.Get(node)
+			data.DynamicPrecedence += int32(dynPrec)
+		}
+
+		if gIdx == 0 {
+			// Primary version — push onto the existing version.
+			baseState := p.stack.State(version)
+			gotoState := p.language.nextState(baseState, symbol)
+
+			// C tree-sitter: if (end_of_non_terminal_extra && next_state == state)
+			if endOfNonTerminalExtra && gotoState == baseState {
+				node = SetExtra(node, p.arena)
+			}
+
+			position := p.stack.Position(version)
+			nodePadding := GetPadding(node, p.arena)
+			nodeSize := GetSize(node, p.arena)
+			newPosition := LengthAdd(LengthAdd(position, nodePadding), nodeSize)
+
+			p.stack.Push(version, gotoState, node, false, newPosition)
+
+			// Re-push trailing extras as siblings of the parent.
+			for i := len(group.trailingExtras) - 1; i >= 0; i-- {
+				extra := group.trailingExtras[i]
+				extraPadding := GetPadding(extra, p.arena)
+				extraSize := GetSize(extra, p.arena)
+				newPosition = LengthAdd(LengthAdd(newPosition, extraPadding), extraSize)
+				p.stack.Push(version, gotoState, extra, false, newPosition)
+			}
+		} else {
+			// Alternative version — different base node, create new version.
+			altBaseState := group.node.state
+			altGotoState := p.language.nextState(altBaseState, symbol)
+			altBasePosition := group.node.position
+			altNodePadding := GetPadding(node, p.arena)
+			altNodeSize := GetSize(node, p.arena)
+			altNewPosition := LengthAdd(LengthAdd(altBasePosition, altNodePadding), altNodeSize)
+
+			altVersion := p.stack.ForkAtNode(group.node, version)
+			if altVersion >= 0 {
+				p.stack.Push(altVersion, altGotoState, node, false, altNewPosition)
+			}
+		}
+	}
+}
+
+// selectChildren compares two sets of children for the same reduction.
+// Returns true if the alternative children should replace the current best.
+// Port of C tree-sitter's ts_parser__select_children.
+func (p *Parser) selectChildren(symbol Symbol, productionID uint16, dynPrec int16,
+	currentChildren, altChildren []Subtree) bool {
+	// Create temporary nodes for comparison, matching C's approach.
+	currentNode := NewNodeSubtree(p.arena, symbol, currentChildren, productionID, p.language)
+	SummarizeChildren(currentNode, p.arena, p.language)
+	if dynPrec != 0 && !currentNode.IsInline() {
+		data := p.arena.Get(currentNode)
 		data.DynamicPrecedence += int32(dynPrec)
 	}
 
-	// Look up the goto state.
-	baseState := p.stack.State(version)
-	gotoState := p.language.nextState(baseState, symbol)
-
-	// C tree-sitter: if (end_of_non_terminal_extra && next_state == state)
-	// Only mark as extra when BOTH conditions are true. Without the
-	// endOfNonTerminalExtra guard, left-recursive hidden rules like
-	// _scope_resolution in C++ get incorrectly marked as extra, causing
-	// multi-level qualified identifiers (a::b::c) to be flattened.
-	if endOfNonTerminalExtra && gotoState == baseState {
-		node = SetExtra(node, p.arena)
+	altNode := NewNodeSubtree(p.arena, symbol, altChildren, productionID, p.language)
+	SummarizeChildren(altNode, p.arena, p.language)
+	if dynPrec != 0 && !altNode.IsInline() {
+		data := p.arena.Get(altNode)
+		data.DynamicPrecedence += int32(dynPrec)
 	}
 
-	// Compute new position.
-	position := p.stack.Position(version)
-	nodePadding := GetPadding(node, p.arena)
-	nodeSize := GetSize(node, p.arena)
-	newPosition := LengthAdd(LengthAdd(position, nodePadding), nodeSize)
-
-	p.stack.Push(version, gotoState, node, false, newPosition)
-
-	// Re-push trailing extras onto the stack as siblings of the parent.
-	// Push in tree order (reverse of collection order) so that when the
-	// next pop collects them in stack order and reverses, they end up
-	// in the correct source order.
-	for i := len(trailingExtras) - 1; i >= 0; i-- {
-		extra := trailingExtras[i]
-		extraPadding := GetPadding(extra, p.arena)
-		extraSize := GetSize(extra, p.arena)
-		newPosition = LengthAdd(LengthAdd(newPosition, extraPadding), extraSize)
-		p.stack.Push(version, gotoState, extra, false, newPosition)
-	}
-
-	// Handle additional pop paths (GLR ambiguity).
-	// Each alt path may have a different base state (from merged stack DAG),
-	// so we must create a version pointing at each path's base node and
-	// compute goto state and position per-path.
-	for i := 1; i < len(results); i++ {
-		path := results[i]
-		altChildren := make([]Subtree, len(path.subtrees))
-		for j, s := range path.subtrees {
-			altChildren[len(altChildren)-1-j] = s
-		}
-		altNode := NewNodeSubtree(p.arena, symbol, altChildren, productionID, p.language)
-		SummarizeChildren(altNode, p.arena, p.language)
-
-		// Apply dynamic precedence to alternate paths too.
-		if dynPrec != 0 && !altNode.IsInline() {
-			altData := p.arena.Get(altNode)
-			altData.DynamicPrecedence += int32(dynPrec)
-		}
-
-		// Compute goto state from this path's base state.
-		altBaseState := path.node.state
-		altGotoState := p.language.nextState(altBaseState, symbol)
-
-		// Compute position from this path's base position.
-		altBasePosition := path.node.position
-		altNodePadding := GetPadding(altNode, p.arena)
-		altNodeSize := GetSize(altNode, p.arena)
-		altNewPosition := LengthAdd(LengthAdd(altBasePosition, altNodePadding), altNodeSize)
-
-		// Create a new version pointing at this path's base node (not the
-		// primary's pushed result). This is critical for correct goto states.
-		altVersion := p.stack.ForkAtNode(path.node, version)
-		if altVersion >= 0 {
-			p.stack.Push(altVersion, altGotoState, altNode, false, altNewPosition)
-		}
-	}
+	return p.selectTree(currentNode, altNode)
 }
 
 // doAccept marks a version as accepted and stores the finished tree.
