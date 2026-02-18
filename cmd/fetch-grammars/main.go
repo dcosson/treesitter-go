@@ -59,16 +59,27 @@ func main() {
 		} else {
 			// Fetch the desired version and checkout.
 			fmt.Printf("updating %s to %s ...\n", g.Name, g.Version)
+			// Try fetching as a tag first; if that fails, try as a branch.
 			fetch := exec.Command("git", "fetch", "--depth=1", "origin", "tag", g.Version)
 			fetch.Dir = repoDir
 			fetch.Stdout = os.Stdout
 			fetch.Stderr = os.Stderr
 			if err := fetch.Run(); err != nil {
-				fmt.Fprintf(os.Stderr, "error fetching %s: %v\n", g.Name, err)
-				os.Exit(1)
+				fetch2 := exec.Command("git", "fetch", "--depth=1", "origin", g.Version)
+				fetch2.Dir = repoDir
+				fetch2.Stdout = os.Stdout
+				fetch2.Stderr = os.Stderr
+				if err2 := fetch2.Run(); err2 != nil {
+					fmt.Fprintf(os.Stderr, "error fetching %s: %v\n", g.Name, err2)
+					os.Exit(1)
+				}
 			}
 
-			checkout := exec.Command("git", "checkout", g.Version)
+			ref := g.Version
+			if ref == "master" || ref == "main" || ref == "release" {
+				ref = "FETCH_HEAD"
+			}
+			checkout := exec.Command("git", "checkout", ref)
 			checkout.Dir = repoDir
 			checkout.Stdout = os.Stdout
 			checkout.Stderr = os.Stderr

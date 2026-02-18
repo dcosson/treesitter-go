@@ -12,6 +12,6 @@
   {"name": "java",       "repo": "tree-sitter/tree-sitter-java",       "version": "v0.23.5"},
   {"name": "html",       "repo": "tree-sitter/tree-sitter-html",       "version": "v0.23.2"},
   {"name": "css",        "repo": "tree-sitter/tree-sitter-css",        "version": "v0.23.2"},
-  {"name": "perl",       "repo": "tree-sitter-perl/tree-sitter-perl",  "version": "master"},
-  {"name": "lua",        "repo": "tree-sitter-grammars/tree-sitter-lua", "version": "v0.4.1"}
+  {"name": "lua",        "repo": "tree-sitter-grammars/tree-sitter-lua", "version": "v0.4.1"},
+  {"name": "perl",       "repo": "tree-sitter-perl/tree-sitter-perl",  "version": "release"}
 ]
