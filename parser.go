@@ -304,6 +304,33 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 
 		action := entry.Actions[0]
 
+		// Match C runtime version ordering for GLR reduces.
+		//
+		// In C tree-sitter, all actions are processed in a flat loop. All
+		// reduces create new versions via ts_stack_pop_count (which doesn't
+		// modify the original version). After the loop,
+		// ts_stack_renumber_version replaces the original version with the
+		// LAST reduction's version, making it the "primary".
+		//
+		// This ordering matters for merge disambiguation: when versions merge
+		// later (nodeAddLink Case 1), equal DynPrec keeps the "existing"
+		// (primary) version's subtree. In C, the last reduce becomes primary.
+		//
+		// Our Go Pop modifies the version in place, so we can't reduce on
+		// the same version twice. Instead, when the primary action is a reduce
+		// AND there's a later reduce in the action list, we swap: the primary
+		// reduce goes on a split, and the last reduce runs on the primary
+		// version.
+		lastReduceIdx := -1
+		if entry.ActionCount > 1 && action.Type == ParseActionTypeReduce {
+			for i := int(entry.ActionCount) - 1; i > 0; i-- {
+				if entry.Actions[i].Type == ParseActionTypeReduce {
+					lastReduceIdx = i
+					break
+				}
+			}
+		}
+
 		// Handle additional actions (GLR ambiguity) by splitting.
 		for i := 1; i < int(entry.ActionCount); i++ {
 			extraAction := entry.Actions[i]
@@ -314,6 +341,10 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 			}
 			if nullLookahead && extraAction.Type == ParseActionTypeShift {
 				continue // Can't shift a null token
+			}
+			// Skip the last reduce here — it will run on the primary below.
+			if i == lastReduceIdx {
+				continue
 			}
 			splitVersion := p.stack.Split(version)
 			if splitVersion < 0 {
@@ -341,6 +372,17 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 				}
 			}
 		}
+
+		// When swapping reduces: put the primary reduce on a split, and
+		// the last reduce becomes the new primary action.
+		if lastReduceIdx > 0 {
+			splitVersion := p.stack.Split(version)
+			if splitVersion >= 0 {
+				p.doReduce(splitVersion, action, nullLookahead)
+			}
+			action = entry.Actions[lastReduceIdx]
+		}
+
 		// Execute the primary action.
 		// Skip repetition shifts in primary action too.
 		if action.Type == ParseActionTypeShift && action.ShiftRepetition {
