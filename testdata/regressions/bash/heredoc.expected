@@ -1,1 +1,1 @@
-(program (redirected_statement (command (command_name (word))) (heredoc_redirect (heredoc_start) (heredoc_body) (heredoc_end))))
+(program (redirected_statement body: (command name: (command_name (word))) redirect: (heredoc_redirect (heredoc_start) (heredoc_body) (heredoc_end))))
