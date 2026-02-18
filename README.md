@@ -140,6 +140,7 @@ Tested against the official tree-sitter corpus tests for all 15 languages:
 | 2026-02-17 | 1525 | 94 | 1619 | 94.2% | HTML scanner fix, error cost tuning |
 | 2026-02-18 | 1585 | 49 | 1634 | 97.0% | handleError rewrite, error recovery improvements |
 | 2026-02-18 | 1614 | 20 | 1634 | 98.8% | GLR tree selection, reduce ordering, grammar regen |
+| 2026-02-18 | 1615 | 19 | 1634 | 98.8% | DynPrec guard on advance swap |
 
 See `docs/corpus-progress.csv` for detailed per-commit history.
 

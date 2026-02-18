@@ -25,3 +25,4 @@ timestamp,pass_count,fail_count,total,branch_or_commit,notes
 2026-02-18T16:00:00Z,1595,39,1634,main (7111c60),"Perl + Lua grammar regeneration. 39 leaf failures baseline with corrected parse tables."
 2026-02-18T16:30:00Z,1603,31,1634,main (8c8ca31),"selectTree + subtreeCompare + selectChildren merge (dynprec-ambiguity). +8 tests: 6 Perl, 1 Python, 1 Java."
 2026-02-18T17:00:00Z,1614,20,1634,main (084665b),"GLR reduce version ordering swap (wcu.20 advance swap). +11 more tests. Combined: 1599 PASS / 20 FAIL leaf tests (97.8%)."
+2026-02-18T17:30:00Z,1615,19,1634,main (5fedd30),"DynPrec guard on advance swap (wcu.20). +1 test: TS/Arrow_functions. Guards swap with ReduceDynPrec >= check. 98.8% leaf pass rate."
