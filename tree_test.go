@@ -376,25 +376,118 @@ func TestNodeStringSExpression(t *testing.T) {
 	root := tree.RootNode()
 	s := root.String()
 
-	// Should produce something like: (document (object (pair (string) (number))))
-	if s == "" {
-		t.Fatal("S-expression should not be empty")
+	// Should produce: (document (object (pair key: (string) value: (number))))
+	want := "(document (object (pair key: (string) value: (number))))"
+	if s != want {
+		t.Errorf("S-expression mismatch\n  got:  %s\n  want: %s", s, want)
 	}
-	// Verify it starts with (document and contains key subtree names.
-	if s[:10] != "(document " {
-		t.Errorf("S-expression starts with %q, want \"(document \"", s[:10])
+}
+
+func TestNodeStringSExprFieldAnnotations(t *testing.T) {
+	tree, _ := buildTestTree()
+	root := tree.RootNode()
+
+	// The pair node should have field annotations for key and value.
+	pairNode := root.NamedChild(0).NamedChild(0) // document -> object -> pair
+	if pairNode.IsNull() {
+		t.Fatal("pair node should not be null")
 	}
-	if !containsSubstring(s, "object") {
-		t.Errorf("S-expression missing 'object': %s", s)
+	if pairNode.Type() != "pair" {
+		t.Fatalf("expected pair node, got %q", pairNode.Type())
 	}
-	if !containsSubstring(s, "pair") {
-		t.Errorf("S-expression missing 'pair': %s", s)
+
+	s := pairNode.String()
+	want := "(pair key: (string) value: (number))"
+	if s != want {
+		t.Errorf("pair S-expression mismatch\n  got:  %s\n  want: %s", s, want)
 	}
-	if !containsSubstring(s, "string") {
-		t.Errorf("S-expression missing 'string': %s", s)
+
+	// Verify field names appear before the right children.
+	if !containsSubstring(s, "key: (string)") {
+		t.Errorf("S-expression missing 'key: (string)': %s", s)
 	}
-	if !containsSubstring(s, "number") {
-		t.Errorf("S-expression missing 'number': %s", s)
+	if !containsSubstring(s, "value: (number)") {
+		t.Errorf("S-expression missing 'value: (number)': %s", s)
+	}
+}
+
+func TestNodeStringSExprFieldPropagation(t *testing.T) {
+	// Build a tree with hidden intermediate nodes to test field propagation.
+	// Structure: declaration -> _specifiers -> type_id (visible)
+	//                        -> _declarator -> identifier (visible)
+	// The declaration has inherited fields pointing to hidden children.
+	// Non-inherited fields on hidden children should propagate to visible grandchildren.
+	arena := NewSubtreeArena(64)
+	lang := &Language{
+		SymbolMetadata: []SymbolMetadata{
+			{Visible: false, Named: false}, // 0: end
+			{Visible: true, Named: true},   // 1: declaration
+			{Visible: false, Named: true},  // 2: _specifiers (hidden)
+			{Visible: false, Named: true},  // 3: _declarator_wrapper (hidden)
+			{Visible: true, Named: true},   // 4: type_identifier
+			{Visible: true, Named: true},   // 5: identifier
+			{Visible: true, Named: true},   // 6: program
+		},
+		SymbolNames: []string{
+			"end", "declaration", "_specifiers", "_declarator_wrapper",
+			"type_identifier", "identifier", "program",
+		},
+		FieldNames: []string{
+			"",      // 0: no field
+			"type",  // 1
+			"name",  // 2
+		},
+		FieldMapSlices: []FieldMapSlice{
+			{},                   // prodID 0: no fields
+			{Index: 0, Length: 2}, // prodID 1: declaration -> type(inherited), name(inherited)
+			{Index: 2, Length: 1}, // prodID 2: _specifiers -> type(non-inherited)
+			{Index: 3, Length: 1}, // prodID 3: _declarator_wrapper -> name(non-inherited)
+		},
+		FieldMapEntries: []FieldMapEntry{
+			{FieldID: 1, ChildIndex: 0, Inherited: true},  // prodID 1: type -> child 0 (inherited)
+			{FieldID: 2, ChildIndex: 1, Inherited: true},  // prodID 1: name -> child 1 (inherited)
+			{FieldID: 1, ChildIndex: 0, Inherited: false}, // prodID 2: type -> child 0 (non-inherited)
+			{FieldID: 2, ChildIndex: 0, Inherited: false}, // prodID 3: name -> child 0 (non-inherited)
+		},
+	}
+
+	// Build: type_identifier (leaf)
+	typeID := NewLeafSubtree(arena, Symbol(4),
+		Length{Bytes: 0}, Length{Bytes: 3, Point: Point{Column: 3}},
+		StateID(1), false, false, false, lang)
+
+	// Build: _specifiers -> type_identifier (hidden, prodID 2)
+	specifiers := NewNodeSubtree(arena, Symbol(2), []Subtree{typeID}, 2, lang)
+	SummarizeChildren(specifiers, arena, lang)
+
+	// Build: identifier (leaf)
+	ident := NewLeafSubtree(arena, Symbol(5),
+		Length{Bytes: 0}, Length{Bytes: 1, Point: Point{Column: 1}},
+		StateID(2), false, false, false, lang)
+
+	// Build: _declarator_wrapper -> identifier (hidden, prodID 3)
+	declWrapper := NewNodeSubtree(arena, Symbol(3), []Subtree{ident}, 3, lang)
+	SummarizeChildren(declWrapper, arena, lang)
+
+	// Build: declaration -> _specifiers _declarator_wrapper (prodID 1)
+	decl := NewNodeSubtree(arena, Symbol(1), []Subtree{specifiers, declWrapper}, 1, lang)
+	SummarizeChildren(decl, arena, lang)
+
+	// Build: program -> declaration
+	program := NewNodeSubtree(arena, Symbol(6), []Subtree{decl}, 0, lang)
+	SummarizeChildren(program, arena, lang)
+
+	tree := NewTree(program, lang, nil, []*SubtreeArena{arena})
+	root := tree.RootNode()
+	s := root.String()
+
+	// Fields should propagate through hidden nodes:
+	// declaration's inherited fields point to hidden _specifiers and _declarator_wrapper,
+	// but the non-inherited entries on those hidden nodes push the fields to the visible
+	// grandchildren (type_identifier and identifier).
+	want := "(program (declaration type: (type_identifier) name: (identifier)))"
+	if s != want {
+		t.Errorf("hidden node field propagation mismatch\n  got:  %s\n  want: %s", s, want)
 	}
 }
 

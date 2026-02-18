@@ -486,44 +486,123 @@ func (n Node) String() string {
 	}
 	var buf strings.Builder
 	n.writeSExpr(&buf)
-	return buf.String()
+	s := buf.String()
+	// The recursive writer prepends a space before each visible named node;
+	// trim the leading space from the root.
+	if len(s) > 0 && s[0] == ' ' {
+		return s[1:]
+	}
+	return s
 }
 
 // writeSExpr writes the S-expression for this node to the builder.
 func (n Node) writeSExpr(buf *strings.Builder) {
-	arena := n.tree.Arena()
-	isNamed := n.IsNamed()
+	writeSExprSubtree(n.subtree, n.tree.Arena(), n.tree.language, buf, 0, "")
+}
 
-	if isNamed {
+// writeSExprSubtree writes the S-expression for a subtree, walking raw children
+// to correctly track structural child indices for field annotation lookup.
+// aliasSymbol overrides the subtree's symbol when non-zero (for alias resolution).
+// fieldName is the field annotation from the parent, propagated through hidden nodes.
+func writeSExprSubtree(s Subtree, arena *SubtreeArena, lang *Language, buf *strings.Builder, aliasSymbol Symbol, fieldName string) {
+	// Determine symbol and named status, considering aliases.
+	var sym Symbol
+	var isNamed bool
+	if aliasSymbol != 0 {
+		sym = aliasSymbol
+		isNamed = lang.SymbolIsNamed(aliasSymbol)
+	} else {
+		sym = lang.PublicSymbol(GetSymbol(s, arena))
+		isNamed = IsNamed(s, arena)
+	}
+
+	isVisible := IsVisible(s, arena) || aliasSymbol != 0
+
+	if isVisible && isNamed {
+		buf.WriteByte(' ')
+		if fieldName != "" {
+			buf.WriteString(fieldName)
+			buf.WriteString(": ")
+		}
 		buf.WriteByte('(')
-		buf.WriteString(n.Type())
+		buf.WriteString(lang.SymbolName(sym))
+	}
 
-		childCount := n.ChildCount()
-		if childCount > 0 {
-			for i := 0; i < int(childCount); i++ {
-				child := n.Child(i)
-				if child.IsNull() {
-					continue
+	// Iterate raw children to track structural child indices for field lookup.
+	children := GetChildren(s, arena)
+	if len(children) > 0 {
+		prodID := GetProductionID(s, arena)
+		fieldEntries := lang.FieldMapForProduction(prodID)
+		structuralIdx := 0
+
+		for _, child := range children {
+			childExtra := IsExtra(child, arena)
+
+			if childExtra {
+				// Extra nodes (e.g., comments) don't have field annotations
+				// and don't increment the structural index.
+				if IsVisible(child, arena) && IsNamed(child, arena) {
+					writeSExprSubtree(child, arena, lang, buf, 0, "")
 				}
-				if child.IsNamed() {
-					buf.WriteByte(' ')
-					child.writeSExpr(buf)
+				continue
+			}
+
+			// Determine the field name for this child:
+			// - If current node is visible: start fresh (no propagation)
+			// - If current node is hidden: propagate incoming fieldName
+			// Then check for non-inherited field map entries to override.
+			var childFieldName string
+			if !isVisible {
+				childFieldName = fieldName
+			}
+			childFieldName = nonInheritedFieldForChild(fieldEntries, lang, uint16(structuralIdx), childFieldName)
+
+			// Look up alias for this child.
+			childAlias := lang.AliasForProduction(prodID, structuralIdx)
+			structuralIdx++
+
+			// Determine child visibility and named status considering aliases.
+			var childIsVisible, childIsNamed bool
+			if childAlias != 0 {
+				childIsVisible = lang.SymbolIsVisible(childAlias)
+				childIsNamed = lang.SymbolIsNamed(childAlias)
+			} else {
+				childIsVisible = IsVisible(child, arena)
+				childIsNamed = IsNamed(child, arena)
+			}
+
+			if childIsVisible {
+				if childIsNamed {
+					writeSExprSubtree(child, arena, lang, buf, childAlias, childFieldName)
+				} else {
+					writeSExprSubtree(child, arena, lang, buf, childAlias, "")
 				}
+			} else {
+				// Hidden child: recurse to emit its visible descendants.
+				// Propagate the field name through hidden nodes.
+				writeSExprSubtree(child, arena, lang, buf, 0, childFieldName)
 			}
 		}
+	}
 
-		// Check for MISSING nodes.
-		if IsMissing(n.subtree, arena) {
+	if isVisible && isNamed {
+		if IsMissing(s, arena) {
 			buf.WriteString(" MISSING")
 		}
-
 		buf.WriteByte(')')
-	} else {
-		// Anonymous nodes — just output the type name.
-		sym := n.Symbol()
-		name := n.tree.language.SymbolName(sym)
-		buf.WriteString(name)
 	}
+}
+
+// nonInheritedFieldForChild checks the field map for a non-inherited entry
+// at the given structural child index. If found, returns that field name.
+// Otherwise returns the fallback (which may be a propagated field from parent).
+func nonInheritedFieldForChild(entries []FieldMapEntry, lang *Language, childIndex uint16, fallback string) string {
+	for _, entry := range entries {
+		if !entry.Inherited && entry.ChildIndex == childIndex {
+			return lang.FieldName(entry.FieldID)
+		}
+	}
+	return fallback
 }
 
 // --- Internal helpers ---
