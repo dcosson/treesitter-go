@@ -325,7 +325,14 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 		if entry.ActionCount > 1 && action.Type == ParseActionTypeReduce {
 			for i := int(entry.ActionCount) - 1; i > 0; i-- {
 				if entry.Actions[i].Type == ParseActionTypeReduce {
-					lastReduceIdx = i
+					// Only swap when the last reduce's DynPrec >= primary's.
+					// When the last reduce has LOWER precedence (e.g. -1 vs 0),
+					// swapping would make the lower-precedence version primary,
+					// which is incorrect (e.g. TS/Arrow_functions where
+					// type_assertion has negative precedence vs arrow_function).
+					if entry.Actions[i].ReduceDynPrec >= action.ReduceDynPrec {
+						lastReduceIdx = i
+					}
 					break
 				}
 			}
