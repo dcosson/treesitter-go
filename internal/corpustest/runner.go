@@ -46,16 +46,13 @@ func RunCorpus(t *testing.T, cases []TestCase, parse ParseFunc) {
 				normalizedActual, _ = normalizeSExpression(actual)
 			}
 
-			// Strip field annotations from both sides. Our parser does not
-			// currently emit field labels in S-expressions, so we compare
-			// tree structure without fields regardless of whether the
-			// expected output uses them.
-			if !tc.Attributes.CST {
-				normalizedActual = StripFields(normalizedActual)
-			}
+			// When the expected output has field annotations, compare with
+			// fields (our parser now emits them). When the expected output
+			// does not have fields, strip fields from the actual output
+			// so the comparison is field-blind.
 			expected := tc.Expected
-			if tc.HasFields && !tc.Attributes.CST {
-				expected = StripFields(expected)
+			if !tc.Attributes.CST && !tc.HasFields {
+				normalizedActual = StripFields(normalizedActual)
 			}
 
 			if tc.Attributes.Error {
