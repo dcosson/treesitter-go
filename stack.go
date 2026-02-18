@@ -462,6 +462,69 @@ func (s *Stack) PopAll(version StackVersion) []Subtree {
 	return subtrees
 }
 
+// PopPending pops a single pending subtree from the top of the stack.
+// A subtree is pending when it was pushed with isPending=true, indicating
+// it was a composite reused subtree that may need to be broken down.
+// Returns the pending subtree and true if one was found, or SubtreeZero
+// and false if the top link is not pending.
+// Matches C: ts_stack_pop_pending
+func (s *Stack) PopPending(version StackVersion) (Subtree, bool) {
+	if int(version) >= len(s.heads) {
+		return SubtreeZero, false
+	}
+	head := &s.heads[version]
+	if head.node == nil || head.node.linkCount == 0 {
+		return SubtreeZero, false
+	}
+
+	link := &head.node.links[0]
+	if !link.isPending {
+		return SubtreeZero, false
+	}
+
+	subtree := link.subtree
+	head.node = link.node
+	return subtree, true
+}
+
+// PopError pops a single error subtree from the top of the stack.
+// Checks if any link from the current node has an error subtree, and if so,
+// pops it. Returns the error subtree and true if found, or SubtreeZero and
+// false if no error subtree is at the top.
+// Matches C: ts_stack_pop_error
+func (s *Stack) PopError(version StackVersion) (Subtree, bool) {
+	if int(version) >= len(s.heads) {
+		return SubtreeZero, false
+	}
+	head := &s.heads[version]
+	if head.node == nil || head.node.linkCount == 0 {
+		return SubtreeZero, false
+	}
+
+	// Check if any link has an error subtree.
+	hasError := false
+	for i := uint16(0); i < head.node.linkCount; i++ {
+		link := &head.node.links[i]
+		if !link.subtree.IsZero() && GetSymbol(link.subtree, s.arena) == SymbolError {
+			hasError = true
+			break
+		}
+	}
+	if !hasError {
+		return SubtreeZero, false
+	}
+
+	// Pop via the primary link (following C which uses stack__iter with count 1).
+	link := &head.node.links[0]
+	if link.subtree.IsZero() || GetSymbol(link.subtree, s.arena) != SymbolError {
+		return SubtreeZero, false
+	}
+
+	subtree := link.subtree
+	head.node = link.node
+	return subtree, true
+}
+
 // Split forks a version, creating a new version at the same position.
 // Returns the new version index.
 func (s *Stack) Split(version StackVersion) StackVersion {

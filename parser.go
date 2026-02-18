@@ -3,6 +3,7 @@ package treesitter
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"math"
 )
 
@@ -273,6 +274,15 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 
 	tokenSymbol := GetSymbol(token, p.arena)
 
+	if p.debug {
+		symName := ""
+		if p.language != nil && int(tokenSymbol) < len(p.language.SymbolNames) {
+			symName = p.language.SymbolNames[tokenSymbol]
+		}
+		fmt.Printf("[advance] v=%d state=%d pos=%d token=%d(%s)\n",
+			version, state, position.Bytes, tokenSymbol, symName)
+	}
+
 	// Inner reduce loop: keep reducing until we can shift or accept.
 	// This avoids re-lexing after every reduce.
 	for reduceCount := 0; reduceCount < 1000; reduceCount++ {
@@ -281,6 +291,9 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 		entry := p.language.tableEntry(state, tokenSymbol)
 		if entry.ActionCount == 0 {
 			// No valid action — pause this version for error recovery.
+			if p.debug {
+				fmt.Printf("[advance] v=%d PAUSE at state=%d token=%d\n", version, state, tokenSymbol)
+			}
 			p.stack.Pause(version, token)
 			return true
 		}
@@ -323,6 +336,10 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 		// Skip repetition shifts in primary action too.
 		if action.Type == ParseActionTypeShift && action.ShiftRepetition {
 			continue
+		}
+		if p.debug {
+			fmt.Printf("[action] v=%d state=%d type=%d shift_state=%d reduce_sym=%d reduce_count=%d\n",
+				version, state, action.Type, action.ShiftState, action.ReduceSymbol, action.ReduceChildCount)
 		}
 		switch action.Type {
 		case ParseActionTypeShift:
@@ -925,6 +942,15 @@ func (p *Parser) handleError(version StackVersion, token Subtree) {
 	position := p.stack.Position(version)
 	lookaheadSymbol := GetSymbol(token, p.arena)
 
+	if p.debug {
+		symName := ""
+		if p.language != nil && int(lookaheadSymbol) < len(p.language.SymbolNames) {
+			symName = p.language.SymbolNames[lookaheadSymbol]
+		}
+		fmt.Printf("[handleError] v=%d state=%d pos=%d lookahead=%d(%s) versions=%d\n",
+			version, p.stack.State(version), position.Bytes, lookaheadSymbol, symName, previousVersionCount)
+	}
+
 	// Step 1: doAllPotentialReductions (unfiltered, matches C's symbol=0 call).
 	// This tries all reductions from the current state regardless of whether
 	// they help with the lookahead. Creates split versions for each reduction.
@@ -1245,10 +1271,31 @@ func (p *Parser) recoverToState(version StackVersion, depth uint32, goalState St
 		return false
 	}
 
+	// Check if the state matches the goal state. If not, halt the version.
+	// (For the primary result; C does this per-slice for multi-path pops.)
+	if p.stack.State(version) != goalState {
+		p.stack.Halt(version)
+		return false
+	}
+
+	// Check for an existing error node at the stack top. If found, merge
+	// its children into the front of the popped subtrees so that consecutive
+	// skipped tokens are collected in a single ERROR node.
+	// Matches C: ts_stack_pop_error in ts_parser__recover_to_state.
+	var existingErrorChildren []Subtree
+	if errTree, ok := p.stack.PopError(version); ok {
+		errorChildren := GetChildren(errTree, p.arena)
+		if len(errorChildren) > 0 {
+			existingErrorChildren = make([]Subtree, len(errorChildren))
+			copy(existingErrorChildren, errorChildren)
+		}
+	}
+
 	// Create ERROR node from popped subtrees (reverse from stack to tree order).
 	// Filter out SubtreeZero entries which come from ERROR_STATE pushes.
 	popped := results[0].subtrees
-	children := make([]Subtree, 0, len(popped))
+	children := make([]Subtree, 0, len(existingErrorChildren)+len(popped))
+	children = append(children, existingErrorChildren...)
 	for i := len(popped) - 1; i >= 0; i-- {
 		if !popped[i].IsZero() {
 			children = append(children, popped[i])

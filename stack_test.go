@@ -831,3 +831,125 @@ func TestMergeSameTargetNodeDisambiguation(t *testing.T) {
 		t.Errorf("DynamicPrecedence = %d, want >= 0 (should reflect best path)", prec)
 	}
 }
+
+// --- PopPending tests ---
+
+func TestPopPendingReturnsPendingSubtree(t *testing.T) {
+	arena := NewSubtreeArena(32)
+	lang := makeSubtreeTestLanguage()
+	stack := NewStack(arena)
+	v0 := stack.AddVersion(StateID(0), Length{Bytes: 0})
+
+	leaf1 := NewLeafSubtree(arena, Symbol(1),
+		Length{Bytes: 0, Point: Point{Column: 0}},
+		Length{Bytes: 3, Point: Point{Column: 3}},
+		StateID(1), false, false, false, lang)
+	stack.Push(v0, 1, leaf1, false, Length{Bytes: 3, Point: Point{Column: 3}})
+
+	leaf2 := NewLeafSubtree(arena, Symbol(2),
+		Length{Bytes: 0, Point: Point{Column: 0}},
+		Length{Bytes: 2, Point: Point{Column: 2}},
+		StateID(2), false, false, false, lang)
+	stack.Push(v0, 2, leaf2, true, Length{Bytes: 5, Point: Point{Column: 5}})
+
+	got, ok := stack.PopPending(v0)
+	if !ok {
+		t.Fatal("expected PopPending to succeed")
+	}
+	if GetSymbol(got, arena) != 2 {
+		t.Errorf("expected symbol 2, got %d", GetSymbol(got, arena))
+	}
+	if stack.State(v0) != 1 {
+		t.Errorf("expected state 1 after PopPending, got %d", stack.State(v0))
+	}
+}
+
+func TestPopPendingReturnsFalseForNonPending(t *testing.T) {
+	arena := NewSubtreeArena(32)
+	lang := makeSubtreeTestLanguage()
+	stack := NewStack(arena)
+	v0 := stack.AddVersion(StateID(0), Length{Bytes: 0})
+
+	leaf := NewLeafSubtree(arena, Symbol(1),
+		Length{Bytes: 0, Point: Point{Column: 0}},
+		Length{Bytes: 3, Point: Point{Column: 3}},
+		StateID(1), false, false, false, lang)
+	stack.Push(v0, 1, leaf, false, Length{Bytes: 3, Point: Point{Column: 3}})
+
+	_, ok := stack.PopPending(v0)
+	if ok {
+		t.Error("expected PopPending to return false for non-pending subtree")
+	}
+}
+
+func TestPopPendingEmptyStack(t *testing.T) {
+	arena := NewSubtreeArena(32)
+	stack := NewStack(arena)
+	v0 := stack.AddVersion(StateID(0), Length{Bytes: 0})
+
+	_, ok := stack.PopPending(v0)
+	if ok {
+		t.Error("expected PopPending to return false on empty stack")
+	}
+}
+
+// --- PopError tests ---
+
+func TestPopErrorReturnsErrorSubtree(t *testing.T) {
+	arena := NewSubtreeArena(32)
+	lang := makeSubtreeTestLanguage()
+	stack := NewStack(arena)
+	v0 := stack.AddVersion(StateID(0), Length{Bytes: 0})
+
+	leaf := NewLeafSubtree(arena, Symbol(1),
+		Length{Bytes: 0, Point: Point{Column: 0}},
+		Length{Bytes: 3, Point: Point{Column: 3}},
+		StateID(1), false, false, false, lang)
+	stack.Push(v0, 1, leaf, false, Length{Bytes: 3, Point: Point{Column: 3}})
+
+	errLeaf := NewLeafSubtree(arena, SymbolError,
+		Length{Bytes: 0, Point: Point{Column: 0}},
+		Length{Bytes: 2, Point: Point{Column: 2}},
+		StateID(2), false, false, false, lang)
+	stack.Push(v0, 2, errLeaf, false, Length{Bytes: 5, Point: Point{Column: 5}})
+
+	got, ok := stack.PopError(v0)
+	if !ok {
+		t.Fatal("expected PopError to succeed")
+	}
+	if GetSymbol(got, arena) != SymbolError {
+		t.Errorf("expected SymbolError, got %d", GetSymbol(got, arena))
+	}
+	if stack.State(v0) != 1 {
+		t.Errorf("expected state 1 after PopError, got %d", stack.State(v0))
+	}
+}
+
+func TestPopErrorReturnsFalseForNonError(t *testing.T) {
+	arena := NewSubtreeArena(32)
+	lang := makeSubtreeTestLanguage()
+	stack := NewStack(arena)
+	v0 := stack.AddVersion(StateID(0), Length{Bytes: 0})
+
+	leaf := NewLeafSubtree(arena, Symbol(1),
+		Length{Bytes: 0, Point: Point{Column: 0}},
+		Length{Bytes: 3, Point: Point{Column: 3}},
+		StateID(1), false, false, false, lang)
+	stack.Push(v0, 1, leaf, false, Length{Bytes: 3, Point: Point{Column: 3}})
+
+	_, ok := stack.PopError(v0)
+	if ok {
+		t.Error("expected PopError to return false for non-error subtree")
+	}
+}
+
+func TestPopErrorEmptyStack(t *testing.T) {
+	arena := NewSubtreeArena(32)
+	stack := NewStack(arena)
+	v0 := stack.AddVersion(StateID(0), Length{Bytes: 0})
+
+	_, ok := stack.PopError(v0)
+	if ok {
+		t.Error("expected PopError to return false on empty stack")
+	}
+}
