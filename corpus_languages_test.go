@@ -159,6 +159,61 @@ func TestCorpusLua(t *testing.T) {
 	runCorpusForLanguage(t, "tree-sitter-lua", luaLang())
 }
 
+// TestPerlFunctionCallExpression tests that parenthesized Perl function calls
+// like foo() produce function_call_expression (not ambiguous_function_call_expression).
+// This is a regression test for a bug where doAccept's selectTree logic used
+// >= for dynamic precedence comparison instead of >, causing the last-accepted
+// GLR version to always win. C tree-sitter's ts_parser__select_tree uses
+// ts_subtree_compare as a final tiebreaker when costs and dynPrec are equal.
+func TestPerlFunctionCallExpression(t *testing.T) {
+	lang := perlgrammar.PerlLanguage()
+	lang.NewExternalScanner = perlscanner.New
+	parseFn := makeCorpusParseFunc(lang)
+
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "zero args",
+			input:    "foo();",
+			expected: "(source_file (expression_statement (function_call_expression (function))))",
+		},
+		{
+			name:     "one arg",
+			input:    "foo(123);",
+			expected: "(source_file (expression_statement (function_call_expression (function) (number))))",
+		},
+		{
+			name:     "two args",
+			input:    "foo(12, 34);",
+			expected: "(source_file (expression_statement (function_call_expression (function) (list_expression (number) (number)))))",
+		},
+		{
+			name:     "sort with unary plus function call",
+			input:    "sort +returns_list(1, 2, 3);",
+			expected: "(source_file (expression_statement (sort_expression (unary_expression (function_call_expression (function) (list_expression (number) (number) (number)))))))",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			actual, err := parseFn([]byte(tc.input))
+			if err != nil {
+				t.Fatalf("parse error: %v", err)
+			}
+			normalizedActualRaw, _ := corpustest.NormalizeSExpression(actual)
+			normalizedActual := corpustest.StripFields(normalizedActualRaw)
+			normalizedExpected, _ := corpustest.NormalizeSExpression(tc.expected)
+			if normalizedActual != normalizedExpected {
+				t.Errorf("function_call_expression mismatch\ninput: %s\nexpected: %s\nactual:   %s",
+					tc.input, normalizedExpected, normalizedActual)
+			}
+		})
+	}
+}
+
 // TestCppNestedQualifiedIdentifier tests that multi-level namespace
 // qualifications like a::b::c produce nested qualified_identifier nodes
 // rather than being flattened. This is a regression test for a bug where

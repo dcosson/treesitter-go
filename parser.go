@@ -877,22 +877,99 @@ func (p *Parser) doAccept(version StackVersion) {
 	if !tree.IsZero() {
 		if p.finishedTree.IsZero() {
 			p.finishedTree = tree
-		} else {
-			oldCost := GetErrorCost(p.finishedTree, p.arena)
-			newCost := GetErrorCost(tree, p.arena)
-			if newCost < oldCost {
-				p.finishedTree = tree
-			} else if newCost == oldCost {
-				oldPrec := GetDynamicPrecedence(p.finishedTree, p.arena)
-				newPrec := GetDynamicPrecedence(tree, p.arena)
-				if newPrec >= oldPrec {
-					p.finishedTree = tree
-				}
-			}
+		} else if p.selectTree(p.finishedTree, tree) {
+			p.finishedTree = tree
 		}
 	}
 	p.acceptCount++
 	p.stack.Halt(version)
+}
+
+// selectTree determines whether a new tree should replace the existing one.
+// Returns true to select the new tree, false to keep the existing one.
+// This is a port of C tree-sitter's ts_parser__select_tree.
+func (p *Parser) selectTree(left, right Subtree) bool {
+	if left.IsZero() {
+		return true
+	}
+	if right.IsZero() {
+		return false
+	}
+
+	// Lower error cost wins.
+	rightCost := GetErrorCost(right, p.arena)
+	leftCost := GetErrorCost(left, p.arena)
+	if rightCost < leftCost {
+		return true
+	}
+	if leftCost < rightCost {
+		return false
+	}
+
+	// Higher dynamic precedence wins (strict >).
+	rightPrec := GetDynamicPrecedence(right, p.arena)
+	leftPrec := GetDynamicPrecedence(left, p.arena)
+	if rightPrec > leftPrec {
+		return true
+	}
+	if leftPrec > rightPrec {
+		return false
+	}
+
+	// If both have errors, prefer the new tree.
+	if leftCost > 0 {
+		return true
+	}
+
+	// Structural comparison: prefer the tree with the lower symbol ID
+	// (earlier grammar definition). This matches C's ts_subtree_compare.
+	cmp := subtreeCompare(left, right, p.arena)
+	return cmp > 0 // right is "earlier" → select right
+}
+
+// subtreeCompare compares two subtrees structurally, returning:
+//
+//	-1 if left is "earlier" (lower symbol, fewer children)
+//	 1 if right is "earlier"
+//	 0 if structurally identical
+//
+// Port of C tree-sitter's ts_subtree_compare. Uses iterative stack
+// to avoid recursion depth issues.
+func subtreeCompare(left, right Subtree, arena *SubtreeArena) int {
+	type pair struct{ left, right Subtree }
+	stack := []pair{{left, right}}
+
+	for len(stack) > 0 {
+		p := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+
+		leftSym := GetSymbol(p.left, arena)
+		rightSym := GetSymbol(p.right, arena)
+		if leftSym < rightSym {
+			return -1
+		}
+		if rightSym < leftSym {
+			return 1
+		}
+
+		leftCC := GetChildCount(p.left, arena)
+		rightCC := GetChildCount(p.right, arena)
+		if leftCC < rightCC {
+			return -1
+		}
+		if rightCC < leftCC {
+			return 1
+		}
+
+		// Push children in reverse order (so first child is compared first).
+		leftChildren := GetChildren(p.left, arena)
+		rightChildren := GetChildren(p.right, arena)
+		for i := int(leftCC) - 1; i >= 0; i-- {
+			stack = append(stack, pair{leftChildren[i], rightChildren[i]})
+		}
+	}
+
+	return 0
 }
 
 // acceptTree pops all subtrees from the stack and reconstructs the root node
