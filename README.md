@@ -128,7 +128,37 @@ The following grammars are included for testing and can be used as references fo
 | Lua | tree-sitter-lua | Yes |
 | JSON | tree-sitter-json | No |
 
-## Corpus Test Results
+## Testing
+
+### Test Types
+
+| Test | Command | Content | Requires CLI? | Notes |
+|------|---------|---------|:---:|-------|
+| **Unit tests** | `make test` | Hand-written tests for parser, lexer, stack, subtree, API, external scanners | No | Skips corpus and differential tests. Tests core runtime behavior with small focused inputs. |
+| **Corpus tests** | `make test-corpus` | Tree-sitter's official test suites (1634 cases across 15 languages) | No | Each grammar repo ships a `corpus/` directory with input/expected-output pairs. Fetched with `make fetch-test-grammars` into `testdata/grammars/`. |
+| **Regression tests** | `make test-regression` | Curated inputs that previously caused bugs (hangs, panics, wrong output) | No | Stored in `testdata/regression/<lang>/`. Guards against regressions in specific edge cases. |
+| **Differential tests** | `make diff-test` | Small set of per-grammar sample inputs compared against C tree-sitter CLI output | **Yes** | Tests in `internal/difftest/`. Verifies our S-expression output matches the C reference exactly. |
+| **Corpora diff tests** | `make test-corpora-diff` | Real-world source files from open-source projects compared against C CLI | **Yes** | Fetched via `make fetch-corpora` from GitHub repos. Parses hundreds of real files per language and diffs against C reference output. |
+| **Benchmarks** | `make bench` | Auto-generated synthetic inputs (varying sizes per language) | Optional | Measures parse throughput (bytes/sec) for all 15 languages at multiple sizes. If CLI is available, also benchmarks C parser for comparison. |
+| **Grammar batch tests** | `go test -run TestGrammarBatch` | Subset of corpus tests used during grammar generation validation | No | Runs during development to verify grammar extraction + code generation. |
+
+### Setup
+
+```bash
+# Fetch grammar repos (needed for corpus tests, regression tests)
+make fetch-test-grammars
+
+# Install tree-sitter CLI (needed for diff tests, corpora diff tests, CLI benchmarks)
+make deps
+
+# Fetch real-world source corpora (needed for corpora diff tests)
+make fetch-corpora
+
+# Build grammar dylibs for CLI benchmarks (optional, macOS)
+make bench-grammars
+```
+
+### Corpus Test Results
 
 Tested against the official tree-sitter corpus tests for all 15 languages:
 
@@ -141,6 +171,8 @@ Tested against the official tree-sitter corpus tests for all 15 languages:
 | 2026-02-18 | 1585 | 49 | 1634 | 97.0% | handleError rewrite, error recovery improvements |
 | 2026-02-18 | 1614 | 20 | 1634 | 98.8% | GLR tree selection, reduce ordering, grammar regen |
 | 2026-02-18 | 1615 | 19 | 1634 | 98.8% | DynPrec guard on advance swap |
+| 2026-02-24 | 1617 | 17 | 1634 | 99.0% | Error symbol metadata, Strategy 1 split, scanner fixes |
+| 2026-02-24 | 1621 | 13 | 1634 | 99.2% | Ruby % strings, keyword matching, TSX grammar |
 
 See `docs/corpus-progress.csv` for detailed per-commit history.
 
