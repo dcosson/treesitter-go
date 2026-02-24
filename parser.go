@@ -1242,53 +1242,6 @@ func (p *Parser) handleError(version StackVersion, token Subtree) {
 	// they help with the lookahead. Creates split versions for each reduction.
 	p.doAllPotentialReductionsUnfiltered(version)
 
-	// Step 1.5: Check if any reduced version can already handle the lookahead.
-	// If so, keep those versions and halt the rest — we've recovered via
-	// reduction without needing ERROR_STATE.
-	// NOTE: This does NOT exist in C tree-sitter. C always proceeds to
-	// ERROR_STATE push + full recovery. This step compensates for our
-	// doAllPotentialReductionsUnfiltered being a simplified stub — in C,
-	// the reduced versions survive alongside ERROR_STATE because they merge
-	// properly. TODO: Remove this once doAllPotentialReductionsUnfiltered
-	// is properly ported.
-	if lookaheadSymbol != SymbolError && lookaheadSymbol != SymbolEnd {
-		recovered := false
-		for v := version; int(v) < p.stack.VersionCount(); v++ {
-			if int(v) < previousVersionCount && v != version {
-				continue
-			}
-			if p.stack.IsHalted(v) {
-				continue
-			}
-			newState := p.stack.State(v)
-			newEntry := p.language.tableEntry(newState, lookaheadSymbol)
-			if newEntry.ActionCount > 0 && v != version {
-				// This reduced version can handle the lookahead.
-				p.stack.AddErrorCost(v, ErrorCostPerRecovery)
-				recovered = true
-			}
-		}
-		if recovered {
-			// Halt the original version and any reduced versions that can't
-			// handle the lookahead.
-			for v := version; int(v) < p.stack.VersionCount(); v++ {
-				if int(v) < previousVersionCount && v != version {
-					continue
-				}
-				if p.stack.IsHalted(v) {
-					continue
-				}
-				newState := p.stack.State(v)
-				newEntry := p.language.tableEntry(newState, lookaheadSymbol)
-				if newEntry.ActionCount == 0 || v == version {
-					p.stack.Halt(v)
-				}
-			}
-			p.cachedTokenValid = false
-			return
-		}
-	}
-
 	// Step 2: Try inserting missing tokens on all versions created so far.
 	// For each version (original + any splits from step 1), try each visible
 	// symbol as a missing token. If shifting the missing token followed by
