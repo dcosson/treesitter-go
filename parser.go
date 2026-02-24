@@ -1099,27 +1099,25 @@ func (p *Parser) selectChildren(symbol Symbol, productionID uint16, dynPrec int1
 
 // doAccept marks a version as accepted and stores the finished tree.
 //
-// This matches C tree-sitter's ts_parser__accept: pop all subtrees from
-// the stack, find the root (non-extra) node, splice its children into the
-// full array (replacing the root entry), and create a new root from
-// everything - ensuring extras re-pushed by doReduce become children of
-// the final root node rather than being stranded on the stack.
-//
-// When multiple versions accept, the tree with lower error cost wins;
-// ties are broken by higher dynamic precedence. If both are equal,
-// the newer tree wins (later accepts are typically more complete).
+// Matches C tree-sitter's ts_parser__accept (parser.c:1048-1099):
+// Pop all subtrees from the stack (traversing all links at merge points),
+// build a root tree from each path, and use selectTree to pick the best.
+// This ensures that when multiple parse paths converge at accept time,
+// the correct tree is chosen via error cost / dynamic precedence comparison.
 func (p *Parser) doAccept(version StackVersion) {
-	fmt.Fprintf(os.Stderr, "[DEBUG ACCEPT] version=%d\n", version)
-	tree := p.acceptTree(version)
-	if !tree.IsZero() {
+	paths := p.stack.PopAll(version)
+	for _, subtrees := range paths {
+		root := p.buildAcceptTree(subtrees)
+		if root.IsZero() {
+			continue
+		}
+		p.acceptCount++
 		if p.finishedTree.IsZero() {
-			fmt.Fprintf(os.Stderr, "[DEBUG ACCEPT] first tree accepted from version=%d\n", version)
-			p.finishedTree = tree
-		} else if p.selectTree(p.finishedTree, tree) {
-			p.finishedTree = tree
+			p.finishedTree = root
+		} else if p.selectTree(p.finishedTree, root) {
+			p.finishedTree = root
 		}
 	}
-	p.acceptCount++
 	p.stack.Halt(version)
 }
 
@@ -1212,12 +1210,15 @@ func subtreeCompare(left, right Subtree, arena *SubtreeArena) int {
 	return 0
 }
 
-// acceptTree pops all subtrees from the stack and reconstructs the root node
-// with any extras (comments) that were re-pushed by doReduce trailing
-// extras handling. If there are no extras on the stack, it returns the root
-// node directly (fast path).
-func (p *Parser) acceptTree(version StackVersion) Subtree {
-	allSubtrees := p.stack.PopAll(version)
+// buildAcceptTree reconstructs the root node from a path of subtrees
+// (already in source order, leftmost first). Finds the root (non-extra)
+// node, splices its children into the full array (replacing the root entry),
+// and creates a new root — ensuring extras re-pushed by doReduce become
+// children of the final root node.
+//
+// Matches C tree-sitter's inline tree construction in ts_parser__accept
+// (parser.c:1060-1079).
+func (p *Parser) buildAcceptTree(allSubtrees []Subtree) Subtree {
 	if len(allSubtrees) == 0 {
 		return SubtreeZero
 	}
@@ -1227,18 +1228,11 @@ func (p *Parser) acceptTree(version StackVersion) Subtree {
 		return allSubtrees[0]
 	}
 
-	// Reverse to tree order (stack is top-first, tree is left-first in source).
-	for i, j := 0, len(allSubtrees)-1; i < j; i, j = i+1, j-1 {
-		allSubtrees[i], allSubtrees[j] = allSubtrees[j], allSubtrees[i]
-	}
-
-	// Find the root node (the first non-extra subtree in source order).
-	// C tree-sitter's ts_parser__accept searches backward from trees.size-1
-	// in the unreversed (stack-order) array, which is equivalent to searching
-	// forward from the start of the reversed (source-order) array. The root
-	// is the bottom-of-stack (oldest/leftmost) non-extra subtree.
+	// Find the root node: search backward from end (most recently pushed)
+	// for the first non-extra subtree. Matches C's backward search
+	// (parser.c:1061: for j = trees.size - 1; j + 1 > 0; j--).
 	rootIdx := -1
-	for j := 0; j < len(allSubtrees); j++ {
+	for j := len(allSubtrees) - 1; j >= 0; j-- {
 		if allSubtrees[j].IsZero() {
 			continue
 		}
