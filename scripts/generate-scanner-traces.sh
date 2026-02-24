@@ -1,0 +1,351 @@
+#!/usr/bin/env bash
+#
+# generate-scanner-traces.sh
+#
+# Generates golden JSONL trace files for external scanner calls by:
+# 1. Cloning tree-sitter at a pinned version
+# 2. Applying scanner-trace.patch to instrument parser.c
+# 3. Building the patched CLI with cargo
+# 4. Running it against corpus test inputs for each language with an external scanner
+# 5. Writing testdata/scanner-traces/{lang}.jsonl
+#
+# Prerequisites:
+#   - Rust/cargo installed (for building tree-sitter CLI)
+#   - C compiler (cc) for building grammar shared libraries
+#   - testdata/grammars/ populated via `make fetch-test-grammars`
+#
+# Usage:
+#   ./scripts/generate-scanner-traces.sh [--lang python] [--ts-version v0.25.3]
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+GRAMMARS_DIR="$PROJECT_DIR/testdata/grammars"
+TRACES_DIR="$PROJECT_DIR/testdata/scanner-traces"
+PATCH_FILE="$SCRIPT_DIR/scanner-trace.patch"
+
+# Tree-sitter version to clone — should match or be compatible with grammar versions.
+# v0.25.3 requires Rust 1.82+.
+TS_VERSION="v0.25.3"
+
+# Languages with external scanners
+SCANNER_LANGUAGES=(
+  bash
+  cpp
+  css
+  html
+  javascript
+  lua
+  perl
+  python
+  ruby
+  rust
+  typescript
+)
+
+# Parse arguments
+FILTER_LANG=""
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --lang)
+      FILTER_LANG="$2"
+      shift 2
+      ;;
+    --ts-version)
+      TS_VERSION="$2"
+      shift 2
+      ;;
+    --help|-h)
+      echo "Usage: $0 [--lang LANG] [--ts-version VERSION]"
+      echo "  --lang LANG        Only generate traces for this language"
+      echo "  --ts-version VER   Tree-sitter version to clone (default: $TS_VERSION)"
+      exit 0
+      ;;
+    *)
+      echo "Unknown argument: $1" >&2
+      exit 1
+      ;;
+  esac
+done
+
+# Detect shared library extension
+case "$(uname -s)" in
+  Darwin) DYLIB_EXT="dylib" ;;
+  *)      DYLIB_EXT="so" ;;
+esac
+
+# Verify prerequisites
+if ! command -v cargo >/dev/null 2>&1; then
+  echo "Error: cargo not found. Install Rust: https://rustup.rs" >&2
+  exit 1
+fi
+
+if ! command -v cc >/dev/null 2>&1; then
+  echo "Error: C compiler (cc) not found." >&2
+  exit 1
+fi
+
+if [ ! -d "$GRAMMARS_DIR" ]; then
+  echo "Error: $GRAMMARS_DIR not found. Run 'make fetch-test-grammars' first." >&2
+  exit 1
+fi
+
+if [ ! -f "$PATCH_FILE" ]; then
+  echo "Error: $PATCH_FILE not found." >&2
+  exit 1
+fi
+
+# Create temp directory for the patched tree-sitter build
+WORK_DIR="$(mktemp -d)"
+trap 'rm -rf "$WORK_DIR"' EXIT
+
+echo "=== Cloning tree-sitter $TS_VERSION ==="
+git clone --depth=1 --branch "$TS_VERSION" \
+  https://github.com/tree-sitter/tree-sitter.git \
+  "$WORK_DIR/tree-sitter" 2>&1 | tail -2
+
+echo "=== Applying scanner trace patch ==="
+cd "$WORK_DIR/tree-sitter"
+
+# Use the Python patcher which matches on code patterns rather than line numbers.
+# This is robust across tree-sitter versions.
+python3 "$SCRIPT_DIR/apply-scanner-trace-patch.py" \
+  "$WORK_DIR/tree-sitter/lib/src/parser.c"
+
+echo "=== Building patched tree-sitter CLI ==="
+# Enable the trace instrumentation via CFLAGS
+export CFLAGS="${CFLAGS:-} -DTS_SCANNER_TRACE"
+cargo build --release 2>&1 | tail -3
+
+PATCHED_CLI="$WORK_DIR/tree-sitter/target/release/tree-sitter"
+if [ ! -f "$PATCHED_CLI" ]; then
+  echo "Error: patched CLI not built at $PATCHED_CLI" >&2
+  exit 1
+fi
+
+echo "=== CLI built at $PATCHED_CLI ==="
+
+# Create a tree-sitter config that points to our grammar directories
+TS_CONFIG="$WORK_DIR/ts-config/config.json"
+mkdir -p "$(dirname "$TS_CONFIG")"
+cat > "$TS_CONFIG" <<CFGEOF
+{
+  "parser-directories": ["$GRAMMARS_DIR"]
+}
+CFGEOF
+
+# Create traces output directory
+mkdir -p "$TRACES_DIR"
+
+# Helper: extract individual test inputs from a corpus .txt file.
+# Corpus format:
+#   ==================
+#   Test Name
+#   ==================
+#
+#   <input code>
+#
+#   ---
+#
+#   <expected s-expression>
+#
+# We extract just the input code sections.
+extract_corpus_inputs() {
+  local corpus_file="$1"
+  local output_dir="$2"
+  local lang="$3"
+
+  python3 -c "
+import sys, os, re
+
+corpus_file = sys.argv[1]
+output_dir = sys.argv[2]
+lang = sys.argv[3]
+
+with open(corpus_file, 'r') as f:
+    content = f.read()
+
+# Split by test separator (line of === or more)
+tests = re.split(r'^={3,}\s*$', content, flags=re.MULTILINE)
+
+# Tests come in groups: [preamble, name, body, name, body, ...]
+# Skip the first element if it's empty
+idx = 0
+test_num = 0
+if tests and not tests[0].strip():
+    idx = 1
+
+while idx + 1 < len(tests):
+    name = tests[idx].strip()
+    body = tests[idx + 1] if idx + 1 < len(tests) else ''
+    idx += 2
+
+    # Body is split by --- into input and expected output
+    parts = re.split(r'^-{3,}\s*$', body, flags=re.MULTILINE)
+    if not parts:
+        continue
+
+    input_code = parts[0].strip()
+    if not input_code:
+        continue
+
+    # Write input to a file
+    safe_name = re.sub(r'[^a-zA-Z0-9_-]', '_', name)[:80]
+    out_path = os.path.join(output_dir, f'{test_num:04d}_{safe_name}.txt')
+    with open(out_path, 'w') as out:
+        out.write(input_code)
+        out.write('\n')
+
+    test_num += 1
+
+print(f'Extracted {test_num} test inputs from {os.path.basename(corpus_file)}')
+" "$corpus_file" "$output_dir" "$lang"
+}
+
+# Helper: get file extension for a language (for tree-sitter to auto-detect)
+lang_extension() {
+  case "$1" in
+    bash)       echo "sh" ;;
+    cpp)        echo "cpp" ;;
+    css)        echo "css" ;;
+    html)       echo "html" ;;
+    javascript) echo "js" ;;
+    lua)        echo "lua" ;;
+    perl)       echo "pl" ;;
+    python)     echo "py" ;;
+    ruby)       echo "rb" ;;
+    rust)       echo "rs" ;;
+    typescript) echo "ts" ;;
+    *)          echo "txt" ;;
+  esac
+}
+
+# Process each language
+for lang in "${SCANNER_LANGUAGES[@]}"; do
+  if [ -n "$FILTER_LANG" ] && [ "$lang" != "$FILTER_LANG" ]; then
+    continue
+  fi
+
+  grammar_dir="$GRAMMARS_DIR/tree-sitter-$lang"
+  if [ ! -d "$grammar_dir" ]; then
+    echo "Warning: grammar directory not found for $lang, skipping" >&2
+    continue
+  fi
+
+  # TypeScript has a nested structure
+  if [ "$lang" = "typescript" ]; then
+    grammar_path="$grammar_dir/typescript"
+    corpus_dirs=("$grammar_dir/typescript/test/corpus" "$grammar_dir/common/test/corpus")
+  else
+    grammar_path="$grammar_dir"
+    corpus_dirs=("$grammar_dir/test/corpus")
+  fi
+
+  # Check for scanner.c to confirm external scanner exists
+  if [ ! -f "$grammar_path/src/scanner.c" ] && [ ! -f "$grammar_path/src/scanner.cc" ]; then
+    echo "Warning: no scanner.c/scanner.cc found for $lang, skipping" >&2
+    continue
+  fi
+
+  # Check for corpus test files
+  has_corpus=false
+  for corpus_dir in "${corpus_dirs[@]}"; do
+    if [ -d "$corpus_dir" ]; then
+      has_corpus=true
+      break
+    fi
+  done
+  if [ "$has_corpus" = false ]; then
+    echo "Warning: no corpus directory found for $lang, skipping" >&2
+    continue
+  fi
+
+  echo ""
+  echo "=== Processing $lang ==="
+
+  # Extract test inputs from corpus files
+  inputs_dir="$WORK_DIR/inputs/$lang"
+  mkdir -p "$inputs_dir"
+
+  ext="$(lang_extension "$lang")"
+
+  for corpus_dir in "${corpus_dirs[@]}"; do
+    if [ ! -d "$corpus_dir" ]; then
+      continue
+    fi
+    for corpus_file in "$corpus_dir"/*.txt; do
+      [ -f "$corpus_file" ] || continue
+      extract_corpus_inputs "$corpus_file" "$inputs_dir" "$lang"
+    done
+  done
+
+  # Count extracted inputs
+  input_count=$(find "$inputs_dir" -name '*.txt' 2>/dev/null | wc -l | tr -d ' ')
+  if [ "$input_count" -eq 0 ]; then
+    echo "Warning: no test inputs extracted for $lang, skipping" >&2
+    continue
+  fi
+  echo "  Extracted $input_count test inputs"
+
+  # Rename inputs to have the right extension for tree-sitter language detection
+  renamed_dir="$WORK_DIR/inputs_renamed/$lang"
+  mkdir -p "$renamed_dir"
+  for f in "$inputs_dir"/*.txt; do
+    [ -f "$f" ] || continue
+    base="$(basename "$f" .txt)"
+    cp "$f" "$renamed_dir/${base}.$ext"
+  done
+
+  # Build the grammar shared library using the patched CLI
+  echo "  Building grammar library..."
+  # Use a single file to trigger the grammar build and warm the cache
+  first_input="$(ls "$renamed_dir"/*."$ext" 2>/dev/null | head -1)"
+  if [ -z "$first_input" ]; then
+    echo "Warning: no renamed inputs for $lang" >&2
+    continue
+  fi
+
+  # Run parse on the first file to trigger grammar compilation (ignore stderr trace output)
+  "$PATCHED_CLI" parse --config-path "$TS_CONFIG" "$first_input" \
+    --quiet 2>/dev/null || true
+
+  # Now parse all files and capture trace output
+  trace_file="$TRACES_DIR/$lang.jsonl"
+  > "$trace_file"  # truncate
+
+  echo "  Generating traces..."
+  file_count=0
+  for input_file in "$renamed_dir"/*."$ext"; do
+    [ -f "$input_file" ] || continue
+    file_count=$((file_count + 1))
+
+    # Extract the test name from the filename
+    input_basename="$(basename "$input_file" ".$ext")"
+
+    # Run the patched CLI; stderr has JSONL trace lines, stdout has parse output
+    # We capture stderr and tag each line with the source file info
+    trace_stderr="$WORK_DIR/trace_stderr.tmp"
+    "$PATCHED_CLI" parse --config-path "$TS_CONFIG" "$input_file" \
+      --quiet 2>"$trace_stderr" || true
+
+    # Read each trace line and add the file/lang metadata.
+    # Only process lines starting with { (valid JSON); skip CLI warnings/errors.
+    while IFS= read -r line; do
+      case "$line" in
+        \{*)
+          rest="${line#\{}"
+          echo "{\"lang\":\"$lang\",\"file\":\"$input_basename\",$rest" >> "$trace_file"
+          ;;
+      esac
+    done < "$trace_stderr"
+  done
+
+  trace_count=$(wc -l < "$trace_file" | tr -d ' ')
+  echo "  Generated $trace_count trace entries from $file_count files -> $trace_file"
+done
+
+echo ""
+echo "=== Done ==="
+echo "Trace files written to $TRACES_DIR/"
+ls -lh "$TRACES_DIR"/*.jsonl 2>/dev/null || echo "(no trace files generated)"

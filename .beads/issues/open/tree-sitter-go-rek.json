@@ -1,0 +1,27 @@
+{
+  "id": "tree-sitter-go-rek",
+  "title": "scanner-trace-go-test-suite",
+  "description": "Phase 4: Build the Go test suite (scanner_trace_test.go ~200 lines) that replays recorded C scanner traces against Go scanner implementations. Includes: TraceEntry struct for JSONL deserialization, traceLexer mock (~100 lines) implementing the Advance/MarkEnd/Lookahead/ResultSymbol interface fed from corpus input bytes, TestScannerTraces function that iterates all 11 languages, deserializes scanner state before each call, calls Scan with recorded valid_symbols, and compares matched/result_symbol/advances/post-state. Each trace entry is independently verifiable via state deserialization. See docs/scanner-trace-testing-plan.md Phase 4.",
+  "status": "open",
+  "priority": 2,
+  "type": "task",
+  "dependencies": [
+    {
+      "id": "tree-sitter-go-amk",
+      "type": "blocks"
+    }
+  ],
+  "dependents": [
+    {
+      "id": "tree-sitter-go-s9s",
+      "type": "blocks"
+    }
+  ],
+  "created_by": "Danny Cosson",
+  "owner": "dcosson@gmail.com",
+  "labels": [
+    "project=tree-sitter-go"
+  ],
+  "created_at": "2026-02-24T15:19:15.317604-08:00",
+  "updated_at": "2026-02-24T15:19:15.317604-08:00"
+}
