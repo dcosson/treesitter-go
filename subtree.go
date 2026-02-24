@@ -730,6 +730,16 @@ func GetRepeatDepth(s Subtree, arena *SubtreeArena) uint16 {
 	return arena.Get(s).RepeatDepth
 }
 
+// HasExternalScannerStateChange returns whether the subtree caused an
+// external scanner state change. Inline subtrees cannot have this flag.
+// Mirrors C's ts_subtree_has_external_scanner_state_change.
+func HasExternalScannerStateChange(s Subtree, arena *SubtreeArena) bool {
+	if s.IsInline() {
+		return false
+	}
+	return arena.Get(s).HasFlag(SubtreeFlagHasExternalScannerStateChange)
+}
+
 // GetProductionID returns the production ID for a subtree.
 func GetProductionID(s Subtree, arena *SubtreeArena) uint16 {
 	if s.IsInline() {

@@ -368,13 +368,13 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 			}
 		}
 
-		if position.Bytes >= 56 && position.Bytes <= 68 && entry.ActionCount > 1 {
+		if position.Bytes >= 48 && position.Bytes <= 68 && entry.ActionCount > 1 {
 			fmt.Fprintf(os.Stderr, "[DEBUG CONFLICT] ver=%d pos=%d state=%d actionCount=%d lastReduceIdx=%d\n",
 				version, position.Bytes, state, entry.ActionCount, lastReduceIdx)
 			for ai := 0; ai < int(entry.ActionCount); ai++ {
 				a := entry.Actions[ai]
-				fmt.Fprintf(os.Stderr, "[DEBUG CONFLICT]   action[%d]: type=%d reduceSym=%d childCount=%d dynPrec=%d\n",
-					ai, a.Type, a.ReduceSymbol, a.ReduceChildCount, a.ReduceDynPrec)
+				fmt.Fprintf(os.Stderr, "[DEBUG CONFLICT]   action[%d]: type=%d shiftState=%d reduceSym=%d childCount=%d dynPrec=%d\n",
+					ai, a.Type, a.ShiftState, a.ReduceSymbol, a.ReduceChildCount, a.ReduceDynPrec)
 			}
 		}
 
@@ -1632,14 +1632,36 @@ func (p *Parser) recover(version StackVersion, lookahead Subtree) {
 		return
 	}
 
+	// If recovery succeeded and the lookahead has an external scanner state
+	// change, halt this version. Matches C: parser.c:1349-1356.
+	if didRecover && HasExternalScannerStateChange(lookahead, p.arena) {
+		p.stack.Halt(version)
+		return
+	}
+
 	// Don't skip if recovery would be worse than existing versions.
+	// Use total bytes (padding + size) matching C's ts_subtree_total_bytes.
+	totalBytes := GetTotalBytes(lookahead, p.arena)
+	tokenPadding := GetPadding(lookahead, p.arena)
 	tokenSize := GetSize(lookahead, p.arena)
+	totalRows := tokenPadding.Point.Row + tokenSize.Point.Row
 	newCost := currentErrorCost + ErrorCostPerSkippedTree +
-		tokenSize.Bytes*ErrorCostPerSkippedChar +
-		tokenSize.Point.Row*ErrorCostPerSkippedLine
+		totalBytes*ErrorCostPerSkippedChar +
+		totalRows*ErrorCostPerSkippedLine
 	if p.betterVersionExists(version, false, newCost) {
 		p.stack.Halt(version)
 		return
+	}
+
+	// If the current lookahead is an extra token (e.g., comment), mark it.
+	// This means it won't be counted in error cost calculations.
+	// Matches C: parser.c:1371-1377.
+	extraEntry := p.language.tableEntry(1, GetSymbol(lookahead, p.arena))
+	if extraEntry.ActionCount > 0 {
+		lastAction := extraEntry.Actions[extraEntry.ActionCount-1]
+		if lastAction.Type == ParseActionTypeShift && lastAction.ShiftExtra {
+			lookahead = SetExtra(lookahead, p.arena)
+		}
 	}
 
 	// Build error_repeat node with the skipped token.
@@ -1665,7 +1687,6 @@ func (p *Parser) recover(version StackVersion, lookahead Subtree) {
 	errorRepeat := p.createErrorRepeatNode(children)
 
 	// Compute new position after skipping the token.
-	tokenPadding := GetPadding(lookahead, p.arena)
 	newPosition := LengthAdd(LengthAdd(position, tokenPadding), tokenSize)
 
 	// Push error_repeat with ERROR_STATE (state 0).
