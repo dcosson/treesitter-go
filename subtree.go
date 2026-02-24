@@ -709,10 +709,25 @@ func NewNodeSubtree(
 	lang *Language,
 ) Subtree {
 	var visible, named bool
-	if int(symbol) < len(lang.SymbolMetadata) {
-		meta := lang.SymbolMetadata[symbol]
-		visible = meta.Visible
-		named = meta.Named
+	switch symbol {
+	case SymbolError:
+		// ERROR nodes are always visible and named. Matches C's
+		// ts_language_symbol_metadata which returns {visible:true, named:true}
+		// for ts_builtin_sym_error.
+		visible = true
+		named = true
+	case SymbolErrorRepeat:
+		// error_repeat nodes are always invisible. Matches C's
+		// ts_language_symbol_metadata which returns {visible:false, named:false}
+		// for ts_builtin_sym_error_repeat.
+		visible = false
+		named = false
+	default:
+		if int(symbol) < len(lang.SymbolMetadata) {
+			meta := lang.SymbolMetadata[symbol]
+			visible = meta.Visible
+			named = meta.Named
+		}
 	}
 
 	st, data := arena.Alloc()

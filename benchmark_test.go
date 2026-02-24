@@ -16,7 +16,6 @@ import (
 	"time"
 
 	ts "github.com/treesitter-go/treesitter"
-	"github.com/treesitter-go/treesitter/internal/difftest"
 	tg "github.com/treesitter-go/treesitter/internal/testgrammars"
 	bashgrammar "github.com/treesitter-go/treesitter/internal/testgrammars/bash"
 	cgrammar "github.com/treesitter-go/treesitter/internal/testgrammars/cgrammar"
@@ -49,10 +48,15 @@ import (
 // Set via -ts-cli flag or TS_CLI_PATH environment variable.
 var tsCLI = flag.String("ts-cli", os.Getenv("TS_CLI_PATH"), "path to tree-sitter CLI binary")
 
+// benchDylibDir is the directory containing prebuilt grammar dylibs for CLI benchmarks.
+// Build with: make bench-grammars
+const benchDylibDir = "build/benchmark-dylibs"
+
 // benchLang describes a language available for benchmarking.
 type benchLang struct {
 	name     string
-	ext      string // file extension for CLI scope lookup
+	ext      string // file extension for temp file naming
+	libName  string // tree-sitter language name for --lang-name flag
 	language func() *ts.Language
 	generate func(targetBytes int) []byte
 }
@@ -60,61 +64,61 @@ type benchLang struct {
 // benchLanguages returns all 15 supported languages with their input generators.
 func benchLanguages() []benchLang {
 	return []benchLang{
-		{"json", ".json", func() *ts.Language { return tg.JSONLanguage() }, generateJSON},
-		{"go", ".go", func() *ts.Language { return golanggrammar.GoLanguage() }, generateGo},
-		{"python", ".py", func() *ts.Language {
+		{"json", ".json", "json", func() *ts.Language { return tg.JSONLanguage() }, generateJSON},
+		{"go", ".go", "go", func() *ts.Language { return golanggrammar.GoLanguage() }, generateGo},
+		{"python", ".py", "python", func() *ts.Language {
 			l := pygrammar.PythonLanguage()
 			l.NewExternalScanner = pyscanner.New
 			return l
 		}, generatePython},
-		{"javascript", ".js", func() *ts.Language {
+		{"javascript", ".js", "javascript", func() *ts.Language {
 			l := jsgrammar.JavascriptLanguage()
 			l.NewExternalScanner = jsscanner.New
 			return l
 		}, generateJavaScript},
-		{"typescript", ".ts", func() *ts.Language {
+		{"typescript", ".ts", "typescript", func() *ts.Language {
 			l := tsgrammar.TypescriptLanguage()
 			l.NewExternalScanner = tsscanner.New
 			return l
 		}, generateTypeScript},
-		{"c", ".c", func() *ts.Language { return cgrammar.CLanguage() }, generateC},
-		{"cpp", ".cpp", func() *ts.Language {
+		{"c", ".c", "c", func() *ts.Language { return cgrammar.CLanguage() }, generateC},
+		{"cpp", ".cpp", "cpp", func() *ts.Language {
 			l := cppgrammar.CppLanguage()
 			l.NewExternalScanner = cppscanner.New
 			return l
 		}, generateCpp},
-		{"rust", ".rs", func() *ts.Language {
+		{"rust", ".rs", "rust", func() *ts.Language {
 			l := rustgrammar.RustLanguage()
 			l.NewExternalScanner = rustscanner.New
 			return l
 		}, generateRust},
-		{"java", ".java", func() *ts.Language { return javagrammar.JavaLanguage() }, generateJava},
-		{"ruby", ".rb", func() *ts.Language {
+		{"java", ".java", "java", func() *ts.Language { return javagrammar.JavaLanguage() }, generateJava},
+		{"ruby", ".rb", "ruby", func() *ts.Language {
 			l := rubygrammar.RubyLanguage()
 			l.NewExternalScanner = rubyscanner.New
 			return l
 		}, generateRuby},
-		{"bash", ".sh", func() *ts.Language {
+		{"bash", ".sh", "bash", func() *ts.Language {
 			l := bashgrammar.BashLanguage()
 			l.NewExternalScanner = bashscanner.New
 			return l
 		}, generateBash},
-		{"css", ".css", func() *ts.Language {
+		{"css", ".css", "css", func() *ts.Language {
 			l := cssgrammar.CssLanguage()
 			l.NewExternalScanner = cssscanner.New
 			return l
 		}, generateCSS},
-		{"html", ".html", func() *ts.Language {
+		{"html", ".html", "html", func() *ts.Language {
 			l := htmlgrammar.HtmlLanguage()
 			l.NewExternalScanner = htmlscanner.New
 			return l
 		}, generateHTML},
-		{"perl", ".pl", func() *ts.Language {
+		{"perl", ".pl", "perl", func() *ts.Language {
 			l := perlgrammar.PerlLanguage()
 			l.NewExternalScanner = perlscanner.New
 			return l
 		}, generatePerl},
-		{"lua", ".lua", func() *ts.Language {
+		{"lua", ".lua", "lua", func() *ts.Language {
 			l := luagrammar.LuaLanguage()
 			l.NewExternalScanner = luascanner.New
 			return l
@@ -122,24 +126,52 @@ func benchLanguages() []benchLang {
 	}
 }
 
-// hasCLI returns true if the tree-sitter CLI is configured and available.
+// hasCLI returns true if the tree-sitter CLI is configured and available,
+// and at least one prebuilt grammar dylib exists in benchDylibDir.
 func hasCLI() bool {
 	if *tsCLI == "" {
 		return false
 	}
 	_, err := exec.LookPath(*tsCLI)
-	return err == nil
+	if err != nil {
+		return false
+	}
+	entries, err := os.ReadDir(benchDylibDir)
+	if err != nil {
+		return false
+	}
+	for _, e := range entries {
+		if filepath.Ext(e.Name()) == ".dylib" {
+			return true
+		}
+	}
+	return false
 }
 
-// cliParseBytes parses input bytes using the tree-sitter CLI.
-// Writes to a temp file with the appropriate extension.
-func cliParseBytes(input []byte, ext string) error {
-	scope := difftest.Scope[ext]
-	old := difftest.TreeSitterCLI
-	difftest.TreeSitterCLI = *tsCLI
-	defer func() { difftest.TreeSitterCLI = old }()
-	_, err := difftest.ParseBytesWithCLI(input, scope)
-	return err
+// cliParseBytes parses input bytes using the tree-sitter CLI with a prebuilt grammar dylib.
+// Uses --lib-path to point at the precompiled dylib and --lang-name to select the language.
+func cliParseBytes(input []byte, ext, libName string) error {
+	tmpFile, err := os.CreateTemp("", "bench-*"+ext)
+	if err != nil {
+		return err
+	}
+	defer os.Remove(tmpFile.Name())
+	if _, err := tmpFile.Write(input); err != nil {
+		tmpFile.Close()
+		return err
+	}
+	tmpFile.Close()
+
+	libPath := filepath.Join(benchDylibDir, libName+".dylib")
+	cmd := exec.Command(*tsCLI, "parse", "--lib-path", libPath, "--lang-name", libName, tmpFile.Name())
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
+			return nil // Parse tree has errors but CLI still produced valid output.
+		}
+		return fmt.Errorf("tree-sitter parse failed: %v\noutput: %s", err, output)
+	}
+	return nil
 }
 
 // --- Unified Parse Benchmark (Go + optional CLI comparison) ---
@@ -181,17 +213,18 @@ func BenchmarkParse(b *testing.B) {
 			// CLI comparison benchmark (only when CLI is available).
 			if hasCLI() {
 				ext := lang.ext
+				libName := lang.libName
 				inputCopy := append([]byte(nil), input...)
 				b.Run(fmt.Sprintf("cli/%s/%s", lang.name, size.name), func(b *testing.B) {
-					// Verify CLI can parse this scope.
-					if err := cliParseBytes(inputCopy[:min(len(inputCopy), 100)], ext); err != nil {
+					// Verify CLI can parse this language with the prebuilt dylib.
+					if err := cliParseBytes(inputCopy[:min(len(inputCopy), 100)], ext, libName); err != nil {
 						b.Skipf("CLI cannot parse %s: %v", lang.name, err)
 					}
 
 					b.SetBytes(int64(len(inputCopy)))
 					b.ResetTimer()
 					for i := 0; i < b.N; i++ {
-						cliParseBytes(inputCopy, ext)
+						cliParseBytes(inputCopy, ext, libName)
 					}
 				})
 			}
@@ -821,28 +854,6 @@ func generateLua(targetBytes int) []byte {
 		fmt.Fprintf(&b, unit, i, i)
 	}
 	return []byte(b.String())
-}
-
-// writeBenchFixture writes generated input to a temp file and returns its path.
-// Used by CLI benchmarks that need a file path.
-func writeBenchFixture(input []byte, ext string) (string, func()) {
-	f, err := os.CreateTemp("", "bench-*"+ext)
-	if err != nil {
-		panic(err)
-	}
-	f.Write(input)
-	f.Close()
-	return f.Name(), func() { os.Remove(f.Name()) }
-}
-
-// Ensure the Scope map has entries for Perl and Lua.
-func init() {
-	if _, ok := difftest.Scope[".pl"]; !ok {
-		difftest.Scope[".pl"] = "source.perl"
-	}
-	if _, ok := difftest.Scope[".lua"]; !ok {
-		difftest.Scope[".lua"] = "source.lua"
-	}
 }
 
 // writeBenchFixtureFiles generates and writes benchmark fixture files to testdata/bench/.

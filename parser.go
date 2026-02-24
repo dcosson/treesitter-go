@@ -298,6 +298,9 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 				return true
 			}
 			// No valid action — pause this version for error recovery.
+			// This applies even in ERROR_STATE (state 0). C tree-sitter
+			// always pauses and lets condenseStack resume with handleError,
+			// which records a fresh summary matching the current stack state.
 			p.stack.Pause(version, token)
 			return true
 		}
@@ -1085,10 +1088,13 @@ func (p *Parser) acceptTree(version StackVersion) Subtree {
 		allSubtrees[i], allSubtrees[j] = allSubtrees[j], allSubtrees[i]
 	}
 
-	// Find the root node (the non-extra subtree). Search backward from end,
-	// matching C tree-sitter ts_parser__accept.
+	// Find the root node (the first non-extra subtree in source order).
+	// C tree-sitter's ts_parser__accept searches backward from trees.size-1
+	// in the unreversed (stack-order) array, which is equivalent to searching
+	// forward from the start of the reversed (source-order) array. The root
+	// is the bottom-of-stack (oldest/leftmost) non-extra subtree.
 	rootIdx := -1
-	for j := len(allSubtrees) - 1; j >= 0; j-- {
+	for j := 0; j < len(allSubtrees); j++ {
 		if allSubtrees[j].IsZero() {
 			continue
 		}
@@ -1385,7 +1391,20 @@ func (p *Parser) recover(version StackVersion, lookahead Subtree) {
 			// Check if the lookahead token is valid in this previous state.
 			tableEntry := p.language.tableEntry(entry.State, lookaheadSymbol)
 			if tableEntry.ActionCount > 0 {
-				if p.recoverToState(version, depth, entry.State) {
+				if p.stack.VersionCount() >= MaxVersionCount {
+					break
+				}
+				// Split the version before attempting Strategy 1 popback.
+				// Strategy 1 destructively modifies the version via Pop. If
+				// the pop doesn't reach the goal state, the version is halted.
+				// In C, this is acceptable because Pop can create version forks
+				// via the GSS. In our single-path Go stack, we must split
+				// explicitly to preserve the original version for Strategy 2.
+				recoveryVersion := p.stack.Split(version)
+				if recoveryVersion < 0 {
+					break
+				}
+				if p.recoverToState(recoveryVersion, depth, entry.State) {
 					didRecover = true
 					break
 				}
@@ -1401,15 +1420,22 @@ func (p *Parser) recover(version StackVersion, lookahead Subtree) {
 		}
 	}
 
-	// At EOF, wrap everything in ERROR and accept.
+	// At EOF, terminate by accepting.
+	// C pushes an empty ERROR node at state 1, then calls ts_parser__accept
+	// (which also pushes the EOF lookahead). In Go's doAccept, we don't push
+	// the lookahead, and pushing a visible empty ERROR would add a spurious
+	// (ERROR) child. So just push SubtreeZero at state 1 to trigger acceptance.
 	if lookaheadSymbol == SymbolEnd {
-		errNode := p.createErrorNode(nil)
-		p.stack.Push(version, 1, errNode, false, position)
+		p.stack.Push(version, 1, SubtreeZero, false, position)
 		p.doAccept(version)
 		return
 	}
 
 	// Strategy 2: Skip the lookahead token by wrapping it in an error_repeat.
+	// In C tree-sitter, both Strategy 1 and Strategy 2 modify the same version.
+	// Strategy 1's popback recovery gets "extended" by Strategy 2 wrapping the
+	// lookahead into the error_repeat. This matches C's behavior where the error
+	// region grows to include the current token.
 
 	// Don't pursue this if there are already too many versions.
 	if didRecover && p.stack.VersionCount() > MaxVersionCount {
@@ -1475,7 +1501,8 @@ func (p *Parser) recoverToState(version StackVersion, depth uint32, goalState St
 
 	// Check if the state matches the goal state. If not, halt the version.
 	// (For the primary result; C does this per-slice for multi-path pops.)
-	if p.stack.State(version) != goalState {
+	actualState := p.stack.State(version)
+	if actualState != goalState {
 		p.stack.Halt(version)
 		return false
 	}
@@ -1556,6 +1583,7 @@ func (p *Parser) createErrorNode(skippedTokens []Subtree) Subtree {
 		Children:   children,
 	}
 	data.SetFlag(SubtreeFlagVisible, true)
+	data.SetFlag(SubtreeFlagNamed, true)
 
 	if len(children) > 0 {
 		firstPadding := GetPadding(children[0], p.arena)

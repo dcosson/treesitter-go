@@ -225,7 +225,14 @@ func (l *Language) HasNonTerminalAliases(s Symbol) bool {
 }
 
 // SymbolName returns the name of a symbol.
+// Matches C's ts_language_symbol_name which special-cases error symbols.
 func (l *Language) SymbolName(symbol Symbol) string {
+	if symbol == SymbolError {
+		return "ERROR"
+	}
+	if symbol == SymbolErrorRepeat {
+		return "_ERROR"
+	}
 	if int(symbol) < len(l.SymbolNames) {
 		return l.SymbolNames[symbol]
 	}
@@ -233,7 +240,14 @@ func (l *Language) SymbolName(symbol Symbol) string {
 }
 
 // SymbolIsNamed returns whether a symbol is a named node.
+// Matches C's ts_language_symbol_metadata special-casing for error symbols.
 func (l *Language) SymbolIsNamed(symbol Symbol) bool {
+	if symbol == SymbolError {
+		return true
+	}
+	if symbol == SymbolErrorRepeat {
+		return false
+	}
 	if int(symbol) < len(l.SymbolMetadata) {
 		return l.SymbolMetadata[symbol].Named
 	}
@@ -241,7 +255,14 @@ func (l *Language) SymbolIsNamed(symbol Symbol) bool {
 }
 
 // SymbolIsVisible returns whether a symbol is visible in the tree.
+// Matches C's ts_language_symbol_metadata special-casing for error symbols.
 func (l *Language) SymbolIsVisible(symbol Symbol) bool {
+	if symbol == SymbolError {
+		return true
+	}
+	if symbol == SymbolErrorRepeat {
+		return false
+	}
 	if int(symbol) < len(l.SymbolMetadata) {
 		return l.SymbolMetadata[symbol].Visible
 	}
