@@ -877,6 +877,12 @@ func (p *Parser) doReduce(version StackVersion, action ParseActionEntry, endOfNo
 
 	// Pop children.
 	results := p.stack.Pop(version, childCount)
+	if pos.Bytes >= 45 && pos.Bytes <= 60 {
+		fmt.Fprintf(os.Stderr, "[DEBUG REDUCE] ver=%d sym=%d popResults=%d\n", version, symbol, len(results))
+		for ri, r := range results {
+			fmt.Fprintf(os.Stderr, "[DEBUG REDUCE]   result[%d]: node.state=%d nSubtrees=%d\n", ri, r.node.state, len(r.subtrees))
+		}
+	}
 	if len(results) == 0 {
 		p.stack.Halt(version)
 		return
@@ -1387,29 +1393,143 @@ func (p *Parser) handleError(version StackVersion, token Subtree) {
 // the lookahead. This is used in handleError to "compact" the stack before
 // pushing ERROR_STATE.
 // Matches C: ts_parser__do_all_potential_reductions(self, version, 0)
-func (p *Parser) doAllPotentialReductionsUnfiltered(version StackVersion) {
-	state := p.stack.State(version)
+// doAllPotentialReductions tries every possible reduction from the current
+// state. When lookaheadSymbol is 0 (unfiltered mode, used by handleError),
+// it scans all terminal symbols. When non-zero (filtered mode), it only
+// checks actions for that specific symbol. This is a faithful port of C's
+// ts_parser__do_all_potential_reductions (reference/parser.c:1101-1189).
+func (p *Parser) doAllPotentialReductions(startingVersion StackVersion, lookaheadSymbol Symbol) bool {
+	initialVersionCount := p.stack.VersionCount()
+	canShiftLookahead := false
 
-	for sym := Symbol(0); sym < Symbol(p.language.SymbolCount); sym++ {
-		entry := p.language.tableEntry(state, sym)
-		for i := 0; i < int(entry.ActionCount); i++ {
-			action := entry.Actions[i]
-			if action.Type != ParseActionTypeReduce {
-				continue
+	version := startingVersion
+	for i := 0; ; i++ {
+		versionCount := p.stack.VersionCount()
+		if int(version) >= versionCount {
+			break
+		}
+
+		// Try to merge with previously created versions.
+		merged := false
+		for j := StackVersion(initialVersionCount); j < version; j++ {
+			if p.stack.Merge(j, version) {
+				merged = true
+				break
 			}
+		}
+		if merged {
+			continue
+		}
 
-			if p.stack.VersionCount() >= MaxVersionCount {
-				return
+		state := p.stack.State(version)
+		hasShiftAction := false
+
+		// Collect unique reduce actions (deduplication).
+		type reduceAction struct {
+			symbol    Symbol
+			count     uint32
+			dynPrec   int16
+			prodID    uint16
+		}
+		var reduceActions []reduceAction
+
+		// Determine symbol range.
+		var firstSym, endSym Symbol
+		if lookaheadSymbol != 0 {
+			firstSym = lookaheadSymbol
+			endSym = lookaheadSymbol + 1
+		} else {
+			firstSym = 1
+			endSym = Symbol(p.language.TokenCount)
+		}
+
+		for sym := firstSym; sym < endSym; sym++ {
+			entry := p.language.tableEntry(state, sym)
+			for j := 0; j < int(entry.ActionCount); j++ {
+				action := entry.Actions[j]
+				switch action.Type {
+				case ParseActionTypeShift, ParseActionTypeRecover:
+					if !action.ShiftExtra && !action.ShiftRepetition {
+						hasShiftAction = true
+					}
+				case ParseActionTypeReduce:
+					if action.ReduceChildCount > 0 {
+						ra := reduceAction{
+							symbol:  action.ReduceSymbol,
+							count:   uint32(action.ReduceChildCount),
+							dynPrec: action.ReduceDynPrec,
+							prodID:  action.ReduceProdID,
+						}
+						// Deduplicate.
+						found := false
+						for _, existing := range reduceActions {
+							if existing == ra {
+								found = true
+								break
+							}
+						}
+						if !found {
+							reduceActions = append(reduceActions, ra)
+						}
+					}
+				}
 			}
+		}
 
-			testVersion := p.stack.Split(version)
-			if testVersion < 0 {
-				continue
-			}
+		// Execute all collected reduce actions.
+		var reductionVersion StackVersion = -1
+		for _, ra := range reduceActions {
+			reductionVersion = p.doReduceForPotential(version, ra.symbol, ra.count, ra.dynPrec, ra.prodID)
+		}
 
-			p.doReduce(testVersion, action, false)
+		if hasShiftAction {
+			canShiftLookahead = true
+		} else if reductionVersion >= 0 && i < MaxVersionCount {
+			// No shift action but reductions succeeded — replace this version
+			// with the last reduced version and re-process it. This chains
+			// reductions until a state with a shift action is found.
+			p.stack.RenumberVersion(reductionVersion, version)
+			continue
+		} else if lookaheadSymbol != 0 {
+			// No shift and no reductions for this specific symbol — remove.
+			p.stack.RemoveVersion(version)
+		}
+
+		// After processing the starting version, skip to newly created versions.
+		if version == startingVersion {
+			version = StackVersion(versionCount)
+		} else {
+			version++
 		}
 	}
+
+	return canShiftLookahead
+}
+
+// doAllPotentialReductionsUnfiltered is the unfiltered variant (lookaheadSymbol=0).
+func (p *Parser) doAllPotentialReductionsUnfiltered(version StackVersion) {
+	p.doAllPotentialReductions(version, 0)
+}
+
+// doReduceForPotential performs a reduce for doAllPotentialReductions.
+// It splits the version, pops child_count items, and creates a parent node.
+// Returns the new version, or -1 on failure.
+func (p *Parser) doReduceForPotential(version StackVersion, symbol Symbol, childCount uint32, dynPrec int16, prodID uint16) StackVersion {
+	splitVersion := p.stack.Split(version)
+	if splitVersion < 0 {
+		return -1
+	}
+
+	action := ParseActionEntry{
+		Type:              ParseActionTypeReduce,
+		ReduceSymbol:      symbol,
+		ReduceChildCount:  uint8(childCount),
+		ReduceDynPrec:     dynPrec,
+		ReduceProdID:      prodID,
+	}
+	p.doReduce(splitVersion, action, false)
+
+	return splitVersion
 }
 
 // recover attempts to continue parsing after an error. Called from handleError
@@ -1818,7 +1938,7 @@ func (p *Parser) condenseStack() uint32 {
 			cmpResult := p.compareVersions(statusJ, statusI)
 			posI := p.stack.Position(StackVersion(i))
 			posJ := p.stack.Position(StackVersion(j))
-			if (posI.Bytes >= 45 && posI.Bytes <= 65) || (posJ.Bytes >= 45 && posJ.Bytes <= 65) {
+			if (posI.Bytes >= 45 && posI.Bytes <= 65) || (posJ.Bytes >= 45 && posJ.Bytes <= 65) || (i <= 1 && j == 0) {
 				fmt.Fprintf(os.Stderr, "[DEBUG CONDENSE] cmp i=%d(pos=%d,cost=%d,prec=%d,err=%v) vs j=%d(pos=%d,cost=%d,prec=%d,err=%v) → %d\n",
 					i, posI.Bytes, statusI.cost, statusI.dynamicPrecedence, statusI.isInError,
 					j, posJ.Bytes, statusJ.cost, statusJ.dynamicPrecedence, statusJ.isInError,
