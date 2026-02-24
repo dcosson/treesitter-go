@@ -219,7 +219,6 @@ func (s *Scanner) Scan(lexer *ts.Lexer, validSymbols []bool) bool {
 					} else if lexer.Lookahead == '\n' {
 						advance(lexer)
 					}
-					hasContent = true
 					continue
 				}
 				if d.isBytes() {

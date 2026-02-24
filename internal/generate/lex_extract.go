@@ -448,7 +448,7 @@ func detectDefault(state *LexState) {
 		return
 	}
 	last := &state.Transitions[len(state.Transitions)-1]
-	if last.IsNegated && last.Char == 0 && len(last.CharExclusions) == 0 {
+	if last.IsNegated && last.Char == 0 && len(last.CharExclusions) == 0 && len(last.ExcludeRanges) == 0 {
 		state.HasDefault = true
 		state.DefaultTarget = last.Target
 		state.DefaultSkip = last.Skip
