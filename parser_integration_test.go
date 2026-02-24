@@ -7,7 +7,6 @@ import (
 
 	ts "github.com/treesitter-go/treesitter"
 	tg "github.com/treesitter-go/treesitter/internal/testgrammars"
-	cgrammar "github.com/treesitter-go/treesitter/internal/testgrammars/cgrammar"
 )
 
 // jsonLexFn is a hand-written lex function for the JSON grammar.
@@ -961,68 +960,3 @@ func TestIncrementalWithNilOldTree(t *testing.T) {
 	}
 }
 
-func TestCTypedefKeywordDebug(t *testing.T) {
-	lang := cgrammar.CLanguage()
-	p := ts.NewParser()
-	p.SetLanguage(lang)
-	p.SetDebugKeywords(true)
-	p.SetDebug(true)
-
-	input := []byte("typedef unsigned long int;\n")
-	tree := p.ParseString(context.Background(), input)
-	if tree == nil {
-		t.Fatal("parse returned nil")
-	}
-	sexp := tree.RootNode().String()
-	t.Logf("Result: %s", sexp)
-	if !strings.Contains(sexp, "primitive_type") {
-		t.Errorf("expected primitive_type in declarator, got: %s", sexp)
-	}
-
-	// Dump state 1410 actions
-	t.Logf("State 1410 token actions:")
-	for sym := uint32(0); sym < lang.TokenCount; sym++ {
-		val := lang.ExportLookup(1410, ts.Symbol(sym))
-		if val != 0 {
-			name := ""
-			if int(sym) < len(lang.SymbolNames) {
-				name = lang.SymbolNames[sym]
-			}
-			t.Logf("  sym=%d (%s) -> action=%d", sym, name, val)
-		}
-	}
-	// Also check for non-terminal goto entries
-	t.Logf("State 1410 non-terminal gotos:")
-	for sym := lang.TokenCount; sym < lang.SymbolCount; sym++ {
-		val := lang.ExportLookup(1410, ts.Symbol(sym))
-		if val != 0 {
-			name := ""
-			if int(sym) < len(lang.SymbolNames) {
-				name = lang.SymbolNames[sym]
-			}
-			t.Logf("  sym=%d (%s) -> goto=%d", sym, name, val)
-		}
-	}
-
-	// Check lex modes for both states
-	t.Logf("LexMode for state 1136: %+v", lang.LexModes[1136])
-	t.Logf("LexMode for state 1410: %+v", lang.LexModes[1410])
-
-	// Check what actions state 1136 has for primitive_type and identifier
-	t.Logf("State 1136 lookup(primitive_type=93)=%d", lang.ExportLookup(1136, 93))
-	t.Logf("State 1136 lookup(identifier=1)=%d", lang.ExportLookup(1136, 1))
-
-	// Check the actual table entry (actions) for state 1136 + primitive_type
-	for _, checkState := range []uint16{1136, 1114} {
-		entry := lang.ExportTableEntry(checkState, 93)
-		t.Logf("State %d table_entry for primitive_type: ActionCount=%d Reusable=%v", checkState, entry.ActionCount, entry.Reusable)
-		for i, action := range entry.Actions {
-			rsym := ""
-			if int(action.ReduceSymbol) < len(lang.SymbolNames) {
-				rsym = lang.SymbolNames[action.ReduceSymbol]
-			}
-			t.Logf("  action[%d]: Type=%d ShiftState=%d ShiftExtra=%v ReduceSymbol=%d(%s) ReduceCount=%d DynPrec=%d",
-				i, action.Type, action.ShiftState, action.ShiftExtra, action.ReduceSymbol, rsym, action.ReduceChildCount, action.ReduceDynPrec)
-		}
-	}
-}
