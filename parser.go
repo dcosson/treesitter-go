@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"math"
+	"os"
 )
 
 // Parser is the GLR parsing engine. It drives the Lexer and Language to
@@ -53,6 +54,8 @@ type Parser struct {
 
 	// debug enables trace output.
 	debug bool
+	// debugKeywords enables keyword extraction trace output.
+	debugKeywords bool
 }
 
 // Error cost constants matching C tree-sitter.
@@ -84,6 +87,11 @@ func NewParser() *Parser {
 // SetDebug enables debug trace output.
 func (p *Parser) SetDebug(on bool) {
 	p.debug = on
+}
+
+// SetDebugKeywords enables keyword extraction debug trace output.
+func (p *Parser) SetDebugKeywords(on bool) {
+	p.debugKeywords = on
 }
 
 // SetLanguage sets the language (grammar) for the parser.
@@ -291,6 +299,20 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 		// Look up parse actions.
 		state = p.stack.State(version)
 		entry := p.language.tableEntry(state, tokenSymbol)
+		if p.debugKeywords && (tokenSymbol == 93 || tokenSymbol == 1) {
+			symName := ""
+			if int(tokenSymbol) < len(p.language.SymbolNames) {
+				symName = p.language.SymbolNames[tokenSymbol]
+			}
+			fmt.Fprintf(os.Stderr, "REDUCE_LOOP: v=%d state=%d token=%d(%s) actions=%d reduce=%d\n",
+				version, state, tokenSymbol, symName, entry.ActionCount, reduceCount)
+			if entry.ActionCount > 0 {
+				for i, a := range entry.Actions {
+					fmt.Fprintf(os.Stderr, "  action[%d]: type=%d shift_state=%d reduce_sym=%d reduce_count=%d\n",
+						i, a.Type, a.ShiftState, a.ReduceSymbol, a.ReduceChildCount)
+				}
+			}
+		}
 		if entry.ActionCount == 0 {
 			if nullLookahead {
 				// No action for SymbolEnd after NTE reduction — need to re-lex
@@ -301,6 +323,9 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 			// This applies even in ERROR_STATE (state 0). C tree-sitter
 			// always pauses and lets condenseStack resume with handleError,
 			// which records a fresh summary matching the current stack state.
+			if p.debugKeywords {
+				fmt.Fprintf(os.Stderr, "PAUSE: v=%d state=%d token=%d\n", version, state, tokenSymbol)
+			}
 			p.stack.Pause(version, token)
 			return true
 		}
@@ -546,16 +571,33 @@ func (p *Parser) lexToken(version StackVersion, state StateID, position Length) 
 		}
 
 		// If the result is the keyword capture token, try keyword lex.
-		// Keyword lex always starts at state 0 (initial keyword DFA state).
-		// The keyword match is only accepted if the keyword lex consumed the
-		// ENTIRE identifier text (current position == original token end).
+		// Keyword lex starts from token_start_position (after whitespace)
+		// at state 0. The keyword match is accepted only if the keyword
+		// lex's token_end_position matches the original token end (i.e.,
+		// the keyword consumed the ENTIRE identifier text). This matches
+		// the C tree-sitter runtime which resets to token_start_position
+		// and compares token_end_position.bytes (not current_position).
 		if found && p.language.KeywordLexFn != nil && p.lexer.ResultSymbol == p.language.KeywordCaptureToken {
 			keywordEndPos := p.lexer.TokenEndPosition
 			origSymbol := p.lexer.ResultSymbol
 
-			p.lexer.Start(position)
-			keywordMatched := p.language.KeywordLexFn(p.lexer, 0) &&
-				p.lexer.CurrentPosition() == keywordEndPos
+			// Start keyword lex from token_start_position (after whitespace),
+			// matching C tree-sitter's ts_lexer_reset to token_start_position.
+			p.lexer.Start(p.lexer.TokenStartPosition())
+			kwLexResult := p.language.KeywordLexFn(p.lexer, 0)
+			// Compare token_end_position (marked end), not current_position,
+			// matching C tree-sitter's token_end_position.bytes comparison.
+			keywordMatched := kwLexResult &&
+				p.lexer.TokenEndPosition.Bytes == keywordEndPos.Bytes
+			if p.debug && kwLexResult {
+				kwSym := p.lexer.ResultSymbol
+				kwName := ""
+				if int(kwSym) < len(p.language.SymbolNames) {
+					kwName = p.language.SymbolNames[kwSym]
+				}
+				fmt.Fprintf(os.Stderr, "KEYWORD_LEX: state=%d kwSym=%d(%s) kwTokenEnd=%d kwEndTarget=%d matched=%v tokenStart=%d\n",
+					state, kwSym, kwName, p.lexer.TokenEndPosition.Bytes, keywordEndPos.Bytes, keywordMatched, p.lexer.TokenStartPosition().Bytes)
+			}
 
 			if keywordMatched {
 				keywordSymbol := p.lexer.ResultSymbol
@@ -565,10 +607,31 @@ func (p *Parser) lexToken(version StackVersion, state StateID, position Length) 
 				// are always kept; reserved words are kept even without actions
 				// (for error recovery). Keywords with neither are reverted to
 				// the keyword capture token (e.g., `blank_identifier` → `identifier`).
-				if p.language.lookup(state, keywordSymbol) != 0 ||
-					p.language.IsReservedWord(uint32(lexMode.ReservedWordSetID), keywordSymbol) {
+				lookupResult := p.language.lookup(state, keywordSymbol)
+				isReserved := p.language.IsReservedWord(uint32(lexMode.ReservedWordSetID), keywordSymbol)
+				if lookupResult != 0 || isReserved {
+					if p.debugKeywords {
+						symName := ""
+						if int(keywordSymbol) < len(p.language.SymbolNames) {
+							symName = p.language.SymbolNames[keywordSymbol]
+						}
+						fmt.Fprintf(os.Stderr, "KEYWORD_ACCEPT: state=%d keyword=%d(%s) pos=%d..%d\n",
+							state, keywordSymbol, symName, position.Bytes, keywordEndPos.Bytes)
+					}
 					p.lexer.ResultSymbol = keywordSymbol
 				} else {
+					if p.debugKeywords {
+						symName := ""
+						if int(keywordSymbol) < len(p.language.SymbolNames) {
+							symName = p.language.SymbolNames[keywordSymbol]
+						}
+						origName := ""
+						if int(origSymbol) < len(p.language.SymbolNames) {
+							origName = p.language.SymbolNames[origSymbol]
+						}
+						fmt.Fprintf(os.Stderr, "KEYWORD_REJECT: state=%d keyword=%d(%s) lookup=%d reserved=%v reverting to %d(%s) pos=%d..%d\n",
+							state, keywordSymbol, symName, lookupResult, isReserved, origSymbol, origName, position.Bytes, keywordEndPos.Bytes)
+					}
 					p.lexer.ResultSymbol = origSymbol
 				}
 			} else {
