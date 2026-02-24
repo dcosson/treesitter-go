@@ -975,8 +975,11 @@ func (s *Stack) RecordSummary(version StackVersion, maxDepth uint32) {
 			visited[next] = true
 
 			newDepth := iter.depth
-			// SubtreeZero links (from ERROR_STATE push) don't count toward depth.
-			if !link.subtree.IsZero() && !IsExtra(link.subtree, s.arena) {
+			// Depth counting matches C's stack__iter (reference/stack.c:398-413):
+			// - NULL/SubtreeZero links: always count (they represent ERROR_STATE pushes)
+			// - Non-null, non-extra subtrees: count
+			// - Extra subtrees (comments, whitespace): do NOT count
+			if link.subtree.IsZero() || !IsExtra(link.subtree, s.arena) {
 				newDepth++
 			}
 
