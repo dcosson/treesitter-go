@@ -1955,7 +1955,7 @@ func (p *Parser) condenseStack() uint32 {
 		for i := 0; i < p.stack.VersionCount(); i++ {
 			v := StackVersion(i)
 			if p.stack.IsPaused(v) {
-				if !hasUnpausedVersion && p.acceptCount < uint32(p.stack.VersionCount()) {
+				if !hasUnpausedVersion && p.acceptCount < MaxVersionCount {
 					// Resume this version and handle error recovery.
 					lookahead := p.stack.Resume(v)
 					p.handleError(v, lookahead)
