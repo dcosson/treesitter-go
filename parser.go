@@ -297,6 +297,23 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 				// with the current state (which should have a valid lex mode).
 				return true
 			}
+			// Keyword demotion: if the lookahead is a keyword with no
+			// actions, but the word token (keyword_capture_token) DOES have
+			// actions, demote the keyword back to the word token and retry.
+			// This handles cases where a keyword is valid in one parse state
+			// but not another (e.g., Java's `_` as underscore_pattern vs
+			// identifier). Matches C runtime (reference/parser.c:1716-1742).
+			if !token.IsZero() && GetIsKeyword(token, p.arena) &&
+				tokenSymbol != p.language.KeywordCaptureToken &&
+				!p.language.IsReservedWord(uint32(p.language.LexModes[state].ReservedWordSetID), tokenSymbol) {
+				wordEntry := p.language.tableEntry(state, p.language.KeywordCaptureToken)
+				if wordEntry.ActionCount > 0 {
+					token = SetSubtreeSymbol(token, p.arena, p.language.KeywordCaptureToken, p.language)
+					tokenSymbol = p.language.KeywordCaptureToken
+					continue
+				}
+			}
+
 			// No valid action — pause this version for error recovery.
 			// This applies even in ERROR_STATE (state 0). C tree-sitter
 			// always pauses and lets condenseStack resume with handleError,
