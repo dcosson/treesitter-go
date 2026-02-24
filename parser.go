@@ -286,7 +286,7 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 		tokenSymbol = GetSymbol(token, p.arena)
 	}
 
-	if position.Bytes >= 45 && position.Bytes <= 60 {
+	if position.Bytes >= 48 && position.Bytes <= 68 {
 		fmt.Fprintf(os.Stderr, "[DEBUG ADVANCE] ver=%d state=%d pos=%d tokenSym=%d null=%v\n",
 			version, state, position.Bytes, tokenSymbol, nullLookahead)
 	}
@@ -324,7 +324,7 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 			// This applies even in ERROR_STATE (state 0). C tree-sitter
 			// always pauses and lets condenseStack resume with handleError,
 			// which records a fresh summary matching the current stack state.
-			if position.Bytes >= 45 && position.Bytes <= 60 {
+			if position.Bytes >= 56 && position.Bytes <= 68 {
 				fmt.Fprintf(os.Stderr, "[DEBUG PARSER] PAUSE version=%d state=%d pos=%d tokenSym=%d\n",
 					version, state, position.Bytes, tokenSymbol)
 			}
@@ -368,6 +368,16 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 			}
 		}
 
+		if position.Bytes >= 56 && position.Bytes <= 68 && entry.ActionCount > 1 {
+			fmt.Fprintf(os.Stderr, "[DEBUG CONFLICT] ver=%d pos=%d state=%d actionCount=%d lastReduceIdx=%d\n",
+				version, position.Bytes, state, entry.ActionCount, lastReduceIdx)
+			for ai := 0; ai < int(entry.ActionCount); ai++ {
+				a := entry.Actions[ai]
+				fmt.Fprintf(os.Stderr, "[DEBUG CONFLICT]   action[%d]: type=%d reduceSym=%d childCount=%d dynPrec=%d\n",
+					ai, a.Type, a.ReduceSymbol, a.ReduceChildCount, a.ReduceDynPrec)
+			}
+		}
+
 		// Handle additional actions (GLR ambiguity) by splitting.
 		for i := 1; i < int(entry.ActionCount); i++ {
 			extraAction := entry.Actions[i]
@@ -386,6 +396,10 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 			splitVersion := p.stack.Split(version)
 			if splitVersion < 0 {
 				continue
+			}
+			if position.Bytes >= 56 && position.Bytes <= 68 {
+				fmt.Fprintf(os.Stderr, "[DEBUG SPLIT] extra action[%d] on splitVersion=%d (from ver=%d) type=%d reduceSym=%d\n",
+					i, splitVersion, version, extraAction.Type, extraAction.ReduceSymbol)
 			}
 			switch extraAction.Type {
 			case ParseActionTypeShift:
@@ -415,6 +429,10 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 		if lastReduceIdx > 0 {
 			splitVersion := p.stack.Split(version)
 			if splitVersion >= 0 {
+				if position.Bytes >= 56 && position.Bytes <= 68 {
+					fmt.Fprintf(os.Stderr, "[DEBUG SWAP] original primary reduce sym=%d on splitVersion=%d, lastReduce sym=%d becomes primary on ver=%d\n",
+						action.ReduceSymbol, splitVersion, entry.Actions[lastReduceIdx].ReduceSymbol, version)
+				}
 				p.doReduce(splitVersion, action, nullLookahead)
 			}
 			action = entry.Actions[lastReduceIdx]
@@ -870,17 +888,35 @@ func (p *Parser) doReduce(version StackVersion, action ParseActionEntry, endOfNo
 	dynPrec := action.ReduceDynPrec
 
 	pos := p.stack.Position(version)
-	if pos.Bytes >= 45 && pos.Bytes <= 60 {
+	if pos.Bytes >= 56 && pos.Bytes <= 68 {
 		fmt.Fprintf(os.Stderr, "[DEBUG REDUCE] ver=%d sym=%d childCount=%d prodID=%d dynPrec=%d pos=%d nResults=%d\n",
 			version, symbol, childCount, productionID, dynPrec, pos.Bytes, 0)
 	}
 
 	// Pop children.
+	// Enable trace for slice_expression (sym=440), _slice_expression_interpolation (sym=344),
+	// _interpolation_fallbacks (sym=445)
+	if symbol == 440 || symbol == 344 || symbol == 445 {
+		PopDebugTrace = true
+	}
 	results := p.stack.Pop(version, childCount)
-	if pos.Bytes >= 45 && pos.Bytes <= 60 {
+	if pos.Bytes >= 45 && pos.Bytes <= 68 {
 		fmt.Fprintf(os.Stderr, "[DEBUG REDUCE] ver=%d sym=%d popResults=%d\n", version, symbol, len(results))
 		for ri, r := range results {
 			fmt.Fprintf(os.Stderr, "[DEBUG REDUCE]   result[%d]: node.state=%d nSubtrees=%d\n", ri, r.node.state, len(r.subtrees))
+		}
+	}
+	// Special trace for slice_expression (sym=440) -- unconditional
+	if symbol == 440 || symbol == 344 {
+		fmt.Fprintf(os.Stderr, "[DEBUG SLICE_EXPR] ver=%d popResults=%d pos=%d\n", version, len(results), pos.Bytes)
+		for ri, r := range results {
+			fmt.Fprintf(os.Stderr, "[DEBUG SLICE_EXPR]   result[%d]: baseNode.state=%d nSubtrees=%d\n", ri, r.node.state, len(r.subtrees))
+			for si, st := range r.subtrees {
+				if !st.IsZero() {
+					fmt.Fprintf(os.Stderr, "[DEBUG SLICE_EXPR]     subtree[%d]: sym=%d size=%d cc=%d\n",
+						si, GetSymbol(st, p.arena), GetSize(st, p.arena).Bytes, GetChildCount(st, p.arena))
+				}
+			}
 		}
 	}
 	if len(results) == 0 {
@@ -942,6 +978,25 @@ func (p *Parser) doReduce(version StackVersion, action ParseActionEntry, endOfNo
 	// Process each group. The first group is the primary version
 	// (Pop already moved the head to results[0].node).
 	for gIdx, group := range groups {
+		if pos.Bytes >= 56 && pos.Bytes <= 68 && (symbol == 204 || symbol == 201 || symbol == 184) {
+			fmt.Fprintf(os.Stderr, "[DEBUG REDUCE GROUPS] sym=%d ver=%d gIdx=%d/%d baseState=%d children:",
+				symbol, version, gIdx, len(groups), group.node.state)
+			for ci, ch := range group.bestChildren {
+				chSym := GetSymbol(ch, p.arena)
+				chCC := GetChildCount(ch, p.arena)
+				fmt.Fprintf(os.Stderr, " [%d]sym=%d,cc=%d", ci, chSym, chCC)
+				// Show one level deeper for the first child
+				if ci == 0 && chCC > 0 {
+					grandchildren := GetChildren(ch, p.arena)
+					fmt.Fprintf(os.Stderr, "{")
+					for _, gc := range grandchildren {
+						fmt.Fprintf(os.Stderr, "sym=%d,", GetSymbol(gc, p.arena))
+					}
+					fmt.Fprintf(os.Stderr, "}")
+				}
+			}
+			fmt.Fprintf(os.Stderr, "\n")
+		}
 		// Create the internal node from the best children.
 		node := NewNodeSubtree(p.arena, symbol, group.bestChildren, productionID, p.language)
 		SummarizeChildren(node, p.arena, p.language)
@@ -977,6 +1032,7 @@ func (p *Parser) doReduce(version StackVersion, action ParseActionEntry, endOfNo
 				newPosition = LengthAdd(LengthAdd(newPosition, extraPadding), extraSize)
 				p.stack.Push(version, gotoState, extra, false, newPosition)
 			}
+
 		} else {
 			// Alternative version — different base node, create new version.
 			altBaseState := group.node.state
@@ -1003,6 +1059,7 @@ func (p *Parser) doReduce(version StackVersion, action ParseActionEntry, endOfNo
 					altNewPosition = LengthAdd(LengthAdd(altNewPosition, extraPadding), extraSize)
 					p.stack.Push(altVersion, altGotoState, extra, false, altNewPosition)
 				}
+
 			}
 		}
 	}
@@ -1028,7 +1085,16 @@ func (p *Parser) selectChildren(symbol Symbol, productionID uint16, dynPrec int1
 		data.DynamicPrecedence += int32(dynPrec)
 	}
 
-	return p.selectTree(currentNode, altNode)
+	result := p.selectTree(currentNode, altNode)
+	pos := p.stack.Position(0) // just for context
+	if pos.Bytes >= 56 && pos.Bytes <= 68 {
+		fmt.Fprintf(os.Stderr, "[DEBUG selectChildren] sym=%d pos~%d: current[0]sym=%d alt[0]sym=%d selectAlt=%v\n",
+			symbol, pos.Bytes,
+			func() Symbol { if len(currentChildren) > 0 { return GetSymbol(currentChildren[0], p.arena) }; return 0 }(),
+			func() Symbol { if len(altChildren) > 0 { return GetSymbol(altChildren[0], p.arena) }; return 0 }(),
+			result)
+	}
+	return result
 }
 
 // doAccept marks a version as accepted and stores the finished tree.
@@ -1207,12 +1273,7 @@ func (p *Parser) acceptTree(version StackVersion) Subtree {
 
 // handleError attempts error recovery for a version that has been resumed
 // from a paused state. Called from condenseStack, not inline from advanceVersion.
-// Ports C tree-sitter's ts_parser__handle_error:
-//  1. doAllPotentialReductions (try all reductions, unfiltered with symbol=0)
-//  2. Try inserting missing tokens
-//  3. Push ERROR_STATE (state 0) onto all relevant versions, try merge
-//  4. Record stack summary for popback recovery
-//  5. Call recover (try popback to previous state, then skip token)
+// Faithfully ports C tree-sitter's ts_parser__handle_error (parser.c:1439-1534).
 func (p *Parser) handleError(version StackVersion, token Subtree) {
 	// Check cancellation before expensive error recovery.
 	if p.ctx != nil {
@@ -1225,132 +1286,114 @@ func (p *Parser) handleError(version StackVersion, token Subtree) {
 	}
 
 	previousVersionCount := p.stack.VersionCount()
+
+	// Step 1: Perform any reductions that can happen in this state, regardless
+	// of the lookahead. After skipping one or more invalid tokens, the parser
+	// might find a token that would have allowed a reduction to take place.
+	// Matches C: ts_parser__do_all_potential_reductions(self, version, 0)
+	p.doAllPotentialReductions(version, 0)
+	versionCount := p.stack.VersionCount()
 	position := p.stack.Position(version)
-	lookaheadSymbol := GetSymbol(token, p.arena)
 
 	if p.debug {
+		leafSym := GetLeafSymbol(token, p.arena)
 		symName := ""
-		if p.language != nil && int(lookaheadSymbol) < len(p.language.SymbolNames) {
-			symName = p.language.SymbolNames[lookaheadSymbol]
+		if p.language != nil && int(leafSym) < len(p.language.SymbolNames) {
+			symName = p.language.SymbolNames[leafSym]
 		}
-		fmt.Printf("[handleError] v=%d state=%d pos=%d lookahead=%d(%s) versions=%d\n",
-			version, p.stack.State(version), position.Bytes, lookaheadSymbol, symName, previousVersionCount)
+		fmt.Printf("[handleError] v=%d state=%d pos=%d lookahead=%d(%s) prevVersions=%d newVersions=%d\n",
+			version, p.stack.State(version), position.Bytes, leafSym, symName, previousVersionCount, versionCount)
 	}
 
-	// Step 1: doAllPotentialReductions (unfiltered, matches C's symbol=0 call).
-	// This tries all reductions from the current state regardless of whether
-	// they help with the lookahead. Creates split versions for each reduction.
-	p.doAllPotentialReductionsUnfiltered(version)
+	// Step 2+3 combined: Push a discontinuity onto the stack. Try inserting
+	// a missing token (once), then push ERROR_STATE onto all relevant versions.
+	// Matches C's combined loop (parser.c:1456-1514).
+	leafSymbol := GetLeafSymbol(token, p.arena)
+	didInsertMissingToken := false
 
-	// Step 2: Try inserting missing tokens on all versions created so far.
-	// For each version (original + any splits from step 1), try each visible
-	// symbol as a missing token. If shifting the missing token followed by
-	// a reduce leads to a state that can handle the lookahead, keep it.
-	if lookaheadSymbol != SymbolError {
-		for v := version; int(v) < p.stack.VersionCount(); v++ {
-			if int(v) < previousVersionCount && v != version {
-				continue
-			}
-			if p.stack.IsHalted(v) {
-				continue
-			}
+	// Compute lookahead_bytes for missing token creation (matches C parser.c:1482).
+	lookaheadBytes := GetTotalBytes(token, p.arena) + GetLookaheadBytes(token, p.arena)
 
+	for v := version; v < StackVersion(versionCount); {
+		// Try missing token insertion (only once across all versions).
+		// Matches C: parser.c:1457-1510
+		if !didInsertMissingToken {
 			state := p.stack.State(v)
-			for sym := Symbol(1); sym < Symbol(p.language.SymbolCount); sym++ {
-				if p.stack.VersionCount() >= MaxVersionCount {
-					break
-				}
-				meta := p.language.SymbolMetadata[sym]
-				if !meta.Visible || meta.Supertype {
+			for missingSym := Symbol(1); missingSym < Symbol(p.language.TokenCount); missingSym++ {
+				stateAfterMissing := p.language.nextState(state, missingSym)
+				if stateAfterMissing == 0 || stateAfterMissing == state {
 					continue
 				}
 
-				entry := p.language.tableEntry(state, sym)
-				if entry.ActionCount == 0 {
-					continue
-				}
+				if p.language.hasReduceAction(stateAfterMissing, leafSymbol) {
+					// Create a new version with the missing token inserted.
+					// Padding: In C, the lexer is reset to compute padding for
+					// included range snapping. For the common case (no ranges), zero.
+					// TODO: implement lexer reset for included ranges.
+					padding := Length{}
 
-				// Check if the first action is a shift.
-				hasShift := false
-				for i := 0; i < int(entry.ActionCount); i++ {
-					if entry.Actions[i].Type == ParseActionTypeShift {
-						hasShift = true
+					missingVersion := p.stack.Split(v)
+					if missingVersion < 0 {
+						continue
+					}
+					missingTree := p.createMissingToken(missingSym, padding, lookaheadBytes)
+					missingPos := p.stack.Position(missingVersion)
+					p.stack.Push(missingVersion, stateAfterMissing, missingTree, false, missingPos)
+
+					if p.doAllPotentialReductions(missingVersion, leafSymbol) {
+						if p.debug {
+							symName := ""
+							if int(missingSym) < len(p.language.SymbolNames) {
+								symName = p.language.SymbolNames[missingSym]
+							}
+							fmt.Printf("[handleError] recover_with_missing symbol:%s state:%d\n",
+								symName, p.stack.State(missingVersion))
+						}
+						didInsertMissingToken = true
 						break
 					}
 				}
-				if !hasShift {
-					continue
-				}
-
-				missingVersion := p.stack.Split(v)
-				if missingVersion < 0 {
-					continue
-				}
-
-				missingToken := p.createMissingToken(sym)
-				shiftState := entry.Actions[0].ShiftState
-				p.stack.Push(missingVersion, shiftState, missingToken, false, position)
-				p.stack.AddErrorCost(missingVersion, ErrorCostPerMissingTree)
-
-				// Check if the lookahead is valid in the post-missing state.
-				newState := p.stack.State(missingVersion)
-				newEntry := p.language.tableEntry(newState, lookaheadSymbol)
-				if newEntry.ActionCount == 0 {
-					p.stack.Halt(missingVersion)
-				}
 			}
 		}
-	}
 
-	// Step 3: Push ERROR_STATE (state 0) onto all relevant versions.
-	// This transitions each version into error recovery mode where RECOVER
-	// actions in the parse table will handle token skipping/popback.
-	for v := version; int(v) < p.stack.VersionCount(); v++ {
-		if int(v) < previousVersionCount && v != version {
-			continue
-		}
-		if p.stack.IsHalted(v) {
-			continue
-		}
-
+		// Push ERROR_STATE (state 0) onto this version.
+		// Matches C: ts_stack_push(self->stack, v, NULL_SUBTREE, false, ERROR_STATE)
 		vPos := p.stack.Position(v)
 		p.stack.Push(v, 0, SubtreeZero, false, vPos)
 
-		// Try to merge this version with a prior one.
-		if v > version {
-			merged := false
-			for priorV := version; priorV < v; priorV++ {
-				if p.stack.Merge(priorV, v) {
-					merged = true
-					break
-				}
-			}
-			if merged {
-				v--
-			}
+		// Advance: process version first, then skip to doAllPotentialReductions versions.
+		// Matches C: v = (v == version) ? previous_version_count : v + 1
+		if v == version {
+			v = StackVersion(previousVersionCount)
+		} else {
+			v++
 		}
 	}
 
-	// Step 4: Record stack summary for popback recovery.
+	// Merge all versions created by doAllPotentialReductions back into version.
+	// Matches C: parser.c:1516-1519
+	for i := previousVersionCount; i < int(versionCount); i++ {
+		p.stack.Merge(version, StackVersion(previousVersionCount))
+	}
+
+	// Record stack summary for popback recovery.
+	// Matches C: ts_stack_record_summary(self->stack, version, MAX_SUMMARY_DEPTH)
 	p.stack.RecordSummary(version, MaxSummaryDepth)
 
-	// Step 5: Break down lookahead if composite, then call recover.
+	// Begin recovery with the current lookahead node. Break down if composite.
+	// Matches C: parser.c:1528-1531
 	if GetChildCount(token, p.arena) > 0 {
 		p.breakdownLookahead(&token, StateID(0))
 	}
 	p.recover(version, token)
 }
 
-// doAllPotentialReductionsUnfiltered tries every possible reduction from the
-// current state, keeping all results regardless of whether they can handle
-// the lookahead. This is used in handleError to "compact" the stack before
-// pushing ERROR_STATE.
-// Matches C: ts_parser__do_all_potential_reductions(self, version, 0)
 // doAllPotentialReductions tries every possible reduction from the current
 // state. When lookaheadSymbol is 0 (unfiltered mode, used by handleError),
 // it scans all terminal symbols. When non-zero (filtered mode), it only
-// checks actions for that specific symbol. This is a faithful port of C's
-// ts_parser__do_all_potential_reductions (reference/parser.c:1101-1189).
+// checks actions for that specific symbol. Returns true if the lookahead
+// can be shifted. Faithful port of C's ts_parser__do_all_potential_reductions
+// (reference/parser.c:1101-1189).
 func (p *Parser) doAllPotentialReductions(startingVersion StackVersion, lookaheadSymbol Symbol) bool {
 	initialVersionCount := p.stack.VersionCount()
 	canShiftLookahead := false
@@ -1459,10 +1502,7 @@ func (p *Parser) doAllPotentialReductions(startingVersion StackVersion, lookahea
 	return canShiftLookahead
 }
 
-// doAllPotentialReductionsUnfiltered is the unfiltered variant (lookaheadSymbol=0).
-func (p *Parser) doAllPotentialReductionsUnfiltered(version StackVersion) {
-	p.doAllPotentialReductions(version, 0)
-}
+
 
 // doReduceForPotential performs a reduce for doAllPotentialReductions.
 // It splits the version, pops child_count items, and creates a parent node.
@@ -1756,12 +1796,16 @@ func (p *Parser) createErrorRepeatNode(children []Subtree) Subtree {
 	return NewNodeSubtree(p.arena, SymbolErrorRepeat, children, 0, p.language)
 }
 
-// createMissingToken creates a MISSING token (zero-width, for error recovery).
-func (p *Parser) createMissingToken(symbol Symbol) Subtree {
+// createMissingToken creates a MISSING leaf token (zero-width, for error recovery).
+// Matches C's ts_subtree_new_missing_leaf. Padding accounts for included range
+// snapping; lookaheadBytes captures the current token's total reach.
+func (p *Parser) createMissingToken(symbol Symbol, padding Length, lookaheadBytes uint32) Subtree {
 	st, data := p.arena.Alloc()
 	meta := p.language.SymbolMetadata[symbol]
 	*data = SubtreeHeapData{
-		Symbol: symbol,
+		Symbol:         symbol,
+		Padding:        padding,
+		LookaheadBytes: lookaheadBytes,
 	}
 	data.SetFlag(SubtreeFlagVisible, meta.Visible)
 	data.SetFlag(SubtreeFlagNamed, meta.Named)

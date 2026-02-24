@@ -668,6 +668,20 @@ func GetFirstLeaf(s Subtree, arena *SubtreeArena) FirstLeaf {
 	return arena.Get(s).FirstLeaf
 }
 
+// GetLeafSymbol returns the symbol of the leftmost leaf token in a subtree.
+// For leaf nodes (inline or zero children), this is the node's own symbol.
+// For non-leaf nodes, this is FirstLeaf.Symbol. Mirrors C's ts_subtree_leaf_symbol.
+func GetLeafSymbol(s Subtree, arena *SubtreeArena) Symbol {
+	if s.IsInline() {
+		return s.InlineSymbol()
+	}
+	data := arena.Get(s)
+	if data.ChildCount > 0 {
+		return data.FirstLeaf.Symbol
+	}
+	return data.Symbol
+}
+
 // GetVisibleChildCount returns the count of visible children.
 func GetVisibleChildCount(s Subtree, arena *SubtreeArena) uint32 {
 	if s.IsInline() {

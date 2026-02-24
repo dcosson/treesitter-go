@@ -177,6 +177,19 @@ func (l *Language) nextState(state StateID, symbol Symbol) StateID {
 	return 0
 }
 
+// hasReduceAction returns true if the parse table for the given state and
+// symbol contains at least one reduce action. Mirrors C's
+// ts_language_has_reduce_action (used in handleError for missing token insertion).
+func (l *Language) hasReduceAction(state StateID, symbol Symbol) bool {
+	entry := l.tableEntry(state, symbol)
+	for i := 0; i < int(entry.ActionCount); i++ {
+		if entry.Actions[i].Type == ParseActionTypeReduce {
+			return true
+		}
+	}
+	return false
+}
+
 // PublicSymbol maps an internal symbol to its public (canonical) symbol.
 // This normalizes internal variants (e.g., sym__declare_scalar -> sym_scalar)
 // to their public representation. Mirrors ts_language_public_symbol in C.
