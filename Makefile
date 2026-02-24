@@ -53,9 +53,9 @@ endif
 
 bench:
 ifdef TREE_SITTER_CLI
-	go test ./... -bench=. -benchmem -count=5 -timeout 10m \
+	go test . -run=NOMATCH -bench=. -benchmem -count=5 -timeout 10m \
 		-ts-cli=$(TREE_SITTER_CLI) | tee bench-results.txt
 else
-	go test ./... -bench=. -benchmem -count=5 -timeout 10m | tee bench-results.txt
+	go test . -run=NOMATCH -bench=. -benchmem -count=5 -timeout 10m | tee bench-results.txt
 	@echo "Note: tree-sitter CLI not found, Go-vs-C comparison skipped."
 endif
