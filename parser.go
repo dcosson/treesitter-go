@@ -297,22 +297,6 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 				// with the current state (which should have a valid lex mode).
 				return true
 			}
-			// Keyword demotion: if the lookahead is a keyword with no
-			// actions, but the word token (keyword_capture_token) DOES have
-			// actions, demote the keyword back to the word token and retry.
-			// This handles GLR cases where a keyword is valid in one parse
-			// state but not another. Matches C runtime (reference/parser.c:1716-1742).
-			if !token.IsZero() && GetIsKeyword(token, p.arena) &&
-				tokenSymbol != p.language.KeywordCaptureToken &&
-				!p.language.IsReservedWord(uint32(p.language.LexModes[state].ReservedWordSetID), tokenSymbol) {
-				wordEntry := p.language.tableEntry(state, p.language.KeywordCaptureToken)
-				if wordEntry.ActionCount > 0 {
-					token = SetSubtreeSymbol(token, p.arena, p.language.KeywordCaptureToken, p.language)
-					tokenSymbol = p.language.KeywordCaptureToken
-					continue
-				}
-			}
-
 			// No valid action — pause this version for error recovery.
 			// This applies even in ERROR_STATE (state 0). C tree-sitter
 			// always pauses and lets condenseStack resume with handleError,
@@ -358,15 +342,6 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 		}
 
 		// Handle additional actions (GLR ambiguity) by splitting.
-		//
-		// Match C runtime action processing order: the C runtime processes
-		// actions sequentially and returns immediately when a non-repetition
-		// SHIFT is encountered, skipping all remaining actions. When the
-		// primary action (action[0]) is a SHIFT, remaining REDUCEs are
-		// intentionally redundant — equivalent reduce paths were already
-		// created by earlier reduces at other states. Processing these
-		// redundant reduces creates extra versions that merge incorrectly.
-		primaryIsShift := action.Type == ParseActionTypeShift && !action.ShiftRepetition
 		for i := 1; i < int(entry.ActionCount); i++ {
 			extraAction := entry.Actions[i]
 			// Skip repetition shifts — these are markers for the parser's
@@ -379,14 +354,6 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 			}
 			// Skip the last reduce here — it will run on the primary below.
 			if i == lastReduceIdx {
-				continue
-			}
-			// When the primary action is a SHIFT, skip remaining REDUCE
-			// actions. This matches the C runtime's behavior where SHIFT
-			// exits ts_parser__advance immediately, skipping subsequent
-			// actions. The grammar compiler accounts for this: REDUCE paths
-			// that need exploration have their reduces BEFORE the shift.
-			if primaryIsShift && extraAction.Type == ParseActionTypeReduce {
 				continue
 			}
 			splitVersion := p.stack.Split(version)
@@ -491,15 +458,34 @@ func (p *Parser) lexToken(version StackVersion, state StateID, position Length) 
 	}
 
 	// Check cache: only valid if same lex state, external lex state, and position.
+	// When the language has keyword extraction, the cached token must also pass
+	// keyword reusability checks. A cached token whose symbol is the keyword
+	// capture token (e.g., identifier) may need re-lexing if the parse state
+	// differs (keyword acceptance is parse-state-dependent). Matches C tree-sitter's
+	// ts_parser__can_reuse_first_leaf (reference/parser.c:488-495).
 	if p.cachedTokenValid &&
 		p.cachedTokenState == StateID(lexMode.LexState) &&
 		p.cachedTokenExtState == lexMode.ExternalLexState &&
 		p.cachedTokenPosition.Bytes == position.Bytes {
-		return p.cachedToken
+		canReuse := true
+		if p.language.KeywordLexFn != nil {
+			cachedSym := GetSymbol(p.cachedToken, p.arena)
+			if cachedSym == p.language.KeywordCaptureToken {
+				// Cached token is the keyword capture token (e.g., identifier).
+				// Reuse only if it's NOT a keyword AND the parse state matches.
+				// If it IS a keyword (was matched by keyword lex but rejected at
+				// original state), a different state might accept the keyword.
+				if GetIsKeyword(p.cachedToken, p.arena) || GetParseState(p.cachedToken, p.arena) != state {
+					canReuse = false
+				}
+			}
+		}
+		if canReuse {
+			return p.cachedToken
+		}
 	}
 
 	foundExternalToken := false
-	keywordAccepted := false
 	var externalScannerStateLen uint32
 	var externalScannerStateChanged bool
 
@@ -571,6 +557,7 @@ func (p *Parser) lexToken(version StackVersion, state StateID, position Length) 
 	}
 
 	// If no external token, run the internal lex function.
+	isKeyword := false
 	if !foundExternalToken {
 		p.lexer.Start(position)
 
@@ -599,6 +586,7 @@ func (p *Parser) lexToken(version StackVersion, state StateID, position Length) 
 			keywordMatched := kwLexResult &&
 				p.lexer.TokenEndPosition.Bytes == keywordEndPos.Bytes
 
+			isKeyword = keywordMatched
 			if keywordMatched {
 				keywordSymbol := p.lexer.ResultSymbol
 				// A keyword is accepted if the parser has actions for it in
@@ -611,7 +599,6 @@ func (p *Parser) lexToken(version StackVersion, state StateID, position Length) 
 				isReserved := p.language.IsReservedWord(uint32(lexMode.ReservedWordSetID), keywordSymbol)
 				if lookupResult != 0 || isReserved {
 					p.lexer.ResultSymbol = keywordSymbol
-					keywordAccepted = true
 				} else {
 					p.lexer.ResultSymbol = origSymbol
 				}
@@ -645,11 +632,6 @@ func (p *Parser) lexToken(version StackVersion, state StateID, position Length) 
 	symbol := p.lexer.ResultSymbol
 
 	// Create the leaf subtree for this token.
-	// isKeyword is true when keyword extraction promoted the keyword capture
-	// token (e.g., identifier) to a specific keyword symbol. This flag enables
-	// keyword demotion during GLR parsing when a keyword has no valid actions
-	// but the word token does. Matches C runtime's is_keyword flag.
-	isKeyword := keywordAccepted
 	dependsOnColumn := padding.Point.Row > 0
 
 	token := NewLeafSubtree(

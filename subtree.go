@@ -511,6 +511,17 @@ func IsNamed(s Subtree, arena *SubtreeArena) bool {
 	return arena.Get(s).HasFlag(SubtreeFlagNamed)
 }
 
+// GetIsKeyword returns true if the subtree is a keyword-extracted token.
+// This flag is set during lexing when the keyword lex function matches.
+// Used by the token cache to determine keyword reusability across parse states.
+// Matches C runtime's ts_subtree_is_keyword.
+func GetIsKeyword(s Subtree, arena *SubtreeArena) bool {
+	if s.IsInline() {
+		return s.InlineIsKeyword()
+	}
+	return arena.Get(s).HasFlag(SubtreeFlagIsKeyword)
+}
+
 // IsExtra returns true if the subtree is an extra node (e.g., whitespace, comments).
 func IsExtra(s Subtree, arena *SubtreeArena) bool {
 	if s.IsInline() {
