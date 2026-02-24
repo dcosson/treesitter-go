@@ -150,8 +150,30 @@ func TestCorpusJavaScript(t *testing.T) {
 }
 
 // TestCorpusTypeScript runs the tree-sitter-typescript corpus tests.
+// The TypeScript corpus includes tests for both TypeScript and TSX grammars,
+// distinguished by :language(typescript) and :language(tsx) attributes.
 func TestCorpusTypeScript(t *testing.T) {
-	runCorpusForLanguage(t, "tree-sitter-typescript", newTSLang())
+	t.Helper()
+	corpusDir := filepath.Join(corpusGrammarsDir(), "tree-sitter-typescript", "test", "corpus")
+	if _, err := os.Stat(corpusDir); os.IsNotExist(err) {
+		t.Skipf("tree-sitter-typescript corpus not found at %s — run 'make fetch-test-grammars' first", corpusDir)
+	}
+
+	cases, err := corpustest.ParseCorpusDir(corpusDir)
+	if err != nil {
+		t.Fatalf("failed to parse corpus: %v", err)
+	}
+	if len(cases) == 0 {
+		t.Fatal("no corpus test cases found")
+	}
+	t.Logf("loaded %d corpus test cases for tree-sitter-typescript", len(cases))
+
+	langParsers := map[string]corpustest.ParseFunc{
+		"":           makeCorpusParseFunc(newTSLang()),
+		"typescript": makeCorpusParseFunc(newTSLang()),
+		"tsx":        makeCorpusParseFunc(newTSXLang()),
+	}
+	corpustest.RunCorpusWithLanguages(t, cases, langParsers)
 }
 
 // TestCorpusLua runs the tree-sitter-lua corpus tests.
