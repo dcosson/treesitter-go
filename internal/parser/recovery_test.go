@@ -428,20 +428,25 @@ func TestRecoverToStateBasic(t *testing.T) {
 		t.Fatal("recoverToState returned false, expected true")
 	}
 
-	// After recovery, the version should be at the goal state.
-	state := p.stack.State(v)
-	if state != 5 {
-		t.Errorf("state after recovery = %d, want 5", state)
+	// C parity: recoverToState creates a new version. Verify at least one
+	// active version is at goal state with an ERROR top subtree.
+	foundRecovered := false
+	for i := 0; i < p.stack.VersionCount(); i++ {
+		vv := StackVersion(i)
+		if !p.stack.IsActive(vv) || p.stack.State(vv) != 5 {
+			continue
+		}
+		topSubtree := p.stack.TopSubtree(vv)
+		if topSubtree.IsZero() {
+			continue
+		}
+		if GetSymbol(topSubtree, p.arena) == SymbolError {
+			foundRecovered = true
+			break
+		}
 	}
-
-	// The top subtree should be an ERROR node.
-	topSubtree := p.stack.TopSubtree(v)
-	if topSubtree.IsZero() {
-		t.Fatal("expected non-zero top subtree after recovery")
-	}
-	topSymbol := GetSymbol(topSubtree, p.arena)
-	if topSymbol != SymbolError {
-		t.Errorf("top subtree symbol = %d, want %d (SymbolError)", topSymbol, SymbolError)
+	if !foundRecovered {
+		t.Fatal("expected an active recovered version at goal state with ERROR top subtree")
 	}
 }
 
@@ -491,9 +496,16 @@ func TestRecoverToStateWithErrorCost(t *testing.T) {
 		t.Fatal("recoverToState failed")
 	}
 
-	costAfter := p.stack.ErrorCost(v)
-	if costAfter <= costBefore {
-		t.Error("expected error cost to increase after recoverToState")
+	increased := false
+	for i := 0; i < p.stack.VersionCount(); i++ {
+		vv := StackVersion(i)
+		if p.stack.IsActive(vv) && p.stack.ErrorCost(vv) > costBefore {
+			increased = true
+			break
+		}
+	}
+	if !increased {
+		t.Error("expected at least one active version to have increased error cost after recoverToState")
 	}
 }
 

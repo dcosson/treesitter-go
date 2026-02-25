@@ -167,6 +167,13 @@ type StackIterator struct {
 	depth    uint32
 }
 
+// StackSlice is one pop result path paired with the stack version that owns
+// the corresponding base node. Mirrors C's StackSlice.
+type StackSlice struct {
+	version  StackVersion
+	subtrees []Subtree
+}
+
 // Node returns the base stack node for this pop path.
 func (it StackIterator) Node() *StackNode {
 	return it.node
@@ -175,6 +182,16 @@ func (it StackIterator) Node() *StackNode {
 // Subtrees returns the popped subtrees for this pop path.
 func (it StackIterator) Subtrees() []Subtree {
 	return it.subtrees
+}
+
+// Version returns the stack version for this slice.
+func (s StackSlice) Version() StackVersion {
+	return s.version
+}
+
+// Subtrees returns the popped subtrees for this slice.
+func (s StackSlice) Subtrees() []Subtree {
+	return s.subtrees
 }
 
 // Stack is the Graph-Structured Stack for GLR parsing.
@@ -994,47 +1011,169 @@ func (s *Stack) CompactHaltedVersions() {
 	s.heads = s.heads[:n]
 }
 
-// PopCount returns the number of pop results for the given version and depth,
-// without modifying the stack. Used to check if a pop would produce multiple paths.
-func (s *Stack) PopCount(version StackVersion, count uint32) int {
+type stackAction uint8
+
+const (
+	stackActionNone stackAction = 0
+	stackActionPop  stackAction = 1 << 0
+	stackActionStop stackAction = 1 << 1
+)
+
+type stackIterState struct {
+	node         *StackNode
+	subtrees     []Subtree
+	subtreeCount uint32
+	isPending    bool
+}
+
+func (s *Stack) addVersionFromNode(original StackVersion, node *StackNode) StackVersion {
+	if int(original) >= len(s.heads) {
+		return -1
+	}
+	head := s.heads[original]
+	version := StackVersion(len(s.heads))
+	s.heads = append(s.heads, StackHead{
+		node:                 node,
+		status:               StackStatusActive,
+		lastExternalToken:    head.lastExternalToken,
+		nodeCountAtLastError: head.nodeCountAtLastError,
+		lookaheadWhenPaused:  SubtreeZero,
+	})
+	return version
+}
+
+func (s *Stack) addSlice(slices *[]StackSlice, original StackVersion, node *StackNode, subtrees []Subtree) {
+	// Match C ts_stack__add_slice: reuse existing version when it has same base node.
+	for i := len(*slices) - 1; i >= 0; i-- {
+		version := (*slices)[i].version
+		if int(version) < len(s.heads) && s.heads[version].node == node {
+			slice := StackSlice{version: version, subtrees: subtrees}
+			*slices = append(*slices, StackSlice{})
+			copy((*slices)[i+2:], (*slices)[i+1:])
+			(*slices)[i+1] = slice
+			return
+		}
+	}
+
+	version := s.addVersionFromNode(original, node)
+	if version < 0 {
+		return
+	}
+	*slices = append(*slices, StackSlice{version: version, subtrees: subtrees})
+}
+
+func reverseSubtrees(items []Subtree) {
+	for i, j := 0, len(items)-1; i < j; i, j = i+1, j-1 {
+		items[i], items[j] = items[j], items[i]
+	}
+}
+
+func (s *Stack) iterate(
+	version StackVersion,
+	goalSubtreeCount int,
+	callback func(*stackIterState) stackAction,
+) []StackSlice {
 	if int(version) >= len(s.heads) {
-		return 0
+		return nil
 	}
 	head := &s.heads[version]
 	if head.node == nil {
-		return 0
+		return nil
 	}
 
-	type walkFrame struct {
-		node  *StackNode
-		depth uint32
+	includeSubtrees := goalSubtreeCount >= 0
+	slices := make([]StackSlice, 0, 4)
+	iterators := make([]stackIterState, 0, 4)
+	initialCap := 0
+	if goalSubtreeCount > 0 {
+		initialCap = goalSubtreeCount
+	}
+	iterators = append(iterators, stackIterState{
+		node:      head.node,
+		subtrees:  make([]Subtree, 0, initialCap),
+		isPending: true,
+	})
+
+	for len(iterators) > 0 {
+		for i := 0; i < len(iterators); i++ {
+			it := &iterators[i]
+			node := it.node
+
+			action := callback(it)
+			shouldPop := action&stackActionPop != 0
+			shouldStop := action&stackActionStop != 0 || node.linkCount == 0
+
+			if shouldPop {
+				subtrees := it.subtrees
+				if !shouldStop {
+					subtrees = append([]Subtree(nil), subtrees...)
+				}
+				reverseSubtrees(subtrees)
+				s.addSlice(&slices, version, node, subtrees)
+			}
+
+			if shouldStop {
+				iterators = append(iterators[:i], iterators[i+1:]...)
+				i--
+				continue
+			}
+
+			// Match C stack__iter fanout/link ordering.
+			for j := uint16(1); j <= node.linkCount; j++ {
+				var next *stackIterState
+				var link StackLink
+				if j == node.linkCount {
+					link = node.links[0]
+					next = &iterators[i]
+				} else {
+					if len(iterators) >= MaxIteratorCount {
+						continue
+					}
+					link = node.links[j]
+					current := iterators[i]
+					current.subtrees = append([]Subtree(nil), current.subtrees...)
+					iterators = append(iterators, current)
+					next = &iterators[len(iterators)-1]
+				}
+
+				next.node = link.node
+				if !link.subtree.IsZero() {
+					if includeSubtrees {
+						next.subtrees = append(next.subtrees, link.subtree)
+					}
+					if !IsExtra(link.subtree, s.arena) {
+						next.subtreeCount++
+						if !link.isPending {
+							next.isPending = false
+						}
+					}
+				} else {
+					next.subtreeCount++
+					next.isPending = false
+				}
+			}
+		}
 	}
 
-	resultCount := 0
-	queue := []walkFrame{{node: head.node, depth: 0}}
+	return slices
+}
 
-	for len(queue) > 0 && resultCount < MaxIteratorCount {
-		frame := queue[0]
-		queue = queue[1:]
-
-		if frame.depth == count {
-			resultCount++
-			continue
+// PopCountSlices performs C-style pop-count traversal and returns one slice per
+// pop path, with version-per-path grouping by base node.
+func (s *Stack) PopCountSlices(version StackVersion, count uint32) []StackSlice {
+	goal := count
+	return s.iterate(version, int(count), func(it *stackIterState) stackAction {
+		if it.subtreeCount == goal {
+			return stackActionPop | stackActionStop
 		}
+		return stackActionNone
+	})
+}
 
-		if frame.node == nil || frame.node.linkCount == 0 {
-			continue
-		}
-
-		for i := uint16(0); i < frame.node.linkCount; i++ {
-			queue = append(queue, walkFrame{
-				node:  frame.node.links[i].node,
-				depth: frame.depth + 1,
-			})
-		}
-	}
-
-	return resultCount
+// PopCount returns the number of pop results for the given version and depth,
+// without modifying the stack. Used to check if a pop would produce multiple paths.
+func (s *Stack) PopCount(version StackVersion, count uint32) int {
+	return len(s.PopCountSlices(version, count))
 }
 
 // summaryIterator tracks a single path through the stack during summary recording.

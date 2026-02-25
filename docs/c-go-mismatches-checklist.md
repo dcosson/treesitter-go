@@ -100,7 +100,7 @@ This makes cross-referencing and auditing trivial.
 | ts_stack_has_advanced_since_error | 647 | HasAdvancedSinceError | 245 | OK |
 | ts_stack_dynamic_precedence | 643 | DynamicPrecedence | 211 | OK |
 | ts_stack_push | — (inline) | Push | 310 | MISMATCH — caller supplies position |
-| ts_stack_pop_count | 534 | Pop / PopCount | 359/926 | **CRITICAL MISMATCH** — see below |
+| ts_stack_pop_count | 534 | PopCountSlices / PopCount | — | FIXED (TBD) — see Stack Operations |
 | ts_stack_pop_all | 597 | PopAll | 443 | FIXED (316754c) |
 | ts_stack_pop_pending | 552 | PopPending | 513 | MISMATCH — no stack__iter fanout |
 | ts_stack_pop_error | 575 | PopError | 537 | MISMATCH — no stack__iter fanout |
@@ -124,9 +124,9 @@ This makes cross-referencing and auditing trivial.
 | stack__subtree_node_count | 126 | subtreeNodeCount | 612 | OK |
 | stack__subtree_is_equivalent | 181 | subtreeIsEquivalent | 628 | OK |
 | stack_node_add_link (internal) | ~100 | nodeAddLink | 665 | OK (GC) |
-| stack__iter (internal) | 324 | — | — | **MISSING** — core iterator, all pop funcs built on it |
+| stack__iter (internal) | 324 | iterate (internal) | — | FIXED (TBD) |
 | ts_stack__add_version (internal) | 286 | AddVersion | 854 | MISMATCH — adds new node, not existing |
-| ts_stack__add_slice (internal) | 304 | — | — | **MISSING** — groups paths by node, creates versions |
+| ts_stack__add_slice (internal) | 304 | addSlice (internal) | — | FIXED (TBD) |
 
 **Go-only functions (no C equivalent):**
 | Go Name | Line | Notes |
@@ -290,19 +290,19 @@ Rename as you touch functions, not as a bulk rename.
 
 ## Stack Operations
 
-- [ ] **Pop vs ts_stack_pop_count — FUNDAMENTAL MISMATCH** (CRITICAL)
-  - C's `ts_stack_pop_count` (via `stack__iter` + `ts_stack__add_slice`):
-    - Creates NEW version in heads array for each GSS path
-    - Returns `StackSliceArray` where each element has `.version` and `.subtrees`
-    - Groups paths that reach the same node into the same version
-  - Go's `Pop`:
-    - Returns `[]StackIterator` with node + subtrees
-    - Modifies first head IN-PLACE (`head.node = results[0].node`)
-    - Does NOT create new versions for multi-path results
-    - `doReduce` handles extra paths via `ForkAtNode` — a workaround, not a match
-  - Go's `PopCount`: only returns a count, doesn't collect subtrees (used differently)
-  - This is likely the root cause of multiple failures — without proper version-per-path creation, inline merge inside reduce can't work, and the version ordering is wrong
-  - Ref: stack.c:304-322 (ts_stack__add_slice), stack.c:324-400 (stack__iter)
+- [x] **Pop vs ts_stack_pop_count — FUNDAMENTAL MISMATCH** (FIXED: TBD)
+  - Added C-style iterator + slice grouping in `internal/stack`:
+    - `iterate` (port of `stack__iter`)
+    - `addSlice` + version creation by base node identity (port of `ts_stack__add_slice`)
+    - `PopCountSlices` returns `(version, subtrees)` slices
+  - Updated parser call-sites to use stack slices instead of `ForkAtNode` workaround:
+    - `doReduce`
+    - `recoverToState`
+    - error-repeat merge path in `recover`
+  - Added `internal/stack` parity tests for:
+    - same-base-node grouping (multiple slices sharing one version)
+    - distinct-base-node fanout (separate versions per path)
+  - Ref: stack.c:304-322 (`ts_stack__add_slice`), stack.c:324-400 (`stack__iter`)
 
 - [x] **PopAll multi-path traversal** (316754c)
   - Fixed to properly traverse all GSS paths in doAccept iteration

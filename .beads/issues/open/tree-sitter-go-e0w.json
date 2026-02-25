@@ -1,0 +1,37 @@
+{
+  "id": "tree-sitter-go-e0w",
+  "title": "tree-sitter-go-cgo-hotfix",
+  "description": "Prioritize highest-impact C/Go runtime mismatches causing remaining corpus failures. All child tasks must update docs/c-go-mismatches-checklist.md with latest status when addressed.",
+  "status": "open",
+  "priority": 2,
+  "type": "epic",
+  "dependents": [
+    {
+      "id": "tree-sitter-go-e0w.1",
+      "type": "parent-child"
+    },
+    {
+      "id": "tree-sitter-go-e0w.2",
+      "type": "parent-child"
+    },
+    {
+      "id": "tree-sitter-go-e0w.3",
+      "type": "parent-child"
+    },
+    {
+      "id": "tree-sitter-go-e0w.4",
+      "type": "parent-child"
+    },
+    {
+      "id": "tree-sitter-go-e0w.5",
+      "type": "parent-child"
+    }
+  ],
+  "created_by": "Danny Cosson",
+  "owner": "dcosson@gmail.com",
+  "labels": [
+    "project=treesitter"
+  ],
+  "created_at": "2026-02-25T12:01:12.071777-08:00",
+  "updated_at": "2026-02-25T12:01:12.071777-08:00"
+}

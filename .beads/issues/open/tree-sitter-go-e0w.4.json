@@ -1,0 +1,33 @@
+{
+  "id": "tree-sitter-go-e0w.4",
+  "title": "stack-popcount-parity",
+  "description": "Implement C-parity for stack pop pipeline: stack__iter + ts_stack__add_slice semantics so ts_stack_pop_count behavior matches C (version-per-path grouping by base node). Include updates to internal/stack APIs and call sites. Acceptance: parity tests for multi-path GSS pop behavior and version ordering. REQUIRED DOC UPDATE: after completion, update docs/c-go-mismatches-checklist.md status entries for ts_stack_pop_count, stack__iter, ts_stack__add_slice, and related notes with commit reference.",
+  "status": "in_progress",
+  "priority": 2,
+  "type": "task",
+  "parent": "tree-sitter-go-e0w",
+  "dependencies": [
+    {
+      "id": "tree-sitter-go-e0w",
+      "type": "parent-child"
+    }
+  ],
+  "dependents": [
+    {
+      "id": "tree-sitter-go-e0w.1",
+      "type": "blocks"
+    },
+    {
+      "id": "tree-sitter-go-e0w.3",
+      "type": "blocks"
+    }
+  ],
+  "created_by": "Danny Cosson",
+  "owner": "dcosson@gmail.com",
+  "labels": [
+    "project=treesitter"
+  ],
+  "assignee": "coder-1",
+  "created_at": "2026-02-25T12:01:35.122227-08:00",
+  "updated_at": "2026-02-25T12:03:18.732144-08:00"
+}

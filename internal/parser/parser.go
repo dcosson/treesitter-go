@@ -902,35 +902,23 @@ func (p *Parser) doReduce(version StackVersion, action ParseActionEntry, endOfNo
 	productionID := action.ReduceProdID
 	dynPrec := action.ReduceDynPrec
 
-	// Pop children.
-	results := p.stack.Pop(version, childCount)
-	if len(results) == 0 {
+	// Pop children using C-style stack slices (version-per-path grouping by base node).
+	slices := p.stack.PopCountSlices(version, childCount)
+	if len(slices) == 0 {
 		p.stack.Halt(version)
 		return
 	}
 
-	// Group pop results by base node. Paths that converge to the same
-	// base node are alternative children for the same reduction — use
-	// selectChildren to pick the best set in-place. Only paths with
-	// different base nodes create separate stack versions.
-	//
-	// This matches C tree-sitter's ts_parser__reduce which groups
-	// StackSlices by version (assigned by ts_stack__add_slice based
-	// on the base node identity).
+	// Group consecutive slices by slice version (matching C ts_parser__reduce).
 	type reduceGroup struct {
-		node           *StackNode
+		version        StackVersion
 		bestChildren   []Subtree
 		trailingExtras []Subtree
 	}
-	groups := make([]reduceGroup, 0, 1)
-	groupIndex := make(map[*StackNode]int)
-
-	for _, result := range results {
-		// Reverse subtrees from stack order to tree order.
-		children := make([]Subtree, len(result.Subtrees()))
-		for j, s := range result.Subtrees() {
-			children[len(children)-1-j] = s
-		}
+	groups := make([]reduceGroup, 0, len(slices))
+	for i := 0; i < len(slices); i++ {
+		slice := slices[i]
+		children := append([]Subtree(nil), slice.Subtrees()...)
 
 		// Remove trailing extras (e.g. comments) from children.
 		var extras []Subtree
@@ -943,26 +931,36 @@ func (p *Parser) doReduce(version StackVersion, action ParseActionEntry, endOfNo
 			children = children[:len(children)-1]
 		}
 
-		if idx, ok := groupIndex[result.Node()]; ok {
-			// Same base node — compare using selectChildren.
-			if p.selectChildren(symbol, productionID, dynPrec,
-				groups[idx].bestChildren, children) {
-				groups[idx].bestChildren = children
-				groups[idx].trailingExtras = extras
-			}
-		} else {
-			groupIndex[result.Node()] = len(groups)
-			groups = append(groups, reduceGroup{
-				node:           result.Node(),
-				bestChildren:   children,
-				trailingExtras: extras,
-			})
+		group := reduceGroup{
+			version:        slice.Version(),
+			bestChildren:   children,
+			trailingExtras: extras,
 		}
+
+		// Merge subsequent slices with the same version using selectChildren.
+		for i+1 < len(slices) && slices[i+1].Version() == slice.Version() {
+			i++
+			nextChildren := append([]Subtree(nil), slices[i].Subtrees()...)
+			var nextExtras []Subtree
+			for len(nextChildren) > 0 {
+				last := nextChildren[len(nextChildren)-1]
+				if !IsExtra(last, p.arena) {
+					break
+				}
+				nextExtras = append(nextExtras, last)
+				nextChildren = nextChildren[:len(nextChildren)-1]
+			}
+			if p.selectChildren(symbol, productionID, dynPrec, group.bestChildren, nextChildren) {
+				group.bestChildren = nextChildren
+				group.trailingExtras = nextExtras
+			}
+		}
+		groups = append(groups, group)
 	}
 
-	// Process each group. The first group is the primary version
-	// (Pop already moved the head to results[0].node).
-	for gIdx, group := range groups {
+	// Process each grouped slice.
+	removedVersionCount := 0
+	for _, group := range groups {
 		// Create the internal node from the best children.
 		node := NewNodeSubtree(p.arena, symbol, group.bestChildren, productionID, p.language)
 		SummarizeChildren(node, p.arena, p.language)
@@ -973,59 +971,38 @@ func (p *Parser) doReduce(version StackVersion, action ParseActionEntry, endOfNo
 			data.DynamicPrecedence += int32(dynPrec)
 		}
 
-		if gIdx == 0 {
-			// Primary version — push onto the existing version.
-			baseState := p.stack.State(version)
-			gotoState := p.language.NextState(baseState, symbol)
+		sliceVersion := group.version - StackVersion(removedVersionCount)
+		if int(sliceVersion) >= p.stack.VersionCount() {
+			continue
+		}
+		baseState := p.stack.State(sliceVersion)
+		gotoState := p.language.NextState(baseState, symbol)
+		if endOfNonTerminalExtra && gotoState == baseState {
+			node = SetExtra(node, p.arena)
+		}
 
-			// C tree-sitter: if (end_of_non_terminal_extra && next_state == state)
-			if endOfNonTerminalExtra && gotoState == baseState {
-				node = SetExtra(node, p.arena)
+		position := p.stack.Position(sliceVersion)
+		nodePadding := GetPadding(node, p.arena)
+		nodeSize := GetSize(node, p.arena)
+		newPosition := LengthAdd(LengthAdd(position, nodePadding), nodeSize)
+		p.stack.Push(sliceVersion, gotoState, node, false, newPosition)
+
+		for i := len(group.trailingExtras) - 1; i >= 0; i-- {
+			extra := group.trailingExtras[i]
+			extraPadding := GetPadding(extra, p.arena)
+			extraSize := GetSize(extra, p.arena)
+			newPosition = LengthAdd(LengthAdd(newPosition, extraPadding), extraSize)
+			p.stack.Push(sliceVersion, gotoState, extra, false, newPosition)
+		}
+
+		// Inline merge after each reduce push, matching C behavior.
+		for j := StackVersion(0); j < sliceVersion; j++ {
+			if j == version {
+				continue
 			}
-
-			position := p.stack.Position(version)
-			nodePadding := GetPadding(node, p.arena)
-			nodeSize := GetSize(node, p.arena)
-			newPosition := LengthAdd(LengthAdd(position, nodePadding), nodeSize)
-
-			p.stack.Push(version, gotoState, node, false, newPosition)
-
-			// Re-push trailing extras as siblings of the parent.
-			for i := len(group.trailingExtras) - 1; i >= 0; i-- {
-				extra := group.trailingExtras[i]
-				extraPadding := GetPadding(extra, p.arena)
-				extraSize := GetSize(extra, p.arena)
-				newPosition = LengthAdd(LengthAdd(newPosition, extraPadding), extraSize)
-				p.stack.Push(version, gotoState, extra, false, newPosition)
-			}
-
-		} else {
-			// Alternative version — different base node, create new version.
-			altBaseState := group.node.State()
-			altGotoState := p.language.NextState(altBaseState, symbol)
-
-			if endOfNonTerminalExtra && altGotoState == altBaseState {
-				node = SetExtra(node, p.arena)
-			}
-
-			altBasePosition := group.node.Position()
-			altNodePadding := GetPadding(node, p.arena)
-			altNodeSize := GetSize(node, p.arena)
-			altNewPosition := LengthAdd(LengthAdd(altBasePosition, altNodePadding), altNodeSize)
-
-			altVersion := p.stack.ForkAtNode(group.node, version)
-			if altVersion >= 0 {
-				p.stack.Push(altVersion, altGotoState, node, false, altNewPosition)
-
-				// Re-push trailing extras as siblings, matching C behavior.
-				for i := len(group.trailingExtras) - 1; i >= 0; i-- {
-					extra := group.trailingExtras[i]
-					extraPadding := GetPadding(extra, p.arena)
-					extraSize := GetSize(extra, p.arena)
-					altNewPosition = LengthAdd(LengthAdd(altNewPosition, extraPadding), extraSize)
-					p.stack.Push(altVersion, altGotoState, extra, false, altNewPosition)
-				}
-
+			if p.stack.Merge(j, sliceVersion) {
+				removedVersionCount++
+				break
 			}
 		}
 	}
@@ -1624,9 +1601,10 @@ func (p *Parser) recover(version StackVersion, lookahead Subtree) {
 	// If tokens have already been skipped (node_count_since_error > 0),
 	// pop the existing error_repeat and merge it with the new token.
 	if nodeCountSinceError > 0 {
-		results := p.stack.Pop(version, 1)
-		if len(results) > 0 {
-			prevSubtrees := results[0].Subtrees()
+		slices := p.stack.PopCountSlices(version, 1)
+		if len(slices) > 0 {
+			p.stack.RenumberVersion(slices[0].Version(), version)
+			prevSubtrees := slices[0].Subtrees()
 			allChildren := make([]Subtree, 0, len(prevSubtrees)+1)
 			for i := len(prevSubtrees) - 1; i >= 0; i-- {
 				if !prevSubtrees[i].IsZero() {
@@ -1661,28 +1639,22 @@ func (p *Parser) recover(version StackVersion, lookahead Subtree) {
 // creating separate versions for each, keeping those that match goalState and
 // halting those that don't.
 func (p *Parser) recoverToState(version StackVersion, depth uint32, goalState StateID) bool {
-	results := p.stack.Pop(version, depth)
-	if len(results) == 0 {
+	slices := p.stack.PopCountSlices(version, depth)
+	if len(slices) == 0 {
 		return false
 	}
 
-	// Iterate all pop results. The first result is associated with `version`
-	// (Pop updates the head). Additional results need new versions via ForkAtNode.
-	// This matches C's loop over StackSliceArray in ts_parser__recover_to_state.
-	var previousNode *StackNode
+	// Iterate all pop slices (version-per-path), matching C.
 	didRecover := false
+	var previousVersion StackVersion = -1
 
-	for i, result := range results {
-		// Determine the version for this pop result.
-		var sliceVersion StackVersion
-		if i == 0 {
-			sliceVersion = version
-		} else {
-			// Skip duplicate nodes (same as C's previous_version check).
-			if result.Node() == previousNode {
-				continue
-			}
-			sliceVersion = p.stack.ForkAtNode(result.Node(), version)
+	for _, slice := range slices {
+		sliceVersion := slice.Version()
+		if int(sliceVersion) >= p.stack.VersionCount() {
+			continue
+		}
+		if sliceVersion == previousVersion {
+			continue
 		}
 
 		// Check if this version's state matches the goal state.
@@ -1707,7 +1679,7 @@ func (p *Parser) recoverToState(version StackVersion, depth uint32, goalState St
 		// Build children array: existing error children + popped subtrees in
 		// source order (reverse from stack order). Filter out SubtreeZero entries
 		// which come from ERROR_STATE pushes.
-		popped := result.Subtrees()
+		popped := slice.Subtrees()
 		children := make([]Subtree, 0, len(existingErrorChildren)+len(popped))
 		children = append(children, existingErrorChildren...)
 		for j := len(popped) - 1; j >= 0; j-- {
@@ -1752,7 +1724,7 @@ func (p *Parser) recoverToState(version StackVersion, depth uint32, goalState St
 			p.stack.Push(sliceVersion, goalState, extra, false, newPos)
 		}
 
-		previousNode = result.Node()
+		previousVersion = sliceVersion
 		didRecover = true
 	}
 

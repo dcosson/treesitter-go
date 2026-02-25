@@ -1,0 +1,30 @@
+{
+  "id": "tree-sitter-go-e0w.3",
+  "title": "error-recovery-pop-parity",
+  "description": "Fix recover parity with C: Strategy 2 multi-path pop handling (version keep/discard/renumber), Strategy 1 depth increment behavior, and has_error state parity where applicable. Acceptance: recovery tests for multi-path pop branches and expected version outcomes in non-assoc/recovery corpora. REQUIRED DOC UPDATE: after completion, update docs/c-go-mismatches-checklist.md entries for ts_parser__recover (Strategy 1/2 items, has_error note) with commit reference.",
+  "status": "open",
+  "priority": 2,
+  "type": "task",
+  "parent": "tree-sitter-go-e0w",
+  "dependencies": [
+    {
+      "id": "tree-sitter-go-e0w",
+      "type": "parent-child"
+    },
+    {
+      "id": "tree-sitter-go-e0w.4",
+      "type": "blocks"
+    },
+    {
+      "id": "tree-sitter-go-e0w.2",
+      "type": "blocks"
+    }
+  ],
+  "created_by": "Danny Cosson",
+  "owner": "dcosson@gmail.com",
+  "labels": [
+    "project=treesitter"
+  ],
+  "created_at": "2026-02-25T12:01:24.293392-08:00",
+  "updated_at": "2026-02-25T12:01:24.293392-08:00"
+}
