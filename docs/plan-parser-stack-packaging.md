@@ -13,6 +13,11 @@ Today `parser.go` and `stack.go` live in the same package and share many core ty
 
 ## Proposed Package Boundaries
 
+### `internal/` as the core namespace
+`internal/` is the namespace for the core runtime components. Language-specific
+code (generated tables, scanners, language glue) should live **outside** of
+`internal/` so it doesn’t leak into the runtime boundary.
+
 ### `internal/core`
 Owns foundational types and operations that are used broadly:
 - Types: `Subtree`, `SubtreeArena`, `Length`, `Point`, `StateID`, `Symbol`, etc.
