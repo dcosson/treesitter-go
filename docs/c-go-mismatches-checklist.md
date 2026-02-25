@@ -73,58 +73,58 @@ This makes cross-referencing and auditing trivial.
 
 | C Name (stack.c) | Line | Go Name (stack.go) | Line | Status |
 |---|---|---|---|---|
-| ts_stack_new | 421 | NewStack | 129 | ? |
+| ts_stack_new | 421 | NewStack | 129 | MISMATCH — no base node/initial head |
 | ts_stack_delete | 440 | — | — | N/A (GC) |
-| ts_stack_version_count | 459 | VersionCount | 137 | ? |
-| ts_stack_halted_version_count | 463 | — | — | ? missing? |
-| ts_stack_state | 474 | State | 153 | ? |
-| ts_stack_position | 478 | Position | 165 | ? |
-| ts_stack_last_external_token | 482 | LastExternalToken | 890 | ? |
-| ts_stack_set_last_external_token | 486 | SetLastExternalToken | 882 | ? |
-| ts_stack_error_cost | 493 | ErrorCost | 177 | ? |
-| ts_stack_node_count_since_error | 504 | NodeCountSinceError | 224 | ? |
-| ts_stack_has_advanced_since_error | 647 | HasAdvancedSinceError | 245 | ? |
-| ts_stack_dynamic_precedence | 643 | DynamicPrecedence | 211 | ? |
-| ts_stack_push | — (inline) | Push | 310 | ? |
+| ts_stack_version_count | 459 | VersionCount | 137 | OK |
+| ts_stack_halted_version_count | 463 | — | — | MISSING — no halted count |
+| ts_stack_state | 474 | State | 153 | OK |
+| ts_stack_position | 478 | Position | 165 | OK |
+| ts_stack_last_external_token | 482 | LastExternalToken | 890 | OK (GC) |
+| ts_stack_set_last_external_token | 486 | SetLastExternalToken | 882 | OK (GC) |
+| ts_stack_error_cost | 493 | ErrorCost | 177 | OK |
+| ts_stack_node_count_since_error | 504 | NodeCountSinceError | 224 | OK |
+| ts_stack_has_advanced_since_error | 647 | HasAdvancedSinceError | 245 | OK |
+| ts_stack_dynamic_precedence | 643 | DynamicPrecedence | 211 | OK |
+| ts_stack_push | — (inline) | Push | 310 | MISMATCH — caller supplies position |
 | ts_stack_pop_count | 534 | Pop / PopCount | 359/926 | **CRITICAL MISMATCH** — see below |
 | ts_stack_pop_all | 597 | PopAll | 443 | FIXED (316754c) |
-| ts_stack_pop_pending | 552 | PopPending | 513 | ? |
-| ts_stack_pop_error | 575 | PopError | 537 | ? |
-| ts_stack_merge | 708 | Merge | 737 | ? |
-| ts_stack_can_merge | 722 | CanMerge | 768 | ? |
+| ts_stack_pop_pending | 552 | PopPending | 513 | MISMATCH — no stack__iter fanout |
+| ts_stack_pop_error | 575 | PopError | 537 | MISMATCH — no stack__iter fanout |
+| ts_stack_merge | 708 | Merge | 737 | OK |
+| ts_stack_can_merge | 722 | CanMerge | 768 | OK |
 | ts_stack_halt | 734 | Halt | 831 | OK |
 | ts_stack_pause | 738 | Pause | 801 | OK |
 | ts_stack_resume | 757 | Resume | 817 | MISMATCH — Go does not assert status==Paused, uses if-check instead; functionally OK |
-| ts_stack_is_active | 745 | IsActive | 295 | ? |
-| ts_stack_is_halted | 749 | IsHalted | 305 | ? |
-| ts_stack_is_paused | 753 | IsPaused | 300 | ? |
-| ts_stack_remove_version | 671 | RemoveVersion | 840 | ? |
-| ts_stack_renumber_version | 676 | RenumberVersion | 1076 | ? |
-| ts_stack_swap_versions | 691 | SwapVersions | 279 | ? |
-| ts_stack_copy_version | 697 | — | — | ? missing? |
-| ts_stack_record_summary | 624 | RecordSummary | 980 | ? |
-| ts_stack_get_summary | 639 | GetSummary | 1065 | ? |
-| ts_stack_clear | 766 | Clear | 848 | ? |
+| ts_stack_is_active | 745 | IsActive | 295 | OK |
+| ts_stack_is_halted | 749 | IsHalted | 305 | OK |
+| ts_stack_is_paused | 753 | IsPaused | 300 | OK |
+| ts_stack_remove_version | 671 | RemoveVersion | 840 | OK (GC) |
+| ts_stack_renumber_version | 676 | RenumberVersion | 1076 | OK (GC) |
+| ts_stack_swap_versions | 691 | SwapVersions | 279 | OK |
+| ts_stack_copy_version | 697 | — | — | MISSING — use Split/ForkAtNode |
+| ts_stack_record_summary | 624 | RecordSummary | 980 | MISMATCH — visited set drops paths |
+| ts_stack_get_summary | 639 | GetSummary | 1065 | OK |
+| ts_stack_clear | 766 | Clear | 848 | MISMATCH — clears all heads (no base) |
 | ts_stack_print_dot_graph | 780 | — | — | N/A (debug) |
 | stack_node_retain | 82 | — | — | N/A (GC) |
-| stack__subtree_node_count | 126 | subtreeNodeCount | 612 | ? |
-| stack__subtree_is_equivalent | 181 | subtreeIsEquivalent | 628 | ? |
-| stack_node_add_link (internal) | ~100 | nodeAddLink | 665 | ? |
+| stack__subtree_node_count | 126 | subtreeNodeCount | 612 | OK |
+| stack__subtree_is_equivalent | 181 | subtreeIsEquivalent | 628 | OK |
+| stack_node_add_link (internal) | ~100 | nodeAddLink | 665 | OK (GC) |
 | stack__iter (internal) | 324 | — | — | **MISSING** — core iterator, all pop funcs built on it |
-| ts_stack__add_version (internal) | 286 | AddVersion | 854 | ? |
+| ts_stack__add_version (internal) | 286 | AddVersion | 854 | MISMATCH — adds new node, not existing |
 | ts_stack__add_slice (internal) | 304 | — | — | **MISSING** — groups paths by node, creates versions |
 
 **Go-only functions (no C equivalent):**
 | Go Name | Line | Notes |
 |---|---|---|
-| ActiveVersionCount | 142 | ? |
-| NodeCount | 199 | ? |
-| Split | 572 | C uses ts_stack_copy_version? |
-| ForkAtNode | 593 | Go workaround for not having stack__iter |
-| AddErrorCost | 899 | REMOVED double-count? verify |
-| CompactHaltedVersions | 913 | ? |
-| TopSubtree | 870 | ? |
-| Status | 287 | ? |
+| ActiveVersionCount | 142 | WORKAROUND — helper for missing iter/add_slice |
+| NodeCount | 199 | WORKAROUND — helper for missing iter/add_slice |
+| Split | 572 | WORKAROUND — replaces ts_stack_copy_version |
+| ForkAtNode | 593 | WORKAROUND — for missing stack__iter |
+| AddErrorCost | 899 | WORKAROUND — helper for missing iter/add_slice |
+| CompactHaltedVersions | 913 | WORKAROUND — helper for missing iter/add_slice |
+| TopSubtree | 870 | WORKAROUND — helper for missing iter/add_slice |
+| Status | 287 | WORKAROUND — helper for missing iter/add_slice |
 
 Rename as you touch functions, not as a bulk rename.
 
