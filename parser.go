@@ -412,7 +412,7 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 			case ParseActionTypeReduce:
 				p.doReduce(splitVersion, extraAction, nullLookahead)
 			case ParseActionTypeAccept:
-				p.doAccept(splitVersion)
+				p.doAccept(splitVersion, token)
 			case ParseActionTypeRecover:
 				if !nullLookahead {
 					recoverToken := token
@@ -464,7 +464,7 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 			// Continue the inner loop to check the new state.
 			continue
 		case ParseActionTypeAccept:
-			p.doAccept(version)
+			p.doAccept(version, token)
 			return true
 		case ParseActionTypeRecover:
 			if nullLookahead {
@@ -894,11 +894,6 @@ func (p *Parser) doReduce(version StackVersion, action ParseActionEntry, endOfNo
 	}
 
 	// Pop children.
-	// Enable trace for slice_expression (sym=440), _slice_expression_interpolation (sym=344),
-	// _interpolation_fallbacks (sym=445)
-	if symbol == 440 || symbol == 344 || symbol == 445 {
-		PopDebugTrace = true
-	}
 	results := p.stack.Pop(version, childCount)
 	if pos.Bytes >= 45 && pos.Bytes <= 68 {
 		fmt.Fprintf(os.Stderr, "[DEBUG REDUCE] ver=%d sym=%d popResults=%d\n", version, symbol, len(results))
@@ -1104,7 +1099,13 @@ func (p *Parser) selectChildren(symbol Symbol, productionID uint16, dynPrec int1
 // build a root tree from each path, and use selectTree to pick the best.
 // This ensures that when multiple parse paths converge at accept time,
 // the correct tree is chosen via error cost / dynamic precedence comparison.
-func (p *Parser) doAccept(version StackVersion) {
+// doAccept pushes the EOF lookahead at state 1, then pops all stack paths
+// and builds the accept tree from each. Matches C's ts_parser__accept.
+func (p *Parser) doAccept(version StackVersion, lookahead Subtree) {
+	// Push the EOF lookahead onto the stack at state 1, matching C:
+	//   ts_stack_push(self->stack, version, lookahead, false, 1);
+	p.stack.Push(version, 1, lookahead, false, p.stack.Position(version))
+
 	paths := p.stack.PopAll(version)
 	for _, subtrees := range paths {
 		root := p.buildAcceptTree(subtrees)
@@ -1228,12 +1229,13 @@ func (p *Parser) buildAcceptTree(allSubtrees []Subtree) Subtree {
 		return allSubtrees[0]
 	}
 
-	// Find the root node: the first non-extra subtree in source order.
-	// Note: C's ts_parser__accept (parser.c:1061) searches from right to left
-	// after pushing EOF. Go currently searches left to right. This difference
-	// needs investigation — see bead tree-sitter-go-mgu for accept path work.
+	// Find the root node: search backward from end (most recently pushed)
+	// for the first non-extra subtree. Matches C's backward search
+	// (parser.c:1061: for j = trees.size - 1; j + 1 > 0; j--).
+	// This works correctly because EOF is marked as extra (see NewLeafSubtree)
+	// and is pushed before PopAll (see doAccept), so it gets skipped.
 	rootIdx := -1
-	for j := 0; j < len(allSubtrees); j++ {
+	for j := len(allSubtrees) - 1; j >= 0; j-- {
 		if allSubtrees[j].IsZero() {
 			continue
 		}
@@ -1605,13 +1607,12 @@ func (p *Parser) recover(version StackVersion, lookahead Subtree) {
 	}
 
 	// At EOF, terminate by accepting.
-	// C pushes an empty ERROR node at state 1, then calls ts_parser__accept
-	// (which also pushes the EOF lookahead). In Go's doAccept, we don't push
-	// the lookahead, and pushing a visible empty ERROR would add a spurious
-	// (ERROR) child. So just push SubtreeZero at state 1 to trigger acceptance.
+	// Matches C: push an empty ERROR node at state 1, then call accept
+	// (which pushes the EOF lookahead and builds the accept tree).
 	if lookaheadSymbol == SymbolEnd {
-		p.stack.Push(version, 1, SubtreeZero, false, position)
-		p.doAccept(version)
+		emptyError := p.createErrorNode(nil)
+		p.stack.Push(version, 1, emptyError, false, position)
+		p.doAccept(version, lookahead)
 		return
 	}
 

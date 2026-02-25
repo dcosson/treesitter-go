@@ -422,8 +422,12 @@ func NewLeafSubtree(
 		named = meta.Named
 	}
 
+	// EOF tokens are marked as extra, matching C's ts_subtree_new_leaf:
+	//   bool extra = symbol == ts_builtin_sym_end;
+	extra := symbol == SymbolEnd
+
 	if subtreeCanInline(padding, size, symbol, hasExternalTokens) {
-		return newInlineSubtree(symbol, parseState, padding, size, visible, named, false, isKeyword)
+		return newInlineSubtree(symbol, parseState, padding, size, visible, named, extra, isKeyword)
 	}
 
 	st, data := arena.Alloc()
@@ -439,6 +443,7 @@ func NewLeafSubtree(
 	}
 	data.SetFlag(SubtreeFlagVisible, visible)
 	data.SetFlag(SubtreeFlagNamed, named)
+	data.SetFlag(SubtreeFlagExtra, extra)
 	data.SetFlag(SubtreeFlagHasExternalTokens, hasExternalTokens)
 	data.SetFlag(SubtreeFlagDependsOnColumn, dependsOnColumn)
 	data.SetFlag(SubtreeFlagIsKeyword, isKeyword)
