@@ -94,7 +94,7 @@ func New() ts.ExternalScanner {
 }
 
 // Serialize writes the scanner state to buf and returns the number of bytes written.
-// P2.6 fix: Delimiters are now stored as 4 bytes (little-endian int32) instead of 1 byte.
+// Matches C format: delimiters and nesting depth are single bytes (char cast).
 func (s *Scanner) Serialize(buf []byte) uint32 {
 	size := uint32(0)
 
@@ -104,9 +104,9 @@ func (s *Scanner) Serialize(buf []byte) uint32 {
 	}
 
 	// Check if the literal stack would overflow the buffer.
-	// Each literal takes 11 bytes (1 tokenType + 4 openDelimiter + 4 closeDelimiter + 1 nestingDepth + 1 interp),
-	// plus 1 byte for count, plus at least 1 byte for heredoc count.
-	if uint32(len(s.literalStack))*11+2 >= uint32(len(buf)) {
+	// C serializes each literal as 5 bytes: 1 type + 1 open + 1 close + 1 depth + 1 interp.
+	// Delimiters and nesting depth are cast to (char) in C, so only low byte is stored.
+	if uint32(len(s.literalStack))*5+2 >= uint32(len(buf)) {
 		return 0
 	}
 
@@ -117,15 +117,9 @@ func (s *Scanner) Serialize(buf []byte) uint32 {
 		buf[size] = byte(lit.tokenType)
 		size++
 		buf[size] = byte(lit.openDelimiter)
-		buf[size+1] = byte(lit.openDelimiter >> 8)
-		buf[size+2] = byte(lit.openDelimiter >> 16)
-		buf[size+3] = byte(lit.openDelimiter >> 24)
-		size += 4
+		size++
 		buf[size] = byte(lit.closeDelimiter)
-		buf[size+1] = byte(lit.closeDelimiter >> 8)
-		buf[size+2] = byte(lit.closeDelimiter >> 16)
-		buf[size+3] = byte(lit.closeDelimiter >> 24)
-		size += 4
+		size++
 		buf[size] = byte(lit.nestingDepth)
 		size++
 		buf[size] = boolByte(lit.allowsInterpolation)
@@ -159,7 +153,7 @@ func (s *Scanner) Serialize(buf []byte) uint32 {
 }
 
 // Deserialize restores the scanner state from data.
-// P2.6 fix: Delimiters are now read as 4 bytes (little-endian int32) instead of 1 byte.
+// C serializes delimiters and nesting depth as single bytes (char cast).
 func (s *Scanner) Deserialize(data []byte) {
 	s.hasLeadingWhitespace = false
 	s.literalStack = nil
@@ -172,21 +166,15 @@ func (s *Scanner) Deserialize(data []byte) {
 	size := 0
 	literalDepth := int(data[size])
 	size++
-	for j := 0; j < literalDepth && size+11 <= len(data); j++ {
+	for j := 0; j < literalDepth && size+5 <= len(data); j++ {
 		lit := literal{}
 		lit.tokenType = int(data[size])
 		size++
-		lit.openDelimiter = int32(uint8(data[size])) |
-			int32(uint8(data[size+1]))<<8 |
-			int32(uint8(data[size+2]))<<16 |
-			int32(uint8(data[size+3]))<<24
-		size += 4
-		lit.closeDelimiter = int32(uint8(data[size])) |
-			int32(uint8(data[size+1]))<<8 |
-			int32(uint8(data[size+2]))<<16 |
-			int32(uint8(data[size+3]))<<24
-		size += 4
-		lit.nestingDepth = int32(uint8(data[size]))
+		lit.openDelimiter = int32(data[size])
+		size++
+		lit.closeDelimiter = int32(data[size])
+		size++
+		lit.nestingDepth = int32(data[size])
 		size++
 		lit.allowsInterpolation = data[size] != 0
 		size++
@@ -631,33 +619,8 @@ func (s *Scanner) scanOpenDelimiter(lexer *ts.Lexer, lit *literal, validSymbols 
 			if validSymbols[ForwardSlash] {
 				return false
 			}
-			// Skip whitespace to find the actual delimiter character after %.
-			// e.g. in Ruby: %\n  [foo, bar] — the [ is the delimiter.
-			for lexer.Lookahead == '\r' || lexer.Lookahead == '\n' || lexer.Lookahead == ' ' || lexer.Lookahead == '\t' {
-				advance(lexer)
-			}
-			// Determine delimiter from the next non-whitespace character.
-			switch lexer.Lookahead {
-			case '(':
-				lit.openDelimiter = '('
-				lit.closeDelimiter = ')'
-			case '[':
-				lit.openDelimiter = '['
-				lit.closeDelimiter = ']'
-			case '{':
-				lit.openDelimiter = '{'
-				lit.closeDelimiter = '}'
-			case '<':
-				lit.openDelimiter = '<'
-				lit.closeDelimiter = '>'
-			case '|', '!', '#', '/', '\\', '@', '$', '%', '^', '&', '*',
-				')', ']', '}', '>', '+', '-', '~', '`', ',', '.', '?',
-				':', ';', '_', '"', '\'':
-				lit.openDelimiter = lexer.Lookahead
-				lit.closeDelimiter = lexer.Lookahead
-			default:
-				return false
-			}
+			// C leaves open/close delimiter at 0 (default) and just breaks.
+			// The delimiter stays unset — this matches the C behavior exactly.
 		case '|', '!', '#', '/', '\\', '@', '$', '%', '^', '&', '*',
 			')', ']', '}', '>', '+', '-', '~', '`', ',', '.', '?',
 			':', ';', '_', '"', '\'':
@@ -860,7 +823,9 @@ func (s *Scanner) scanLiteralContent(lexer *ts.Lexer) bool {
 			}
 			return false
 		}
-		if lexer.Lookahead == lit.closeDelimiter {
+		// In C, closeDelimiter==0 matches at EOF (where lookahead==0).
+		// In Go, EOF is Lookahead==-1, so we need an explicit check.
+		if lexer.Lookahead == lit.closeDelimiter || (lit.closeDelimiter == 0 && lexer.EOF()) {
 			lexer.MarkEnd()
 			if lit.nestingDepth == 1 {
 				if hasContent {

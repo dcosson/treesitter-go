@@ -2,6 +2,7 @@ package treesitter_test
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
@@ -182,7 +183,13 @@ func loadCorpusInputs(grammarsDir string, cfg scannerLangConfig) (map[string][]b
 			for i, tc := range cases {
 				safeName := sanitizeTestName(tc.Name)
 				key := fmt.Sprintf("%04d_%s", i, safeName)
-				inputs[key] = tc.Input
+				// The trace generator's Python extractor uses text mode (universal
+				// newlines) which normalizes \r\n → \n and lone \r → \n. Match that
+				// here so byte offsets align with the C traces. TODO: fix the trace
+				// generator to use binary mode and regenerate traces.
+				input := bytes.ReplaceAll(tc.Input, []byte("\r\n"), []byte("\n"))
+				input = bytes.ReplaceAll(input, []byte("\r"), []byte("\n"))
+				inputs[key] = input
 			}
 		}
 	}
