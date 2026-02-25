@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"math"
-	"os"
 )
 
 // Parser is the GLR parsing engine. It drives the Lexer and Language to
@@ -286,11 +285,6 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 		tokenSymbol = GetSymbol(token, p.arena)
 	}
 
-	if position.Bytes >= 48 && position.Bytes <= 68 {
-		fmt.Fprintf(os.Stderr, "[DEBUG ADVANCE] ver=%d state=%d pos=%d tokenSym=%d null=%v\n",
-			version, state, position.Bytes, tokenSymbol, nullLookahead)
-	}
-
 	// Inner reduce loop: keep reducing until we can shift or accept.
 	// This avoids re-lexing after every reduce.
 	for reduceCount := 0; reduceCount < 1000; reduceCount++ {
@@ -324,10 +318,6 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 			// This applies even in ERROR_STATE (state 0). C tree-sitter
 			// always pauses and lets condenseStack resume with handleError,
 			// which records a fresh summary matching the current stack state.
-			if position.Bytes >= 56 && position.Bytes <= 68 {
-				fmt.Fprintf(os.Stderr, "[DEBUG PARSER] PAUSE version=%d state=%d pos=%d tokenSym=%d\n",
-					version, state, position.Bytes, tokenSymbol)
-			}
 			p.stack.Pause(version, token)
 			return true
 		}
@@ -368,16 +358,6 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 			}
 		}
 
-		if position.Bytes >= 48 && position.Bytes <= 68 && entry.ActionCount > 1 {
-			fmt.Fprintf(os.Stderr, "[DEBUG CONFLICT] ver=%d pos=%d state=%d actionCount=%d lastReduceIdx=%d\n",
-				version, position.Bytes, state, entry.ActionCount, lastReduceIdx)
-			for ai := 0; ai < int(entry.ActionCount); ai++ {
-				a := entry.Actions[ai]
-				fmt.Fprintf(os.Stderr, "[DEBUG CONFLICT]   action[%d]: type=%d shiftState=%d reduceSym=%d childCount=%d dynPrec=%d\n",
-					ai, a.Type, a.ShiftState, a.ReduceSymbol, a.ReduceChildCount, a.ReduceDynPrec)
-			}
-		}
-
 		// Handle additional actions (GLR ambiguity) by splitting.
 		for i := 1; i < int(entry.ActionCount); i++ {
 			extraAction := entry.Actions[i]
@@ -396,10 +376,6 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 			splitVersion := p.stack.Split(version)
 			if splitVersion < 0 {
 				continue
-			}
-			if position.Bytes >= 56 && position.Bytes <= 68 {
-				fmt.Fprintf(os.Stderr, "[DEBUG SPLIT] extra action[%d] on splitVersion=%d (from ver=%d) type=%d reduceSym=%d\n",
-					i, splitVersion, version, extraAction.Type, extraAction.ReduceSymbol)
 			}
 			switch extraAction.Type {
 			case ParseActionTypeShift:
@@ -429,10 +405,6 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 		if lastReduceIdx > 0 {
 			splitVersion := p.stack.Split(version)
 			if splitVersion >= 0 {
-				if position.Bytes >= 56 && position.Bytes <= 68 {
-					fmt.Fprintf(os.Stderr, "[DEBUG SWAP] original primary reduce sym=%d on splitVersion=%d, lastReduce sym=%d becomes primary on ver=%d\n",
-						action.ReduceSymbol, splitVersion, entry.Actions[lastReduceIdx].ReduceSymbol, version)
-				}
 				p.doReduce(splitVersion, action, nullLookahead)
 			}
 			action = entry.Actions[lastReduceIdx]
@@ -579,21 +551,16 @@ func (p *Parser) lexToken(version StackVersion, state StateID, position Length) 
 				nextParseState := p.language.nextState(state, grammarSymbol)
 				tokenIsExtra := nextParseState == state
 
-				fmt.Fprintf(os.Stderr, "[DEBUG PARSER] zero-width ext token: extIdx=%d gramSym=%d state=%d nextState=%d isExtra=%v isError=%v hasAdvanced=%v pos=%d ver=%d\n",
-					extTokenIndex, grammarSymbol, state, nextParseState, tokenIsExtra, state == 0, p.stack.HasAdvancedSinceError(version), position.Bytes, version)
-
 				// Reject empty external tokens that would cause infinite loops.
 				// Matches C: error_mode || !has_advanced_since_error || token_is_extra
 				if state == 0 || !p.stack.HasAdvancedSinceError(version) || tokenIsExtra {
 					// Fall through to internal lex — reject this empty token.
-					fmt.Fprintf(os.Stderr, "[DEBUG PARSER] REJECTED zero-width ext token at pos=%d ver=%d\n", position.Bytes, version)
 				} else {
 					// Accept: not in error recovery, has advanced, and not extra.
 					if int(extTokenIndex) < len(p.language.ExternalSymbolMap) {
 						p.lexer.ResultSymbol = grammarSymbol
 					}
 					foundExternalToken = true
-					fmt.Fprintf(os.Stderr, "[DEBUG PARSER] ACCEPTED zero-width ext token at pos=%d ver=%d gramSym=%d\n", position.Bytes, version, p.lexer.ResultSymbol)
 				}
 			} else {
 				// Non-empty token or scanner state changed — always accept.
@@ -887,33 +854,8 @@ func (p *Parser) doReduce(version StackVersion, action ParseActionEntry, endOfNo
 	productionID := action.ReduceProdID
 	dynPrec := action.ReduceDynPrec
 
-	pos := p.stack.Position(version)
-	if pos.Bytes >= 56 && pos.Bytes <= 68 {
-		fmt.Fprintf(os.Stderr, "[DEBUG REDUCE] ver=%d sym=%d childCount=%d prodID=%d dynPrec=%d pos=%d nResults=%d\n",
-			version, symbol, childCount, productionID, dynPrec, pos.Bytes, 0)
-	}
-
 	// Pop children.
 	results := p.stack.Pop(version, childCount)
-	if pos.Bytes >= 45 && pos.Bytes <= 68 {
-		fmt.Fprintf(os.Stderr, "[DEBUG REDUCE] ver=%d sym=%d popResults=%d\n", version, symbol, len(results))
-		for ri, r := range results {
-			fmt.Fprintf(os.Stderr, "[DEBUG REDUCE]   result[%d]: node.state=%d nSubtrees=%d\n", ri, r.node.state, len(r.subtrees))
-		}
-	}
-	// Special trace for slice_expression (sym=440) -- unconditional
-	if symbol == 440 || symbol == 344 {
-		fmt.Fprintf(os.Stderr, "[DEBUG SLICE_EXPR] ver=%d popResults=%d pos=%d\n", version, len(results), pos.Bytes)
-		for ri, r := range results {
-			fmt.Fprintf(os.Stderr, "[DEBUG SLICE_EXPR]   result[%d]: baseNode.state=%d nSubtrees=%d\n", ri, r.node.state, len(r.subtrees))
-			for si, st := range r.subtrees {
-				if !st.IsZero() {
-					fmt.Fprintf(os.Stderr, "[DEBUG SLICE_EXPR]     subtree[%d]: sym=%d size=%d cc=%d\n",
-						si, GetSymbol(st, p.arena), GetSize(st, p.arena).Bytes, GetChildCount(st, p.arena))
-				}
-			}
-		}
-	}
 	if len(results) == 0 {
 		p.stack.Halt(version)
 		return
@@ -973,25 +915,6 @@ func (p *Parser) doReduce(version StackVersion, action ParseActionEntry, endOfNo
 	// Process each group. The first group is the primary version
 	// (Pop already moved the head to results[0].node).
 	for gIdx, group := range groups {
-		if pos.Bytes >= 56 && pos.Bytes <= 68 && (symbol == 204 || symbol == 201 || symbol == 184) {
-			fmt.Fprintf(os.Stderr, "[DEBUG REDUCE GROUPS] sym=%d ver=%d gIdx=%d/%d baseState=%d children:",
-				symbol, version, gIdx, len(groups), group.node.state)
-			for ci, ch := range group.bestChildren {
-				chSym := GetSymbol(ch, p.arena)
-				chCC := GetChildCount(ch, p.arena)
-				fmt.Fprintf(os.Stderr, " [%d]sym=%d,cc=%d", ci, chSym, chCC)
-				// Show one level deeper for the first child
-				if ci == 0 && chCC > 0 {
-					grandchildren := GetChildren(ch, p.arena)
-					fmt.Fprintf(os.Stderr, "{")
-					for _, gc := range grandchildren {
-						fmt.Fprintf(os.Stderr, "sym=%d,", GetSymbol(gc, p.arena))
-					}
-					fmt.Fprintf(os.Stderr, "}")
-				}
-			}
-			fmt.Fprintf(os.Stderr, "\n")
-		}
 		// Create the internal node from the best children.
 		node := NewNodeSubtree(p.arena, symbol, group.bestChildren, productionID, p.language)
 		SummarizeChildren(node, p.arena, p.language)
@@ -1080,16 +1003,7 @@ func (p *Parser) selectChildren(symbol Symbol, productionID uint16, dynPrec int1
 		data.DynamicPrecedence += int32(dynPrec)
 	}
 
-	result := p.selectTree(currentNode, altNode)
-	pos := p.stack.Position(0) // just for context
-	if pos.Bytes >= 56 && pos.Bytes <= 68 {
-		fmt.Fprintf(os.Stderr, "[DEBUG selectChildren] sym=%d pos~%d: current[0]sym=%d alt[0]sym=%d selectAlt=%v\n",
-			symbol, pos.Bytes,
-			func() Symbol { if len(currentChildren) > 0 { return GetSymbol(currentChildren[0], p.arena) }; return 0 }(),
-			func() Symbol { if len(altChildren) > 0 { return GetSymbol(altChildren[0], p.arena) }; return 0 }(),
-			result)
-	}
-	return result
+	return p.selectTree(currentNode, altNode)
 }
 
 // doAccept marks a version as accepted and stores the finished tree.
@@ -1161,8 +1075,6 @@ func (p *Parser) selectTree(left, right Subtree) bool {
 	// Structural comparison: prefer the tree with the lower symbol ID
 	// (earlier grammar definition). This matches C's ts_subtree_compare.
 	cmp := subtreeCompare(left, right, p.arena)
-	fmt.Fprintf(os.Stderr, "[DEBUG selectTree] leftSym=%d rightSym=%d leftCost=%d rightCost=%d leftPrec=%d rightPrec=%d cmp=%d result=%v\n",
-		GetSymbol(left, p.arena), GetSymbol(right, p.arena), leftCost, rightCost, leftPrec, rightPrec, cmp, cmp > 0)
 	return cmp > 0 // right is "earlier" → select right
 }
 
@@ -1998,20 +1910,9 @@ func (p *Parser) condenseStack() uint32 {
 			statusJ := p.versionStatus(StackVersion(j))
 
 			cmpResult := p.compareVersions(statusJ, statusI)
-			posI := p.stack.Position(StackVersion(i))
-			posJ := p.stack.Position(StackVersion(j))
-			if (posI.Bytes >= 45 && posI.Bytes <= 65) || (posJ.Bytes >= 45 && posJ.Bytes <= 65) || (i <= 1 && j == 0) {
-				fmt.Fprintf(os.Stderr, "[DEBUG CONDENSE] cmp i=%d(pos=%d,cost=%d,prec=%d,err=%v) vs j=%d(pos=%d,cost=%d,prec=%d,err=%v) → %d\n",
-					i, posI.Bytes, statusI.cost, statusI.dynamicPrecedence, statusI.isInError,
-					j, posJ.Bytes, statusJ.cost, statusJ.dynamicPrecedence, statusJ.isInError,
-					cmpResult)
-			}
 			switch cmpResult {
 			case errorComparisonTakeLeft:
 				// j is decisively better — kill i.
-				if (posI.Bytes >= 45 && posI.Bytes <= 65) || (posJ.Bytes >= 45 && posJ.Bytes <= 65) {
-					fmt.Fprintf(os.Stderr, "[DEBUG CONDENSE] REMOVE i=%d (TakeLeft j=%d)\n", i, j)
-				}
 				p.stack.RemoveVersion(StackVersion(i))
 				i--
 				goto nextVersion
@@ -2019,9 +1920,6 @@ func (p *Parser) condenseStack() uint32 {
 			case errorComparisonPreferLeft, errorComparisonNone:
 				// j is better or equal — try merge (requires same state).
 				if p.stack.Merge(StackVersion(j), StackVersion(i)) {
-					if (posI.Bytes >= 45 && posI.Bytes <= 65) || (posJ.Bytes >= 45 && posJ.Bytes <= 65) {
-						fmt.Fprintf(os.Stderr, "[DEBUG CONDENSE] MERGE i=%d into j=%d (PreferLeft/None)\n", i, j)
-					}
 					i--
 					goto nextVersion
 				}
@@ -2029,9 +1927,6 @@ func (p *Parser) condenseStack() uint32 {
 			case errorComparisonPreferRight:
 				// i is better — try merge, or swap positions.
 				if p.stack.Merge(StackVersion(j), StackVersion(i)) {
-					if (posI.Bytes >= 45 && posI.Bytes <= 65) || (posJ.Bytes >= 45 && posJ.Bytes <= 65) {
-						fmt.Fprintf(os.Stderr, "[DEBUG CONDENSE] MERGE i=%d into j=%d (PreferRight)\n", i, j)
-					}
 					i--
 					goto nextVersion
 				}
@@ -2039,9 +1934,6 @@ func (p *Parser) condenseStack() uint32 {
 
 			case errorComparisonTakeRight:
 				// i is decisively better — kill j.
-				if (posI.Bytes >= 45 && posI.Bytes <= 65) || (posJ.Bytes >= 45 && posJ.Bytes <= 65) {
-					fmt.Fprintf(os.Stderr, "[DEBUG CONDENSE] REMOVE j=%d (TakeRight i=%d)\n", j, i)
-				}
 				p.stack.RemoveVersion(StackVersion(j))
 				i--
 				j--
