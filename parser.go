@@ -322,135 +322,78 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 			return true
 		}
 
-		action := entry.Actions[0]
+		// Flat action loop matching C's ts_parser__advance (parser.c:1620-1677).
+		// Process all actions in order:
+		//   SHIFT/ACCEPT/RECOVER: execute on original version, return immediately
+		//   REDUCE: Split first (non-destructive), reduce on split, track last
+		//
+		// In C, ts_parser__reduce uses ts_stack_pop_count which is non-destructive
+		// (doesn't modify the original version). In Go, Pop is destructive, so we
+		// Split before each reduce to preserve the original version for subsequent
+		// actions. After the loop, RenumberVersion replaces the original with the
+		// last reduction's version (matching C's behavior).
+		didReduce := false
+		lastReductionVersion := StackVersion(-1)
 
-		// Match C runtime version ordering for GLR reduces.
-		//
-		// In C tree-sitter, all actions are processed in a flat loop. All
-		// reduces create new versions via ts_stack_pop_count (which doesn't
-		// modify the original version). After the loop,
-		// ts_stack_renumber_version replaces the original version with the
-		// LAST reduction's version, making it the "primary".
-		//
-		// This ordering matters for merge disambiguation: when versions merge
-		// later (nodeAddLink Case 1), equal DynPrec keeps the "existing"
-		// (primary) version's subtree. In C, the last reduce becomes primary.
-		//
-		// Our Go Pop modifies the version in place, so we can't reduce on
-		// the same version twice. Instead, when the primary action is a reduce
-		// AND there's a later reduce in the action list, we swap: the primary
-		// reduce goes on a split, and the last reduce runs on the primary
-		// version.
-		lastReduceIdx := -1
-		if entry.ActionCount > 1 && action.Type == ParseActionTypeReduce {
-			for i := int(entry.ActionCount) - 1; i > 0; i-- {
-				if entry.Actions[i].Type == ParseActionTypeReduce {
-					// Only swap when the last reduce's DynPrec >= primary's.
-					// When the last reduce has LOWER precedence (e.g. -1 vs 0),
-					// swapping would make the lower-precedence version primary,
-					// which is incorrect (e.g. TS/Arrow_functions where
-					// type_assertion has negative precedence vs arrow_function).
-					if entry.Actions[i].ReduceDynPrec >= action.ReduceDynPrec {
-						lastReduceIdx = i
-					}
-					break
-				}
-			}
-		}
+		for i := 0; i < int(entry.ActionCount); i++ {
+			action := entry.Actions[i]
 
-		// Handle additional actions (GLR ambiguity) by splitting.
-		for i := 1; i < int(entry.ActionCount); i++ {
-			extraAction := entry.Actions[i]
-			// Skip repetition shifts — these are markers for the parser's
-			// repeat optimization and should not be executed as actual shifts.
-			if extraAction.Type == ParseActionTypeShift && extraAction.ShiftRepetition {
-				continue
-			}
-			if nullLookahead && extraAction.Type == ParseActionTypeShift {
-				continue // Can't shift a null token
-			}
-			// Skip the last reduce here — it will run on the primary below.
-			if i == lastReduceIdx {
-				continue
-			}
-			splitVersion := p.stack.Split(version)
-			if splitVersion < 0 {
-				continue
-			}
-			switch extraAction.Type {
+			switch action.Type {
 			case ParseActionTypeShift:
-				shiftToken := token
-				if GetChildCount(shiftToken, p.arena) > 0 {
-					p.breakdownLookahead(&shiftToken, state)
-					extraAction.ShiftState = p.language.nextState(state, GetSymbol(shiftToken, p.arena))
+				if action.ShiftRepetition {
+					continue
 				}
-				p.doShift(splitVersion, extraAction, shiftToken)
+				if nullLookahead {
+					continue // Can't shift a null token
+				}
+				if GetChildCount(token, p.arena) > 0 {
+					p.breakdownLookahead(&token, state)
+					action.ShiftState = p.language.nextState(state, GetSymbol(token, p.arena))
+				}
+				p.doShift(version, action, token)
+				return true
+
 			case ParseActionTypeReduce:
-				p.doReduce(splitVersion, extraAction, nullLookahead)
-			case ParseActionTypeAccept:
-				p.doAccept(splitVersion, token)
-			case ParseActionTypeRecover:
-				if !nullLookahead {
-					recoverToken := token
-					if GetChildCount(recoverToken, p.arena) > 0 {
-						p.breakdownLookahead(&recoverToken, StateID(0))
-					}
-					p.recover(splitVersion, recoverToken)
+				// Split to preserve original version (matching C's non-destructive pop).
+				splitVersion := p.stack.Split(version)
+				if splitVersion < 0 {
+					continue
 				}
-			}
-		}
-
-		// When swapping reduces: put the primary reduce on a split, and
-		// the last reduce becomes the new primary action.
-		if lastReduceIdx > 0 {
-			splitVersion := p.stack.Split(version)
-			if splitVersion >= 0 {
 				p.doReduce(splitVersion, action, nullLookahead)
+				didReduce = true
+				lastReductionVersion = splitVersion
+
+			case ParseActionTypeAccept:
+				p.doAccept(version, token)
+				return true
+
+			case ParseActionTypeRecover:
+				if nullLookahead {
+					continue
+				}
+				if GetChildCount(token, p.arena) > 0 {
+					p.breakdownLookahead(&token, StateID(0))
+				}
+				p.recover(version, token)
+				return true
 			}
-			action = entry.Actions[lastReduceIdx]
 		}
 
-		// Execute the primary action.
-		// Skip repetition shifts in primary action too.
-		if action.Type == ParseActionTypeShift && action.ShiftRepetition {
+		// After the action loop (parser.c:1679-1714):
+		// Replace the original version with the last reduction's version.
+		if lastReductionVersion >= 0 {
+			p.stack.RenumberVersion(lastReductionVersion, version)
+			if nullLookahead {
+				// End of non-terminal extra: re-lex with new state.
+				return true
+			}
+			// Continue the inner reduce loop with the new state.
 			continue
 		}
-		switch action.Type {
-		case ParseActionTypeShift:
-			if nullLookahead {
-				// Can't shift a null token — return to re-lex with new state.
-				return true
-			}
-			if GetChildCount(token, p.arena) > 0 {
-				p.breakdownLookahead(&token, state)
-				action.ShiftState = p.language.nextState(state, GetSymbol(token, p.arena))
-			}
-			p.doShift(version, action, token)
-			return true
-		case ParseActionTypeReduce:
-			p.doReduce(version, action, nullLookahead)
-			if nullLookahead {
-				// After NTE reduce, return to re-lex with the new state.
-				return true
-			}
-			// Continue the inner loop to check the new state.
-			continue
-		case ParseActionTypeAccept:
-			p.doAccept(version, token)
-			return true
-		case ParseActionTypeRecover:
-			if nullLookahead {
-				// Can't recover with a null token — return to re-lex.
-				return true
-			}
-			// Call recover() which handles EOF (wraps in ERROR + accepts),
-			// tries summary-based popback, or falls back to skipping the token.
-			// This matches C's ts_parser__advance which always calls
-			// ts_parser__recover for RECOVER actions, including at EOF.
-			if GetChildCount(token, p.arena) > 0 {
-				p.breakdownLookahead(&token, StateID(0))
-			}
-			p.recover(version, token)
+
+		// All reductions were merged into existing versions. Discard this one.
+		if didReduce {
+			p.stack.Halt(version)
 			return true
 		}
 	}
