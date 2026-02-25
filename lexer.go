@@ -1,11 +1,11 @@
 package treesitter
 
-import ilexer "github.com/treesitter-go/treesitter/internal/lexer"
+import plex "github.com/treesitter-go/treesitter/lexer"
 
-type Input = ilexer.Input
-type StringInput = ilexer.StringInput
+type Input = plex.Input
+type StringInput = plex.StringInput
 
-type Lexer = ilexer.Lexer
+type Lexer = plex.Lexer
 
-func NewStringInput(data []byte) *StringInput { return ilexer.NewStringInput(data) }
-func NewLexer() *Lexer                        { return ilexer.NewLexer() }
+func NewStringInput(data []byte) *StringInput { return plex.NewStringInput(data) }
+func NewLexer() *Lexer                        { return plex.NewLexer() }

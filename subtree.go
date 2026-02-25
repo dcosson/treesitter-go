@@ -53,20 +53,20 @@ const (
 	inlineSizeColShift      = 7
 	inlineSizeColMask       = uint64(0xFF) << inlineSizeColShift
 
-	inlineVisibleBit        = uint64(1) << 6
-	inlineNamedBit          = uint64(1) << 5
-	inlineExtraBit          = uint64(1) << 4
-	inlineHasChangesBit     = uint64(1) << 3
-	inlineIsKeywordBit      = uint64(1) << 2
-	inlineDependsOnColBit   = uint64(1) << 1
+	inlineVisibleBit      = uint64(1) << 6
+	inlineNamedBit        = uint64(1) << 5
+	inlineExtraBit        = uint64(1) << 4
+	inlineHasChangesBit   = uint64(1) << 3
+	inlineIsKeywordBit    = uint64(1) << 2
+	inlineDependsOnColBit = uint64(1) << 1
 
 	// Arena reference layout (63 bits available):
 	//   [63]    = 0 (heap flag)
 	//   [62:32] = block index (31 bits — supports up to 2 billion blocks)
 	//   [31:0]  = offset within block (32 bits)
-	arenaBlockShift  = 32
-	arenaBlockMask   = uint64(0x7FFFFFFF) << arenaBlockShift
-	arenaOffsetMask  = uint64(0xFFFFFFFF)
+	arenaBlockShift = 32
+	arenaBlockMask  = uint64(0x7FFFFFFF) << arenaBlockShift
+	arenaOffsetMask = uint64(0xFFFFFFFF)
 )
 
 // SubtreeZero is the zero-valued Subtree (nil/empty).
@@ -120,6 +120,11 @@ func newInlineSubtree(symbol Symbol, parseState StateID, padding, size Length, v
 		bits |= inlineIsKeywordBit
 	}
 	return Subtree{data: bits}
+}
+
+// NewInlineSubtree is an exported wrapper for newInlineSubtree.
+func NewInlineSubtree(symbol Symbol, parseState StateID, padding, size Length, visible, named, extra, isKeyword bool) Subtree {
+	return newInlineSubtree(symbol, parseState, padding, size, visible, named, extra, isKeyword)
 }
 
 // newArenaSubtree creates an arena-referenced Subtree from a block index and offset.
@@ -214,16 +219,16 @@ func (s Subtree) InlineIsKeyword() bool {
 type SubtreeFlags uint32
 
 const (
-	SubtreeFlagVisible         SubtreeFlags = 1 << 0
-	SubtreeFlagNamed           SubtreeFlags = 1 << 1
-	SubtreeFlagExtra           SubtreeFlags = 1 << 2
-	SubtreeFlagHasChanges      SubtreeFlags = 1 << 3
-	SubtreeFlagMissing         SubtreeFlags = 1 << 4
-	SubtreeFlagFragileLeft     SubtreeFlags = 1 << 5
-	SubtreeFlagFragileRight    SubtreeFlags = 1 << 6
-	SubtreeFlagHasExternalTokens SubtreeFlags = 1 << 7
-	SubtreeFlagDependsOnColumn SubtreeFlags = 1 << 8
-	SubtreeFlagIsKeyword       SubtreeFlags = 1 << 9
+	SubtreeFlagVisible                       SubtreeFlags = 1 << 0
+	SubtreeFlagNamed                         SubtreeFlags = 1 << 1
+	SubtreeFlagExtra                         SubtreeFlags = 1 << 2
+	SubtreeFlagHasChanges                    SubtreeFlags = 1 << 3
+	SubtreeFlagMissing                       SubtreeFlags = 1 << 4
+	SubtreeFlagFragileLeft                   SubtreeFlags = 1 << 5
+	SubtreeFlagFragileRight                  SubtreeFlags = 1 << 6
+	SubtreeFlagHasExternalTokens             SubtreeFlags = 1 << 7
+	SubtreeFlagDependsOnColumn               SubtreeFlags = 1 << 8
+	SubtreeFlagIsKeyword                     SubtreeFlags = 1 << 9
 	SubtreeFlagHasExternalScannerStateChange SubtreeFlags = 1 << 10
 )
 
@@ -238,15 +243,15 @@ type FirstLeaf struct {
 // Field ordering is optimized for cache locality: hot fields first.
 type SubtreeHeapData struct {
 	// --- Hot fields (accessed on nearly every node visit) ---
-	Symbol     Symbol     // 2 bytes
-	ParseState StateID    // 2 bytes
+	Symbol     Symbol       // 2 bytes
+	ParseState StateID      // 2 bytes
 	Flags      SubtreeFlags // 4 bytes
-	ChildCount uint32     // 4 bytes
-	Padding    Length     // 12 bytes (Bytes uint32, Point{Row, Column uint32})
-	Size       Length     // 12 bytes
+	ChildCount uint32       // 4 bytes
+	Padding    Length       // 12 bytes (Bytes uint32, Point{Row, Column uint32})
+	Size       Length       // 12 bytes
 
 	// --- Children (only for internal nodes) ---
-	Children []Subtree   // 24 bytes (slice header)
+	Children []Subtree // 24 bytes (slice header)
 
 	// --- Warm fields ---
 	VisibleChildCount      uint32
@@ -254,12 +259,12 @@ type SubtreeHeapData struct {
 	VisibleDescendantCount uint32
 
 	// --- Cold fields (accessed during error recovery, incremental parsing) ---
-	ErrorCost           uint32
-	DynamicPrecedence   int32
-	LookaheadBytes      uint32
-	RepeatDepth         uint16
-	ProductionID        uint16
-	FirstLeaf           FirstLeaf
+	ErrorCost            uint32
+	DynamicPrecedence    int32
+	LookaheadBytes       uint32
+	RepeatDepth          uint16
+	ProductionID         uint16
+	FirstLeaf            FirstLeaf
 	ExternalScannerState []byte
 
 	// Structural hash (AA-2: hash-consing for O(1) change detection).
@@ -299,9 +304,9 @@ const defaultArenaBlockSize = 512
 // a handful of slice allocations, improving GC performance and cache locality.
 type SubtreeArena struct {
 	blocks    [][]SubtreeHeapData
-	current   int    // index of current block in blocks
-	offset    int    // next free slot in current block
-	blockSize int    // capacity of each block
+	current   int // index of current block in blocks
+	offset    int // next free slot in current block
+	blockSize int // capacity of each block
 }
 
 // NewSubtreeArena creates a new arena with the given block size.
@@ -993,6 +998,11 @@ func computeSizeFromChildren(children []Subtree, arena *SubtreeArena, firstChild
 	}
 
 	return result
+}
+
+// ComputeSizeFromChildren is an exported wrapper for computeSizeFromChildren.
+func ComputeSizeFromChildren(children []Subtree, arena *SubtreeArena, firstChildPadding Length) Length {
+	return computeSizeFromChildren(children, arena, firstChildPadding)
 }
 
 // SetExtra marks a subtree as extra (e.g., comments, whitespace).

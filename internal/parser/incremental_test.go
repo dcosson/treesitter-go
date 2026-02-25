@@ -1,4 +1,4 @@
-package treesitter
+package parser
 
 import "testing"
 
@@ -152,7 +152,7 @@ func TestReusableNodeWithEditedTree(t *testing.T) {
 	}
 
 	childTree := rn.Tree()
-	t.Logf("child inline=%v, data=0x%016x", childTree.IsInline(), childTree.data)
+	t.Logf("child inline=%v", childTree.IsInline())
 	t.Logf("child HasChanges=%v", HasChanges(childTree, parseArena))
 	t.Logf("child InlineHasChanges=%v", childTree.InlineHasChanges())
 
@@ -206,7 +206,7 @@ func TestEditSubtreeInlineHasChanges(t *testing.T) {
 		t.Log("child is heap-allocated, not inline")
 	}
 	if !HasChanges(child, forked) {
-		t.Errorf("edited inline child should have has_changes, data=0x%016x", child.data)
+		t.Error("edited inline child should have has_changes")
 	}
 }
 
@@ -410,7 +410,7 @@ func TestTreeEditEmptyTree(t *testing.T) {
 		StartByte: 0, OldEndByte: 0, NewEndByte: 1,
 	})
 	// Should not panic on empty tree.
-	if edited.root.IsZero() {
+	if edited.RootSubtree().IsZero() {
 		// Expected for empty tree.
 	}
 }
@@ -494,10 +494,10 @@ func TestTreeCopy(t *testing.T) {
 	if cp == tree {
 		t.Error("Copy should return a different *Tree")
 	}
-	if cp.root != tree.root {
+	if cp.RootSubtree() != tree.RootSubtree() {
 		t.Error("Copy should share the same root subtree")
 	}
-	if cp.language != tree.language {
+	if cp.Language() != tree.Language() {
 		t.Error("Copy should share the same language")
 	}
 }

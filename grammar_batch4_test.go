@@ -2,13 +2,14 @@ package treesitter_test
 
 import (
 	"context"
+	iparser "github.com/treesitter-go/treesitter/internal/parser"
 	"strings"
 	"testing"
 
 	ts "github.com/treesitter-go/treesitter"
 	luagrammar "github.com/treesitter-go/treesitter/internal/testgrammars/lua"
-	luascanner "github.com/treesitter-go/treesitter/scanners/lua"
 	perlgrammar "github.com/treesitter-go/treesitter/internal/testgrammars/perl"
+	luascanner "github.com/treesitter-go/treesitter/scanners/lua"
 	perlscanner "github.com/treesitter-go/treesitter/scanners/perl"
 )
 
@@ -27,7 +28,7 @@ func perlLang() *ts.Language {
 // --- Lua Integration Tests ---
 
 func TestLuaParseFunction(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(luaLang())
 
 	src := `function factorial(n)
@@ -60,7 +61,7 @@ end
 }
 
 func TestLuaParseLocalVariables(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(luaLang())
 
 	src := `local x = 10
@@ -88,7 +89,7 @@ print(sum)
 }
 
 func TestLuaParseForLoop(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(luaLang())
 
 	src := `local t = {1, 2, 3, 4, 5}
@@ -127,7 +128,7 @@ end
 }
 
 func TestLuaParseTable(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(luaLang())
 
 	src := `local config = {1, 2, 3}
@@ -154,7 +155,7 @@ print(config)
 }
 
 func TestLuaParseBlockComment(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(luaLang())
 
 	// Block comment followed by real code — verifies the scanner correctly
@@ -187,7 +188,7 @@ local x = 42
 }
 
 func TestLuaParseBlockString(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(luaLang())
 
 	src := `local s = [=[
@@ -217,7 +218,7 @@ print(s)
 }
 
 func TestLuaParseBlockCommentWithLevel(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(luaLang())
 
 	// Level-2 block comment containing ]] and ]=] which are NOT the end.
@@ -250,7 +251,7 @@ local y = 100
 // --- Perl Integration Tests ---
 
 func TestPerlParseSubroutine(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(perlLang())
 
 	// Uses numeric expressions only — string literals have lex routing bugs (tracked)
@@ -275,7 +276,7 @@ func TestPerlParseSubroutine(t *testing.T) {
 }
 
 func TestPerlParsePackage(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(perlLang())
 
 	src := "package Math;\n\nsub square { my ($n) = @_; return $n * $n; }\n\n1;\n"
@@ -295,7 +296,7 @@ func TestPerlParsePackage(t *testing.T) {
 }
 
 func TestPerlParseControlFlow(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(perlLang())
 
 	src := `use strict;
@@ -341,7 +342,7 @@ while ($x > 0) {
 }
 
 func TestPerlParseDataStructures(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(perlLang())
 
 	src := `my @nums = (1, 2, 3, 4, 5);

@@ -1,4 +1,4 @@
-package treesitter
+package parser
 
 import "testing"
 
@@ -53,9 +53,9 @@ func makeRecoveryTestLanguage() *Language {
 	parseTable[5*symbolCount+1] = 7                                                                              // state 5, symbol 1 → action index 7
 
 	// Action group 5: state 0 + symbol 1 → recover
-	parseActions = append(parseActions, ParseActionEntry{Type: ParseActionTypeHeader, Count: 1})  // index 9
-	parseActions = append(parseActions, ParseActionEntry{Type: ParseActionTypeRecover})            // index 10
-	parseTable[0*symbolCount+1] = 9                                                               // state 0, symbol 1 → action index 9
+	parseActions = append(parseActions, ParseActionEntry{Type: ParseActionTypeHeader, Count: 1}) // index 9
+	parseActions = append(parseActions, ParseActionEntry{Type: ParseActionTypeRecover})          // index 10
+	parseTable[0*symbolCount+1] = 9                                                              // state 0, symbol 1 → action index 9
 
 	lang := &Language{
 		Version:         15,
@@ -674,7 +674,7 @@ func TestPopWithSubtreeZeroLinks(t *testing.T) {
 
 	// Verify the popped subtrees include SubtreeZero.
 	foundZero := false
-	for _, st := range results[0].subtrees {
+	for _, st := range results[0].Subtrees() {
 		if st.IsZero() {
 			foundZero = true
 		}

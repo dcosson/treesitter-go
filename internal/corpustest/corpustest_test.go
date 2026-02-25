@@ -731,4 +731,3 @@ input
 		t.Error("skip should suppress error")
 	}
 }
-

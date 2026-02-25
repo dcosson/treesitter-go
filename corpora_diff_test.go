@@ -2,14 +2,15 @@
 //
 // These tests compare Go parser output against the reference C tree-sitter CLI
 // on source files downloaded from popular open-source projects. The tests require:
-//   1. The tree-sitter CLI (install via `make deps`)
-//   2. Downloaded corpora files (install via `make fetch-corpora`)
+//  1. The tree-sitter CLI (install via `make deps`)
+//  2. Downloaded corpora files (install via `make fetch-corpora`)
 //
 // Run: go test -v -run TestDifferentialCorpora -timeout 30m .
 package treesitter_test
 
 import (
 	"context"
+	iparser "github.com/treesitter-go/treesitter/internal/parser"
 	"os"
 	"path/filepath"
 	"testing"
@@ -130,7 +131,7 @@ func allCorporaLanguages() []corporaLanguage {
 // makeCorporaParseFunc creates a ParseFunc for the given language.
 func makeCorporaParseFunc(lang *ts.Language) func([]byte) (string, error) {
 	return func(input []byte) (string, error) {
-		p := ts.NewParser()
+		p := iparser.NewParser()
 		p.SetLanguage(lang)
 		tree := p.ParseString(context.Background(), input)
 		if tree == nil {
@@ -153,7 +154,7 @@ func parseCorporaFileWithTimeout(t *testing.T, lang *ts.Language, input []byte, 
 	ctx, cancel := context.WithTimeout(context.Background(), perFileParseTimeout)
 	defer cancel()
 
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(lang)
 
 	// Run parse in a goroutine so we can respect the timeout.

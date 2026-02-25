@@ -1,4 +1,4 @@
-package treesitter
+package parser
 
 import (
 	"bytes"
@@ -67,7 +67,7 @@ func TestExternalScannerStateEqual(t *testing.T) {
 	}
 
 	// Inline subtree.
-	inline := newInlineSubtree(1, 0, LengthZero, LengthZero, true, true, false, false)
+	inline := NewInlineSubtree(1, 0, LengthZero, LengthZero, true, true, false, false)
 	if ExternalScannerStateEqual(inline, arena, []byte{1}, 1) {
 		t.Error("expected not equal for inline subtree")
 	}
@@ -75,7 +75,7 @@ func TestExternalScannerStateEqual(t *testing.T) {
 
 func TestExternalScannerStateOnInlineSubtree(t *testing.T) {
 	arena := NewSubtreeArena(0)
-	inline := newInlineSubtree(1, 0, LengthZero, LengthZero, true, true, false, false)
+	inline := NewInlineSubtree(1, 0, LengthZero, LengthZero, true, true, false, false)
 
 	// Setting state on inline should be no-op.
 	SetExternalScannerState(inline, arena, []byte{1, 2})
@@ -117,7 +117,7 @@ func TestHasExternalTokensFlag(t *testing.T) {
 	}
 
 	// Inline subtrees never have external tokens.
-	inline := newInlineSubtree(1, 0, LengthZero, LengthZero, true, true, false, false)
+	inline := NewInlineSubtree(1, 0, LengthZero, LengthZero, true, true, false, false)
 	if HasExternalTokens(inline, arena) {
 		t.Error("expected no external tokens for inline subtree")
 	}
@@ -199,14 +199,14 @@ func TestEnabledExternalTokens(t *testing.T) {
 // --- Mock external scanner for unit tests ---
 
 type mockScanner struct {
-	scanCalls       int
-	serializeCalls  int
-	deserializeCalls int
-	lastValidSymbols []bool
+	scanCalls           int
+	serializeCalls      int
+	deserializeCalls    int
+	lastValidSymbols    []bool
 	lastDeserializeData []byte
-	scanResult      bool
-	scanSymbol      Symbol
-	state           byte // simple 1-byte state for testing
+	scanResult          bool
+	scanSymbol          Symbol
+	state               byte // simple 1-byte state for testing
 }
 
 func (s *mockScanner) Scan(lexer *Lexer, validSymbols []bool) bool {
@@ -247,15 +247,15 @@ func (s *mockScanner) Deserialize(data []byte) {
 func TestParserExternalScannerCreation(t *testing.T) {
 	scanner := &mockScanner{}
 	lang := &Language{
-		SymbolCount:    5,
-		TokenCount:     3,
-		StateCount:     2,
-		LargeStateCount: 2,
-		SymbolMetadata: make([]SymbolMetadata, 5),
-		SymbolNames:    make([]string, 5),
-		ParseTable:     make([]uint16, 10),
-		LexModes:       make([]LexMode, 2),
-		ParseActions:   []ParseActionEntry{{Type: ParseActionTypeHeader}},
+		SymbolCount:        5,
+		TokenCount:         3,
+		StateCount:         2,
+		LargeStateCount:    2,
+		SymbolMetadata:     make([]SymbolMetadata, 5),
+		SymbolNames:        make([]string, 5),
+		ParseTable:         make([]uint16, 10),
+		LexModes:           make([]LexMode, 2),
+		ParseActions:       []ParseActionEntry{{Type: ParseActionTypeHeader}},
 		NewExternalScanner: func() ExternalScanner { return scanner },
 	}
 
@@ -272,15 +272,15 @@ func TestParserExternalScannerCreation(t *testing.T) {
 
 func TestParserNoExternalScanner(t *testing.T) {
 	lang := &Language{
-		SymbolCount:    5,
-		TokenCount:     3,
-		StateCount:     2,
+		SymbolCount:     5,
+		TokenCount:      3,
+		StateCount:      2,
 		LargeStateCount: 2,
-		SymbolMetadata: make([]SymbolMetadata, 5),
-		SymbolNames:    make([]string, 5),
-		ParseTable:     make([]uint16, 10),
-		LexModes:       make([]LexMode, 2),
-		ParseActions:   []ParseActionEntry{{Type: ParseActionTypeHeader}},
+		SymbolMetadata:  make([]SymbolMetadata, 5),
+		SymbolNames:     make([]string, 5),
+		ParseTable:      make([]uint16, 10),
+		LexModes:        make([]LexMode, 2),
+		ParseActions:    []ParseActionEntry{{Type: ParseActionTypeHeader}},
 	}
 
 	p := NewParser()
@@ -296,27 +296,27 @@ func TestParserSwitchLanguageClearsScanner(t *testing.T) {
 	scanner2 := &mockScanner{}
 
 	lang1 := &Language{
-		SymbolCount:    5,
-		TokenCount:     3,
-		StateCount:     2,
-		LargeStateCount: 2,
-		SymbolMetadata: make([]SymbolMetadata, 5),
-		SymbolNames:    make([]string, 5),
-		ParseTable:     make([]uint16, 10),
-		LexModes:       make([]LexMode, 2),
-		ParseActions:   []ParseActionEntry{{Type: ParseActionTypeHeader}},
+		SymbolCount:        5,
+		TokenCount:         3,
+		StateCount:         2,
+		LargeStateCount:    2,
+		SymbolMetadata:     make([]SymbolMetadata, 5),
+		SymbolNames:        make([]string, 5),
+		ParseTable:         make([]uint16, 10),
+		LexModes:           make([]LexMode, 2),
+		ParseActions:       []ParseActionEntry{{Type: ParseActionTypeHeader}},
 		NewExternalScanner: func() ExternalScanner { return scanner1 },
 	}
 	lang2 := &Language{
-		SymbolCount:    5,
-		TokenCount:     3,
-		StateCount:     2,
-		LargeStateCount: 2,
-		SymbolMetadata: make([]SymbolMetadata, 5),
-		SymbolNames:    make([]string, 5),
-		ParseTable:     make([]uint16, 10),
-		LexModes:       make([]LexMode, 2),
-		ParseActions:   []ParseActionEntry{{Type: ParseActionTypeHeader}},
+		SymbolCount:        5,
+		TokenCount:         3,
+		StateCount:         2,
+		LargeStateCount:    2,
+		SymbolMetadata:     make([]SymbolMetadata, 5),
+		SymbolNames:        make([]string, 5),
+		ParseTable:         make([]uint16, 10),
+		LexModes:           make([]LexMode, 2),
+		ParseActions:       []ParseActionEntry{{Type: ParseActionTypeHeader}},
 		NewExternalScanner: func() ExternalScanner { return scanner2 },
 	}
 

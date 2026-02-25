@@ -3,6 +3,7 @@ package treesitter_test
 import (
 	"context"
 	"fmt"
+	iparser "github.com/treesitter-go/treesitter/internal/parser"
 	"strings"
 	"testing"
 	"time"
@@ -16,7 +17,7 @@ import (
 func mustParseGo(t *testing.T, src string) *ts.Tree {
 	t.Helper()
 	lang := golanggrammar.GoLanguage()
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(lang)
 	tree := p.ParseString(context.Background(), []byte(src))
 	if tree == nil {
@@ -146,7 +147,7 @@ func TestNodeIsMissing(t *testing.T) {
 	// Use JSON grammar which has reliable error recovery for malformed input.
 	src := `{"a": }`
 	lang := tg.JsonLanguage()
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(lang)
 	tree := p.ParseString(context.Background(), []byte(src))
 	if tree == nil {
@@ -412,7 +413,7 @@ func TestLanguagePublicSymbol(t *testing.T) {
 
 func TestParserSwitchLanguage(t *testing.T) {
 	lang := golanggrammar.GoLanguage()
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(lang)
 
 	tree1 := p.ParseString(context.Background(), []byte("package main\n"))
@@ -434,7 +435,7 @@ func TestParserSwitchLanguage(t *testing.T) {
 
 func TestParserReuse(t *testing.T) {
 	lang := golanggrammar.GoLanguage()
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(lang)
 
 	inputs := []string{
@@ -457,7 +458,7 @@ func TestParserReuse(t *testing.T) {
 
 func TestParserTimeout(t *testing.T) {
 	lang := golanggrammar.GoLanguage()
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(lang)
 
 	// Generate a large input so parsing takes long enough to be cancelled.
@@ -480,7 +481,7 @@ func TestParserTimeout(t *testing.T) {
 
 func TestParserCancellation(t *testing.T) {
 	lang := golanggrammar.GoLanguage()
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(lang)
 
 	// Generate a large input so parsing takes long enough to be cancelled.
@@ -502,7 +503,7 @@ func TestParserCancellation(t *testing.T) {
 
 func TestParserIncrementalParsing(t *testing.T) {
 	lang := golanggrammar.GoLanguage()
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(lang)
 
 	src1 := "package main\n\nvar x = 1\n"

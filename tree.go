@@ -33,6 +33,15 @@ func (t *Tree) RootNode() Node {
 	return t.nodeFromSubtree(t.root, LengthZero, 0)
 }
 
+// RootSubtree returns the internal root subtree.
+// Used by internal package refactors where parser logic is moved out of package treesitter.
+func (t *Tree) RootSubtree() Subtree {
+	if t == nil {
+		return SubtreeZero
+	}
+	return t.root
+}
+
 // Language returns the Language this tree was parsed with.
 func (t *Tree) Language() *Language {
 	return t.language
@@ -99,8 +108,8 @@ func (t *Tree) nodeFromSubtree(s Subtree, position Length, aliasSymbol Symbol) N
 			startPos.Point.Column,
 			uint32(aliasSymbol),
 		},
-		id:   SubtreeIDOf(s),
-		tree: t,
+		id:      SubtreeIDOf(s),
+		tree:    t,
 		subtree: s,
 	}
 }

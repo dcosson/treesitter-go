@@ -52,24 +52,24 @@ func makeTestLanguage() *Language {
 		// State 2 (small index 0, at offset 0):
 		1,    // groupCount = 1
 		3, 1, // group: value=3, symCount=1
-		2,    // symbol 2 ('}')
+		2, // symbol 2 ('}')
 		// State 3 (small index 1, at offset 4):
 		1,    // groupCount = 1
 		5, 1, // group: value=5, symCount=1
-		0,    // symbol 0 (end)
+		0, // symbol 0 (end)
 	}
 	smallParseTableMap := []uint32{0, 4} // small state 0 -> offset 0, small state 1 -> offset 4
 
 	return &Language{
-		SymbolCount:     symbolCount,
-		TokenCount:      tokenCount,
-		StateCount:      4,
-		LargeStateCount: 2,
-		ParseTable:      parseTable,
-		SmallParseTable: smallParseTable,
+		SymbolCount:        symbolCount,
+		TokenCount:         tokenCount,
+		StateCount:         4,
+		LargeStateCount:    2,
+		ParseTable:         parseTable,
+		SmallParseTable:    smallParseTable,
 		SmallParseTableMap: smallParseTableMap,
-		ParseActions:    parseActions,
-		SymbolNames:     []string{"end", "{", "}", "value", "document"},
+		ParseActions:       parseActions,
+		SymbolNames:        []string{"end", "{", "}", "value", "document"},
 		SymbolMetadata: []SymbolMetadata{
 			{Visible: false, Named: false}, // end
 			{Visible: true, Named: false},  // {
@@ -84,25 +84,25 @@ func TestLanguageLookupLargeState(t *testing.T) {
 	lang := makeTestLanguage()
 
 	// State 0 (large), symbol 1 (terminal) -> action index 1.
-	got := lang.lookup(0, 1)
+	got := lang.Lookup(0, 1)
 	if got != 1 {
 		t.Errorf("lookup(0, 1) = %d, want 1", got)
 	}
 
 	// State 0 (large), symbol 0 -> no action (0).
-	got = lang.lookup(0, 0)
+	got = lang.Lookup(0, 0)
 	if got != 0 {
 		t.Errorf("lookup(0, 0) = %d, want 0", got)
 	}
 
 	// State 1 (large), symbol 0 (terminal) -> action index 5 (accept).
-	got = lang.lookup(1, 0)
+	got = lang.Lookup(1, 0)
 	if got != 5 {
 		t.Errorf("lookup(1, 0) = %d, want 5", got)
 	}
 
 	// State 1 (large), symbol 3 (non-terminal) -> raw state ID 3 (goto target).
-	got = lang.lookup(1, 3)
+	got = lang.Lookup(1, 3)
 	if got != 3 {
 		t.Errorf("lookup(1, 3) = %d, want 3", got)
 	}
@@ -112,25 +112,25 @@ func TestLanguageLookupSmallState(t *testing.T) {
 	lang := makeTestLanguage()
 
 	// State 2 (small index 0), symbol 2 -> action index 3.
-	got := lang.lookup(2, 2)
+	got := lang.Lookup(2, 2)
 	if got != 3 {
 		t.Errorf("lookup(2, 2) = %d, want 3", got)
 	}
 
 	// State 2 (small index 0), symbol 0 -> no action (0).
-	got = lang.lookup(2, 0)
+	got = lang.Lookup(2, 0)
 	if got != 0 {
 		t.Errorf("lookup(2, 0) = %d, want 0", got)
 	}
 
 	// State 3 (small index 1), symbol 0 -> action index 5.
-	got = lang.lookup(3, 0)
+	got = lang.Lookup(3, 0)
 	if got != 5 {
 		t.Errorf("lookup(3, 0) = %d, want 5", got)
 	}
 
 	// State 3 (small index 1), symbol 1 -> no action (0).
-	got = lang.lookup(3, 1)
+	got = lang.Lookup(3, 1)
 	if got != 0 {
 		t.Errorf("lookup(3, 1) = %d, want 0", got)
 	}
@@ -140,7 +140,7 @@ func TestLanguageTableEntry(t *testing.T) {
 	lang := makeTestLanguage()
 
 	// Normal shift action.
-	entry := lang.tableEntry(0, 1)
+	entry := lang.TableEntry(0, 1)
 	if entry.ActionCount != 1 {
 		t.Fatalf("tableEntry(0,1).ActionCount = %d, want 1", entry.ActionCount)
 	}
@@ -155,7 +155,7 @@ func TestLanguageTableEntry(t *testing.T) {
 	}
 
 	// Reduce action (reusable).
-	entry = lang.tableEntry(2, 2)
+	entry = lang.TableEntry(2, 2)
 	if entry.ActionCount != 1 {
 		t.Fatalf("tableEntry(2,2).ActionCount = %d, want 1", entry.ActionCount)
 	}
@@ -170,7 +170,7 @@ func TestLanguageTableEntry(t *testing.T) {
 	}
 
 	// Accept action (terminal symbol 0 = end).
-	entry = lang.tableEntry(1, 0)
+	entry = lang.TableEntry(1, 0)
 	if entry.ActionCount != 1 {
 		t.Fatalf("tableEntry(1,0).ActionCount = %d, want 1", entry.ActionCount)
 	}
@@ -179,17 +179,17 @@ func TestLanguageTableEntry(t *testing.T) {
 	}
 
 	// No action.
-	entry = lang.tableEntry(0, 0)
+	entry = lang.TableEntry(0, 0)
 	if entry.ActionCount != 0 {
 		t.Errorf("tableEntry(0,0).ActionCount = %d, want 0", entry.ActionCount)
 	}
 
 	// Error symbol should return empty.
-	entry = lang.tableEntry(0, SymbolError)
+	entry = lang.TableEntry(0, SymbolError)
 	if entry.ActionCount != 0 {
 		t.Errorf("tableEntry(0, error).ActionCount = %d, want 0", entry.ActionCount)
 	}
-	entry = lang.tableEntry(0, SymbolErrorRepeat)
+	entry = lang.TableEntry(0, SymbolErrorRepeat)
 	if entry.ActionCount != 0 {
 		t.Errorf("tableEntry(0, error_repeat).ActionCount = %d, want 0", entry.ActionCount)
 	}
@@ -199,25 +199,25 @@ func TestLanguageNextState(t *testing.T) {
 	lang := makeTestLanguage()
 
 	// State 0, symbol 1 (terminal '{') -> shift to state 2 (via action table).
-	got := lang.nextState(0, 1)
+	got := lang.NextState(0, 1)
 	if got != 2 {
 		t.Errorf("nextState(0, 1) = %d, want 2", got)
 	}
 
 	// State 1, symbol 3 (non-terminal 'value') -> goto state 3 (raw state ID).
-	got = lang.nextState(1, 3)
+	got = lang.NextState(1, 3)
 	if got != 3 {
 		t.Errorf("nextState(1, 3) = %d, want 3", got)
 	}
 
 	// No action -> state 0.
-	got = lang.nextState(0, 0)
+	got = lang.NextState(0, 0)
 	if got != 0 {
 		t.Errorf("nextState(0, 0) = %d, want 0", got)
 	}
 
 	// Error symbol -> state 0.
-	got = lang.nextState(0, SymbolError)
+	got = lang.NextState(0, SymbolError)
 	if got != 0 {
 		t.Errorf("nextState(0, error) = %d, want 0", got)
 	}

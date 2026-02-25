@@ -2,6 +2,7 @@ package treesitter_test
 
 import (
 	"context"
+	iparser "github.com/treesitter-go/treesitter/internal/parser"
 	"strings"
 	"testing"
 
@@ -24,7 +25,7 @@ func pyLang() *ts.Language {
 // --- Go Integration Tests ---
 
 func TestGoParsePackageAndImport(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(goLang())
 
 	src := `package main
@@ -57,7 +58,7 @@ import (
 }
 
 func TestGoParseInterface(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(goLang())
 
 	src := "package io\n\ntype Reader interface {\n\tRead(p []byte) (n int, err error)\n}\n"
@@ -77,7 +78,7 @@ func TestGoParseInterface(t *testing.T) {
 }
 
 func TestGoParseFunctionWithExpressions(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(goLang())
 
 	src := `package main
@@ -110,7 +111,7 @@ func compute() int {
 }
 
 func TestGoParseBlankIdentifier(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(goLang())
 
 	src := `package main
@@ -137,7 +138,7 @@ var _ = 0
 }
 
 func TestGoParseForLoop(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(goLang())
 
 	src := `package main
@@ -164,7 +165,7 @@ func main() {
 }
 
 func TestGoParseIfCondition(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(goLang())
 
 	src := `package main
@@ -192,7 +193,7 @@ func main() {
 }
 
 func TestGoParseMapLiteral(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(goLang())
 
 	src := `package main
@@ -215,7 +216,7 @@ var m = map[int]int{}
 }
 
 func TestGoParsePrintln(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(goLang())
 
 	src := `package main
@@ -242,7 +243,7 @@ func main() {
 // --- Python Integration Tests ---
 
 func TestPythonParseFunction(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(pyLang())
 
 	src := `def greet(name):
@@ -268,7 +269,7 @@ func TestPythonParseFunction(t *testing.T) {
 }
 
 func TestPythonParseClass(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(pyLang())
 
 	src := `class Animal:
@@ -294,7 +295,7 @@ func TestPythonParseClass(t *testing.T) {
 }
 
 func TestPythonParseListComprehension(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(pyLang())
 
 	src := `squares = [x * x for x in range(10) if x % 2 == 0]
@@ -310,5 +311,3 @@ func TestPythonParseListComprehension(t *testing.T) {
 		t.Errorf("expected list_comprehension in: %s", sexp)
 	}
 }
-
-

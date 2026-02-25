@@ -13,6 +13,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	iparser "github.com/treesitter-go/treesitter/internal/parser"
 	"os"
 	"path/filepath"
 	"strings"
@@ -129,7 +130,7 @@ func withScanner(lang *ts.Language, factory ts.ExternalScannerFactory) *ts.Langu
 func parse(lang *ts.Language, input []byte) string {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(lang)
 	tree := p.ParseString(ctx, input)
 	if tree == nil {

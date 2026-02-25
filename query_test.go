@@ -2,6 +2,7 @@ package treesitter_test
 
 import (
 	"context"
+	iparser "github.com/treesitter-go/treesitter/internal/parser"
 	"testing"
 
 	ts "github.com/treesitter-go/treesitter"
@@ -16,7 +17,7 @@ func queryTestLanguage() *ts.Language {
 
 func parseJSON(t *testing.T, input string) *ts.Tree {
 	t.Helper()
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(queryTestLanguage())
 	tree := p.ParseString(context.Background(), []byte(input))
 	if tree == nil {

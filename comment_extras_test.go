@@ -2,11 +2,11 @@ package treesitter_test
 
 import (
 	"context"
+	iparser "github.com/treesitter-go/treesitter/internal/parser"
 	"strings"
 	"testing"
 	"time"
 
-	ts "github.com/treesitter-go/treesitter"
 	cgrammar "github.com/treesitter-go/treesitter/internal/testgrammars/cgrammar"
 )
 
@@ -80,7 +80,7 @@ func TestCommentExtrasPlacement(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			p := ts.NewParser()
+			p := iparser.NewParser()
 			p.SetLanguage(lang)
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			defer cancel()

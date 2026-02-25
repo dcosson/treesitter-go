@@ -3,13 +3,13 @@ package difftest
 import (
 	"context"
 	"flag"
+	iparser "github.com/treesitter-go/treesitter/internal/parser"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 
-	ts "github.com/treesitter-go/treesitter"
 	"github.com/treesitter-go/treesitter/internal/corpustest"
 	golanggrammar "github.com/treesitter-go/treesitter/internal/testgrammars/golang"
 )
@@ -54,7 +54,7 @@ func requireCLIScope(t *testing.T, scope string) {
 func goParseFunc() corpustest.ParseFunc {
 	lang := golanggrammar.GoLanguage()
 	return func(input []byte) (string, error) {
-		p := ts.NewParser()
+		p := iparser.NewParser()
 		p.SetLanguage(lang)
 		tree := p.ParseString(context.Background(), input)
 		if tree == nil {

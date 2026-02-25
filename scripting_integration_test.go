@@ -2,6 +2,7 @@ package treesitter_test
 
 import (
 	"context"
+	iparser "github.com/treesitter-go/treesitter/internal/parser"
 	"strings"
 	"testing"
 	"time"
@@ -33,7 +34,7 @@ func javaLang() *ts.Language {
 // --- CSS Integration Tests ---
 
 func TestCSSParseSimpleRule(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(cssLang())
 
 	src := "body { color: red; }"
@@ -52,7 +53,7 @@ func TestCSSParseSimpleRule(t *testing.T) {
 }
 
 func TestCSSParseDescendantSelector(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(cssLang())
 
 	src := "div p { color: blue; }"
@@ -70,7 +71,7 @@ func TestCSSParseDescendantSelector(t *testing.T) {
 }
 
 func TestCSSParsePseudoClass(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(cssLang())
 
 	src := "a:hover { text-decoration: underline; }"
@@ -88,7 +89,7 @@ func TestCSSParsePseudoClass(t *testing.T) {
 }
 
 func TestCSSParseMediaQuery(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(cssLang())
 
 	src := "@media (max-width: 600px) { body { font-size: 14px; } }"
@@ -108,7 +109,7 @@ func TestCSSParseMediaQuery(t *testing.T) {
 // --- HTML Integration Tests ---
 
 func TestHTMLParseSimpleElement(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(htmlLang())
 
 	src := "<div>hello</div>"
@@ -126,7 +127,7 @@ func TestHTMLParseSimpleElement(t *testing.T) {
 }
 
 func TestHTMLParseNestedElements(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(htmlLang())
 
 	src := "<div><p>text</p></div>"
@@ -144,7 +145,7 @@ func TestHTMLParseNestedElements(t *testing.T) {
 }
 
 func TestHTMLParseSelfClosingTag(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(htmlLang())
 
 	src := "<br/>"
@@ -174,7 +175,7 @@ func TestHTMLParseVoidElement(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			pp := ts.NewParser()
+			pp := iparser.NewParser()
 			pp.SetLanguage(htmlLang())
 			ctx, cancel := context.WithTimeout(context.Background(), testTimeout())
 			defer cancel()
@@ -198,7 +199,7 @@ func TestHTMLParseVoidElement(t *testing.T) {
 // --- Java Integration Tests ---
 
 func TestJavaParseHelloWorld(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(javaLang())
 
 	// Full test
@@ -208,7 +209,7 @@ func TestJavaParseHelloWorld(t *testing.T) {
     }
 }`
 	// Try simpler variants first
-	for _, tc := range []struct{name, code string}{
+	for _, tc := range []struct{ name, code string }{
 		{"empty_class", `class Hello {}`},
 		{"with_field", `class Hello { int x; }`},
 		{"with_method", `class Hello { void main() {} }`},
@@ -221,7 +222,7 @@ func TestJavaParseHelloWorld(t *testing.T) {
 		{"full", src},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			pp := ts.NewParser()
+			pp := iparser.NewParser()
 			pp.SetLanguage(javaLang())
 			ctx2, cancel2 := context.WithTimeout(context.Background(), 2*time.Second)
 			defer cancel2()
@@ -249,7 +250,7 @@ func TestJavaParseHelloWorld(t *testing.T) {
 }
 
 func TestJavaParseInterface(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(javaLang())
 
 	src := `interface Readable {

@@ -1,40 +1,40 @@
-package treesitter
+package parser
 
 import (
 	"context"
-	
+
 	"testing"
 	"time"
 )
 
 // JSON symbol IDs (copied from internal/testgrammars to avoid import cycle).
 const (
-	symEnd                Symbol = 0
-	symLBrace             Symbol = 1
-	symComma              Symbol = 2
-	symRBrace             Symbol = 3
-	symColon              Symbol = 4
-	symLBrack             Symbol = 5
-	symRBrack             Symbol = 6
-	symDQuote             Symbol = 7
-	symStringContent      Symbol = 8
-	symEscapeSequence     Symbol = 9
-	symNumber             Symbol = 10
-	symTrue               Symbol = 11
-	symFalse              Symbol = 12
-	symNull               Symbol = 13
-	symComment            Symbol = 14
-	symDocument           Symbol = 15
-	symValue              Symbol = 16
-	symObject             Symbol = 17
-	symPair               Symbol = 18
-	symArray              Symbol = 19
-	symString             Symbol = 20
-	symAuxStringContent   Symbol = 21
-	symAuxDocRepeat1      Symbol = 22
-	symAuxObjRepeat1      Symbol = 23
-	symAuxArrRepeat1      Symbol = 24
-	numJSONSymbols        uint32 = 25
+	symEnd              Symbol = 0
+	symLBrace           Symbol = 1
+	symComma            Symbol = 2
+	symRBrace           Symbol = 3
+	symColon            Symbol = 4
+	symLBrack           Symbol = 5
+	symRBrack           Symbol = 6
+	symDQuote           Symbol = 7
+	symStringContent    Symbol = 8
+	symEscapeSequence   Symbol = 9
+	symNumber           Symbol = 10
+	symTrue             Symbol = 11
+	symFalse            Symbol = 12
+	symNull             Symbol = 13
+	symComment          Symbol = 14
+	symDocument         Symbol = 15
+	symValue            Symbol = 16
+	symObject           Symbol = 17
+	symPair             Symbol = 18
+	symArray            Symbol = 19
+	symString           Symbol = 20
+	symAuxStringContent Symbol = 21
+	symAuxDocRepeat1    Symbol = 22
+	symAuxObjRepeat1    Symbol = 23
+	symAuxArrRepeat1    Symbol = 24
+	numJSONSymbols      uint32 = 25
 )
 
 // jsonLexFn is a hand-written lex function for the JSON grammar.
@@ -373,22 +373,22 @@ func TestCompareVersions(t *testing.T) {
 		{
 			name: "cost amplification - decisive kill",
 			// cost_diff=100, nodeCount=20: 100 * 21 = 2100 > 1600
-			a: errorStatus{cost: 100, nodeCount: 20},
-			b: errorStatus{cost: 200, nodeCount: 0},
+			a:    errorStatus{cost: 100, nodeCount: 20},
+			b:    errorStatus{cost: 200, nodeCount: 0},
 			want: errorComparisonTakeLeft,
 		},
 		{
 			name: "cost amplification - soft preference",
 			// cost_diff=100, nodeCount=5: 100 * 6 = 600 < 1600
-			a: errorStatus{cost: 100, nodeCount: 5},
-			b: errorStatus{cost: 200, nodeCount: 0},
+			a:    errorStatus{cost: 100, nodeCount: 5},
+			b:    errorStatus{cost: 200, nodeCount: 0},
 			want: errorComparisonPreferLeft,
 		},
 		{
 			name: "cost amplification - symmetric decisive kill",
 			// cost_diff=100, nodeCount=20: 100 * 21 = 2100 > 1600
-			a: errorStatus{cost: 200, nodeCount: 0},
-			b: errorStatus{cost: 100, nodeCount: 20},
+			a:    errorStatus{cost: 200, nodeCount: 0},
+			b:    errorStatus{cost: 100, nodeCount: 20},
 			want: errorComparisonTakeRight,
 		},
 		{

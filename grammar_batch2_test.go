@@ -2,6 +2,7 @@ package treesitter_test
 
 import (
 	"context"
+	iparser "github.com/treesitter-go/treesitter/internal/parser"
 	"strings"
 	"testing"
 
@@ -32,7 +33,7 @@ func rustLang() *ts.Language {
 // --- C Integration Tests ---
 
 func TestCParseStruct(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(cLang())
 
 	src := `struct Point {
@@ -56,7 +57,7 @@ func TestCParseStruct(t *testing.T) {
 }
 
 func TestCParsePointers(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(cLang())
 
 	src := `int *ptr = &x;`
@@ -73,7 +74,7 @@ func TestCParsePointers(t *testing.T) {
 }
 
 func TestCParseFunction(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(cLang())
 
 	src := `int add(int a, int b) { return a + b; }`
@@ -90,7 +91,7 @@ func TestCParseFunction(t *testing.T) {
 }
 
 func TestCParseTypedef(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(cLang())
 
 	src := `typedef unsigned long size_t;`
@@ -109,7 +110,7 @@ func TestCParseTypedef(t *testing.T) {
 // --- C++ Integration Tests ---
 
 func TestCppParseClass(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(cppLang())
 
 	src := `class Shape {
@@ -129,7 +130,7 @@ public:
 }
 
 func TestCppParseTemplate(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(cppLang())
 
 	src := `template <typename T>
@@ -147,7 +148,7 @@ T max(T a, T b) { return a > b ? a : b; }`
 }
 
 func TestCppParseNamespace(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(cppLang())
 
 	src := `namespace math { int add(int a, int b) { return a + b; } }`
@@ -166,7 +167,7 @@ func TestCppParseNamespace(t *testing.T) {
 // --- Rust Integration Tests ---
 
 func TestRustParseStruct(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(rustLang())
 
 	src := `struct Point {
@@ -190,7 +191,7 @@ func TestRustParseStruct(t *testing.T) {
 }
 
 func TestRustParseImpl(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(rustLang())
 
 	src := `impl Point {
@@ -211,7 +212,7 @@ func TestRustParseImpl(t *testing.T) {
 }
 
 func TestRustParseMatch(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(rustLang())
 
 	src := `fn check(x: i32) -> i32 {
@@ -233,7 +234,7 @@ func TestRustParseMatch(t *testing.T) {
 }
 
 func TestRustParseLifetimes(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(rustLang())
 
 	src := `fn longest<'a>(x: &'a str, y: &'a str) -> &'a str { x }`

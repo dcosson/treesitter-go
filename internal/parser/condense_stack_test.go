@@ -1,4 +1,4 @@
-package treesitter
+package parser
 
 import "testing"
 
@@ -13,10 +13,7 @@ import "testing"
 //   - dynPrec: dynamic precedence
 func setupCondenseVersion(stack *Stack, state StateID, pos uint32, errorCost uint32, nodeCount uint32, dynPrec int32) StackVersion {
 	v := stack.AddVersion(state, Length{Bytes: pos})
-	head := &stack.heads[v]
-	head.node.errorCost = errorCost
-	head.node.nodeCount = nodeCount
-	head.node.dynamicPrecedence = dynPrec
+	stack.SetNodeMetrics(v, errorCost, nodeCount, dynPrec)
 	return v
 }
 
@@ -287,7 +284,7 @@ func TestCondenseStackSwapOrdering(t *testing.T) {
 	}
 	// Make the last version have higher dynamic precedence.
 	lastIdx := MaxVersionCount
-	p.stack.heads[lastIdx].node.dynamicPrecedence = 100
+	p.stack.SetNodeMetrics(StackVersion(lastIdx), 0, 5, 100)
 
 	p.condenseStack()
 

@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 	"fmt"
+	iparser "github.com/treesitter-go/treesitter/internal/parser"
 	"time"
 
-	ts "github.com/treesitter-go/treesitter"
 	perlgrammar "github.com/treesitter-go/treesitter/internal/testgrammars/perl"
 	perlscanner "github.com/treesitter-go/treesitter/scanners/perl"
 )
@@ -14,7 +14,7 @@ func main() {
 	lang := perlgrammar.PerlLanguage()
 	lang.NewExternalScanner = perlscanner.New
 
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(lang)
 
 	// Perl non-assoc: chaining cmp triggers error

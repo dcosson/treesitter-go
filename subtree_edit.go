@@ -183,6 +183,12 @@ func editSubtree(s Subtree, edit *InputEdit, arena *SubtreeArena) Subtree {
 	return newTree
 }
 
+// EditSubtree is an exported wrapper around editSubtree for internal package
+// tests that have moved out of the root package.
+func EditSubtree(s Subtree, edit *InputEdit, arena *SubtreeArena) Subtree {
+	return editSubtree(s, edit, arena)
+}
+
 // adjustNodePaddingAndSize adjusts a subtree's padding and size based on an edit.
 // This handles three cases based on where the edit falls relative to the node:
 //  1. Edit entirely in padding: adjust padding by delta

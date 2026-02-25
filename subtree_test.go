@@ -488,12 +488,12 @@ func makeSubtreeTestLanguage() *Language {
 			":", "number", "document", "_value", ",", "comment",
 		},
 		FieldNames: []string{
-			"",    // 0: no field
-			"key", // 1
+			"",      // 0: no field
+			"key",   // 1
 			"value", // 2
 		},
 		FieldMapSlices: []FieldMapSlice{
-			{}, // prodID 0: no fields
+			{},                    // prodID 0: no fields
 			{Index: 0, Length: 2}, // prodID 1: pair -> key:0 value:2
 		},
 		FieldMapEntries: []FieldMapEntry{

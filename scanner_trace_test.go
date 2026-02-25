@@ -39,18 +39,18 @@ import (
 // traceEntry represents a single recorded external scanner call from the
 // C reference implementation. Each entry is independently replayable.
 type traceEntry struct {
-	Lang     string     `json:"lang"`
-	File     string     `json:"file"`
-	CallIdx  uint64     `json:"call_index"`
-	Input    traceInput `json:"input"`
-	Output   traceOutput `json:"output"`
+	Lang    string      `json:"lang"`
+	File    string      `json:"file"`
+	CallIdx uint64      `json:"call_index"`
+	Input   traceInput  `json:"input"`
+	Output  traceOutput `json:"output"`
 }
 
 type traceInput struct {
-	ByteOffset         uint32  `json:"byte_offset"`
-	Lookahead          int32   `json:"lookahead"`
-	ValidSymbols       []int   `json:"valid_symbols"`
-	ScannerStateBefore string  `json:"scanner_state_before"` // base64
+	ByteOffset         uint32 `json:"byte_offset"`
+	Lookahead          int32  `json:"lookahead"`
+	ValidSymbols       []int  `json:"valid_symbols"`
+	ScannerStateBefore string `json:"scanner_state_before"` // base64
 }
 
 type traceOutput struct {
@@ -342,15 +342,15 @@ func TestScannerTraces(t *testing.T) {
 				actualPostState := postBuf[:postLen]
 
 				// For perl, normalize states to zero out unused TSPString
-			// content slots (C has uninitialized stack memory there).
-			cmpActual := actualPostState
-			cmpExpected := expectedPostState
-			if cfg.name == "perl" {
-				cmpActual = normalizePerlState(actualPostState)
-				cmpExpected = normalizePerlState(expectedPostState)
-			}
+				// content slots (C has uninitialized stack memory there).
+				cmpActual := actualPostState
+				cmpExpected := expectedPostState
+				if cfg.name == "perl" {
+					cmpActual = normalizePerlState(actualPostState)
+					cmpExpected = normalizePerlState(expectedPostState)
+				}
 
-			if !bytesEqual(cmpActual, cmpExpected) {
+				if !bytesEqual(cmpActual, cmpExpected) {
 					failCount++
 					if failCount <= maxFailsPerLang {
 						t.Errorf("entry %d (file=%s, call=%d): post-state mismatch (got %d bytes, want %d bytes)",

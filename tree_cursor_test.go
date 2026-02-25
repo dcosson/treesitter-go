@@ -172,8 +172,8 @@ func TestTreeCursorPositions(t *testing.T) {
 	cursor := NewTreeCursor(root)
 
 	// Navigate to pair (byte 1-6).
-	cursor.GotoFirstChild() // object
-	cursor.GotoFirstChild() // "{"
+	cursor.GotoFirstChild()  // object
+	cursor.GotoFirstChild()  // "{"
 	cursor.GotoNextSibling() // pair
 
 	pair := cursor.CurrentNode()
@@ -185,7 +185,7 @@ func TestTreeCursorPositions(t *testing.T) {
 	}
 
 	// Navigate to ":" (byte 4).
-	cursor.GotoFirstChild() // string
+	cursor.GotoFirstChild()  // string
 	cursor.GotoNextSibling() // ":"
 
 	colon := cursor.CurrentNode()
@@ -199,7 +199,9 @@ func TestTreeCursorPositions(t *testing.T) {
 
 // buildDeeplyNestedHiddenTree builds a tree where a visible node is nested
 // behind multiple levels of hidden nodes:
-//   document -> _hidden1 -> _hidden2 -> number
+//
+//	document -> _hidden1 -> _hidden2 -> number
+//
 // This tests that cursor and node traversal handle arbitrary hidden depth.
 func buildDeeplyNestedHiddenTree() (*Tree, *SubtreeArena) {
 	arena := NewSubtreeArena(32)
@@ -386,7 +388,7 @@ func buildAliasedTree() (*Tree, *SubtreeArena) {
 			{Visible: true, Named: true},   // 6: name (alias)
 			{Visible: true, Named: true},   // 7: value (alias)
 		},
-		SymbolNames: []string{"end", "identifier", ":", "number", "wrapper", "document", "name", "value"},
+		SymbolNames:            []string{"end", "identifier", ":", "number", "wrapper", "document", "name", "value"},
 		MaxAliasSequenceLength: 3,
 		AliasSequences: []Symbol{
 			// prodID 0: no aliases
@@ -651,7 +653,7 @@ func buildAliasedTreeWithExtras() (*Tree, *SubtreeArena) {
 			{Visible: true, Named: true},   // 6: value (alias)
 			{Visible: true, Named: true},   // 7: comment (extra)
 		},
-		SymbolNames: []string{"end", "identifier", "number", "wrapper", "document", "name", "value", "comment"},
+		SymbolNames:            []string{"end", "identifier", "number", "wrapper", "document", "name", "value", "comment"},
 		MaxAliasSequenceLength: 2,
 		AliasSequences: []Symbol{
 			// prodID 0: no aliases
@@ -749,7 +751,8 @@ func TestAliasResolutionSkipsExtras(t *testing.T) {
 // the fix for the childBasePos double-count bug (wcu.11).
 //
 // Source: "  {1}" (2 spaces of leading whitespace)
-//   document (padding=2, size=3) -> object (padding=2, size=3) -> "{" number "}"
+//
+//	document (padding=2, size=3) -> object (padding=2, size=3) -> "{" number "}"
 //
 // The first visible child "{" has padding=2. Without the fix, GotoFirstChild
 // would double-count this padding, causing incorrect byte positions.

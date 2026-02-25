@@ -3,6 +3,7 @@ package treesitter_test
 import (
 	"context"
 	"fmt"
+	iparser "github.com/treesitter-go/treesitter/internal/parser"
 	"os"
 	"path/filepath"
 	"testing"
@@ -160,7 +161,7 @@ func mustParseWithTimeout(t *testing.T, lang *ts.Language, input []byte, timeout
 		}()
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		defer cancel()
-		p := ts.NewParser()
+		p := iparser.NewParser()
 		p.SetLanguage(lang)
 		tree := p.ParseString(ctx, input)
 		ch <- result{tree: tree}

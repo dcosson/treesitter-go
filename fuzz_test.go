@@ -3,6 +3,7 @@ package treesitter_test
 import (
 	"bytes"
 	"context"
+	iparser "github.com/treesitter-go/treesitter/internal/parser"
 	"os"
 	"path/filepath"
 	"testing"
@@ -51,7 +52,7 @@ func fuzzParseWithLang(f *testing.F, lang *ts.Language, corpusRepoName string) {
 	seedFromCorpora(f, corpusRepoName)
 
 	f.Fuzz(func(t *testing.T, data []byte) {
-		p := ts.NewParser()
+		p := iparser.NewParser()
 		p.SetLanguage(lang)
 		ctx, cancel := context.WithTimeout(context.Background(), fuzzParseTimeout)
 		defer cancel()
@@ -67,7 +68,7 @@ func FuzzParseJSON(f *testing.F) {
 	lang.LexFn = jsonLexFn
 	seedFromCorpus(f, "tree-sitter-json")
 	f.Fuzz(func(t *testing.T, data []byte) {
-		p := ts.NewParser()
+		p := iparser.NewParser()
 		p.SetLanguage(lang)
 		ctx, cancel := context.WithTimeout(context.Background(), fuzzParseTimeout)
 		defer cancel()

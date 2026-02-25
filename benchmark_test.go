@@ -4,6 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	iparser "github.com/treesitter-go/treesitter/internal/parser"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -193,7 +194,7 @@ func BenchmarkParse(b *testing.B) {
 
 			// Go benchmark.
 			b.Run(fmt.Sprintf("go/%s/%s", lang.name, size.name), func(b *testing.B) {
-				parser := ts.NewParser()
+				parser := iparser.NewParser()
 				parser.SetLanguage(l)
 
 				// Warm up and verify parse succeeds.
@@ -250,7 +251,7 @@ func BenchmarkLatencyDistribution(b *testing.B) {
 		l := lang.language()
 
 		b.Run(lang.name, func(b *testing.B) {
-			parser := ts.NewParser()
+			parser := iparser.NewParser()
 			parser.SetLanguage(l)
 
 			tree := parser.ParseString(context.Background(), input)
@@ -290,7 +291,7 @@ func BenchmarkParseNestedJSON_500(b *testing.B) {
 	input := generateNestedJSON(2000) // ~500 depth
 	lang := tg.JsonLanguage()
 
-	parser := ts.NewParser()
+	parser := iparser.NewParser()
 	parser.SetLanguage(lang)
 
 	tree := parser.ParseString(context.Background(), input)
@@ -321,7 +322,7 @@ func BenchmarkTreeTraversal(b *testing.B) {
 			input := generateJSON(size.bytes)
 			lang := tg.JsonLanguage()
 
-			parser := ts.NewParser()
+			parser := iparser.NewParser()
 			parser.SetLanguage(lang)
 			tree := parser.ParseString(context.Background(), input)
 			if tree == nil {
@@ -351,7 +352,7 @@ func BenchmarkSExpression_1KB(b *testing.B) {
 	input := generateJSON(1024)
 	lang := tg.JsonLanguage()
 
-	parser := ts.NewParser()
+	parser := iparser.NewParser()
 	parser.SetLanguage(lang)
 	tree := parser.ParseString(context.Background(), input)
 	if tree == nil {
@@ -383,7 +384,7 @@ func TestAllocationsPerParse(t *testing.T) {
 	for _, s := range sizes {
 		t.Run(s.name, func(t *testing.T) {
 			input := generateJSON(s.size)
-			parser := ts.NewParser()
+			parser := iparser.NewParser()
 			parser.SetLanguage(lang)
 
 			// Warm up
@@ -423,7 +424,7 @@ func BenchmarkParserReuse(b *testing.B) {
 	lang := tg.JsonLanguage()
 
 	b.Run("reuse", func(b *testing.B) {
-		parser := ts.NewParser()
+		parser := iparser.NewParser()
 		parser.SetLanguage(lang)
 		b.SetBytes(int64(len(input)))
 		b.ReportAllocs()
@@ -438,7 +439,7 @@ func BenchmarkParserReuse(b *testing.B) {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {
-			parser := ts.NewParser()
+			parser := iparser.NewParser()
 			parser.SetLanguage(lang)
 			parser.ParseString(context.Background(), input)
 		}
@@ -463,7 +464,7 @@ func BenchmarkParallelParse(b *testing.B) {
 				for g := 0; g < goroutines; g++ {
 					go func() {
 						defer wg.Done()
-						parser := ts.NewParser()
+						parser := iparser.NewParser()
 						parser.SetLanguage(lang)
 						parser.ParseString(context.Background(), input)
 					}()
@@ -482,7 +483,7 @@ func BenchmarkParseChunkedInput(b *testing.B) {
 
 	for _, chunkSize := range []int{64, 256, 1024, 4096} {
 		b.Run(fmt.Sprintf("chunk-%d", chunkSize), func(b *testing.B) {
-			parser := ts.NewParser()
+			parser := iparser.NewParser()
 			parser.SetLanguage(lang)
 
 			chunked := &chunkedInput{data: input, chunkSize: chunkSize}
@@ -525,7 +526,7 @@ func TestGCImpact(t *testing.T) {
 	input := generateJSON(100 * 1024)
 	lang := tg.JsonLanguage()
 
-	parser := ts.NewParser()
+	parser := iparser.NewParser()
 	parser.SetLanguage(lang)
 
 	for i := 0; i < 5; i++ {
@@ -577,7 +578,7 @@ func BenchmarkParseScaling(b *testing.B) {
 	for _, size := range []int{256, 512, 1024, 2048, 4096, 8192, 16384} {
 		b.Run(fmt.Sprintf("%dB", size), func(b *testing.B) {
 			input := generateJSON(size)
-			parser := ts.NewParser()
+			parser := iparser.NewParser()
 			parser.SetLanguage(lang)
 
 			tree := parser.ParseString(context.Background(), input)

@@ -77,6 +77,22 @@ type StackNode struct {
 	dynamicPrecedence int32
 }
 
+// State returns this node's parse state.
+func (n *StackNode) State() StateID {
+	if n == nil {
+		return 0
+	}
+	return n.state
+}
+
+// Position returns this node's input position.
+func (n *StackNode) Position() Length {
+	if n == nil {
+		return LengthZero
+	}
+	return n.position
+}
+
 // StackLink connects two StackNodes, carrying a subtree (the result of
 // a shift or reduce action).
 type StackLink struct {
@@ -149,6 +165,16 @@ type StackIterator struct {
 	node     *StackNode
 	subtrees []Subtree
 	depth    uint32
+}
+
+// Node returns the base stack node for this pop path.
+func (it StackIterator) Node() *StackNode {
+	return it.node
+}
+
+// Subtrees returns the popped subtrees for this pop path.
+func (it StackIterator) Subtrees() []Subtree {
+	return it.subtrees
 }
 
 // Stack is the Graph-Structured Stack for GLR parsing.
@@ -939,6 +965,21 @@ func (s *Stack) AddErrorCost(version StackVersion, cost uint32) {
 		// NodeCountSinceError will measure from this point forward.
 		head.nodeCountAtLastError = head.node.nodeCount
 	}
+}
+
+// SetNodeMetrics sets internal metrics for a version's top node.
+// Intended for package-external tests that need to seed condense/recovery states.
+func (s *Stack) SetNodeMetrics(version StackVersion, errorCost uint32, nodeCount uint32, dynPrec int32) {
+	if int(version) >= len(s.heads) {
+		return
+	}
+	head := &s.heads[version]
+	if head.node == nil {
+		return
+	}
+	head.node.errorCost = errorCost
+	head.node.nodeCount = nodeCount
+	head.node.dynamicPrecedence = dynPrec
 }
 
 // CompactHaltedVersions removes all halted versions from the stack.

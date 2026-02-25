@@ -2,6 +2,7 @@ package treesitter_test
 
 import (
 	"context"
+	iparser "github.com/treesitter-go/treesitter/internal/parser"
 	"strings"
 	"testing"
 
@@ -196,7 +197,7 @@ func jsonLanguageWithLex() *ts.Language {
 // --- End-to-end parser tests ---
 
 func TestIntegrationParseNull(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(jsonLanguageWithLex())
 	tree := p.ParseString(context.Background(), []byte("null"))
 	if tree == nil {
@@ -213,7 +214,7 @@ func TestIntegrationParseNull(t *testing.T) {
 }
 
 func TestIntegrationParseNumber(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(jsonLanguageWithLex())
 
 	tree := p.ParseString(context.Background(), []byte("42"))
@@ -227,7 +228,7 @@ func TestIntegrationParseNumber(t *testing.T) {
 }
 
 func TestIntegrationParseBooleans(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(jsonLanguageWithLex())
 
 	for _, input := range []string{"true", "false"} {
@@ -243,7 +244,7 @@ func TestIntegrationParseBooleans(t *testing.T) {
 }
 
 func TestIntegrationParseEmptyObject(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(jsonLanguageWithLex())
 
 	tree := p.ParseString(context.Background(), []byte("{}"))
@@ -261,7 +262,7 @@ func TestIntegrationParseEmptyObject(t *testing.T) {
 }
 
 func TestIntegrationParseEmptyArray(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(jsonLanguageWithLex())
 
 	tree := p.ParseString(context.Background(), []byte("[]"))
@@ -275,7 +276,7 @@ func TestIntegrationParseEmptyArray(t *testing.T) {
 }
 
 func TestIntegrationParseString(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(jsonLanguageWithLex())
 
 	tree := p.ParseString(context.Background(), []byte(`"hello"`))
@@ -293,7 +294,7 @@ func TestIntegrationParseString(t *testing.T) {
 }
 
 func TestIntegrationParseObjectWithPair(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(jsonLanguageWithLex())
 
 	tree := p.ParseString(context.Background(), []byte(`{"key": "value"}`))
@@ -311,7 +312,7 @@ func TestIntegrationParseObjectWithPair(t *testing.T) {
 }
 
 func TestIntegrationParseArray(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(jsonLanguageWithLex())
 
 	tree := p.ParseString(context.Background(), []byte(`[1, 2, 3]`))
@@ -326,7 +327,7 @@ func TestIntegrationParseArray(t *testing.T) {
 }
 
 func TestIntegrationParseNestedJSON(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(jsonLanguageWithLex())
 
 	input := `{"a": [1, true, null], "b": {"c": "d"}}`
@@ -348,7 +349,7 @@ func TestIntegrationParseNestedJSON(t *testing.T) {
 }
 
 func TestIntegrationMultipleParses(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(jsonLanguageWithLex())
 
 	inputs := []string{
@@ -369,7 +370,7 @@ func TestIntegrationMultipleParses(t *testing.T) {
 }
 
 func TestIntegrationParseWithWhitespace(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(jsonLanguageWithLex())
 
 	tree := p.ParseString(context.Background(), []byte("  null  "))
@@ -383,7 +384,7 @@ func TestIntegrationParseWithWhitespace(t *testing.T) {
 }
 
 func TestIntegrationNodePositions(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(jsonLanguageWithLex())
 
 	tree := p.ParseString(context.Background(), []byte("null"))
@@ -401,7 +402,7 @@ func TestIntegrationNodePositions(t *testing.T) {
 }
 
 func TestIntegrationParseSExprNull(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(jsonLanguageWithLex())
 
 	tree := p.ParseString(context.Background(), []byte("null"))
@@ -416,7 +417,7 @@ func TestIntegrationParseSExprNull(t *testing.T) {
 }
 
 func TestIntegrationParseSExprObject(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(jsonLanguageWithLex())
 
 	tree := p.ParseString(context.Background(), []byte(`{"key": "value"}`))
@@ -432,7 +433,7 @@ func TestIntegrationParseSExprObject(t *testing.T) {
 }
 
 func TestIntegrationParseSExprNestedArray(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(jsonLanguageWithLex())
 
 	tree := p.ParseString(context.Background(), []byte(`[[1, 2], [3, 4]]`))
@@ -449,7 +450,7 @@ func TestIntegrationParseSExprNestedArray(t *testing.T) {
 }
 
 func TestIntegrationParseEscapeSequence(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(jsonLanguageWithLex())
 
 	tree := p.ParseString(context.Background(), []byte(`"hello\nworld"`))
@@ -466,7 +467,7 @@ func TestIntegrationParseEscapeSequence(t *testing.T) {
 }
 
 func TestIntegrationParseObjectMultiplePairs(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(jsonLanguageWithLex())
 
 	tree := p.ParseString(context.Background(), []byte(`{"a": 1, "b": 2, "c": 3}`))
@@ -486,7 +487,7 @@ func TestIntegrationParseObjectMultiplePairs(t *testing.T) {
 }
 
 func TestIntegrationParseDeepNesting(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(jsonLanguageWithLex())
 
 	input := `{"a": {"b": {"c": {"d": [1, 2, {"e": true}]}}}}`
@@ -508,7 +509,7 @@ func TestIntegrationParseDeepNesting(t *testing.T) {
 
 func TestIntegrationParserReuse(t *testing.T) {
 	// Verify that the same parser can parse multiple inputs sequentially.
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(jsonLanguageWithLex())
 
 	inputs := []string{
@@ -532,7 +533,7 @@ func TestIntegrationParserReuse(t *testing.T) {
 }
 
 func TestIntegrationParseNodeChildNavigation(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(jsonLanguageWithLex())
 
 	tree := p.ParseString(context.Background(), []byte(`[1, 2, 3]`))
@@ -556,7 +557,7 @@ func TestIntegrationParseNodeChildNavigation(t *testing.T) {
 }
 
 func TestIntegrationParseFieldAccess(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(jsonLanguageWithLex())
 
 	tree := p.ParseString(context.Background(), []byte(`{"name": "Alice"}`))
@@ -578,7 +579,7 @@ func extScannerLanguageWithLex() *ts.Language {
 
 func TestIntegrationExternalScannerNumber(t *testing.T) {
 	// Parse a simple number — no external scanner invoked.
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(extScannerLanguageWithLex())
 
 	tree := p.ParseString(context.Background(), []byte("42"))
@@ -597,7 +598,7 @@ func TestIntegrationExternalScannerNumber(t *testing.T) {
 
 func TestIntegrationExternalScannerHeredoc(t *testing.T) {
 	// Parse a heredoc — exercises external scanner.
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(extScannerLanguageWithLex())
 
 	input := "<<\nhello world\nEND\n"
@@ -620,7 +621,7 @@ func TestIntegrationExternalScannerHeredoc(t *testing.T) {
 
 func TestIntegrationExternalScannerStateOnSubtree(t *testing.T) {
 	// Parse a heredoc and verify the scanner state is attached to the subtree.
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(extScannerLanguageWithLex())
 
 	input := "<<\nfoo\nEND\n"
@@ -653,7 +654,7 @@ func TestIntegrationExternalScannerStateOnSubtree(t *testing.T) {
 
 func TestIntegrationExternalScannerMultipleParses(t *testing.T) {
 	// Verify parser reuse with external scanner across multiple parses.
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(extScannerLanguageWithLex())
 
 	inputs := []string{
@@ -676,7 +677,7 @@ func TestIntegrationExternalScannerMultipleParses(t *testing.T) {
 }
 
 func TestIntegrationParseComments(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(jsonLanguageWithLex())
 	input := "{\"a\": 1,\n/*c1*/\n/*c2*/\n\"b\": 2\n}"
 	tree := p.ParseString(context.Background(), []byte(input))
@@ -712,7 +713,7 @@ func incrementalParseTest(t *testing.T, lang *ts.Language, oldSource, newSource 
 	ctx := context.Background()
 
 	// Step 1: Parse original from scratch.
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(lang)
 	tree1 := p.ParseString(ctx, []byte(oldSource))
 	if tree1 == nil {
@@ -723,7 +724,7 @@ func incrementalParseTest(t *testing.T, lang *ts.Language, oldSource, newSource 
 	editedTree := tree1.Edit(edit)
 
 	// Step 3: Re-parse new source with old tree (incremental).
-	p2 := ts.NewParser()
+	p2 := iparser.NewParser()
 	p2.SetLanguage(lang)
 	tree2 := p2.ParseString(ctx, []byte(newSource), editedTree)
 	if tree2 == nil {
@@ -731,7 +732,7 @@ func incrementalParseTest(t *testing.T, lang *ts.Language, oldSource, newSource 
 	}
 
 	// Step 4: Parse new source from scratch.
-	p3 := ts.NewParser()
+	p3 := iparser.NewParser()
 	p3.SetLanguage(lang)
 	tree3 := p3.ParseString(ctx, []byte(newSource))
 	if tree3 == nil {
@@ -844,7 +845,7 @@ func TestIncrementalEditPreservesUnchanged(t *testing.T) {
 	ctx := context.Background()
 	lang := jsonLanguageWithLex()
 
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(lang)
 	tree := p.ParseString(ctx, []byte(`{"a": 1, "b": 2}`))
 	if tree == nil {
@@ -866,7 +867,7 @@ func TestIncrementalEditPreservesUnchanged(t *testing.T) {
 	}
 
 	// Re-parse incrementally.
-	p2 := ts.NewParser()
+	p2 := iparser.NewParser()
 	p2.SetLanguage(lang)
 	tree2 := p2.ParseString(ctx, []byte(`{"a": 99, "b": 2}`), editedTree)
 	if tree2 == nil {
@@ -874,7 +875,7 @@ func TestIncrementalEditPreservesUnchanged(t *testing.T) {
 	}
 
 	// From-scratch parse.
-	p3 := ts.NewParser()
+	p3 := iparser.NewParser()
 	p3.SetLanguage(lang)
 	tree3 := p3.ParseString(ctx, []byte(`{"a": 99, "b": 2}`))
 	if tree3 == nil {
@@ -893,7 +894,7 @@ func TestIncrementalMultipleEdits(t *testing.T) {
 	lang := jsonLanguageWithLex()
 
 	// Parse "null"
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(lang)
 	tree1 := p.ParseString(ctx, []byte("null"))
 	if tree1 == nil {
@@ -908,7 +909,7 @@ func TestIncrementalMultipleEdits(t *testing.T) {
 		NewEndPoint: ts.Point{Row: 0, Column: 2},
 	})
 
-	p2 := ts.NewParser()
+	p2 := iparser.NewParser()
 	p2.SetLanguage(lang)
 	tree2 := p2.ParseString(ctx, []byte("42"), edited1)
 	if tree2 == nil {
@@ -923,7 +924,7 @@ func TestIncrementalMultipleEdits(t *testing.T) {
 		NewEndPoint: ts.Point{Row: 0, Column: 3},
 	})
 
-	p3 := ts.NewParser()
+	p3 := iparser.NewParser()
 	p3.SetLanguage(lang)
 	tree3 := p3.ParseString(ctx, []byte("420"), edited2)
 	if tree3 == nil {
@@ -931,7 +932,7 @@ func TestIncrementalMultipleEdits(t *testing.T) {
 	}
 
 	// From-scratch parse of "420".
-	p4 := ts.NewParser()
+	p4 := iparser.NewParser()
 	p4.SetLanguage(lang)
 	tree4 := p4.ParseString(ctx, []byte("420"))
 	if tree4 == nil {
@@ -949,7 +950,7 @@ func TestIncrementalWithNilOldTree(t *testing.T) {
 	ctx := context.Background()
 	lang := jsonLanguageWithLex()
 
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(lang)
 	tree := p.ParseString(ctx, []byte("null"), nil)
 	if tree == nil {
@@ -959,4 +960,3 @@ func TestIncrementalWithNilOldTree(t *testing.T) {
 		t.Errorf("expected 'document', got %q", tree.RootNode().Type())
 	}
 }
-

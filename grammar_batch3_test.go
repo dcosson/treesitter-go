@@ -2,6 +2,7 @@ package treesitter_test
 
 import (
 	"context"
+	iparser "github.com/treesitter-go/treesitter/internal/parser"
 	"strings"
 	"testing"
 
@@ -9,8 +10,8 @@ import (
 	bashgrammar "github.com/treesitter-go/treesitter/internal/testgrammars/bash"
 	jsgrammar "github.com/treesitter-go/treesitter/internal/testgrammars/javascript"
 	rubygrammar "github.com/treesitter-go/treesitter/internal/testgrammars/ruby"
-	tsgrammar "github.com/treesitter-go/treesitter/internal/testgrammars/typescript"
 	tsxgrammar "github.com/treesitter-go/treesitter/internal/testgrammars/tsxgrammar"
+	tsgrammar "github.com/treesitter-go/treesitter/internal/testgrammars/typescript"
 	bashscanner "github.com/treesitter-go/treesitter/scanners/bash"
 	jsscanner "github.com/treesitter-go/treesitter/scanners/javascript"
 	rubyscanner "github.com/treesitter-go/treesitter/scanners/ruby"
@@ -50,7 +51,7 @@ func newTSXLang() *ts.Language {
 // --- Bash Integration Tests ---
 
 func TestBashParseFunction(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(newBashLang())
 
 	src := `greet() {
@@ -74,7 +75,7 @@ greet World`
 }
 
 func TestBashParsePipeline(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(newBashLang())
 
 	src := `cat /etc/passwd | grep root | wc -l`
@@ -91,7 +92,7 @@ func TestBashParsePipeline(t *testing.T) {
 }
 
 func TestBashParseArray(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(newBashLang())
 
 	src := `arr=(one two three)
@@ -109,7 +110,7 @@ echo "${arr[1]}"`
 }
 
 func TestBashParseHeredoc(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(newBashLang())
 
 	src := `cat <<EOF
@@ -130,7 +131,7 @@ EOF`
 // --- Ruby Integration Tests ---
 
 func TestRubyParseClass(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(newRubyLang())
 
 	src := `class Dog
@@ -155,7 +156,7 @@ end`
 }
 
 func TestRubyParseBlock(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(newRubyLang())
 
 	src := `[1, 2, 3].each do |x|
@@ -174,7 +175,7 @@ end`
 }
 
 func TestRubyParseHeredoc(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(newRubyLang())
 
 	src := `text = <<~HEREDOC
@@ -194,7 +195,7 @@ HEREDOC`
 }
 
 func TestRubyParseStringInterpolation(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(newRubyLang())
 
 	src := `name = "World"
@@ -214,7 +215,7 @@ puts "Hello, #{name}!"`
 // --- TypeScript Integration Tests ---
 
 func TestTypeScriptParseInterface(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(newTSLang())
 
 	src := `interface User {
@@ -238,7 +239,7 @@ func TestTypeScriptParseInterface(t *testing.T) {
 }
 
 func TestTypeScriptParseGenerics(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(newTSLang())
 
 	src := `function identity<T>(arg: T): T {
@@ -257,7 +258,7 @@ func TestTypeScriptParseGenerics(t *testing.T) {
 }
 
 func TestTypeScriptParseTypeAnnotations(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(newTSLang())
 
 	src := `const greeting: string = "hello";
@@ -276,7 +277,7 @@ let active: boolean = true;`
 }
 
 func TestTypeScriptParseEnum(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(newTSLang())
 
 	src := `enum Color {
@@ -299,7 +300,7 @@ func TestTypeScriptParseEnum(t *testing.T) {
 // --- JavaScript Integration Tests ---
 
 func TestJSParseVariableDeclaration(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(jsLang())
 
 	src := `const x = 42;`
@@ -320,7 +321,7 @@ func TestJSParseVariableDeclaration(t *testing.T) {
 }
 
 func TestJSParseFunction(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(jsLang())
 
 	src := `function add(a, b) { return a + b; }`
@@ -337,7 +338,7 @@ func TestJSParseFunction(t *testing.T) {
 }
 
 func TestJSParseArrowFunction(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(jsLang())
 
 	src := `const greet = (name) => "Hello, " + name;`
@@ -354,7 +355,7 @@ func TestJSParseArrowFunction(t *testing.T) {
 }
 
 func TestJSParseClass(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(jsLang())
 
 	src := `class Shape {
@@ -378,7 +379,7 @@ func TestJSParseClass(t *testing.T) {
 }
 
 func TestJSParseImportExport(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(jsLang())
 
 	src := `import { foo } from 'bar';
@@ -399,7 +400,7 @@ export default function main() {}`
 }
 
 func TestJSParseTemplateLiteral(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(jsLang())
 
 	src := "const msg = `Hello, ${name}!`;"
@@ -416,7 +417,7 @@ func TestJSParseTemplateLiteral(t *testing.T) {
 }
 
 func TestJSParseAsyncAwait(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(jsLang())
 
 	src := `async function fetchData() {
@@ -439,7 +440,7 @@ func TestJSParseAsyncAwait(t *testing.T) {
 }
 
 func TestJSParseDestructuring(t *testing.T) {
-	p := ts.NewParser()
+	p := iparser.NewParser()
 	p.SetLanguage(jsLang())
 
 	src := `const { a, b } = obj;

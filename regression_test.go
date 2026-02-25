@@ -3,6 +3,7 @@ package treesitter_test
 import (
 	"context"
 	"fmt"
+	iparser "github.com/treesitter-go/treesitter/internal/parser"
 	"os"
 	"path/filepath"
 	"testing"
@@ -55,7 +56,7 @@ func makeRegressionParseFunc(lang *ts.Language) corpustest.ParseFunc {
 		}()
 		ctx, cancel := context.WithTimeout(context.Background(), regressionParseTimeout)
 		defer cancel()
-		p := ts.NewParser()
+		p := iparser.NewParser()
 		p.SetLanguage(lang)
 		tree := p.ParseString(ctx, input)
 		if tree == nil {

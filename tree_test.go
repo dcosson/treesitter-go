@@ -433,12 +433,12 @@ func TestNodeStringSExprFieldPropagation(t *testing.T) {
 			"type_identifier", "identifier", "program",
 		},
 		FieldNames: []string{
-			"",      // 0: no field
-			"type",  // 1
-			"name",  // 2
+			"",     // 0: no field
+			"type", // 1
+			"name", // 2
 		},
 		FieldMapSlices: []FieldMapSlice{
-			{},                   // prodID 0: no fields
+			{},                    // prodID 0: no fields
 			{Index: 0, Length: 2}, // prodID 1: declaration -> type(inherited), name(inherited)
 			{Index: 2, Length: 1}, // prodID 2: _specifiers -> type(non-inherited)
 			{Index: 3, Length: 1}, // prodID 3: _declarator_wrapper -> name(non-inherited)

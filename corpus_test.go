@@ -2,6 +2,7 @@ package treesitter_test
 
 import (
 	"context"
+	iparser "github.com/treesitter-go/treesitter/internal/parser"
 	"os"
 	"path/filepath"
 	"testing"
@@ -134,7 +135,7 @@ func TestDifferentialJSONCorpora(t *testing.T) {
 // jsonParseFunc returns a ParseFunc for the JSON language.
 func jsonParseFunc(lang *ts.Language) corpustest.ParseFunc {
 	return func(input []byte) (string, error) {
-		p := ts.NewParser()
+		p := iparser.NewParser()
 		p.SetLanguage(lang)
 		tree := p.ParseString(context.Background(), input)
 		if tree == nil {
