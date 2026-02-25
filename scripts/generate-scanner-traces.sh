@@ -25,9 +25,8 @@ GRAMMARS_DIR="$PROJECT_DIR/testdata/grammars"
 TRACES_DIR="$PROJECT_DIR/testdata/scanner-traces"
 PATCH_FILE="$SCRIPT_DIR/scanner-trace.patch"
 
-# Tree-sitter version to clone — should match or be compatible with grammar versions.
-# v0.25.3 requires Rust 1.82+.
-TS_VERSION="v0.25.3"
+# Tree-sitter version to clone — must be v0.26.0+ for --lib-path support.
+TS_VERSION="v0.26.5"
 
 # Languages with external scanners
 SCANNER_LANGUAGES=(
@@ -126,15 +125,6 @@ if [ ! -f "$PATCHED_CLI" ]; then
 fi
 
 echo "=== CLI built at $PATCHED_CLI ==="
-
-# Create a tree-sitter config that points to our grammar directories
-TS_CONFIG="$WORK_DIR/ts-config/config.json"
-mkdir -p "$(dirname "$TS_CONFIG")"
-cat > "$TS_CONFIG" <<CFGEOF
-{
-  "parser-directories": ["$GRAMMARS_DIR"]
-}
-CFGEOF
 
 # Create traces output directory
 mkdir -p "$TRACES_DIR"
@@ -297,6 +287,27 @@ for lang in "${SCANNER_LANGUAGES[@]}"; do
   fi
   echo "  Extracted $input_count test inputs"
 
+  # Build the grammar shared library directly with cc.
+  # The tree-sitter CLI's internal grammar build hangs on large grammars
+  # (perl: 479K lines, ruby: 471K lines), but raw cc compiles them in seconds.
+  echo "  Building grammar library with cc..."
+  dylib_path="$WORK_DIR/libs/${lang}.${DYLIB_EXT}"
+  mkdir -p "$WORK_DIR/libs"
+
+  src_files=("$grammar_path/src/parser.c")
+  if [ -f "$grammar_path/src/scanner.c" ]; then
+    src_files+=("$grammar_path/src/scanner.c")
+  elif [ -f "$grammar_path/src/scanner.cc" ]; then
+    src_files+=("$grammar_path/src/scanner.cc")
+  fi
+
+  cc -shared -fPIC -O2 -I "$grammar_path/src" "${src_files[@]}" -o "$dylib_path" 2>&1
+  if [ ! -f "$dylib_path" ]; then
+    echo "Warning: failed to compile grammar library for $lang, skipping" >&2
+    continue
+  fi
+  echo "  Built $dylib_path"
+
   # Rename inputs to have the right extension for tree-sitter language detection
   renamed_dir="$WORK_DIR/inputs_renamed/$lang"
   mkdir -p "$renamed_dir"
@@ -306,21 +317,7 @@ for lang in "${SCANNER_LANGUAGES[@]}"; do
     cp "$f" "$renamed_dir/${base}.$ext"
   done
 
-  # Build the grammar shared library using the patched CLI
-  echo "  Building grammar library..."
-  # Use a single file to trigger the grammar build and warm the cache
-  first_input="$(ls "$renamed_dir"/*."$ext" 2>/dev/null | head -1)"
-  if [ -z "$first_input" ]; then
-    echo "Warning: no renamed inputs for $lang" >&2
-    continue
-  fi
-
-  # Run parse on the first file to trigger grammar compilation (ignore stderr trace output).
-  # Large grammars (Ruby: 471K lines, C++: 530K lines) can take minutes to compile.
-  timeout 300 "$PATCHED_CLI" parse --config-path "$TS_CONFIG" "$first_input" \
-    --quiet 2>/dev/null || true
-
-  # Now parse all files and capture trace output
+  # Now parse all files using --lib-path to bypass CLI's internal grammar build
   trace_file="$TRACES_DIR/$lang.jsonl"
   > "$trace_file"  # truncate
 
@@ -336,8 +333,9 @@ for lang in "${SCANNER_LANGUAGES[@]}"; do
     # Run the patched CLI; stderr has JSONL trace lines, stdout has parse output
     # We capture stderr and tag each line with the source file info
     trace_stderr="$WORK_DIR/trace_stderr.tmp"
-    timeout 30 "$PATCHED_CLI" parse --config-path "$TS_CONFIG" "$input_file" \
-      --quiet 2>"$trace_stderr" || true
+    timeout 30 "$PATCHED_CLI" parse \
+      --lib-path "$dylib_path" --lang-name "$lang" \
+      "$input_file" --quiet 2>"$trace_stderr" || true
 
     # Read each trace line and add the file/lang metadata.
     # Only process lines starting with { (valid JSON); skip CLI warnings/errors.
