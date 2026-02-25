@@ -16,58 +16,58 @@ This makes cross-referencing and auditing trivial.
 
 | C Name (parser.c) | Line | Go Name (parser.go) | Line | Status |
 |---|---|---|---|---|
-| ts_parser_new | 1935 | NewParser | 74 | ? |
+| ts_parser_new | 1935 | NewParser | 74 | MISMATCH — no wasm/included-range init |
 | ts_parser_delete | 1958 | — | — | N/A (GC) |
-| ts_parser_set_language | 1988 | SetLanguage | 91 | ? |
-| ts_parser_language | 1984 | Language | 100 | ? |
-| ts_parser_reset | 2047 | Reset | 105 | ? |
-| ts_parser_parse | 2074 | Parse | 123 | ? |
-| ts_parser_parse_string | 2215 | ParseString | 194 | ? |
+| ts_parser_set_language | 1988 | SetLanguage | 91 | MISMATCH — no reset/ABI/wasm handling |
+| ts_parser_language | 1984 | Language | 100 | OK |
+| ts_parser_reset | 2047 | Reset | 105 | MISMATCH — no lexer/scanner/opts reset |
+| ts_parser_parse | 2074 | Parse | 123 | MISMATCH — no wasm/included ranges/balancing |
+| ts_parser_parse_string | 2215 | ParseString | 194 | MISMATCH — no encoding/included ranges |
 | ts_parser__advance | 1557 | advanceVersion | 231 | MISMATCH — flat loop added but inline merge missing |
 | ts_parser__reduce | 931 | doReduce | 794 | MISMATCH — no inline merge, no return value |
-| ts_parser__shift | 908 | doShift | 756 | ? |
+| ts_parser__shift | 908 | doShift | 756 | OK |
 | ts_parser__accept | 1048 | doAccept | 961 | FIXED (43ee822) |
-| ts_parser__lex | 505 | lexToken | 409 | ? |
-| ts_parser__get_cached_token | 703 | — (inline in lexToken?) | — | ? |
-| ts_parser__set_cached_token | 724 | — (inline in lexToken?) | — | ? |
+| ts_parser__lex | 505 | lexToken | 409 | MISMATCH — no error-mode lex loop/included ranges |
+| ts_parser__get_cached_token | 703 | — (inline in lexToken?) | — | MISMATCH — cache ignores last ext token/reuse |
+| ts_parser__set_cached_token | 724 | — (inline in lexToken?) | — | MISMATCH — caches token only (no ext token) |
 | ts_parser__handle_error | 1439 | handleError | 1129 | FIXED (3da71fa) |
 | ts_parser__recover | 1250 | recover | 1384 | MISMATCH — Strategy 2 multi-path |
 | ts_parser__recover_to_state | 1191 | recoverToState | 1560 | FIXED (8ce6698) |
-| ts_parser__condense_stack | 1766 | condenseStack | 1826 | ? |
+| ts_parser__condense_stack | 1766 | condenseStack | 1826 | MISMATCH — no paused minErrorCost update |
 | ts_parser__do_all_potential_reductions | 1101 | doAllPotentialReductions | 1249 | FIXED (de8d8b8) |
-| ts_parser__select_tree | 836 | selectTree | 985 | ? |
-| ts_parser__select_children | 883 | selectChildren | 932 | ? |
-| ts_parser__breakdown_top_of_stack | 176 | — | — | ? missing? |
-| ts_parser__breakdown_lookahead | 224 | breakdownLookahead | 739 | ? |
-| ts_parser__compare_versions | 246 | compareVersions | 1779 | ? |
-| ts_parser__version_status | 289 | versionStatus | 1760 | ? |
-| ts_parser__better_version_exists | 304 | betterVersionExists | 1667 | ? |
-| ts_parser__can_reuse_first_leaf | 470 | — (inline?) | — | ? |
-| ts_parser__reuse_node | 753 | tryReuseNode | 643 | ? |
-| ts_parser__check_progress | 1536 | — | — | ? missing? |
-| ts_parser__balance_subtree | 1867 | — | — | ? missing? |
-| ts_parser__log | 157 | — | — | ? |
-| ts_parser__call_main_lex_fn | 341 | — (inline?) | — | ? |
-| ts_parser__call_keyword_lex_fn | 349 | — (inline?) | — | ? |
-| ts_parser__external_scanner_create | 357 | — | — | ? |
-| ts_parser__external_scanner_destroy | 374 | — | — | ? |
-| ts_parser__external_scanner_serialize | 390 | externalScannerSerialize | 1925 | ? |
-| ts_parser__external_scanner_deserialize | 413 | externalScannerDeserialize | 1935 | ? |
-| ts_parser__external_scanner_scan | 443 | — (inline?) | — | ? |
+| ts_parser__select_tree | 836 | selectTree | 985 | OK |
+| ts_parser__select_children | 883 | selectChildren | 932 | OK |
+| ts_parser__breakdown_top_of_stack | 176 | — | — | MISSING — no pending stack breakdown |
+| ts_parser__breakdown_lookahead | 224 | breakdownLookahead | 739 | OK |
+| ts_parser__compare_versions | 246 | compareVersions | 1779 | OK |
+| ts_parser__version_status | 289 | versionStatus | 1760 | MISMATCH — paused cost not added |
+| ts_parser__better_version_exists | 304 | betterVersionExists | 1667 | MISMATCH — no finished tree/pos/merge checks |
+| ts_parser__can_reuse_first_leaf | 470 | — (inline?) | — | MISMATCH — reuse checks incomplete |
+| ts_parser__reuse_node | 753 | tryReuseNode | 643 | MISMATCH — no range diffs/breakdown_top |
+| ts_parser__check_progress | 1536 | — | — | MISSING — no progress callback checks |
+| ts_parser__balance_subtree | 1867 | — | — | MISSING — no subtree balancing |
+| ts_parser__log | 157 | — | — | MISSING — no parser log/dot graph |
+| ts_parser__call_main_lex_fn | 341 | — (inline?) | — | MISMATCH — no wasm lex dispatch |
+| ts_parser__call_keyword_lex_fn | 349 | — (inline?) | — | MISMATCH — no wasm keyword lex |
+| ts_parser__external_scanner_create | 357 | — | — | MISMATCH — no scanner create hook |
+| ts_parser__external_scanner_destroy | 374 | — | — | MISMATCH — no scanner destroy hook |
+| ts_parser__external_scanner_serialize | 390 | externalScannerSerialize | 1925 | MISMATCH — no wasm scanner support |
+| ts_parser__external_scanner_deserialize | 413 | externalScannerDeserialize | 1935 | MISMATCH — no wasm scanner support |
+| ts_parser__external_scanner_scan | 443 | — (inline?) | — | MISMATCH — no wasm scanner support |
 | ts_parser__has_included_range_difference | 740 | — | — | N/A (no incremental yet) |
-| ts_parser_has_outstanding_parse | 1924 | — | — | ? |
-| ts_string_input_read | 138 | — | — | ? |
+| ts_parser_has_outstanding_parse | 1924 | — | — | MISSING — no resume parse tracking |
+| ts_string_input_read | 138 | — | — | OK (StringInput.Read) |
 
 **Go-only functions (no C equivalent):**
 | Go Name | Line | Notes |
 |---|---|---|
-| findActiveVersion | 210 | ? |
+| findActiveVersion | 210 | OK — helper for version selection |
 | doReduceForPotential | 1362 | Split+reduce for error recovery — C does this inline |
 | buildAcceptTree | 1077 | C logic is inline in ts_parser__accept |
-| subtreeCompare | 1032 | ? |
-| createErrorNode | 1684 | ? |
-| createErrorRepeatNode | 1715 | ? |
-| createMissingToken | 1722 | ? |
+| subtreeCompare | 1032 | OK — port of ts_subtree_compare |
+| createErrorNode | 1684 | OK — helper for error node creation |
+| createErrorRepeatNode | 1715 | OK — helper for error_repeat node |
+| createMissingToken | 1722 | OK — helper for missing leaf |
 
 ### Stack Functions (C: 41 in stack.c, Go: 45 in stack.go)
 
@@ -92,9 +92,9 @@ This makes cross-referencing and auditing trivial.
 | ts_stack_pop_error | 575 | PopError | 537 | ? |
 | ts_stack_merge | 708 | Merge | 737 | ? |
 | ts_stack_can_merge | 722 | CanMerge | 768 | ? |
-| ts_stack_halt | 734 | Halt | 831 | ? |
-| ts_stack_pause | 738 | Pause | 801 | ? |
-| ts_stack_resume | 757 | Resume | 817 | ? |
+| ts_stack_halt | 734 | Halt | 831 | OK |
+| ts_stack_pause | 738 | Pause | 801 | OK |
+| ts_stack_resume | 757 | Resume | 817 | MISMATCH — Go does not assert status==Paused, uses if-check instead; functionally OK |
 | ts_stack_is_active | 745 | IsActive | 295 | ? |
 | ts_stack_is_halted | 749 | IsHalted | 305 | ? |
 | ts_stack_is_paused | 753 | IsPaused | 300 | ? |
