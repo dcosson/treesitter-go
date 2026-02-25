@@ -2,7 +2,7 @@
   "id": "tree-sitter-go-lwq",
   "title": "python-assignments-glr-merge",
   "description": "Python/Assignments failure: 'a, *b.c = d' produces attribute(list_splat(b), c) instead of list_splat_pattern(attribute(b, c)). CORRECTED ROOT CAUSE (2026-02-24): NOT a GLR merge disambiguation issue — nodeAddLink Case 1/2 and condenseStack merge never fire for this test. The actual root cause is reduce/reduce conflict ordering in advanceVersion: list_splat (sym=149) vs list_splat_pattern (sym=184). In C, the last reduce becomes primary via renumber. Go's swap-based approach selects the wrong primary. Fix: coder-1's advanceVersion flat loop restructure (Split+doReduce+renumber matching C's linear loop) will resolve this.",
-  "status": "open",
+  "status": "closed",
   "priority": 2,
   "type": "task",
   "created_by": "Danny Cosson",
@@ -12,5 +12,7 @@
     "type=bug"
   ],
   "created_at": "2026-02-24T13:22:58.15092-08:00",
-  "updated_at": "2026-02-24T22:20:08.460302-08:00"
+  "updated_at": "2026-02-25T08:42:28.227923-08:00",
+  "closed_at": "2026-02-25T08:42:28.227923-08:00",
+  "close_reason": "Closed"
 }

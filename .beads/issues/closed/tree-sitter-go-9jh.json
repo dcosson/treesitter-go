@@ -2,7 +2,7 @@
   "id": "tree-sitter-go-9jh",
   "title": "Complete error recovery C-port",
   "description": "Individual fixes (split-before-recoverToState, Push nodeCountAtLastError reset, RecordSummary depth, ERROR extra=true, trailing extras in recoverToState) match C semantics individually but cause 22 regressions combined. Go has other divergences (in-place Pop, version ordering, no merge-after-push) that C relies on. Needs coordinated effort. Potential: 4 wcu.21 + 5 Cat-G tests.",
-  "status": "open",
+  "status": "closed",
   "priority": 2,
   "type": "task",
   "dependencies": [
@@ -17,5 +17,7 @@
     "project=tree-sitter-go"
   ],
   "created_at": "2026-02-18T09:19:05.267538-08:00",
-  "updated_at": "2026-02-18T09:19:05.267538-08:00"
+  "updated_at": "2026-02-25T08:42:28.217876-08:00",
+  "closed_at": "2026-02-25T08:42:28.217876-08:00",
+  "close_reason": "Closed"
 }
