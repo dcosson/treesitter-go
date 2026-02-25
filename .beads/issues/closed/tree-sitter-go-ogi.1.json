@@ -2,7 +2,7 @@
   "id": "tree-sitter-go-ogi.1",
   "title": "core-package",
   "description": "Create internal/core and move shared types/constants/helpers required by stack and parser",
-  "status": "open",
+  "status": "closed",
   "priority": 2,
   "type": "task",
   "parent": "tree-sitter-go-ogi",
@@ -32,5 +32,7 @@
     "project=treesitter"
   ],
   "created_at": "2026-02-25T09:43:41.107164-08:00",
-  "updated_at": "2026-02-25T09:43:41.107164-08:00"
+  "updated_at": "2026-02-25T10:23:13.216114-08:00",
+  "closed_at": "2026-02-25T10:23:13.216114-08:00",
+  "close_reason": "Completed"
 }
