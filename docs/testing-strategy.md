@@ -1049,21 +1049,32 @@ make test-scanner-traces
 
 Trace files only need regeneration when grammar versions are bumped.
 
-**Current results (9 of 11 languages):**
+**Current results (all 11 languages):**
 
 | Language | Trace Entries | Go Failures | Status |
 |----------|--------------|-------------|--------|
+| bash | 3,694 | 0 | PASS |
 | cpp | 45 | 0 | PASS |
 | css | 492 | 0 | PASS |
 | html | 387 | 0 | PASS |
+| javascript | 4,151 | 3 | Needs trace regen (extractor bug) |
 | lua | 857 | 0 | PASS |
+| perl | 4,097 | 0 | PASS |
+| python | 4,622 | 0 | PASS |
+| ruby | 5,895 | 0 | PASS |
 | rust | 1,983 | 0 | PASS |
 | typescript | 4,143 | 0 | PASS |
-| javascript | 4,151 | 3 | 3 matched divergences |
-| python | 4,622 | 1,367 | Mixed: state mismatches + matched divergences |
-| bash | 3,694 | 3,694 | All post-state serialization mismatches (2 vs 4 bytes) |
-| perl | — | — | SKIP: no parser.c in grammar repo |
-| ruby | — | — | SKIP: grammar compile hangs (471K-line parser.c) |
+| **Total** | **30,366** | **3** | **99.99% pass** |
+
+The 3 JavaScript failures are caused by the trace generator's input extraction
+(not scanner bugs). Regenerating traces with the Go extractor will fix them.
+
+**Bugs found and fixed via trace replay:**
+- Serialization format: bash (2 missing header bytes), perl (variable vs fixed-size
+  TSPString), python (2-byte vs 1-byte indents), ruby (4-byte vs 1-byte delimiters)
+- Logic bugs: bash (missing null terminator in heredoc delimiters), ruby (% whitespace
+  string delimiter handling, EOF close-delimiter matching)
+- Test harness: row/column computation, C stack garbage normalization, CRLF handling
 
 See `docs/scanner-trace-testing-plan.md` for the full design.
 
@@ -1485,7 +1496,7 @@ are committed to the repo as a permanent record.
 | Error recovery tests | Not started | Design in Section 10 |
 | Real-world corpora collection | Not started | Need version-pinned files |
 | Performance comparison vs CLI | Not started | Design in Section 6 |
-| Scanner trace replay tests | Done | 9/11 languages traced; 6 pass, 3 have failures (see §7 Strategy 5) |
+| Scanner trace replay tests | Done | 11/11 languages, 30,366 entries, 99.99% pass (3 JS need trace regen) |
 | Scanner round-trip tests | Not started | |
 | Regression test directory | Not started | `testdata/regressions/` |
 
