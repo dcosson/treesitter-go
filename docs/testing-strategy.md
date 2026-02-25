@@ -996,6 +996,85 @@ func TestScannerParity(t *testing.T) {
 }
 ```
 
+### Strategy 5: Scanner Trace Replay (Implemented)
+
+Record every external scanner call made by the C reference implementation during
+corpus parsing, then replay those calls against the Go scanner and compare
+results. This provides call-level parity verification without CGo.
+
+**How it works:**
+
+1. A Python patcher (`scripts/apply-scanner-trace-patch.py`) instruments
+   tree-sitter's `parser.c` with `#ifdef TS_SCANNER_TRACE` guards that emit
+   JSONL to stderr for each `ts_external_scanner_scan` call.
+2. `scripts/generate-scanner-traces.sh` clones tree-sitter at a pinned version
+   (v0.25.3), applies the patch, builds a patched CLI, and runs it against
+   grammar corpus test inputs.
+3. Golden trace files are committed to `testdata/scanner-traces/{lang}.jsonl`.
+4. `scanner_trace_test.go` loads each trace, deserializes scanner state, creates
+   a `*Lexer` positioned at the recorded byte offset with the original corpus
+   input, calls `Scan`, and compares: matched/not-matched, result symbol, and
+   post-call serialized scanner state.
+
+**JSONL trace format** (one line per scanner call):
+```json
+{
+  "lang": "python",
+  "file": "0042_indentation",
+  "call_index": 7,
+  "input": {
+    "byte_offset": 24,
+    "lookahead": 10,
+    "valid_symbols": [0,0,1,1,0,0],
+    "scanner_state_before": "AQAAAA=="
+  },
+  "output": {
+    "matched": true,
+    "result_symbol": 3,
+    "token_end_byte": 24,
+    "advances": 0,
+    "scanner_state_after": "AQAAAA=="
+  }
+}
+```
+
+**Running:**
+```bash
+# Generate golden traces (requires Rust/cargo, ~10 min for all languages)
+make generate-scanner-traces
+
+# Run Go scanner against traces
+make test-scanner-traces
+```
+
+Trace files only need regeneration when grammar versions are bumped.
+
+**Current results (all 11 languages):**
+
+| Language | Trace Entries | Go Failures | Status |
+|----------|--------------|-------------|--------|
+| bash | 3,694 | 0 | PASS |
+| cpp | 45 | 0 | PASS |
+| css | 492 | 0 | PASS |
+| html | 387 | 0 | PASS |
+| javascript | 4,151 | 0 | PASS |
+| lua | 857 | 0 | PASS |
+| perl | 4,097 | 0 | PASS |
+| python | 4,622 | 0 | PASS |
+| ruby | 5,895 | 0 | PASS |
+| rust | 1,983 | 0 | PASS |
+| typescript | 4,143 | 0 | PASS |
+| **Total** | **30,366** | **0** | **100% pass** |
+
+**Bugs found and fixed via trace replay:**
+- Serialization format: bash (2 missing header bytes), perl (variable vs fixed-size
+  TSPString), python (2-byte vs 1-byte indents), ruby (4-byte vs 1-byte delimiters)
+- Logic bugs: bash (missing null terminator in heredoc delimiters), ruby (% whitespace
+  string delimiter handling, EOF close-delimiter matching)
+- Test harness: row/column computation, C stack garbage normalization, CRLF handling
+
+See `docs/scanner-trace-testing-plan.md` for the full design.
+
 ### Scanner Test Priority
 
 | Grammar | Scanner Complexity | Priority | Key Tokens |
@@ -1414,6 +1493,7 @@ are committed to the repo as a permanent record.
 | Error recovery tests | Not started | Design in Section 10 |
 | Real-world corpora collection | Not started | Need version-pinned files |
 | Performance comparison vs CLI | Not started | Design in Section 6 |
+| Scanner trace replay tests | Done | 11/11 languages, 30,366 entries, 100% pass |
 | Scanner round-trip tests | Not started | |
 | Regression test directory | Not started | `testdata/regressions/` |
 

@@ -1,6 +1,6 @@
 TREE_SITTER_CLI := $(shell which tree-sitter 2>/dev/null)
 
-.PHONY: build test bench bench-grammars fetch-test-grammars fetch-corpora test-corpus test-corpus-json test-regression test-corpora-diff deps diff-test
+.PHONY: build test bench bench-grammars fetch-test-grammars fetch-corpora test-corpus test-corpus-json test-regression test-corpora-diff deps diff-test generate-scanner-traces test-scanner-traces
 
 build:
 	go build ./...
@@ -79,6 +79,12 @@ else
 	@echo "tree-sitter CLI not found. Run 'make deps' to install."
 	@exit 1
 endif
+
+generate-scanner-traces:
+	scripts/generate-scanner-traces.sh
+
+test-scanner-traces:
+	go test -v -race -run 'TestScannerTraces' -count=1 -timeout 10m .
 
 bench:
 ifdef TREE_SITTER_CLI
