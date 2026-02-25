@@ -12,9 +12,9 @@ C tree-sitter and our Go port. Checked items are fixed and committed.
 Go functions should match C function names converted to CamelCase.
 This makes cross-referencing and auditing trivial.
 
-### Parser Functions (C: 50 in parser.c, Go: 33 in parser.go)
+### internal/parser Functions (C: 50 in parser.c, Go: internal/parser)
 
-| C Name (parser.c) | Line | Go Name (parser.go) | Line | Status |
+| C Name (parser.c) | Line | Go Name (internal/parser) | Line | Status |
 |---|---|---|---|---|
 | ts_parser_new | 1935 | NewParser | 74 | MISMATCH — no wasm/included-range init |
 | ts_parser_delete | 1958 | — | — | N/A (GC) |
@@ -56,7 +56,6 @@ This makes cross-referencing and auditing trivial.
 | ts_parser__external_scanner_scan | 443 | — (inline?) | — | MISMATCH — no wasm scanner support |
 | ts_parser__has_included_range_difference | 740 | — | — | N/A (no incremental yet) |
 | ts_parser_has_outstanding_parse | 1924 | — | — | MISSING — no resume parse tracking |
-| ts_string_input_read | 138 | — | — | OK (StringInput.Read) |
 
 **Go-only functions (no C equivalent):**
 | Go Name | Line | Notes |
@@ -69,9 +68,24 @@ This makes cross-referencing and auditing trivial.
 | createErrorRepeatNode | 1715 | OK — helper for error_repeat node |
 | createMissingToken | 1722 | OK — helper for missing leaf |
 
-### Stack Functions (C: 41 in stack.c, Go: 45 in stack.go)
+### public/lexer Functions (C: parser.c StringInput + lexer.c, Go: lexer/)
 
-| C Name (stack.c) | Line | Go Name (stack.go) | Line | Status |
+| C Name | Line | Go Name (lexer/) | Line | Status |
+|---|---|---|---|---|
+| ts_string_input_read (parser.c) | 138 | StringInput.Read | — | OK |
+| ts_lexer_init (lexer.c) | 214 | NewLexer | — | OK |
+| ts_lexer_delete (lexer.c) | 230 | — | — | N/A (GC) |
+| ts_lexer_set_input (lexer.c) | 235 | SetInput | — | OK |
+| ts_lexer_reset (lexer.c) | 240 | Reset | — | MISMATCH — no position arg |
+| ts_lexer_start (lexer.c) | 282 | Start | — | MISMATCH — Go takes position |
+| ts_lexer_finish (lexer.c) | 324 | — | — | MISSING — no finish/lookahead_end |
+| ts_lexer_mark_end (lexer.c) | 366 | MarkEnd | — | OK |
+| ts_lexer_set_included_ranges (lexer.c) | 399 | SetIncludedRanges | — | MISMATCH — no error return |
+| ts_lexer_included_ranges (lexer.c) | 437 | — | — | MISSING — no getter |
+
+### internal/stack Functions (C: 41 in stack.c, Go: internal/stack)
+
+| C Name (stack.c) | Line | Go Name (internal/stack) | Line | Status |
 |---|---|---|---|---|
 | ts_stack_new | 421 | NewStack | 129 | MISMATCH — no base node/initial head |
 | ts_stack_delete | 440 | — | — | N/A (GC) |
