@@ -7,7 +7,7 @@ import (
 )
 
 func TestJSONLanguageConstants(t *testing.T) {
-	lang := JSONLanguage()
+	lang := JsonLanguage()
 
 	if lang.SymbolCount != 25 {
 		t.Errorf("SymbolCount = %d, want 25", lang.SymbolCount)
@@ -33,7 +33,7 @@ func TestJSONLanguageConstants(t *testing.T) {
 }
 
 func TestJSONLanguageSymbolNames(t *testing.T) {
-	lang := JSONLanguage()
+	lang := JsonLanguage()
 
 	tests := []struct {
 		sym  ts.Symbol
@@ -55,7 +55,7 @@ func TestJSONLanguageSymbolNames(t *testing.T) {
 		{SymNull, "null"},
 		{SymComment, "comment"},
 		{SymDocument, "document"},
-		{SymValue, "_value"},
+		{SymAuxValue, "_value"},
 		{SymObject, "object"},
 		{SymPair, "pair"},
 		{SymArray, "array"},
@@ -70,7 +70,7 @@ func TestJSONLanguageSymbolNames(t *testing.T) {
 }
 
 func TestJSONLanguageSymbolMetadata(t *testing.T) {
-	lang := JSONLanguage()
+	lang := JsonLanguage()
 
 	// Named, visible nodes (user-facing).
 	namedVisible := []ts.Symbol{
@@ -99,7 +99,7 @@ func TestJSONLanguageSymbolMetadata(t *testing.T) {
 	}
 
 	// Hidden nodes (not visible).
-	hidden := []ts.Symbol{SymValue, SymAuxStringContent, SymAuxDocumentRepeat1, SymAuxObjectRepeat1, SymAuxArrayRepeat1}
+	hidden := []ts.Symbol{SymAuxValue, SymAuxStringContent, SymDocumentRepeat1, SymObjectRepeat1, SymArrayRepeat1}
 	for _, sym := range hidden {
 		if lang.SymbolIsVisible(sym) {
 			t.Errorf("symbol %d (%s) should not be visible", sym, lang.SymbolName(sym))
@@ -107,13 +107,13 @@ func TestJSONLanguageSymbolMetadata(t *testing.T) {
 	}
 
 	// _value is a supertype.
-	if !lang.SymbolMetadata[SymValue].Supertype {
+	if !lang.SymbolMetadata[SymAuxValue].Supertype {
 		t.Error("_value should be a supertype")
 	}
 }
 
 func TestJSONLanguageLargeStateLookup(t *testing.T) {
-	lang := JSONLanguage()
+	lang := JsonLanguage()
 
 	// State 1 (large state): expecting a value.
 	tests := []struct {
@@ -143,7 +143,7 @@ func TestJSONLanguageLargeStateLookup(t *testing.T) {
 }
 
 func TestJSONLanguageSmallStateLookup(t *testing.T) {
-	lang := JSONLanguage()
+	lang := JsonLanguage()
 
 	tests := []struct {
 		name   string
@@ -188,7 +188,7 @@ func TestJSONLanguageSmallStateLookup(t *testing.T) {
 }
 
 func TestJSONLanguageTableEntry(t *testing.T) {
-	lang := JSONLanguage()
+	lang := JsonLanguage()
 
 	// State 1, '{' -> shift to state 16.
 	entry := lang.ExportTableEntry(1, SymLBrace)
@@ -234,7 +234,7 @@ func TestJSONLanguageTableEntry(t *testing.T) {
 }
 
 func TestJSONLanguageFieldMap(t *testing.T) {
-	lang := JSONLanguage()
+	lang := JsonLanguage()
 
 	// Production 1 is the pair rule: key:value.
 	entries := lang.FieldMapForProduction(1)
@@ -264,7 +264,7 @@ func TestJSONLanguageFieldMap(t *testing.T) {
 }
 
 func TestJSONLanguageLexModes(t *testing.T) {
-	lang := JSONLanguage()
+	lang := JsonLanguage()
 
 	// Most states use lex state 0.
 	for i := 0; i < 17; i++ {
@@ -282,12 +282,12 @@ func TestJSONLanguageLexModes(t *testing.T) {
 }
 
 func TestJSONLanguageSupertypes(t *testing.T) {
-	lang := JSONLanguage()
+	lang := JsonLanguage()
 
 	if len(lang.SupertypeSymbols) != 1 {
 		t.Fatalf("SupertypeSymbols length = %d, want 1", len(lang.SupertypeSymbols))
 	}
-	if lang.SupertypeSymbols[0] != SymValue {
-		t.Errorf("SupertypeSymbols[0] = %d, want %d (_value)", lang.SupertypeSymbols[0], SymValue)
+	if lang.SupertypeSymbols[0] != SymAuxValue {
+		t.Errorf("SupertypeSymbols[0] = %d, want %d (_value)", lang.SupertypeSymbols[0], SymAuxValue)
 	}
 }
