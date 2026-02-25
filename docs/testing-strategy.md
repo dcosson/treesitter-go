@@ -1057,17 +1057,14 @@ Trace files only need regeneration when grammar versions are bumped.
 | cpp | 45 | 0 | PASS |
 | css | 492 | 0 | PASS |
 | html | 387 | 0 | PASS |
-| javascript | 4,151 | 3 | Needs trace regen (extractor bug) |
+| javascript | 4,151 | 0 | PASS |
 | lua | 857 | 0 | PASS |
 | perl | 4,097 | 0 | PASS |
 | python | 4,622 | 0 | PASS |
 | ruby | 5,895 | 0 | PASS |
 | rust | 1,983 | 0 | PASS |
 | typescript | 4,143 | 0 | PASS |
-| **Total** | **30,366** | **3** | **99.99% pass** |
-
-The 3 JavaScript failures are caused by the trace generator's input extraction
-(not scanner bugs). Regenerating traces with the Go extractor will fix them.
+| **Total** | **30,366** | **0** | **100% pass** |
 
 **Bugs found and fixed via trace replay:**
 - Serialization format: bash (2 missing header bytes), perl (variable vs fixed-size
@@ -1496,7 +1493,7 @@ are committed to the repo as a permanent record.
 | Error recovery tests | Not started | Design in Section 10 |
 | Real-world corpora collection | Not started | Need version-pinned files |
 | Performance comparison vs CLI | Not started | Design in Section 6 |
-| Scanner trace replay tests | Done | 11/11 languages, 30,366 entries, 99.99% pass (3 JS need trace regen) |
+| Scanner trace replay tests | Done | 11/11 languages, 30,366 entries, 100% pass |
 | Scanner round-trip tests | Not started | |
 | Regression test directory | Not started | `testdata/regressions/` |
 
