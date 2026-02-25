@@ -24,6 +24,12 @@
       "type": "blocks"
     }
   ],
+  "dependents": [
+    {
+      "id": "tree-sitter-go-ogi.6",
+      "type": "blocks"
+    }
+  ],
   "created_by": "Danny Cosson",
   "owner": "dcosson@gmail.com",
   "labels": [
