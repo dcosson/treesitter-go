@@ -270,9 +270,15 @@ func TestScannerTraces(t *testing.T) {
 					continue
 				}
 
-				// Create a fresh scanner and deserialize to the recorded state
+				// Create a fresh scanner and deserialize to the recorded state.
+				// For perl, normalize the pre-state to zero out unused TSPString
+				// content slots (C has uninitialized stack garbage there).
+				deserializeState := preState
+				if cfg.name == "perl" {
+					deserializeState = normalizePerlState(preState)
+				}
 				goScanner := cfg.newScanner()
-				goScanner.Deserialize(preState)
+				goScanner.Deserialize(deserializeState)
 
 				// Build valid_symbols bool slice
 				validSymbols := make([]bool, len(entry.Input.ValidSymbols))
@@ -281,12 +287,14 @@ func TestScannerTraces(t *testing.T) {
 				}
 
 				// Create a real Lexer positioned at the recorded byte offset.
-				// The C trace records lookahead as the Unicode code point (int32).
-				// In the C implementation, EOF is lookahead == 0.
-				// In Go, EOF is Lookahead == -1.
+				// We must compute the correct row/column from the input bytes,
+				// since some scanners (e.g. Perl) check Column == 0 for heredoc
+				// and pod detection. Using {Bytes: offset} alone would leave
+				// Point at {0,0}, causing false positives.
+				startPos := byteOffsetToPosition(inputBytes, entry.Input.ByteOffset)
 				lexer := ts.NewLexer()
 				lexer.SetInput(ts.NewStringInput(inputBytes))
-				lexer.Start(ts.Length{Bytes: entry.Input.ByteOffset})
+				lexer.Start(startPos)
 
 				// Call the Go scanner
 				matched := goScanner.Scan(lexer, validSymbols)
@@ -326,7 +334,16 @@ func TestScannerTraces(t *testing.T) {
 				postLen := goScanner.Serialize(postBuf[:])
 				actualPostState := postBuf[:postLen]
 
-				if !bytesEqual(actualPostState, expectedPostState) {
+				// For perl, normalize states to zero out unused TSPString
+			// content slots (C has uninitialized stack memory there).
+			cmpActual := actualPostState
+			cmpExpected := expectedPostState
+			if cfg.name == "perl" {
+				cmpActual = normalizePerlState(actualPostState)
+				cmpExpected = normalizePerlState(expectedPostState)
+			}
+
+			if !bytesEqual(cmpActual, cmpExpected) {
 					failCount++
 					if failCount <= maxFailsPerLang {
 						t.Errorf("entry %d (file=%s, call=%d): post-state mismatch (got %d bytes, want %d bytes)",
@@ -349,6 +366,29 @@ func TestScannerTraces(t *testing.T) {
 	}
 }
 
+// byteOffsetToPosition computes the row/column Point for a given byte offset
+// by scanning through the input bytes and counting newlines.
+func byteOffsetToPosition(input []byte, offset uint32) ts.Length {
+	row := uint32(0)
+	col := uint32(0)
+	limit := int(offset)
+	if limit > len(input) {
+		limit = len(input)
+	}
+	for i := 0; i < limit; i++ {
+		if input[i] == '\n' {
+			row++
+			col = 0
+		} else {
+			col++
+		}
+	}
+	return ts.Length{
+		Bytes: offset,
+		Point: ts.Point{Row: row, Column: col},
+	}
+}
+
 func bytesEqual(a, b []byte) bool {
 	if len(a) != len(b) {
 		return false
@@ -359,4 +399,54 @@ func bytesEqual(a, b []byte) bool {
 		}
 	}
 	return true
+}
+
+// normalizePerlState zeroes out unused TSPString content slots in a perl
+// scanner serialized state. The C scanner uses memcpy of the full struct
+// which includes uninitialized stack memory in unused array positions.
+// Go zeroes these by default, so we normalize both sides for comparison.
+func normalizePerlState(state []byte) []byte {
+	if len(state) < 4 {
+		return state
+	}
+	out := make([]byte, len(state))
+	copy(out, state)
+
+	off := 0
+	// quote count (1 byte)
+	if off >= len(out) {
+		return out
+	}
+	quoteCount := int(out[off])
+	off++
+	// quotes: 12 bytes each (open:4 + close:4 + count:4)
+	off += quoteCount * 12
+	if off+3 > len(out) {
+		return out
+	}
+	// heredocInterpolates, heredocIndents, heredocState (3 bytes)
+	off += 3
+	// TSPString: length (4 bytes LE) + contents[8] (4 bytes each)
+	if off+4 > len(out) {
+		return out
+	}
+	delimLen := int(out[off]) | int(out[off+1])<<8 | int(out[off+2])<<16 | int(out[off+3])<<24
+	off += 4
+	// Skip used content slots
+	used := delimLen
+	if used > 8 {
+		used = 8
+	}
+	off += used * 4
+	// Zero unused content slots
+	for i := used; i < 8; i++ {
+		if off+4 <= len(out) {
+			out[off] = 0
+			out[off+1] = 0
+			out[off+2] = 0
+			out[off+3] = 0
+			off += 4
+		}
+	}
+	return out
 }
