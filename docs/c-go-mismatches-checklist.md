@@ -62,8 +62,8 @@ This makes cross-referencing and auditing trivial.
 | Go Name | Line | Notes |
 |---|---|---|
 | findActiveVersion | 210 | OK — helper for version selection |
-| doReduceForPotential | 1362 | Split+reduce for error recovery — C does this inline |
-| buildAcceptTree | 1077 | C logic is inline in ts_parser__accept |
+| doReduceForPotential | 1362 | OK — helper for error recovery reduce |
+| buildAcceptTree | 1077 | OK — helper for accept tree assembly |
 | subtreeCompare | 1032 | OK — port of ts_subtree_compare |
 | createErrorNode | 1684 | OK — helper for error node creation |
 | createErrorRepeatNode | 1715 | OK — helper for error_repeat node |
