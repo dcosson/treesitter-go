@@ -168,9 +168,10 @@ const (
 	ErrorCostPerSkippedLine = 30
 	ErrorCostPerSkippedChar = 1
 
-	MaxVersionCount   = 6
-	MaxCostDifference = 18 * ErrorCostPerSkippedTree // = 1800, matches C master
-	MaxSummaryDepth   = 16
+	MaxVersionCount    = 6
+	maxVersionOverflow = 4
+	MaxCostDifference  = 18 * ErrorCostPerSkippedTree // = 1800, matches C master
+	MaxSummaryDepth    = 16
 
 	defaultCancellationInterval = 100
 )
@@ -910,6 +911,8 @@ func (p *Parser) doReduce(version StackVersion, action ParseActionEntry, endOfNo
 	}
 
 	// Group consecutive slices by slice version (matching C ts_parser__reduce).
+	removedVersionCount := 0
+	haltedVersionCount := p.stack.HaltedVersionCount()
 	type reduceGroup struct {
 		version        StackVersion
 		bestChildren   []Subtree
@@ -959,9 +962,20 @@ func (p *Parser) doReduce(version StackVersion, action ParseActionEntry, endOfNo
 	}
 
 	// Process each grouped slice.
-	removedVersionCount := 0
 	for _, group := range groups {
 		// Create the internal node from the best children.
+		sliceVersion := group.version - StackVersion(removedVersionCount)
+		if int(sliceVersion) >= p.stack.VersionCount() {
+			continue
+		}
+
+		// Match C overflow guard in ts_parser__reduce.
+		if int(sliceVersion) > MaxVersionCount+maxVersionOverflow+haltedVersionCount {
+			p.stack.RemoveVersion(sliceVersion)
+			removedVersionCount++
+			continue
+		}
+
 		node := NewNodeSubtree(p.arena, symbol, group.bestChildren, productionID, p.language)
 		SummarizeChildren(node, p.arena, p.language)
 
@@ -971,10 +985,6 @@ func (p *Parser) doReduce(version StackVersion, action ParseActionEntry, endOfNo
 			data.DynamicPrecedence += int32(dynPrec)
 		}
 
-		sliceVersion := group.version - StackVersion(removedVersionCount)
-		if int(sliceVersion) >= p.stack.VersionCount() {
-			continue
-		}
 		baseState := p.stack.State(sliceVersion)
 		gotoState := p.language.NextState(baseState, symbol)
 		if endOfNonTerminalExtra && gotoState == baseState {
@@ -1006,6 +1016,7 @@ func (p *Parser) doReduce(version StackVersion, action ParseActionEntry, endOfNo
 			}
 		}
 	}
+
 }
 
 // selectChildren compares two sets of children for the same reduction.

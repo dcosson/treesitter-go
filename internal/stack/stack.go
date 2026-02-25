@@ -213,6 +213,17 @@ func (s *Stack) VersionCount() int {
 	return len(s.heads)
 }
 
+// HaltedVersionCount returns the number of halted versions.
+func (s *Stack) HaltedVersionCount() int {
+	count := 0
+	for i := range s.heads {
+		if s.heads[i].status == StackStatusHalted {
+			count++
+		}
+	}
+	return count
+}
+
 // ActiveVersionCount returns the number of active (non-paused, non-halted) versions.
 func (s *Stack) ActiveVersionCount() int {
 	count := 0
@@ -1095,7 +1106,7 @@ func (s *Stack) iterate(
 	})
 
 	for len(iterators) > 0 {
-		for i := 0; i < len(iterators); i++ {
+		for i, size := 0, len(iterators); i < size; i++ {
 			it := &iterators[i]
 			node := it.node
 
@@ -1115,6 +1126,7 @@ func (s *Stack) iterate(
 			if shouldStop {
 				iterators = append(iterators[:i], iterators[i+1:]...)
 				i--
+				size--
 				continue
 			}
 
