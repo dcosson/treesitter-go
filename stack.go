@@ -2,8 +2,6 @@ package treesitter
 
 import (
 	"bytes"
-	"fmt"
-	"os"
 	"sync"
 )
 
@@ -357,8 +355,6 @@ func (s *Stack) Push(version StackVersion, state StateID, subtree Subtree, isPen
 // top node is advanced to the first result's bottom node (results[0].node).
 // This matches C tree-sitter's stack_pop behavior where pop removes the
 // top N entries from the stack. Use PopCount for a read-only check.
-// PopDebugTrace enables verbose tracing for the next Pop call.
-var PopDebugTrace bool
 
 func (s *Stack) Pop(version StackVersion, count uint32) []StackIterator {
 	if int(version) >= len(s.heads) {
@@ -376,14 +372,6 @@ func (s *Stack) Pop(version StackVersion, count uint32) []StackIterator {
 		depth    uint32
 	}
 
-	debugPop := PopDebugTrace
-	PopDebugTrace = false
-
-	if debugPop {
-		fmt.Fprintf(os.Stderr, "[DEBUG POP] Start: ver=%d count=%d headState=%d headPos=%d headLinks=%d\n",
-			version, count, head.node.state, head.node.position.Bytes, head.node.linkCount)
-	}
-
 	// BFS/DFS through the DAG of links.
 	// Extra subtrees (e.g. comments) are collected but do NOT count toward
 	// the pop depth — matching C tree-sitter's stack__iter which skips extras
@@ -394,23 +382,11 @@ func (s *Stack) Pop(version StackVersion, count uint32) []StackIterator {
 		depth:    0,
 	}}
 
-	frameID := 0
 	for len(queue) > 0 && len(results) < MaxIteratorCount {
 		frame := queue[0]
 		queue = queue[1:]
 
 		if frame.depth == count {
-			if debugPop {
-				fmt.Fprintf(os.Stderr, "[DEBUG POP]   RESULT #%d: baseNode.state=%d baseNode.pos=%d\n",
-					len(results), frame.node.state, frame.node.position.Bytes)
-				for si, st := range frame.subtrees {
-					sym := Symbol(0)
-					if !st.IsZero() {
-						sym = GetSymbol(st, s.arena)
-					}
-					fmt.Fprintf(os.Stderr, "[DEBUG POP]     subtree[%d]: sym=%d\n", si, sym)
-				}
-			}
 			results = append(results, StackIterator{
 				node:     frame.node,
 				subtrees: frame.subtrees,
@@ -420,29 +396,8 @@ func (s *Stack) Pop(version StackVersion, count uint32) []StackIterator {
 		}
 
 		if frame.node == nil || frame.node.linkCount == 0 {
-			if debugPop {
-				fmt.Fprintf(os.Stderr, "[DEBUG POP]   DEAD END at depth=%d (node=%v linkCount=%d)\n",
-					frame.depth, frame.node != nil, func() uint16 { if frame.node != nil { return frame.node.linkCount }; return 0 }())
-			}
 			// Reached the bottom of the stack before popping enough.
 			continue
-		}
-
-		if debugPop && frame.node.linkCount > 1 {
-			fmt.Fprintf(os.Stderr, "[DEBUG POP]   BRANCH at depth=%d state=%d pos=%d linkCount=%d\n",
-				frame.depth, frame.node.state, frame.node.position.Bytes, frame.node.linkCount)
-			for li := uint16(0); li < frame.node.linkCount; li++ {
-				lnk := &frame.node.links[li]
-				sym := Symbol(0)
-				if !lnk.subtree.IsZero() {
-					sym = GetSymbol(lnk.subtree, s.arena)
-				}
-				targetState := StateID(0)
-				if lnk.node != nil {
-					targetState = lnk.node.state
-				}
-				fmt.Fprintf(os.Stderr, "[DEBUG POP]     link[%d]: sym=%d targetState=%d\n", li, sym, targetState)
-			}
 		}
 
 		for i := uint16(0); i < frame.node.linkCount; i++ {
@@ -459,22 +414,12 @@ func (s *Stack) Pop(version StackVersion, count uint32) []StackIterator {
 				newDepth++
 			}
 
-			if debugPop {
-				sym := Symbol(0)
-				if !link.subtree.IsZero() {
-					sym = GetSymbol(link.subtree, s.arena)
-				}
-				fmt.Fprintf(os.Stderr, "[DEBUG POP]   frame%d: follow link[%d] sym=%d depth=%d→%d\n",
-					frameID, i, sym, frame.depth, newDepth)
-			}
-
 			queue = append(queue, popFrame{
 				node:     link.node,
 				subtrees: newSubtrees,
 				depth:    newDepth,
 			})
 		}
-		frameID++
 	}
 
 	// After pop, update the head to point to the first result's node.
@@ -732,15 +677,6 @@ func (s *Stack) nodeAddLink(node *StackNode, link StackLink) {
 				if !link.subtree.IsZero() && !existing.subtree.IsZero() {
 					newPrec := GetDynamicPrecedence(link.subtree, s.arena)
 					oldPrec := GetDynamicPrecedence(existing.subtree, s.arena)
-					if node.position.Bytes >= 56 && node.position.Bytes <= 68 {
-						existingSym := GetSymbol(existing.subtree, s.arena)
-						linkSym := GetSymbol(link.subtree, s.arena)
-						existingCC := GetChildCount(existing.subtree, s.arena)
-						linkCC := GetChildCount(link.subtree, s.arena)
-						fmt.Fprintf(os.Stderr, "[DEBUG ADDLINK] Case1 same-target at pos=%d nodeState=%d: existing(sym=%d,cc=%d,prec=%d) vs new(sym=%d,cc=%d,prec=%d) → keep=%s\n",
-							node.position.Bytes, node.state, existingSym, existingCC, oldPrec, linkSym, linkCC, newPrec,
-							func() string { if newPrec > oldPrec { return "NEW" }; return "EXISTING" }())
-					}
 					if newPrec > oldPrec {
 						existing.subtree = link.subtree
 						node.dynamicPrecedence = link.node.dynamicPrecedence +
@@ -754,18 +690,6 @@ func (s *Stack) nodeAddLink(node *StackNode, link StackLink) {
 			if existing.node.state == link.node.state &&
 				existing.node.position.Bytes == link.node.position.Bytes &&
 				existing.node.errorCost == link.node.errorCost {
-				if node.position.Bytes >= 56 && node.position.Bytes <= 68 {
-					existingSym := Symbol(0)
-					linkSym := Symbol(0)
-					if !existing.subtree.IsZero() {
-						existingSym = GetSymbol(existing.subtree, s.arena)
-					}
-					if !link.subtree.IsZero() {
-						linkSym = GetSymbol(link.subtree, s.arena)
-					}
-					fmt.Fprintf(os.Stderr, "[DEBUG ADDLINK] Case2 recursive-merge at pos=%d nodeState=%d: existingSym=%d linkSym=%d targetState=%d targetPos=%d\n",
-						node.position.Bytes, node.state, existingSym, linkSym, existing.node.state, existing.node.position.Bytes)
-				}
 				for j := uint16(0); j < link.node.linkCount; j++ {
 					s.nodeAddLink(existing.node, link.node.links[j])
 				}
