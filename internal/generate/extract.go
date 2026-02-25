@@ -619,9 +619,23 @@ func extractLexModes(g *Grammar, src string) error {
 		return fmt.Errorf("ts_lex_modes not found")
 	}
 
-	// Capture lex_state, external_lex_state, and reserved_word_set_id.
-	re := regexp.MustCompile(`\[(\d+)\]\s*=\s*\{\.lex_state\s*=\s*(\d+)(?:,\s*\.external_lex_state\s*=\s*(\d+))?(?:,\s*\.reserved_word_set_id\s*=\s*(\d+))?[^}]*\}`)
 	modes := make([]LexModeEntry, g.StateCount)
+
+	// Detect sentinel entries: {(TSStateId)(-1)} means "no lookahead after
+	// non-terminal extra". In the C runtime, lex_state == (uint16_t)(-1) causes
+	// ts_parser__lex to return NULL_SUBTREE. We store this as LexState=65535.
+	sentinelRe := regexp.MustCompile(`\[(\d+)\]\s*=\s*\{\s*\(TSStateId\)\s*\(\s*-1\s*\)\s*,?\s*\}`)
+	for _, m := range sentinelRe.FindAllStringSubmatch(block, -1) {
+		idx, _ := strconv.Atoi(m[1])
+		if idx < len(modes) {
+			modes[idx] = LexModeEntry{
+				LexState: 65535, // LexStateNoLookahead sentinel
+			}
+		}
+	}
+
+	// Capture normal entries: lex_state, external_lex_state, and reserved_word_set_id.
+	re := regexp.MustCompile(`\[(\d+)\]\s*=\s*\{\.lex_state\s*=\s*(\d+)(?:,\s*\.external_lex_state\s*=\s*(\d+))?(?:,\s*\.reserved_word_set_id\s*=\s*(\d+))?[^}]*\}`)
 	for _, m := range re.FindAllStringSubmatch(block, -1) {
 		idx, _ := strconv.Atoi(m[1])
 		lexState, _ := strconv.Atoi(m[2])

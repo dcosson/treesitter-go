@@ -511,6 +511,46 @@ func IsNamed(s Subtree, arena *SubtreeArena) bool {
 	return arena.Get(s).HasFlag(SubtreeFlagNamed)
 }
 
+// GetIsKeyword returns true if the subtree is a keyword-extracted token.
+// This flag is set during lexing when the keyword lex function matches.
+// Used by the token cache to determine keyword reusability across parse states.
+// Matches C runtime's ts_subtree_is_keyword.
+func GetIsKeyword(s Subtree, arena *SubtreeArena) bool {
+	if s.IsInline() {
+		return s.InlineIsKeyword()
+	}
+	return arena.Get(s).HasFlag(SubtreeFlagIsKeyword)
+}
+
+// SetSubtreeSymbol changes a subtree's symbol and updates its visible/named
+// flags to match the new symbol's metadata. Used by keyword demotion to change
+// a keyword token back to the word token (e.g., primitive_type -> identifier).
+// Matches C runtime's ts_subtree_set_symbol.
+func SetSubtreeSymbol(s Subtree, arena *SubtreeArena, symbol Symbol, lang *Language) Subtree {
+	visible := lang.SymbolIsVisible(symbol)
+	named := lang.SymbolIsNamed(symbol)
+	if s.IsInline() {
+		s.data &^= inlineSymbolMask
+		s.data |= uint64(symbol) << inlineSymbolShift
+		if visible {
+			s.data |= inlineVisibleBit
+		} else {
+			s.data &^= inlineVisibleBit
+		}
+		if named {
+			s.data |= inlineNamedBit
+		} else {
+			s.data &^= inlineNamedBit
+		}
+		return s
+	}
+	data := arena.Get(s)
+	data.Symbol = symbol
+	data.SetFlag(SubtreeFlagVisible, visible)
+	data.SetFlag(SubtreeFlagNamed, named)
+	return s
+}
+
 // IsExtra returns true if the subtree is an extra node (e.g., whitespace, comments).
 func IsExtra(s Subtree, arena *SubtreeArena) bool {
 	if s.IsInline() {
@@ -709,10 +749,25 @@ func NewNodeSubtree(
 	lang *Language,
 ) Subtree {
 	var visible, named bool
-	if int(symbol) < len(lang.SymbolMetadata) {
-		meta := lang.SymbolMetadata[symbol]
-		visible = meta.Visible
-		named = meta.Named
+	switch symbol {
+	case SymbolError:
+		// ERROR nodes are always visible and named. Matches C's
+		// ts_language_symbol_metadata which returns {visible:true, named:true}
+		// for ts_builtin_sym_error.
+		visible = true
+		named = true
+	case SymbolErrorRepeat:
+		// error_repeat nodes are always invisible. Matches C's
+		// ts_language_symbol_metadata which returns {visible:false, named:false}
+		// for ts_builtin_sym_error_repeat.
+		visible = false
+		named = false
+	default:
+		if int(symbol) < len(lang.SymbolMetadata) {
+			meta := lang.SymbolMetadata[symbol]
+			visible = meta.Visible
+			named = meta.Named
+		}
 	}
 
 	st, data := arena.Alloc()

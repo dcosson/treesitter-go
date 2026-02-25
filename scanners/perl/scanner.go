@@ -499,11 +499,15 @@ func (s *Scanner) Scan(lexer *ts.Lexer, validSymbols []bool) bool {
 	// NOTE: Do NOT update c here. The C code keeps c stale (original value from
 	// function entry) until the main whitespace-skipping block below. This is
 	// important because the skipped_whitespace flag depends on c still being the
-	// original whitespace character. Attribute value checks read lexer.Lookahead
-	// directly instead.
+	// original whitespace character.
 
 	// TOKEN_ATTRIBUTE_VALUE_BEGIN (zero-width — lookahead found '(')
-	if !isError && validSymbols[TokenAttributeValueBegin] && lexer.Lookahead == '(' {
+	// Must use c (pre-whitespace-skip value), NOT lexer.Lookahead, to match C
+	// behavior. In C, c is set before skip_ws_to_eol and not updated after.
+	// This matters for cases like "sub f :attr ($sig) {}" where the space
+	// between :attr and ($sig) means c==' ' so this check correctly fails,
+	// allowing ($sig) to be parsed as a signature instead of attribute_value.
+	if !isError && validSymbols[TokenAttributeValueBegin] && c == '(' {
 		lexer.MarkEnd()
 		lexer.ResultSymbol = ts.Symbol(TokenAttributeValueBegin)
 		return true

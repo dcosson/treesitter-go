@@ -256,6 +256,11 @@ func writeSmallParseTableMap(b *strings.Builder, g *Grammar) {
 func writeLexModes(b *strings.Builder, g *Grammar) {
 	fmt.Fprintf(b, "\tlexModes := []ts.LexMode{\n")
 	for i, lm := range g.LexModes {
+		if lm.LexState == 65535 {
+			// Sentinel: no lookahead after non-terminal extra.
+			fmt.Fprintf(b, "\t\t{LexState: ts.LexStateNoLookahead}, // state %d (no lookahead)\n", i)
+			continue
+		}
 		parts := fmt.Sprintf("LexState: %d", lm.LexState)
 		if lm.ExternalLexState != 0 {
 			parts += fmt.Sprintf(", ExternalLexState: %d", lm.ExternalLexState)

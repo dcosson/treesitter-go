@@ -1,0 +1,4 @@
+my $str = "Hello World";
+if ($str =~ /^Hello/) {
+    print "matched\n";
+}

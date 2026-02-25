@@ -1,0 +1,10 @@
+def outer():
+    if True:
+        x = 1
+    else:
+        x = 2
+    return x
+
+class Foo:
+    def bar(self):
+        pass

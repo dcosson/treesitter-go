@@ -433,7 +433,7 @@ func TestCompareVersions(t *testing.T) {
 	}
 }
 
-func TestFindActiveVersionRoundRobin(t *testing.T) {
+func TestFindActiveVersionLowestPosition(t *testing.T) {
 	p := NewParser()
 	p.arena = NewSubtreeArena(0)
 	p.stack = NewStack(p.arena)
@@ -443,31 +443,11 @@ func TestFindActiveVersionRoundRobin(t *testing.T) {
 	p.stack.AddVersion(1, Length{Bytes: 10, Point: Point{Row: 0, Column: 10}})
 	p.stack.AddVersion(2, Length{Bytes: 20, Point: Point{Row: 0, Column: 20}})
 
-	// findActiveVersion should initially pick v0 (lowest position).
-	v := p.findActiveVersion()
-	if v != 0 {
-		t.Fatalf("expected v0, got v%d", v)
-	}
-
-	// Call findActiveVersion repeatedly without advancing v0's position.
-	// After maxStaleSelections, it should rotate to v1.
-	for i := 0; i < maxStaleSelections-1; i++ {
-		v = p.findActiveVersion()
+	// findActiveVersion should always pick v0 (lowest position).
+	for i := 0; i < 10; i++ {
+		v := p.findActiveVersion()
 		if v != 0 {
-			t.Fatalf("iteration %d: expected v0 (stale count %d < %d), got v%d",
-				i, i+1, maxStaleSelections, v)
+			t.Fatalf("iteration %d: expected v0 (lowest position), got v%d", i, v)
 		}
-	}
-
-	// This call should trigger rotation to v1.
-	v = p.findActiveVersion()
-	if v != 1 {
-		t.Fatalf("expected round-robin rotation to v1, got v%d", v)
-	}
-
-	// After rotation, counter resets. Next call picks v0 again (lowest pos).
-	v = p.findActiveVersion()
-	if v != 0 {
-		t.Fatalf("expected v0 after rotation reset, got v%d", v)
 	}
 }

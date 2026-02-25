@@ -1,0 +1,9 @@
+:root {
+  --primary: #333;
+  --spacing: 8px;
+}
+
+.btn {
+  color: var(--primary);
+  padding: var(--spacing);
+}

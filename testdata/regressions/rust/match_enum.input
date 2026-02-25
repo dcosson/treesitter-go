@@ -1,0 +1,13 @@
+enum Color {
+    Red,
+    Green,
+    Blue,
+}
+
+fn describe(c: Color) -> &'static str {
+    match c {
+        Color::Red => "red",
+        Color::Green => "green",
+        Color::Blue => "blue",
+    }
+}

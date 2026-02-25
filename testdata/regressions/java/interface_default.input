@@ -1,0 +1,7 @@
+public interface Greeter {
+    String greet(String name);
+
+    default String hello() {
+        return "Hello";
+    }
+}

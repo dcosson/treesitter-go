@@ -959,3 +959,4 @@ func TestIncrementalWithNilOldTree(t *testing.T) {
 		t.Errorf("expected 'document', got %q", tree.RootNode().Type())
 	}
 }
+

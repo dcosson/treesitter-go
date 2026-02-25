@@ -1,6 +1,9 @@
 package treesitter
 
-import "sync"
+import (
+	"bytes"
+	"sync"
+)
 
 // Graph-Structured Stack (GSS) for GLR parsing.
 //
@@ -76,7 +79,7 @@ type StackVersion int
 type StackHead struct {
 	node    *StackNode
 	status  StackStatus
-	summary StackSummary
+	summary []StackSummaryEntry
 	// lastExternalToken tracks external scanner state for this version.
 	lastExternalToken Subtree
 	// nodeCountAtLastError records the node count when the last error
@@ -84,6 +87,10 @@ type StackHead struct {
 	// the number of nodes parsed since the last error, which is used
 	// by compareVersions for cost amplification.
 	nodeCountAtLastError uint32
+	// lookaheadWhenPaused stores the token that caused the error, so
+	// that handleError can use it when the version is resumed.
+	// Mirrors C tree-sitter's ts_stack_pause / ts_stack_resume.
+	lookaheadWhenPaused Subtree
 }
 
 // StackStatus indicates whether a version is active, paused, or halted.
@@ -95,11 +102,14 @@ const (
 	StackStatusHalted
 )
 
-// StackSummary accumulates metadata for a version's parse history.
-type StackSummary struct {
-	errorCost         uint32
-	nodeCount         uint32
-	dynamicPrecedence int32
+// StackSummaryEntry records a parse state reachable by walking back through
+// the stack from the current head. Used by error recovery to find previous
+// states where the lookahead token might be valid.
+// Mirrors C tree-sitter's StackSummaryEntry.
+type StackSummaryEntry struct {
+	Position Length
+	Depth    uint32
+	State    StateID
 }
 
 // StackIterator holds the result of one pop path.
@@ -172,7 +182,17 @@ func (s *Stack) ErrorCost(version StackVersion) uint32 {
 	if head.node == nil {
 		return 0
 	}
-	return head.node.errorCost
+	cost := head.node.errorCost
+	// Add recovery bonus for paused versions or versions in ERROR_STATE
+	// that have SubtreeZero as their first link (just pushed ERROR_STATE).
+	// This matches C's ts_stack_error_cost which adds ERROR_COST_PER_RECOVERY
+	// (= 500) for versions in error recovery state.
+	if head.status == StackStatusPaused {
+		cost += ErrorCostPerRecovery
+	} else if head.node.state == 0 && head.node.linkCount > 0 && head.node.links[0].subtree.IsZero() {
+		cost += ErrorCostPerRecovery
+	}
+	return cost
 }
 
 // NodeCount returns the node count for a version.
@@ -215,6 +235,41 @@ func (s *Stack) NodeCountSinceError(version StackVersion) uint32 {
 		head.nodeCountAtLastError = head.node.nodeCount
 	}
 	return head.node.nodeCount - head.nodeCountAtLastError
+}
+
+// HasAdvancedSinceError returns true if the parser has made meaningful
+// progress since the last error on this version. It walks the primary
+// link chain looking for non-zero-width subtrees. If no error has
+// occurred (errorCost == 0), returns true.
+// Mirrors C tree-sitter's ts_stack_has_advanced_since_error.
+func (s *Stack) HasAdvancedSinceError(version StackVersion) bool {
+	if int(version) >= len(s.heads) {
+		return false
+	}
+	head := &s.heads[version]
+	node := head.node
+	if node == nil {
+		return false
+	}
+	if node.errorCost == 0 {
+		return true
+	}
+	for node != nil {
+		if node.linkCount > 0 {
+			subtree := node.links[0].subtree
+			if !subtree.IsZero() {
+				if GetTotalBytes(subtree, s.arena) > 0 {
+					return true
+				} else if node.nodeCount > head.nodeCountAtLastError &&
+					GetErrorCost(subtree, s.arena) == 0 {
+					node = node.links[0].node
+					continue
+				}
+			}
+		}
+		break
+	}
+	return false
 }
 
 // SwapVersions swaps two version heads. Used by condenseStack when a
@@ -351,8 +406,10 @@ func (s *Stack) Pop(version StackVersion, count uint32) []StackIterator {
 			newSubtrees[len(frame.subtrees)] = link.subtree
 
 			// Extra subtrees don't count toward the pop depth.
+			// SubtreeZero links (from ERROR_STATE push with null subtree)
+			// always count toward depth.
 			newDepth := frame.depth
-			if !IsExtra(link.subtree, s.arena) {
+			if link.subtree.IsZero() || !IsExtra(link.subtree, s.arena) {
 				newDepth++
 			}
 
@@ -392,7 +449,10 @@ func (s *Stack) PopAll(version StackVersion) []Subtree {
 	var subtrees []Subtree
 	node := head.node
 	for node != nil && node.linkCount > 0 {
-		subtrees = append(subtrees, node.links[0].subtree)
+		// Skip SubtreeZero entries (null placeholders from ERROR_STATE pushes).
+		if !node.links[0].subtree.IsZero() {
+			subtrees = append(subtrees, node.links[0].subtree)
+		}
 		node = node.links[0].node
 	}
 
@@ -400,6 +460,69 @@ func (s *Stack) PopAll(version StackVersion) []Subtree {
 	head.node = node
 
 	return subtrees
+}
+
+// PopPending pops a single pending subtree from the top of the stack.
+// A subtree is pending when it was pushed with isPending=true, indicating
+// it was a composite reused subtree that may need to be broken down.
+// Returns the pending subtree and true if one was found, or SubtreeZero
+// and false if the top link is not pending.
+// Matches C: ts_stack_pop_pending
+func (s *Stack) PopPending(version StackVersion) (Subtree, bool) {
+	if int(version) >= len(s.heads) {
+		return SubtreeZero, false
+	}
+	head := &s.heads[version]
+	if head.node == nil || head.node.linkCount == 0 {
+		return SubtreeZero, false
+	}
+
+	link := &head.node.links[0]
+	if !link.isPending {
+		return SubtreeZero, false
+	}
+
+	subtree := link.subtree
+	head.node = link.node
+	return subtree, true
+}
+
+// PopError pops a single error subtree from the top of the stack.
+// Checks if any link from the current node has an error subtree, and if so,
+// pops it. Returns the error subtree and true if found, or SubtreeZero and
+// false if no error subtree is at the top.
+// Matches C: ts_stack_pop_error
+func (s *Stack) PopError(version StackVersion) (Subtree, bool) {
+	if int(version) >= len(s.heads) {
+		return SubtreeZero, false
+	}
+	head := &s.heads[version]
+	if head.node == nil || head.node.linkCount == 0 {
+		return SubtreeZero, false
+	}
+
+	// Check if any link has an error subtree.
+	hasError := false
+	for i := uint16(0); i < head.node.linkCount; i++ {
+		link := &head.node.links[i]
+		if !link.subtree.IsZero() && GetSymbol(link.subtree, s.arena) == SymbolError {
+			hasError = true
+			break
+		}
+	}
+	if !hasError {
+		return SubtreeZero, false
+	}
+
+	// Pop via the primary link (following C which uses stack__iter with count 1).
+	link := &head.node.links[0]
+	if link.subtree.IsZero() || GetSymbol(link.subtree, s.arena) != SymbolError {
+		return SubtreeZero, false
+	}
+
+	subtree := link.subtree
+	head.node = link.node
+	return subtree, true
 }
 
 // Split forks a version, creating a new version at the same position.
@@ -413,82 +536,189 @@ func (s *Stack) Split(version StackVersion) StackVersion {
 	s.heads = append(s.heads, StackHead{
 		node:                 head.node,
 		status:               head.status,
-		summary:              head.summary,
+		summary:              nil, // Don't share summary reference; each version builds its own
 		lastExternalToken:    head.lastExternalToken,
 		nodeCountAtLastError: head.nodeCountAtLastError,
+		lookaheadWhenPaused:  head.lookaheadWhenPaused,
 	})
 	return newVersion
 }
 
 // ForkAtNode creates a new active version pointing at the given node.
 // Used during multi-path reduce to create versions for alt pop paths.
-func (s *Stack) ForkAtNode(node *StackNode) StackVersion {
+// Inherits lastExternalToken from the source version for correct scanner state.
+func (s *Stack) ForkAtNode(node *StackNode, sourceVersion StackVersion) StackVersion {
 	newVersion := StackVersion(len(s.heads))
+	var extToken Subtree
+	if int(sourceVersion) < len(s.heads) {
+		extToken = s.heads[sourceVersion].lastExternalToken
+	}
 	s.heads = append(s.heads, StackHead{
-		node:   node,
-		status: StackStatusActive,
+		node:              node,
+		status:            StackStatusActive,
+		lastExternalToken: extToken,
 	})
 	return newVersion
 }
 
-// Merge combines two versions that have reached the same state.
-// The source version's top node is added as an additional link on the
-// target version's top node. The source version is halted.
+// subtreeNodeCount returns the number of nodes in a subtree for progress
+// tracking. Matches C's stack__subtree_node_count.
+func subtreeNodeCount(s Subtree, arena *SubtreeArena) uint32 {
+	count := GetVisibleDescendantCount(s, arena)
+	if IsVisible(s, arena) {
+		count++
+	}
+	// Count intermediate error nodes even though they are not visible,
+	// because a stack version's node count is used to check whether it
+	// has made any progress since the last time it encountered an error.
+	if GetSymbol(s, arena) == SymbolErrorRepeat {
+		count++
+	}
+	return count
+}
+
+// subtreeIsEquivalent checks if two subtrees are equivalent for merge
+// deduplication purposes. Matches C's stack__subtree_is_equivalent.
+func (s *Stack) subtreeIsEquivalent(left, right Subtree) bool {
+	if left == right {
+		return true
+	}
+	if left.IsZero() || right.IsZero() {
+		return false
+	}
+
+	// Symbols must match.
+	if GetSymbol(left, s.arena) != GetSymbol(right, s.arena) {
+		return false
+	}
+
+	// If both have errors, don't bother keeping both.
+	if GetErrorCost(left, s.arena) > 0 && GetErrorCost(right, s.arena) > 0 {
+		return true
+	}
+
+	return GetPadding(left, s.arena).Bytes == GetPadding(right, s.arena).Bytes &&
+		GetSize(left, s.arena).Bytes == GetSize(right, s.arena).Bytes &&
+		GetChildCount(left, s.arena) == GetChildCount(right, s.arena) &&
+		IsExtra(left, s.arena) == IsExtra(right, s.arena) &&
+		bytes.Equal(GetExternalScannerState(left, s.arena), GetExternalScannerState(right, s.arena))
+}
+
+// nodeAddLink adds a link to a stack node, handling three cases for
+// deduplication. This is a faithful port of C's stack_node_add_link.
 //
-// When the source has higher dynamic precedence than the target's first
-// link, the links are swapped so that links[0] (the default path) has
-// the best dynamic precedence. This matches C tree-sitter behavior.
+// Case 1: If an existing link has an equivalent subtree AND the same target
+// node, replace the subtree if the new one has higher DynPrec (disambiguation).
 //
-// Returns true if the merge was successful.
-func (s *Stack) Merge(target, source StackVersion) bool {
-	if int(target) >= len(s.heads) || int(source) >= len(s.heads) {
-		return false
-	}
-	targetHead := &s.heads[target]
-	sourceHead := &s.heads[source]
-
-	if targetHead.node == nil || sourceHead.node == nil {
-		return false
-	}
-
-	// States must match for merge.
-	if targetHead.node.state != sourceHead.node.state {
-		return false
+// Case 2: If an existing link has an equivalent subtree AND the target node
+// has the same state/position/errorCost, recursively merge the target nodes.
+//
+// Case 3: Otherwise, add as a new link.
+//
+// In all cases, update the node's accumulated dynamicPrecedence.
+func (s *Stack) nodeAddLink(node *StackNode, link StackLink) {
+	// Prevent self-loops.
+	if link.node == node {
+		return
 	}
 
-	// Add source's links to target.
-	targetNode := targetHead.node
-	sourceNode := sourceHead.node
-	for i := uint16(0); i < sourceNode.linkCount; i++ {
-		if targetNode.linkCount >= MaxLinkCount {
-			break
-		}
-		targetNode.links[targetNode.linkCount] = sourceNode.links[i]
-		targetNode.linkCount++
-
-		// If the newly added link has higher dynamic precedence than
-		// the first link, swap them so links[0] is always the best path.
-		// This matches C tree-sitter's ts_stack__merge behavior.
-		newIdx := targetNode.linkCount - 1
-		if newIdx > 0 {
-			newLink := &targetNode.links[newIdx]
-			firstLink := &targetNode.links[0]
-			if !newLink.subtree.IsZero() && !firstLink.subtree.IsZero() {
-				newPrec := GetDynamicPrecedence(newLink.subtree, s.arena)
-				firstPrec := GetDynamicPrecedence(firstLink.subtree, s.arena)
-				if newPrec > firstPrec {
-					targetNode.links[0], targetNode.links[newIdx] = targetNode.links[newIdx], targetNode.links[0]
+	for i := uint16(0); i < node.linkCount; i++ {
+		existing := &node.links[i]
+		if s.subtreeIsEquivalent(existing.subtree, link.subtree) {
+			// Case 1: Same target node — disambiguation.
+			// Keep only the higher DynPrec subtree.
+			if existing.node == link.node {
+				if !link.subtree.IsZero() && !existing.subtree.IsZero() {
+					newPrec := GetDynamicPrecedence(link.subtree, s.arena)
+					oldPrec := GetDynamicPrecedence(existing.subtree, s.arena)
+					if newPrec > oldPrec {
+						existing.subtree = link.subtree
+						node.dynamicPrecedence = link.node.dynamicPrecedence +
+							GetDynamicPrecedence(link.subtree, s.arena)
+					}
 				}
+				return
+			}
+
+			// Case 2: Same state — recursive merge.
+			if existing.node.state == link.node.state &&
+				existing.node.position.Bytes == link.node.position.Bytes &&
+				existing.node.errorCost == link.node.errorCost {
+				for j := uint16(0); j < link.node.linkCount; j++ {
+					s.nodeAddLink(existing.node, link.node.links[j])
+				}
+				dynPrec := link.node.dynamicPrecedence
+				if !link.subtree.IsZero() {
+					dynPrec += GetDynamicPrecedence(link.subtree, s.arena)
+				}
+				if dynPrec > node.dynamicPrecedence {
+					node.dynamicPrecedence = dynPrec
+				}
+				return
 			}
 		}
 	}
 
-	// Halt the source version.
-	sourceHead.status = StackStatusHalted
+	// Case 3: No match — add as new link.
+	if node.linkCount >= MaxLinkCount {
+		return
+	}
+
+	nodeCount := link.node.nodeCount
+	dynPrec := link.node.dynamicPrecedence
+	node.links[node.linkCount] = link
+	node.linkCount++
+
+	if !link.subtree.IsZero() {
+		nodeCount += subtreeNodeCount(link.subtree, s.arena)
+		dynPrec += GetDynamicPrecedence(link.subtree, s.arena)
+	}
+
+	if nodeCount > node.nodeCount {
+		node.nodeCount = nodeCount
+	}
+	if dynPrec > node.dynamicPrecedence {
+		node.dynamicPrecedence = dynPrec
+	}
+}
+
+// Merge combines two versions that have reached the same state.
+// The source version's links are added to the target version's node
+// using nodeAddLink which handles deduplication and DynPrec updates.
+// The source version is removed (matching C's ts_stack_merge).
+//
+// Returns true if the merge was successful.
+func (s *Stack) Merge(target, source StackVersion) bool {
+	if !s.CanMerge(target, source) {
+		return false
+	}
+
+	targetHead := &s.heads[target]
+	sourceHead := &s.heads[source]
+
+	// If merging in error state, update the error marker.
+	// Matches C: if (head1->node->state == ERROR_STATE)
+	//   head1->node_count_at_last_error = head1->node->node_count;
+	if targetHead.node.state == 0 {
+		targetHead.nodeCountAtLastError = targetHead.node.nodeCount
+	}
+
+	// Add source's links to target using the three-case add logic.
+	targetNode := targetHead.node
+	sourceNode := sourceHead.node
+	for i := uint16(0); i < sourceNode.linkCount; i++ {
+		s.nodeAddLink(targetNode, sourceNode.links[i])
+	}
+
+	// Remove the source version (matches C's ts_stack_merge behavior).
+	// After merge, the source version is gone and indices shift down.
+	s.RemoveVersion(source)
 	return true
 }
 
-// CanMerge returns true if two versions can be merged (same state).
+// CanMerge returns true if two versions can be merged.
+// Matches C tree-sitter's ts_stack_can_merge: requires same state, both
+// active, same position, same error cost, and same external scanner state.
 func (s *Stack) CanMerge(v1, v2 StackVersion) bool {
 	if int(v1) >= len(s.heads) || int(v2) >= len(s.heads) {
 		return false
@@ -498,25 +728,57 @@ func (s *Stack) CanMerge(v1, v2 StackVersion) bool {
 	if h1.node == nil || h2.node == nil {
 		return false
 	}
-	return h1.node.state == h2.node.state
+	if h1.status != StackStatusActive || h2.status != StackStatusActive {
+		return false
+	}
+	if h1.node.state != h2.node.state {
+		return false
+	}
+	if h1.node.position.Bytes != h2.node.position.Bytes {
+		return false
+	}
+	if h1.node.errorCost != h2.node.errorCost {
+		return false
+	}
+	// Compare external scanner states.
+	state1 := GetExternalScannerState(h1.lastExternalToken, s.arena)
+	state2 := GetExternalScannerState(h2.lastExternalToken, s.arena)
+	if !bytes.Equal(state1, state2) {
+		return false
+	}
+	return true
 }
 
-// Pause pauses a version (for error recovery exploration).
-func (s *Stack) Pause(version StackVersion) {
+// Pause pauses a version and stores the lookahead token that triggered the error.
+// The token is returned when the version is resumed via Resume.
+// Mirrors C tree-sitter's ts_stack_pause.
+func (s *Stack) Pause(version StackVersion, lookahead Subtree) {
 	if int(version) >= len(s.heads) {
 		return
 	}
-	s.heads[version].status = StackStatusPaused
+	head := &s.heads[version]
+	head.status = StackStatusPaused
+	head.lookaheadWhenPaused = lookahead
+	// Record the current node count as the error point, matching C's
+	// ts_stack_pause which sets node_count_at_last_error.
+	if head.node != nil {
+		head.nodeCountAtLastError = head.node.nodeCount
+	}
 }
 
-// Resume resumes a paused version.
-func (s *Stack) Resume(version StackVersion) {
+// Resume resumes a paused version and returns the stored lookahead token.
+// Mirrors C tree-sitter's ts_stack_resume.
+func (s *Stack) Resume(version StackVersion) Subtree {
 	if int(version) >= len(s.heads) {
-		return
+		return SubtreeZero
 	}
-	if s.heads[version].status == StackStatusPaused {
-		s.heads[version].status = StackStatusActive
+	head := &s.heads[version]
+	if head.status == StackStatusPaused {
+		head.status = StackStatusActive
 	}
+	lookahead := head.lookaheadWhenPaused
+	head.lookaheadWhenPaused = SubtreeZero
+	return lookahead
 }
 
 // Halt discards a version.
@@ -654,4 +916,133 @@ func (s *Stack) PopCount(version StackVersion, count uint32) int {
 	}
 
 	return resultCount
+}
+
+// summaryIterator tracks a single path through the stack during summary recording.
+type summaryIterator struct {
+	node  *StackNode
+	depth uint32
+}
+
+// RecordSummary walks back through the stack from the given version's head,
+// recording states and positions at each depth up to maxDepth. The resulting
+// summary is used by error recovery to find previous states where the
+// lookahead token might be valid.
+//
+// Uses C tree-sitter's iterative BFS approach with MaxIteratorCount (64) cap
+// on concurrent iterators to prevent worst-case blowup on merged stack DAGs.
+func (s *Stack) RecordSummary(version StackVersion, maxDepth uint32) {
+	if int(version) >= len(s.heads) {
+		return
+	}
+	head := &s.heads[version]
+	head.summary = nil
+	if head.node == nil || head.node.linkCount == 0 {
+		return
+	}
+
+	position := head.node.position
+
+	// Iterative BFS with iterator array, matching C's ts_stack__iter pattern.
+	iterators := make([]summaryIterator, 0, MaxIteratorCount)
+	iterators = append(iterators, summaryIterator{node: head.node, depth: 0})
+
+	// Visited set to prevent re-walking shared subgraph paths.
+	visited := make(map[*StackNode]bool)
+
+	var entries []StackSummaryEntry
+
+	for len(iterators) > 0 {
+		// Process in FIFO order (BFS).
+		iter := iterators[0]
+		iterators = iterators[1:]
+
+		node := iter.node
+		if node == nil || node.linkCount == 0 || iter.depth > maxDepth {
+			continue
+		}
+
+		for i := uint16(0); i < node.linkCount; i++ {
+			link := &node.links[i]
+			next := link.node
+			if next == nil {
+				continue
+			}
+
+			if visited[next] {
+				continue
+			}
+			visited[next] = true
+
+			newDepth := iter.depth
+			// Depth counting matches C's stack__iter (reference/stack.c:398-413):
+			// - NULL/SubtreeZero links: always count (they represent ERROR_STATE pushes)
+			// - Non-null, non-extra subtrees: count
+			// - Extra subtrees (comments, whitespace): do NOT count
+			if link.subtree.IsZero() || !IsExtra(link.subtree, s.arena) {
+				newDepth++
+			}
+
+			// Record entry for non-error states at different positions.
+			if next.state != 0 && next.position.Bytes != position.Bytes {
+				entry := StackSummaryEntry{
+					Position: next.position,
+					Depth:    newDepth,
+					State:    next.state,
+				}
+				// Deduplicate by (state, depth).
+				found := false
+				for _, e := range entries {
+					if e.State == entry.State && e.Depth == entry.Depth {
+						found = true
+						break
+					}
+				}
+				if !found {
+					entries = append(entries, entry)
+				}
+			}
+
+			// Enqueue next node if within depth and iterator budget.
+			if newDepth <= maxDepth {
+				if len(iterators) < MaxIteratorCount {
+					iterators = append(iterators, summaryIterator{node: next, depth: newDepth})
+				}
+			}
+		}
+	}
+
+	head.summary = entries
+}
+
+// GetSummary returns the recorded summary for a version.
+func (s *Stack) GetSummary(version StackVersion) []StackSummaryEntry {
+	if int(version) >= len(s.heads) {
+		return nil
+	}
+	return s.heads[version].summary
+}
+
+// RenumberVersion replaces version 'to' with version 'from', then removes
+// 'from'. Requires from > to. Used during error recovery when multiple pop
+// paths need to be consolidated.
+// Mirrors C tree-sitter's ts_stack_renumber_version.
+func (s *Stack) RenumberVersion(from, to StackVersion) {
+	if from == to {
+		return
+	}
+	if int(from) >= len(s.heads) || int(to) >= len(s.heads) {
+		return
+	}
+	// If the target has a summary but the source doesn't, transfer it.
+	// This preserves recovery information when renumbering after pop.
+	// Matches C: if (target_head->summary && !source_head->summary)
+	sourceHead := &s.heads[from]
+	targetHead := &s.heads[to]
+	if targetHead.summary != nil && sourceHead.summary == nil {
+		sourceHead.summary = targetHead.summary
+		targetHead.summary = nil
+	}
+	s.heads[to] = s.heads[from]
+	s.RemoveVersion(from)
 }

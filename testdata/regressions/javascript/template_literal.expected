@@ -1,1 +1,1 @@
-(program (lexical_declaration (variable_declarator (identifier) (template_string (string_fragment) (template_substitution (identifier)) (string_fragment)))))
+(program (lexical_declaration (variable_declarator name: (identifier) value: (template_string (string_fragment) (template_substitution (identifier)) (string_fragment)))))

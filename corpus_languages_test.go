@@ -150,11 +150,142 @@ func TestCorpusJavaScript(t *testing.T) {
 }
 
 // TestCorpusTypeScript runs the tree-sitter-typescript corpus tests.
+// The TypeScript corpus includes tests for both TypeScript and TSX grammars,
+// distinguished by :language(typescript) and :language(tsx) attributes.
 func TestCorpusTypeScript(t *testing.T) {
-	runCorpusForLanguage(t, "tree-sitter-typescript", newTSLang())
+	t.Helper()
+	corpusDir := filepath.Join(corpusGrammarsDir(), "tree-sitter-typescript", "test", "corpus")
+	if _, err := os.Stat(corpusDir); os.IsNotExist(err) {
+		t.Skipf("tree-sitter-typescript corpus not found at %s — run 'make fetch-test-grammars' first", corpusDir)
+	}
+
+	cases, err := corpustest.ParseCorpusDir(corpusDir)
+	if err != nil {
+		t.Fatalf("failed to parse corpus: %v", err)
+	}
+	if len(cases) == 0 {
+		t.Fatal("no corpus test cases found")
+	}
+	t.Logf("loaded %d corpus test cases for tree-sitter-typescript", len(cases))
+
+	langParsers := map[string]corpustest.ParseFunc{
+		"":           makeCorpusParseFunc(newTSLang()),
+		"typescript": makeCorpusParseFunc(newTSLang()),
+		"tsx":        makeCorpusParseFunc(newTSXLang()),
+	}
+	corpustest.RunCorpusWithLanguages(t, cases, langParsers)
 }
 
 // TestCorpusLua runs the tree-sitter-lua corpus tests.
 func TestCorpusLua(t *testing.T) {
 	runCorpusForLanguage(t, "tree-sitter-lua", luaLang())
+}
+
+// TestPerlFunctionCallExpression tests that parenthesized Perl function calls
+// like foo() produce function_call_expression (not ambiguous_function_call_expression).
+// This is a regression test for a bug where doAccept's selectTree logic used
+// >= for dynamic precedence comparison instead of >, causing the last-accepted
+// GLR version to always win. C tree-sitter's ts_parser__select_tree uses
+// ts_subtree_compare as a final tiebreaker when costs and dynPrec are equal.
+func TestPerlFunctionCallExpression(t *testing.T) {
+	lang := perlgrammar.PerlLanguage()
+	lang.NewExternalScanner = perlscanner.New
+	parseFn := makeCorpusParseFunc(lang)
+
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:     "zero args",
+			input:    "foo();",
+			expected: "(source_file (expression_statement (function_call_expression (function))))",
+		},
+		{
+			name:     "one arg",
+			input:    "foo(123);",
+			expected: "(source_file (expression_statement (function_call_expression (function) (number))))",
+		},
+		{
+			name:     "two args",
+			input:    "foo(12, 34);",
+			expected: "(source_file (expression_statement (function_call_expression (function) (list_expression (number) (number)))))",
+		},
+		{
+			name:     "sort with unary plus function call",
+			input:    "sort +returns_list(1, 2, 3);",
+			expected: "(source_file (expression_statement (sort_expression (unary_expression (function_call_expression (function) (list_expression (number) (number) (number)))))))",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			actual, err := parseFn([]byte(tc.input))
+			if err != nil {
+				t.Fatalf("parse error: %v", err)
+			}
+			normalizedActualRaw, _ := corpustest.NormalizeSExpression(actual)
+			normalizedActual := corpustest.StripFields(normalizedActualRaw)
+			normalizedExpected, _ := corpustest.NormalizeSExpression(tc.expected)
+			if normalizedActual != normalizedExpected {
+				t.Errorf("function_call_expression mismatch\ninput: %s\nexpected: %s\nactual:   %s",
+					tc.input, normalizedExpected, normalizedActual)
+			}
+		})
+	}
+}
+
+// TestCppNestedQualifiedIdentifier tests that multi-level namespace
+// qualifications like a::b::c produce nested qualified_identifier nodes
+// rather than being flattened. This is a regression test for a bug where
+// doReduce unconditionally marked reduced nodes as "extra" when
+// gotoState == baseState, without checking endOfNonTerminalExtra.
+func TestCppNestedQualifiedIdentifier(t *testing.T) {
+	lang := cppgrammar.CppLanguage()
+	lang.NewExternalScanner = cppscanner.New
+	parseFn := makeCorpusParseFunc(lang)
+
+	tests := []struct {
+		name     string
+		input    string
+		expected string
+	}{
+		{
+			name:  "two-level namespace",
+			input: "a::b::c = 1;",
+			expected: "(translation_unit (expression_statement (assignment_expression" +
+				" (qualified_identifier (namespace_identifier) (qualified_identifier (namespace_identifier) (identifier)))" +
+				" (number_literal))))",
+		},
+		{
+			name:  "three-level namespace in using",
+			input: "using ::e::f::g;",
+			expected: "(translation_unit (using_declaration" +
+				" (qualified_identifier (qualified_identifier (namespace_identifier) (qualified_identifier (namespace_identifier) (identifier))))))",
+		},
+		{
+			name:  "template in scope position",
+			input: "std::vector<int>::size_typ my_string;",
+			expected: "(translation_unit (declaration" +
+				" (qualified_identifier (namespace_identifier) (qualified_identifier (template_type (type_identifier) (template_argument_list (type_descriptor (primitive_type)))) (type_identifier)))" +
+				" (identifier)))",
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			actual, err := parseFn([]byte(tc.input))
+			if err != nil {
+				t.Fatalf("parse error: %v", err)
+			}
+			normalizedActualRaw, _ := corpustest.NormalizeSExpression(actual)
+			normalizedActual := corpustest.StripFields(normalizedActualRaw)
+			normalizedExpected, _ := corpustest.NormalizeSExpression(tc.expected)
+			if normalizedActual != normalizedExpected {
+				t.Errorf("nested qualified_identifier mismatch\ninput: %s\nexpected: %s\nactual:   %s",
+					tc.input, normalizedExpected, normalizedActual)
+			}
+		})
+	}
 }

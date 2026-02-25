@@ -1,0 +1,4 @@
+const f = async (x) => {
+  const result = await fetch(x);
+  return result.json();
+};

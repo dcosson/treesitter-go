@@ -631,6 +631,33 @@ func (s *Scanner) scanOpenDelimiter(lexer *ts.Lexer, lit *literal, validSymbols 
 			if validSymbols[ForwardSlash] {
 				return false
 			}
+			// Skip whitespace to find the actual delimiter character after %.
+			// e.g. in Ruby: %\n  [foo, bar] — the [ is the delimiter.
+			for lexer.Lookahead == '\r' || lexer.Lookahead == '\n' || lexer.Lookahead == ' ' || lexer.Lookahead == '\t' {
+				advance(lexer)
+			}
+			// Determine delimiter from the next non-whitespace character.
+			switch lexer.Lookahead {
+			case '(':
+				lit.openDelimiter = '('
+				lit.closeDelimiter = ')'
+			case '[':
+				lit.openDelimiter = '['
+				lit.closeDelimiter = ']'
+			case '{':
+				lit.openDelimiter = '{'
+				lit.closeDelimiter = '}'
+			case '<':
+				lit.openDelimiter = '<'
+				lit.closeDelimiter = '>'
+			case '|', '!', '#', '/', '\\', '@', '$', '%', '^', '&', '*',
+				')', ']', '}', '>', '+', '-', '~', '`', ',', '.', '?',
+				':', ';', '_', '"', '\'':
+				lit.openDelimiter = lexer.Lookahead
+				lit.closeDelimiter = lexer.Lookahead
+			default:
+				return false
+			}
 		case '|', '!', '#', '/', '\\', '@', '$', '%', '^', '&', '*',
 			')', ']', '}', '>', '+', '-', '~', '`', ',', '.', '?',
 			':', ';', '_', '"', '\'':

@@ -1,0 +1,12 @@
+body {
+  color: red;
+  font-size: 16px;
+}
+
+.container > .child {
+  display: flex;
+}
+
+#main:hover {
+  background-color: blue;
+}

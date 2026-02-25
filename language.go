@@ -100,6 +100,12 @@ func (l *Language) ExportTableEntry(state StateID, symbol Symbol) TableEntry {
 	return l.tableEntry(state, symbol)
 }
 
+// HasActions returns true if the parse table has any valid actions for
+// the given (state, symbol) pair. Equivalent to C's ts_language_has_actions.
+func (l *Language) HasActions(state StateID, symbol Symbol) bool {
+	return l.lookup(state, symbol) != 0
+}
+
 // lookup returns the action index for a (state, symbol) pair.
 // This mirrors ts_language_lookup() from the C implementation.
 func (l *Language) lookup(state StateID, symbol Symbol) uint16 {
@@ -219,7 +225,14 @@ func (l *Language) HasNonTerminalAliases(s Symbol) bool {
 }
 
 // SymbolName returns the name of a symbol.
+// Matches C's ts_language_symbol_name which special-cases error symbols.
 func (l *Language) SymbolName(symbol Symbol) string {
+	if symbol == SymbolError {
+		return "ERROR"
+	}
+	if symbol == SymbolErrorRepeat {
+		return "_ERROR"
+	}
 	if int(symbol) < len(l.SymbolNames) {
 		return l.SymbolNames[symbol]
 	}
@@ -227,7 +240,14 @@ func (l *Language) SymbolName(symbol Symbol) string {
 }
 
 // SymbolIsNamed returns whether a symbol is a named node.
+// Matches C's ts_language_symbol_metadata special-casing for error symbols.
 func (l *Language) SymbolIsNamed(symbol Symbol) bool {
+	if symbol == SymbolError {
+		return true
+	}
+	if symbol == SymbolErrorRepeat {
+		return false
+	}
 	if int(symbol) < len(l.SymbolMetadata) {
 		return l.SymbolMetadata[symbol].Named
 	}
@@ -235,7 +255,14 @@ func (l *Language) SymbolIsNamed(symbol Symbol) bool {
 }
 
 // SymbolIsVisible returns whether a symbol is visible in the tree.
+// Matches C's ts_language_symbol_metadata special-casing for error symbols.
 func (l *Language) SymbolIsVisible(symbol Symbol) bool {
+	if symbol == SymbolError {
+		return true
+	}
+	if symbol == SymbolErrorRepeat {
+		return false
+	}
 	if int(symbol) < len(l.SymbolMetadata) {
 		return l.SymbolMetadata[symbol].Visible
 	}

@@ -1,0 +1,5 @@
+int main() {
+    auto f = [&](int x) -> int { return x * 2; };
+    int y = f(5);
+    return 0;
+}

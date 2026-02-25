@@ -1,0 +1,8 @@
+def my_decorator(func):
+    def wrapper(*args):
+        return func(*args)
+    return wrapper
+
+@my_decorator
+def greet(name):
+    print(name)

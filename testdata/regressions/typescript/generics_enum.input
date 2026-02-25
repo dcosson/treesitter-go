@@ -1,0 +1,10 @@
+enum Direction {
+    Up = "UP",
+    Down = "DOWN",
+}
+
+function identity<T>(arg: T): T {
+    return arg;
+}
+
+const x: number = identity<number>(42);

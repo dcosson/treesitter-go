@@ -1,1 +1,1 @@
-(translation_unit (declaration (primitive_type) (identifier)) (comment))
+(translation_unit (declaration type: (primitive_type) declarator: (identifier)) (comment))

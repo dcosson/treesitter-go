@@ -1,0 +1,5 @@
+NAME="world"
+echo "Hello, ${NAME}!"
+echo "$NAME"
+ARR=(a b c)
+echo "${ARR[1]}"

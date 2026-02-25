@@ -1,0 +1,9 @@
+local t = {
+    name = "lua",
+    version = 5.4,
+    [1] = "first",
+}
+
+for k, v in pairs(t) do
+    print(k, v)
+end

@@ -892,7 +892,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			if !eof {
+			if !eof && (lookahead < '<' || lookahead > '>') {
 				state = 29
 				lexer.Advance(false)
 				lookahead = lexer.Lookahead

@@ -555,3 +555,160 @@ func TestLengthSaturatingSubUnderflow(t *testing.T) {
 		t.Errorf("column should saturate to 0, got %d", result.Point.Column)
 	}
 }
+
+// --- breakdownLookahead tests ---
+
+// buildCompositeTree creates a 3-level tree for breakdown testing:
+//
+//	document (symbol 8, parseState 10)
+//	  ├── object (symbol 3, parseState 5)
+//	  │     ├── "{" (symbol 1, parseState 2, leaf)
+//	  │     └── "}" (symbol 2, parseState 3, leaf)
+//	  └── number (symbol 7, parseState 7, leaf)
+func buildCompositeTree(arena *SubtreeArena, lang *Language) Subtree {
+	lbrace := NewLeafSubtree(arena, Symbol(1),
+		Length{Bytes: 0, Point: Point{Column: 0}},
+		Length{Bytes: 1, Point: Point{Column: 1}},
+		StateID(2), false, false, false, lang)
+
+	rbrace := NewLeafSubtree(arena, Symbol(2),
+		Length{Bytes: 0, Point: Point{Column: 0}},
+		Length{Bytes: 1, Point: Point{Column: 1}},
+		StateID(3), false, false, false, lang)
+
+	object := NewNodeSubtree(arena, Symbol(3), []Subtree{lbrace, rbrace}, 0, lang)
+	SummarizeChildren(object, arena, lang)
+	SetParseState(object, arena, StateID(5))
+
+	number := NewLeafSubtree(arena, Symbol(7),
+		Length{Bytes: 0, Point: Point{Column: 0}},
+		Length{Bytes: 1, Point: Point{Column: 1}},
+		StateID(7), false, false, false, lang)
+
+	doc := NewNodeSubtree(arena, Symbol(8), []Subtree{object, number}, 0, lang)
+	SummarizeChildren(doc, arena, lang)
+	SetParseState(doc, arena, StateID(10))
+
+	return doc
+}
+
+func TestBreakdownLookaheadDescendsToMatchingState(t *testing.T) {
+	arena := NewSubtreeArena(32)
+	lang := makeSubtreeTestLanguage()
+	doc := buildCompositeTree(arena, lang)
+
+	// Create a parser with a reusable node rooted at the composite tree.
+	p := &Parser{
+		arena:        arena,
+		language:     lang,
+		reusableNode: NewReusableNode(doc, arena),
+	}
+
+	// Lookahead is the document node (parseState=10, children>0).
+	// Request breakdown with target state 5 (matching the object child).
+	lookahead := doc
+	p.breakdownLookahead(&lookahead, StateID(5))
+
+	// Should have descended to the object node (parseState=5).
+	if GetSymbol(lookahead, arena) != Symbol(3) {
+		t.Errorf("expected symbol 3 (object), got %d", GetSymbol(lookahead, arena))
+	}
+	if GetParseState(lookahead, arena) != StateID(5) {
+		t.Errorf("expected parseState 5, got %d", GetParseState(lookahead, arena))
+	}
+}
+
+func TestBreakdownLookaheadDescendsToLeaf(t *testing.T) {
+	arena := NewSubtreeArena(32)
+	lang := makeSubtreeTestLanguage()
+	doc := buildCompositeTree(arena, lang)
+
+	p := &Parser{
+		arena:        arena,
+		language:     lang,
+		reusableNode: NewReusableNode(doc, arena),
+	}
+
+	// Request breakdown with target state 99 (no node matches).
+	// Should descend all the way to the first leaf "{" (parseState=2, no children).
+	lookahead := doc
+	p.breakdownLookahead(&lookahead, StateID(99))
+
+	// Should stop at the first leaf (no more children to descend into).
+	if GetChildCount(lookahead, arena) != 0 {
+		t.Errorf("expected leaf (childCount=0), got childCount=%d", GetChildCount(lookahead, arena))
+	}
+	if GetSymbol(lookahead, arena) != Symbol(1) {
+		t.Errorf("expected symbol 1 ({), got %d", GetSymbol(lookahead, arena))
+	}
+}
+
+func TestBreakdownLookaheadNoopWhenStateMatches(t *testing.T) {
+	arena := NewSubtreeArena(32)
+	lang := makeSubtreeTestLanguage()
+	doc := buildCompositeTree(arena, lang)
+
+	p := &Parser{
+		arena:        arena,
+		language:     lang,
+		reusableNode: NewReusableNode(doc, arena),
+	}
+
+	// Request breakdown with target state 10 (matches document's parseState).
+	// Should NOT descend because the state already matches.
+	lookahead := doc
+	origSymbol := GetSymbol(lookahead, arena)
+	p.breakdownLookahead(&lookahead, StateID(10))
+
+	if GetSymbol(lookahead, arena) != origSymbol {
+		t.Errorf("expected no change (symbol %d), got symbol %d",
+			origSymbol, GetSymbol(lookahead, arena))
+	}
+}
+
+func TestBreakdownLookaheadNoopForLeaf(t *testing.T) {
+	arena := NewSubtreeArena(32)
+	lang := makeSubtreeTestLanguage()
+
+	// Create a single leaf node.
+	leaf := NewLeafSubtree(arena, Symbol(7),
+		Length{Bytes: 0, Point: Point{Column: 0}},
+		Length{Bytes: 3, Point: Point{Column: 3}},
+		StateID(1), false, false, false, lang)
+
+	p := &Parser{
+		arena:        arena,
+		language:     lang,
+		reusableNode: NewReusableNode(leaf, arena),
+	}
+
+	// A leaf has childCount=0, so the while loop body never executes.
+	lookahead := leaf
+	p.breakdownLookahead(&lookahead, StateID(99))
+
+	// Lookahead should be unchanged.
+	if GetSymbol(lookahead, arena) != Symbol(7) {
+		t.Errorf("expected leaf unchanged (symbol 7), got %d", GetSymbol(lookahead, arena))
+	}
+}
+
+func TestBreakdownLookaheadNoopWhenNoReusableNode(t *testing.T) {
+	arena := NewSubtreeArena(32)
+	lang := makeSubtreeTestLanguage()
+	doc := buildCompositeTree(arena, lang)
+
+	// Parser with no reusable node (non-incremental parse).
+	p := &Parser{
+		arena:    arena,
+		language: lang,
+	}
+
+	lookahead := doc
+	origSymbol := GetSymbol(lookahead, arena)
+	p.breakdownLookahead(&lookahead, StateID(0))
+
+	if GetSymbol(lookahead, arena) != origSymbol {
+		t.Errorf("expected no change without reusableNode, got symbol %d",
+			GetSymbol(lookahead, arena))
+	}
+}

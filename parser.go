@@ -3,6 +3,9 @@ package treesitter
 import (
 	"bytes"
 	"context"
+	"fmt"
+	"math"
+	"os"
 )
 
 // Parser is the GLR parsing engine. It drives the Lexer and Language to
@@ -38,19 +41,16 @@ type Parser struct {
 	operationCount    uint32
 	skippedErrorTrees []Subtree
 
-	// Starvation detection for findActiveVersion round-robin.
-	// When the same version is selected repeatedly without any version making
-	// position progress, we rotate to the next version to prevent starvation.
-	lastActiveVersion    int
-	lastActivePosition   uint32
-	staleSelectionCount  uint32
-
 	// Incremental parsing state.
 	reusableNode *ReusableNode
 	oldTree      *Tree
 
 	// Cancellation check interval.
 	cancellationCheckInterval uint32
+
+	// ctx holds the current parse context for cancellation checks
+	// in deep call paths (condenseStack, handleError, recover).
+	ctx context.Context
 
 	// debug enables trace output.
 	debug bool
@@ -65,7 +65,7 @@ const (
 	ErrorCostPerSkippedChar = 1
 
 	MaxVersionCount     = 6
-	MaxCostDifference   = 16 * ErrorCostPerSkippedTree // = 1600, matches C
+	MaxCostDifference   = 18 * ErrorCostPerSkippedTree // = 1800, matches C master
 	MaxSummaryDepth     = 16
 
 	defaultCancellationInterval = 100
@@ -116,9 +116,6 @@ func (p *Parser) Reset() {
 	p.skippedErrorTrees = p.skippedErrorTrees[:0]
 	p.reusableNode = nil
 	p.oldTree = nil
-	p.lastActiveVersion = -1
-	p.lastActivePosition = 0
-	p.staleSelectionCount = 0
 }
 
 // Parse parses the input and returns a Tree. If ctx is cancelled, the
@@ -144,6 +141,7 @@ func (p *Parser) Parse(ctx context.Context, input Input, oldTree *Tree) *Tree {
 		p.reusableNode = nil
 	}
 	p.stack = NewStack(p.arena)
+	p.ctx = ctx
 
 	// Initialize the stack with a single version at state 1.
 	// State 0 is reserved as the error/recovery state by tree-sitter convention.
@@ -175,8 +173,14 @@ func (p *Parser) Parse(ctx context.Context, input Input, oldTree *Tree) *Tree {
 			}
 		}
 
-		// Condense: merge/prune versions.
-		p.condenseStack()
+		// Condense: merge/prune versions, resume paused versions.
+		minErrorCost := p.condenseStack()
+
+		// If the finished tree is better than all remaining versions, stop.
+		if !p.finishedTree.IsZero() && GetErrorCost(p.finishedTree, p.arena) < minErrorCost {
+			p.stack.Clear()
+			break
+		}
 	}
 
 	if p.finishedTree.IsZero() {
@@ -200,19 +204,10 @@ func (p *Parser) ParseString(ctx context.Context, source []byte, oldTree ...*Tre
 // prioritizing the version with the lowest position (furthest behind).
 // Returns -1 if no active versions exist.
 //
-// Includes starvation detection: when the same version is selected repeatedly
-// without making position progress, we rotate to the next active version.
-// This prevents scenarios where a stuck low-position version starves higher-
-// position versions that could actually make progress. In C tree-sitter,
-// PreferRight swaps handle this implicitly; our phased approach needs this
-// explicit mechanism instead.
-// maxStaleSelections is the number of consecutive times the same version can
-// be selected by findActiveVersion without advancing its position before
-// we rotate to the next version. This prevents starvation where a stuck
-// low-position version blocks higher-position versions from advancing.
-// In C tree-sitter, PreferRight swaps handle this implicitly.
-const maxStaleSelections = 4
-
+// This matches C tree-sitter's ts_parser__select_next_version behavior.
+// With PreferRight swaps in condenseStack, the best version naturally
+// occupies the lowest index, so simple lowest-position selection works
+// correctly without starvation detection.
 func (p *Parser) findActiveVersion() int {
 	bestVersion := -1
 	var bestPosition Length
@@ -229,44 +224,6 @@ func (p *Parser) findActiveVersion() int {
 		}
 	}
 
-	if bestVersion < 0 {
-		return -1
-	}
-
-	// Starvation detection: if the same version keeps getting selected
-	// without advancing its position, rotate to give other versions a turn.
-	if bestVersion == p.lastActiveVersion && bestPosition.Bytes == p.lastActivePosition {
-		p.staleSelectionCount++
-		if p.staleSelectionCount >= maxStaleSelections {
-			// Find the next active version after bestVersion (round-robin).
-			for i := bestVersion + 1; i < p.stack.VersionCount(); i++ {
-				v := StackVersion(i)
-				if p.stack.IsActive(v) {
-					p.staleSelectionCount = 0
-					p.lastActiveVersion = i
-					p.lastActivePosition = p.stack.Position(v).Bytes
-					return i
-				}
-			}
-			// Wrap around.
-			for i := 0; i < bestVersion; i++ {
-				v := StackVersion(i)
-				if p.stack.IsActive(v) {
-					p.staleSelectionCount = 0
-					p.lastActiveVersion = i
-					p.lastActivePosition = p.stack.Position(v).Bytes
-					return i
-				}
-			}
-			// Only one version — reset counter, return it.
-			p.staleSelectionCount = 0
-		}
-	} else {
-		p.staleSelectionCount = 0
-	}
-
-	p.lastActiveVersion = bestVersion
-	p.lastActivePosition = bestPosition.Bytes
 	return bestVersion
 }
 
@@ -316,7 +273,23 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 		token = p.lexToken(version, state, position)
 	}
 
-	tokenSymbol := GetSymbol(token, p.arena)
+	// Check for null lookahead (non-terminal extra end state).
+	// When lexToken returns a zero Subtree, this state is at the end of a
+	// non-terminal extra rule (e.g., heredoc_body). The C runtime returns NULL
+	// from ts_parser__lex and uses ts_builtin_sym_end for action lookup,
+	// triggering reductions. After each reduce, it re-lexes with the new state.
+	nullLookahead := token.IsZero()
+	var tokenSymbol Symbol
+	if nullLookahead {
+		tokenSymbol = SymbolEnd
+	} else {
+		tokenSymbol = GetSymbol(token, p.arena)
+	}
+
+	if position.Bytes >= 45 && position.Bytes <= 60 {
+		fmt.Fprintf(os.Stderr, "[DEBUG ADVANCE] ver=%d state=%d pos=%d tokenSym=%d null=%v\n",
+			version, state, position.Bytes, tokenSymbol, nullLookahead)
+	}
 
 	// Inner reduce loop: keep reducing until we can shift or accept.
 	// This avoids re-lexing after every reduce.
@@ -324,13 +297,76 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 		// Look up parse actions.
 		state = p.stack.State(version)
 		entry := p.language.tableEntry(state, tokenSymbol)
-
 		if entry.ActionCount == 0 {
-			// No valid action — try error recovery.
-			return p.handleError(version, token)
+			if nullLookahead {
+				// No action for SymbolEnd after NTE reduction — need to re-lex
+				// with the current state (which should have a valid lex mode).
+				return true
+			}
+			// Keyword demotion: if the lookahead is a keyword with no
+			// actions, but the word token (keyword_capture_token) DOES have
+			// actions, demote the keyword back to the word token and retry.
+			// This handles cases where a keyword is valid in one parse state
+			// but not another (e.g., Java's `_` as underscore_pattern vs
+			// identifier). Matches C runtime (reference/parser.c:1716-1742).
+			if !token.IsZero() && GetIsKeyword(token, p.arena) &&
+				tokenSymbol != p.language.KeywordCaptureToken &&
+				!p.language.IsReservedWord(uint32(p.language.LexModes[state].ReservedWordSetID), tokenSymbol) {
+				wordEntry := p.language.tableEntry(state, p.language.KeywordCaptureToken)
+				if wordEntry.ActionCount > 0 {
+					token = SetSubtreeSymbol(token, p.arena, p.language.KeywordCaptureToken, p.language)
+					tokenSymbol = p.language.KeywordCaptureToken
+					continue
+				}
+			}
+
+			// No valid action — pause this version for error recovery.
+			// This applies even in ERROR_STATE (state 0). C tree-sitter
+			// always pauses and lets condenseStack resume with handleError,
+			// which records a fresh summary matching the current stack state.
+			if position.Bytes >= 45 && position.Bytes <= 60 {
+				fmt.Fprintf(os.Stderr, "[DEBUG PARSER] PAUSE version=%d state=%d pos=%d tokenSym=%d\n",
+					version, state, position.Bytes, tokenSymbol)
+			}
+			p.stack.Pause(version, token)
+			return true
 		}
 
 		action := entry.Actions[0]
+
+		// Match C runtime version ordering for GLR reduces.
+		//
+		// In C tree-sitter, all actions are processed in a flat loop. All
+		// reduces create new versions via ts_stack_pop_count (which doesn't
+		// modify the original version). After the loop,
+		// ts_stack_renumber_version replaces the original version with the
+		// LAST reduction's version, making it the "primary".
+		//
+		// This ordering matters for merge disambiguation: when versions merge
+		// later (nodeAddLink Case 1), equal DynPrec keeps the "existing"
+		// (primary) version's subtree. In C, the last reduce becomes primary.
+		//
+		// Our Go Pop modifies the version in place, so we can't reduce on
+		// the same version twice. Instead, when the primary action is a reduce
+		// AND there's a later reduce in the action list, we swap: the primary
+		// reduce goes on a split, and the last reduce runs on the primary
+		// version.
+		lastReduceIdx := -1
+		if entry.ActionCount > 1 && action.Type == ParseActionTypeReduce {
+			for i := int(entry.ActionCount) - 1; i > 0; i-- {
+				if entry.Actions[i].Type == ParseActionTypeReduce {
+					// Only swap when the last reduce's DynPrec >= primary's.
+					// When the last reduce has LOWER precedence (e.g. -1 vs 0),
+					// swapping would make the lower-precedence version primary,
+					// which is incorrect (e.g. TS/Arrow_functions where
+					// type_assertion has negative precedence vs arrow_function).
+					if entry.Actions[i].ReduceDynPrec >= action.ReduceDynPrec {
+						lastReduceIdx = i
+					}
+					break
+				}
+			}
+		}
 
 		// Handle additional actions (GLR ambiguity) by splitting.
 		for i := 1; i < int(entry.ActionCount); i++ {
@@ -340,25 +376,50 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 			if extraAction.Type == ParseActionTypeShift && extraAction.ShiftRepetition {
 				continue
 			}
+			if nullLookahead && extraAction.Type == ParseActionTypeShift {
+				continue // Can't shift a null token
+			}
+			// Skip the last reduce here — it will run on the primary below.
+			if i == lastReduceIdx {
+				continue
+			}
 			splitVersion := p.stack.Split(version)
 			if splitVersion < 0 {
 				continue
 			}
 			switch extraAction.Type {
 			case ParseActionTypeShift:
-				p.doShift(splitVersion, extraAction, token)
+				shiftToken := token
+				if GetChildCount(shiftToken, p.arena) > 0 {
+					p.breakdownLookahead(&shiftToken, state)
+					extraAction.ShiftState = p.language.nextState(state, GetSymbol(shiftToken, p.arena))
+				}
+				p.doShift(splitVersion, extraAction, shiftToken)
 			case ParseActionTypeReduce:
-				p.doReduce(splitVersion, extraAction)
+				p.doReduce(splitVersion, extraAction, nullLookahead)
 			case ParseActionTypeAccept:
 				p.doAccept(splitVersion)
 			case ParseActionTypeRecover:
-				if tokenSymbol == SymbolEnd {
-					p.stack.Halt(splitVersion)
-				} else {
-					p.doShift(splitVersion, extraAction, token)
+				if !nullLookahead {
+					recoverToken := token
+					if GetChildCount(recoverToken, p.arena) > 0 {
+						p.breakdownLookahead(&recoverToken, StateID(0))
+					}
+					p.recover(splitVersion, recoverToken)
 				}
 			}
 		}
+
+		// When swapping reduces: put the primary reduce on a split, and
+		// the last reduce becomes the new primary action.
+		if lastReduceIdx > 0 {
+			splitVersion := p.stack.Split(version)
+			if splitVersion >= 0 {
+				p.doReduce(splitVersion, action, nullLookahead)
+			}
+			action = entry.Actions[lastReduceIdx]
+		}
+
 		// Execute the primary action.
 		// Skip repetition shifts in primary action too.
 		if action.Type == ParseActionTypeShift && action.ShiftRepetition {
@@ -366,23 +427,40 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 		}
 		switch action.Type {
 		case ParseActionTypeShift:
+			if nullLookahead {
+				// Can't shift a null token — return to re-lex with new state.
+				return true
+			}
+			if GetChildCount(token, p.arena) > 0 {
+				p.breakdownLookahead(&token, state)
+				action.ShiftState = p.language.nextState(state, GetSymbol(token, p.arena))
+			}
 			p.doShift(version, action, token)
 			return true
 		case ParseActionTypeReduce:
-			p.doReduce(version, action)
+			p.doReduce(version, action, nullLookahead)
+			if nullLookahead {
+				// After NTE reduce, return to re-lex with the new state.
+				return true
+			}
 			// Continue the inner loop to check the new state.
 			continue
 		case ParseActionTypeAccept:
 			p.doAccept(version)
 			return true
 		case ParseActionTypeRecover:
-			// At EOF, a RECOVER action cannot make progress (no more input
-			// to skip). Halt the version — it's stuck in error recovery.
-			if tokenSymbol == SymbolEnd {
-				p.stack.Halt(version)
-				return false
+			if nullLookahead {
+				// Can't recover with a null token — return to re-lex.
+				return true
 			}
-			p.doShift(version, action, token)
+			// Call recover() which handles EOF (wraps in ERROR + accepts),
+			// tries summary-based popback, or falls back to skipping the token.
+			// This matches C's ts_parser__advance which always calls
+			// ts_parser__recover for RECOVER actions, including at EOF.
+			if GetChildCount(token, p.arena) > 0 {
+				p.breakdownLookahead(&token, StateID(0))
+			}
+			p.recover(version, token)
 			return true
 		}
 	}
@@ -398,12 +476,40 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 func (p *Parser) lexToken(version StackVersion, state StateID, position Length) Subtree {
 	lexMode := p.language.LexModes[state]
 
+	// No-lookahead sentinel: this state is at the end of a non-terminal extra
+	// rule (e.g., heredoc_body in Ruby). The C runtime returns NULL_SUBTREE here,
+	// causing the parser to use SymbolEnd for action lookup (triggering reductions)
+	// and then re-lex with the new state. We return a zero Subtree to signal this.
+	if lexMode.LexState == LexStateNoLookahead {
+		return Subtree{}
+	}
+
 	// Check cache: only valid if same lex state, external lex state, and position.
+	// When the language has keyword extraction, the cached token must also pass
+	// keyword reusability checks. A cached token whose symbol is the keyword
+	// capture token (e.g., identifier) may need re-lexing if the parse state
+	// differs (keyword acceptance is parse-state-dependent). Matches C tree-sitter's
+	// ts_parser__can_reuse_first_leaf (reference/parser.c:488-495).
 	if p.cachedTokenValid &&
 		p.cachedTokenState == StateID(lexMode.LexState) &&
 		p.cachedTokenExtState == lexMode.ExternalLexState &&
 		p.cachedTokenPosition.Bytes == position.Bytes {
-		return p.cachedToken
+		canReuse := true
+		if p.language.KeywordLexFn != nil {
+			cachedSym := GetSymbol(p.cachedToken, p.arena)
+			if cachedSym == p.language.KeywordCaptureToken {
+				// Cached token is the keyword capture token (e.g., identifier).
+				// Reuse only if it's NOT a keyword AND the parse state matches.
+				// If it IS a keyword (was matched by keyword lex but rejected at
+				// original state), a different state might accept the keyword.
+				if GetIsKeyword(p.cachedToken, p.arena) || GetParseState(p.cachedToken, p.arena) != state {
+					canReuse = false
+				}
+			}
+		}
+		if canReuse {
+			return p.cachedToken
+		}
 	}
 
 	foundExternalToken := false
@@ -455,14 +561,21 @@ func (p *Parser) lexToken(version StackVersion, state StateID, position Length) 
 				nextParseState := p.language.nextState(state, grammarSymbol)
 				tokenIsExtra := nextParseState == state
 
-				if state == 0 || tokenIsExtra {
+				fmt.Fprintf(os.Stderr, "[DEBUG PARSER] zero-width ext token: extIdx=%d gramSym=%d state=%d nextState=%d isExtra=%v isError=%v hasAdvanced=%v pos=%d ver=%d\n",
+					extTokenIndex, grammarSymbol, state, nextParseState, tokenIsExtra, state == 0, p.stack.HasAdvancedSinceError(version), position.Bytes, version)
+
+				// Reject empty external tokens that would cause infinite loops.
+				// Matches C: error_mode || !has_advanced_since_error || token_is_extra
+				if state == 0 || !p.stack.HasAdvancedSinceError(version) || tokenIsExtra {
 					// Fall through to internal lex — reject this empty token.
+					fmt.Fprintf(os.Stderr, "[DEBUG PARSER] REJECTED zero-width ext token at pos=%d ver=%d\n", position.Bytes, version)
 				} else {
-					// Accept: not in error recovery and not extra.
+					// Accept: not in error recovery, has advanced, and not extra.
 					if int(extTokenIndex) < len(p.language.ExternalSymbolMap) {
 						p.lexer.ResultSymbol = grammarSymbol
 					}
 					foundExternalToken = true
+					fmt.Fprintf(os.Stderr, "[DEBUG PARSER] ACCEPTED zero-width ext token at pos=%d ver=%d gramSym=%d\n", position.Bytes, version, p.lexer.ResultSymbol)
 				}
 			} else {
 				// Non-empty token or scanner state changed — always accept.
@@ -476,6 +589,7 @@ func (p *Parser) lexToken(version StackVersion, state StateID, position Length) 
 	}
 
 	// If no external token, run the internal lex function.
+	isKeyword := false
 	if !foundExternalToken {
 		p.lexer.Start(position)
 
@@ -485,17 +599,26 @@ func (p *Parser) lexToken(version StackVersion, state StateID, position Length) 
 		}
 
 		// If the result is the keyword capture token, try keyword lex.
-		// Keyword lex always starts at state 0 (initial keyword DFA state).
-		// The keyword match is only accepted if the keyword lex consumed the
-		// ENTIRE identifier text (current position == original token end).
+		// Keyword lex starts from token_start_position (after whitespace)
+		// at state 0. The keyword match is accepted only if the keyword
+		// lex's token_end_position matches the original token end (i.e.,
+		// the keyword consumed the ENTIRE identifier text). This matches
+		// the C tree-sitter runtime which resets to token_start_position
+		// and compares token_end_position.bytes (not current_position).
 		if found && p.language.KeywordLexFn != nil && p.lexer.ResultSymbol == p.language.KeywordCaptureToken {
 			keywordEndPos := p.lexer.TokenEndPosition
 			origSymbol := p.lexer.ResultSymbol
 
-			p.lexer.Start(position)
-			keywordMatched := p.language.KeywordLexFn(p.lexer, 0) &&
-				p.lexer.CurrentPosition() == keywordEndPos
+			// Start keyword lex from token_start_position (after whitespace),
+			// matching C tree-sitter's ts_lexer_reset to token_start_position.
+			p.lexer.Start(p.lexer.TokenStartPosition())
+			kwLexResult := p.language.KeywordLexFn(p.lexer, 0)
+			// Compare token_end_position (marked end), not current_position,
+			// matching C tree-sitter's token_end_position.bytes comparison.
+			keywordMatched := kwLexResult &&
+				p.lexer.TokenEndPosition.Bytes == keywordEndPos.Bytes
 
+			isKeyword = keywordMatched
 			if keywordMatched {
 				keywordSymbol := p.lexer.ResultSymbol
 				// A keyword is accepted if the parser has actions for it in
@@ -504,8 +627,9 @@ func (p *Parser) lexToken(version StackVersion, state StateID, position Length) 
 				// are always kept; reserved words are kept even without actions
 				// (for error recovery). Keywords with neither are reverted to
 				// the keyword capture token (e.g., `blank_identifier` → `identifier`).
-				if p.language.lookup(state, keywordSymbol) != 0 ||
-					p.language.IsReservedWord(uint32(lexMode.ReservedWordSetID), keywordSymbol) {
+				lookupResult := p.language.lookup(state, keywordSymbol)
+				isReserved := p.language.IsReservedWord(uint32(lexMode.ReservedWordSetID), keywordSymbol)
+				if lookupResult != 0 || isReserved {
 					p.lexer.ResultSymbol = keywordSymbol
 				} else {
 					p.lexer.ResultSymbol = origSymbol
@@ -540,7 +664,6 @@ func (p *Parser) lexToken(version StackVersion, state StateID, position Length) 
 	symbol := p.lexer.ResultSymbol
 
 	// Create the leaf subtree for this token.
-	isKeyword := false
 	dependsOnColumn := padding.Point.Row > 0
 
 	token := NewLeafSubtree(
@@ -680,6 +803,27 @@ func (p *Parser) tryReuseNode(version StackVersion, state StateID, position Leng
 	return SubtreeZero, false
 }
 
+// breakdownLookahead decomposes a reused composite node back into individual
+// tokens when the node's parse state doesn't match the current parser state.
+// This is needed for incremental parsing + error recovery when a previously
+// reused non-terminal can't be shifted as-is.
+// Matches C: ts_parser__breakdown_lookahead
+func (p *Parser) breakdownLookahead(lookahead *Subtree, state StateID) {
+	if p.reusableNode == nil {
+		return
+	}
+	didDescend := false
+	tree := p.reusableNode.Tree()
+	for GetChildCount(tree, p.arena) > 0 && GetParseState(tree, p.arena) != state {
+		p.reusableNode.Descend()
+		tree = p.reusableNode.Tree()
+		didDescend = true
+	}
+	if didDescend {
+		*lookahead = tree
+	}
+}
+
 // doShift pushes a token onto the stack and transitions to a new state.
 func (p *Parser) doShift(version StackVersion, action ParseActionEntry, token Subtree) {
 	state := action.ShiftState
@@ -707,121 +851,184 @@ func (p *Parser) doShift(version StackVersion, action ParseActionEntry, token Su
 }
 
 // doReduce pops children from the stack and creates an internal node.
-func (p *Parser) doReduce(version StackVersion, action ParseActionEntry) {
+// endOfNonTerminalExtra indicates the reduction is happening during
+// non-terminal extra processing (null lookahead). Only when this is true
+// AND the goto state equals the base state should the node be marked as
+// extra. This matches C tree-sitter's ts_parser__reduce:
+//
+//	if (end_of_non_terminal_extra && next_state == state) parent->extra = true;
+//
+// When Pop returns multiple paths through a merged stack DAG, paths that
+// converge to the same base node represent alternative children for the
+// same reduction. These are resolved in-place using selectChildren (port
+// of C's ts_parser__select_children) rather than creating separate
+// versions. Only paths with different base nodes create new versions.
+func (p *Parser) doReduce(version StackVersion, action ParseActionEntry, endOfNonTerminalExtra bool) {
 	childCount := uint32(action.ReduceChildCount)
 	symbol := action.ReduceSymbol
 	productionID := action.ReduceProdID
 	dynPrec := action.ReduceDynPrec
 
+	pos := p.stack.Position(version)
+	if pos.Bytes >= 45 && pos.Bytes <= 60 {
+		fmt.Fprintf(os.Stderr, "[DEBUG REDUCE] ver=%d sym=%d childCount=%d prodID=%d dynPrec=%d pos=%d nResults=%d\n",
+			version, symbol, childCount, productionID, dynPrec, pos.Bytes, 0)
+	}
+
 	// Pop children.
 	results := p.stack.Pop(version, childCount)
+	if pos.Bytes >= 45 && pos.Bytes <= 60 {
+		fmt.Fprintf(os.Stderr, "[DEBUG REDUCE] ver=%d sym=%d popResults=%d\n", version, symbol, len(results))
+		for ri, r := range results {
+			fmt.Fprintf(os.Stderr, "[DEBUG REDUCE]   result[%d]: node.state=%d nSubtrees=%d\n", ri, r.node.state, len(r.subtrees))
+		}
+	}
 	if len(results) == 0 {
 		p.stack.Halt(version)
 		return
 	}
 
-	// For the primary path (first result), create the internal node.
-	primary := results[0]
-
-	// The children come in stack order (top first). Reverse for tree order.
-	children := make([]Subtree, len(primary.subtrees))
-	for i, s := range primary.subtrees {
-		children[len(children)-1-i] = s
+	// Group pop results by base node. Paths that converge to the same
+	// base node are alternative children for the same reduction — use
+	// selectChildren to pick the best set in-place. Only paths with
+	// different base nodes create separate stack versions.
+	//
+	// This matches C tree-sitter's ts_parser__reduce which groups
+	// StackSlices by version (assigned by ts_stack__add_slice based
+	// on the base node identity).
+	type reduceGroup struct {
+		node           *StackNode
+		bestChildren   []Subtree
+		trailingExtras []Subtree
 	}
+	groups := make([]reduceGroup, 0, 1)
+	groupIndex := make(map[*StackNode]int)
 
-	// Remove trailing extras (e.g. comments) from children before creating
-	// the parent node. In C tree-sitter, ts_subtree_array_remove_trailing_extras
-	// strips extras from the end of the children array. They are then re-pushed
-	// onto the stack after the parent, so they become siblings of the parent
-	// rather than children - allowing them to float up to the correct level.
-	var trailingExtras []Subtree
-	for len(children) > 0 {
-		last := children[len(children)-1]
-		if !IsExtra(last, p.arena) {
-			break
+	for _, result := range results {
+		// Reverse subtrees from stack order to tree order.
+		children := make([]Subtree, len(result.subtrees))
+		for j, s := range result.subtrees {
+			children[len(children)-1-j] = s
 		}
-		trailingExtras = append(trailingExtras, last)
-		children = children[:len(children)-1]
+
+		// Remove trailing extras (e.g. comments) from children.
+		var extras []Subtree
+		for len(children) > 0 {
+			last := children[len(children)-1]
+			if !IsExtra(last, p.arena) {
+				break
+			}
+			extras = append(extras, last)
+			children = children[:len(children)-1]
+		}
+
+		if idx, ok := groupIndex[result.node]; ok {
+			// Same base node — compare using selectChildren.
+			if p.selectChildren(symbol, productionID, dynPrec,
+				groups[idx].bestChildren, children) {
+				groups[idx].bestChildren = children
+				groups[idx].trailingExtras = extras
+			}
+		} else {
+			groupIndex[result.node] = len(groups)
+			groups = append(groups, reduceGroup{
+				node:           result.node,
+				bestChildren:   children,
+				trailingExtras: extras,
+			})
+		}
 	}
 
-	// Create the internal node (without trailing extras).
-	node := NewNodeSubtree(p.arena, symbol, children, productionID, p.language)
-	SummarizeChildren(node, p.arena, p.language)
+	// Process each group. The first group is the primary version
+	// (Pop already moved the head to results[0].node).
+	for gIdx, group := range groups {
+		// Create the internal node from the best children.
+		node := NewNodeSubtree(p.arena, symbol, group.bestChildren, productionID, p.language)
+		SummarizeChildren(node, p.arena, p.language)
 
-	// Apply dynamic precedence.
-	if dynPrec != 0 && !node.IsInline() {
-		data := p.arena.Get(node)
+		// Apply dynamic precedence.
+		if dynPrec != 0 && !node.IsInline() {
+			data := p.arena.Get(node)
+			data.DynamicPrecedence += int32(dynPrec)
+		}
+
+		if gIdx == 0 {
+			// Primary version — push onto the existing version.
+			baseState := p.stack.State(version)
+			gotoState := p.language.nextState(baseState, symbol)
+
+			// C tree-sitter: if (end_of_non_terminal_extra && next_state == state)
+			if endOfNonTerminalExtra && gotoState == baseState {
+				node = SetExtra(node, p.arena)
+			}
+
+			position := p.stack.Position(version)
+			nodePadding := GetPadding(node, p.arena)
+			nodeSize := GetSize(node, p.arena)
+			newPosition := LengthAdd(LengthAdd(position, nodePadding), nodeSize)
+
+			p.stack.Push(version, gotoState, node, false, newPosition)
+
+			// Re-push trailing extras as siblings of the parent.
+			for i := len(group.trailingExtras) - 1; i >= 0; i-- {
+				extra := group.trailingExtras[i]
+				extraPadding := GetPadding(extra, p.arena)
+				extraSize := GetSize(extra, p.arena)
+				newPosition = LengthAdd(LengthAdd(newPosition, extraPadding), extraSize)
+				p.stack.Push(version, gotoState, extra, false, newPosition)
+			}
+		} else {
+			// Alternative version — different base node, create new version.
+			altBaseState := group.node.state
+			altGotoState := p.language.nextState(altBaseState, symbol)
+
+			if endOfNonTerminalExtra && altGotoState == altBaseState {
+				node = SetExtra(node, p.arena)
+			}
+
+			altBasePosition := group.node.position
+			altNodePadding := GetPadding(node, p.arena)
+			altNodeSize := GetSize(node, p.arena)
+			altNewPosition := LengthAdd(LengthAdd(altBasePosition, altNodePadding), altNodeSize)
+
+			altVersion := p.stack.ForkAtNode(group.node, version)
+			if altVersion >= 0 {
+				p.stack.Push(altVersion, altGotoState, node, false, altNewPosition)
+
+				// Re-push trailing extras as siblings, matching C behavior.
+				for i := len(group.trailingExtras) - 1; i >= 0; i-- {
+					extra := group.trailingExtras[i]
+					extraPadding := GetPadding(extra, p.arena)
+					extraSize := GetSize(extra, p.arena)
+					altNewPosition = LengthAdd(LengthAdd(altNewPosition, extraPadding), extraSize)
+					p.stack.Push(altVersion, altGotoState, extra, false, altNewPosition)
+				}
+			}
+		}
+	}
+}
+
+// selectChildren compares two sets of children for the same reduction.
+// Returns true if the alternative children should replace the current best.
+// Port of C tree-sitter's ts_parser__select_children.
+func (p *Parser) selectChildren(symbol Symbol, productionID uint16, dynPrec int16,
+	currentChildren, altChildren []Subtree) bool {
+	// Create temporary nodes for comparison, matching C's approach.
+	currentNode := NewNodeSubtree(p.arena, symbol, currentChildren, productionID, p.language)
+	SummarizeChildren(currentNode, p.arena, p.language)
+	if dynPrec != 0 && !currentNode.IsInline() {
+		data := p.arena.Get(currentNode)
 		data.DynamicPrecedence += int32(dynPrec)
 	}
 
-	// Look up the goto state.
-	baseState := p.stack.State(version)
-	gotoState := p.language.nextState(baseState, symbol)
-
-	// If the goto state equals the base state, this reduced node is an "extra"
-	// (like comments, whitespace, or heredoc_body in Ruby). Extra nodes don't
-	// change the parser state and are skipped during pop operations.
-	// This matches C tree-sitter's ts_parser__reduce behavior.
-	if gotoState == baseState {
-		node = SetExtra(node, p.arena)
+	altNode := NewNodeSubtree(p.arena, symbol, altChildren, productionID, p.language)
+	SummarizeChildren(altNode, p.arena, p.language)
+	if dynPrec != 0 && !altNode.IsInline() {
+		data := p.arena.Get(altNode)
+		data.DynamicPrecedence += int32(dynPrec)
 	}
 
-	// Compute new position.
-	position := p.stack.Position(version)
-	nodePadding := GetPadding(node, p.arena)
-	nodeSize := GetSize(node, p.arena)
-	newPosition := LengthAdd(LengthAdd(position, nodePadding), nodeSize)
-
-	p.stack.Push(version, gotoState, node, false, newPosition)
-
-	// Re-push trailing extras onto the stack as siblings of the parent.
-	// Push in tree order (reverse of collection order) so that when the
-	// next pop collects them in stack order and reverses, they end up
-	// in the correct source order.
-	for i := len(trailingExtras) - 1; i >= 0; i-- {
-		extra := trailingExtras[i]
-		extraPadding := GetPadding(extra, p.arena)
-		extraSize := GetSize(extra, p.arena)
-		newPosition = LengthAdd(LengthAdd(newPosition, extraPadding), extraSize)
-		p.stack.Push(version, gotoState, extra, false, newPosition)
-	}
-
-	// Handle additional pop paths (GLR ambiguity).
-	// Each alt path may have a different base state (from merged stack DAG),
-	// so we must create a version pointing at each path's base node and
-	// compute goto state and position per-path.
-	for i := 1; i < len(results); i++ {
-		path := results[i]
-		altChildren := make([]Subtree, len(path.subtrees))
-		for j, s := range path.subtrees {
-			altChildren[len(altChildren)-1-j] = s
-		}
-		altNode := NewNodeSubtree(p.arena, symbol, altChildren, productionID, p.language)
-		SummarizeChildren(altNode, p.arena, p.language)
-
-		// Apply dynamic precedence to alternate paths too.
-		if dynPrec != 0 && !altNode.IsInline() {
-			altData := p.arena.Get(altNode)
-			altData.DynamicPrecedence += int32(dynPrec)
-		}
-
-		// Compute goto state from this path's base state.
-		altBaseState := path.node.state
-		altGotoState := p.language.nextState(altBaseState, symbol)
-
-		// Compute position from this path's base position.
-		altBasePosition := path.node.position
-		altNodePadding := GetPadding(altNode, p.arena)
-		altNodeSize := GetSize(altNode, p.arena)
-		altNewPosition := LengthAdd(LengthAdd(altBasePosition, altNodePadding), altNodeSize)
-
-		// Create a new version pointing at this path's base node (not the
-		// primary's pushed result). This is critical for correct goto states.
-		altVersion := p.stack.ForkAtNode(path.node)
-		if altVersion >= 0 {
-			p.stack.Push(altVersion, altGotoState, altNode, false, altNewPosition)
-		}
-	}
+	return p.selectTree(currentNode, altNode)
 }
 
 // doAccept marks a version as accepted and stores the finished tree.
@@ -836,26 +1043,107 @@ func (p *Parser) doReduce(version StackVersion, action ParseActionEntry) {
 // ties are broken by higher dynamic precedence. If both are equal,
 // the newer tree wins (later accepts are typically more complete).
 func (p *Parser) doAccept(version StackVersion) {
+	fmt.Fprintf(os.Stderr, "[DEBUG ACCEPT] version=%d\n", version)
 	tree := p.acceptTree(version)
 	if !tree.IsZero() {
 		if p.finishedTree.IsZero() {
+			fmt.Fprintf(os.Stderr, "[DEBUG ACCEPT] first tree accepted from version=%d\n", version)
 			p.finishedTree = tree
-		} else {
-			oldCost := GetErrorCost(p.finishedTree, p.arena)
-			newCost := GetErrorCost(tree, p.arena)
-			if newCost < oldCost {
-				p.finishedTree = tree
-			} else if newCost == oldCost {
-				oldPrec := GetDynamicPrecedence(p.finishedTree, p.arena)
-				newPrec := GetDynamicPrecedence(tree, p.arena)
-				if newPrec >= oldPrec {
-					p.finishedTree = tree
-				}
-			}
+		} else if p.selectTree(p.finishedTree, tree) {
+			p.finishedTree = tree
 		}
 	}
 	p.acceptCount++
 	p.stack.Halt(version)
+}
+
+// selectTree determines whether a new tree should replace the existing one.
+// Returns true to select the new tree, false to keep the existing one.
+// This is a port of C tree-sitter's ts_parser__select_tree.
+func (p *Parser) selectTree(left, right Subtree) bool {
+	if left.IsZero() {
+		return true
+	}
+	if right.IsZero() {
+		return false
+	}
+
+	// Lower error cost wins.
+	rightCost := GetErrorCost(right, p.arena)
+	leftCost := GetErrorCost(left, p.arena)
+	if rightCost < leftCost {
+		return true
+	}
+	if leftCost < rightCost {
+		return false
+	}
+
+	// Higher dynamic precedence wins (strict >).
+	rightPrec := GetDynamicPrecedence(right, p.arena)
+	leftPrec := GetDynamicPrecedence(left, p.arena)
+	if rightPrec > leftPrec {
+		return true
+	}
+	if leftPrec > rightPrec {
+		return false
+	}
+
+	// If both have errors, prefer the new tree.
+	if leftCost > 0 {
+		return true
+	}
+
+	// Structural comparison: prefer the tree with the lower symbol ID
+	// (earlier grammar definition). This matches C's ts_subtree_compare.
+	cmp := subtreeCompare(left, right, p.arena)
+	fmt.Fprintf(os.Stderr, "[DEBUG selectTree] leftSym=%d rightSym=%d leftCost=%d rightCost=%d leftPrec=%d rightPrec=%d cmp=%d result=%v\n",
+		GetSymbol(left, p.arena), GetSymbol(right, p.arena), leftCost, rightCost, leftPrec, rightPrec, cmp, cmp > 0)
+	return cmp > 0 // right is "earlier" → select right
+}
+
+// subtreeCompare compares two subtrees structurally, returning:
+//
+//	-1 if left is "earlier" (lower symbol, fewer children)
+//	 1 if right is "earlier"
+//	 0 if structurally identical
+//
+// Port of C tree-sitter's ts_subtree_compare. Uses iterative stack
+// to avoid recursion depth issues.
+func subtreeCompare(left, right Subtree, arena *SubtreeArena) int {
+	type pair struct{ left, right Subtree }
+	stack := []pair{{left, right}}
+
+	for len(stack) > 0 {
+		p := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+
+		leftSym := GetSymbol(p.left, arena)
+		rightSym := GetSymbol(p.right, arena)
+		if leftSym < rightSym {
+			return -1
+		}
+		if rightSym < leftSym {
+			return 1
+		}
+
+		leftCC := GetChildCount(p.left, arena)
+		rightCC := GetChildCount(p.right, arena)
+		if leftCC < rightCC {
+			return -1
+		}
+		if rightCC < leftCC {
+			return 1
+		}
+
+		// Push children in reverse order (so first child is compared first).
+		leftChildren := GetChildren(p.left, arena)
+		rightChildren := GetChildren(p.right, arena)
+		for i := int(leftCC) - 1; i >= 0; i-- {
+			stack = append(stack, pair{leftChildren[i], rightChildren[i]})
+		}
+	}
+
+	return 0
 }
 
 // acceptTree pops all subtrees from the stack and reconstructs the root node
@@ -878,10 +1166,16 @@ func (p *Parser) acceptTree(version StackVersion) Subtree {
 		allSubtrees[i], allSubtrees[j] = allSubtrees[j], allSubtrees[i]
 	}
 
-	// Find the root node (the non-extra subtree). Search backward from end,
-	// matching C tree-sitter ts_parser__accept.
+	// Find the root node (the first non-extra subtree in source order).
+	// C tree-sitter's ts_parser__accept searches backward from trees.size-1
+	// in the unreversed (stack-order) array, which is equivalent to searching
+	// forward from the start of the reversed (source-order) array. The root
+	// is the bottom-of-stack (oldest/leftmost) non-extra subtree.
 	rootIdx := -1
-	for j := len(allSubtrees) - 1; j >= 0; j-- {
+	for j := 0; j < len(allSubtrees); j++ {
+		if allSubtrees[j].IsZero() {
+			continue
+		}
 		if !IsExtra(allSubtrees[j], p.arena) {
 			rootIdx = j
 			break
@@ -911,166 +1205,519 @@ func (p *Parser) acceptTree(version StackVersion) Subtree {
 	return newRoot
 }
 
-// handleError attempts error recovery for a version that encountered
-// an invalid token.
-func (p *Parser) handleError(version StackVersion, token Subtree) bool {
-	state := p.stack.State(version)
-
-	// At end-of-input, skipping won't advance position (zero-size token).
-	// If we already have a finished tree, just halt this error version.
-	// Otherwise, force-accept what we have.
-	tokenSymbol := GetSymbol(token, p.arena)
-	if tokenSymbol == SymbolEnd {
-		if !p.finishedTree.IsZero() {
+// handleError attempts error recovery for a version that has been resumed
+// from a paused state. Called from condenseStack, not inline from advanceVersion.
+// Ports C tree-sitter's ts_parser__handle_error:
+//  1. doAllPotentialReductions (try all reductions, unfiltered with symbol=0)
+//  2. Try inserting missing tokens
+//  3. Push ERROR_STATE (state 0) onto all relevant versions, try merge
+//  4. Record stack summary for popback recovery
+//  5. Call recover (try popback to previous state, then skip token)
+func (p *Parser) handleError(version StackVersion, token Subtree) {
+	// Check cancellation before expensive error recovery.
+	if p.ctx != nil {
+		select {
+		case <-p.ctx.Done():
 			p.stack.Halt(version)
-			return false
+			return
+		default:
 		}
+	}
+
+	previousVersionCount := p.stack.VersionCount()
+	position := p.stack.Position(version)
+	lookaheadSymbol := GetSymbol(token, p.arena)
+
+	if p.debug {
+		symName := ""
+		if p.language != nil && int(lookaheadSymbol) < len(p.language.SymbolNames) {
+			symName = p.language.SymbolNames[lookaheadSymbol]
+		}
+		fmt.Printf("[handleError] v=%d state=%d pos=%d lookahead=%d(%s) versions=%d\n",
+			version, p.stack.State(version), position.Bytes, lookaheadSymbol, symName, previousVersionCount)
+	}
+
+	// Step 1: doAllPotentialReductions (unfiltered, matches C's symbol=0 call).
+	// This tries all reductions from the current state regardless of whether
+	// they help with the lookahead. Creates split versions for each reduction.
+	p.doAllPotentialReductionsUnfiltered(version)
+
+	// Step 2: Try inserting missing tokens on all versions created so far.
+	// For each version (original + any splits from step 1), try each visible
+	// symbol as a missing token. If shifting the missing token followed by
+	// a reduce leads to a state that can handle the lookahead, keep it.
+	if lookaheadSymbol != SymbolError {
+		for v := version; int(v) < p.stack.VersionCount(); v++ {
+			if int(v) < previousVersionCount && v != version {
+				continue
+			}
+			if p.stack.IsHalted(v) {
+				continue
+			}
+
+			state := p.stack.State(v)
+			for sym := Symbol(1); sym < Symbol(p.language.SymbolCount); sym++ {
+				if p.stack.VersionCount() >= MaxVersionCount {
+					break
+				}
+				meta := p.language.SymbolMetadata[sym]
+				if !meta.Visible || meta.Supertype {
+					continue
+				}
+
+				entry := p.language.tableEntry(state, sym)
+				if entry.ActionCount == 0 {
+					continue
+				}
+
+				// Check if the first action is a shift.
+				hasShift := false
+				for i := 0; i < int(entry.ActionCount); i++ {
+					if entry.Actions[i].Type == ParseActionTypeShift {
+						hasShift = true
+						break
+					}
+				}
+				if !hasShift {
+					continue
+				}
+
+				missingVersion := p.stack.Split(v)
+				if missingVersion < 0 {
+					continue
+				}
+
+				missingToken := p.createMissingToken(sym)
+				shiftState := entry.Actions[0].ShiftState
+				p.stack.Push(missingVersion, shiftState, missingToken, false, position)
+				p.stack.AddErrorCost(missingVersion, ErrorCostPerMissingTree)
+
+				// Check if the lookahead is valid in the post-missing state.
+				newState := p.stack.State(missingVersion)
+				newEntry := p.language.tableEntry(newState, lookaheadSymbol)
+				if newEntry.ActionCount == 0 {
+					p.stack.Halt(missingVersion)
+				}
+			}
+		}
+	}
+
+	// Step 3: Push ERROR_STATE (state 0) onto all relevant versions.
+	// This transitions each version into error recovery mode where RECOVER
+	// actions in the parse table will handle token skipping/popback.
+	for v := version; int(v) < p.stack.VersionCount(); v++ {
+		if int(v) < previousVersionCount && v != version {
+			continue
+		}
+		if p.stack.IsHalted(v) {
+			continue
+		}
+
+		vPos := p.stack.Position(v)
+		p.stack.Push(v, 0, SubtreeZero, false, vPos)
+
+		// Try to merge this version with a prior one.
+		if v > version {
+			merged := false
+			for priorV := version; priorV < v; priorV++ {
+				if p.stack.Merge(priorV, v) {
+					merged = true
+					break
+				}
+			}
+			if merged {
+				v--
+			}
+		}
+	}
+
+	// Step 4: Record stack summary for popback recovery.
+	p.stack.RecordSummary(version, MaxSummaryDepth)
+
+	// Step 5: Break down lookahead if composite, then call recover.
+	if GetChildCount(token, p.arena) > 0 {
+		p.breakdownLookahead(&token, StateID(0))
+	}
+	p.recover(version, token)
+}
+
+// doAllPotentialReductionsUnfiltered tries every possible reduction from the
+// current state, keeping all results regardless of whether they can handle
+// the lookahead. This is used in handleError to "compact" the stack before
+// pushing ERROR_STATE.
+// Matches C: ts_parser__do_all_potential_reductions(self, version, 0)
+// doAllPotentialReductions tries every possible reduction from the current
+// state. When lookaheadSymbol is 0 (unfiltered mode, used by handleError),
+// it scans all terminal symbols. When non-zero (filtered mode), it only
+// checks actions for that specific symbol. This is a faithful port of C's
+// ts_parser__do_all_potential_reductions (reference/parser.c:1101-1189).
+func (p *Parser) doAllPotentialReductions(startingVersion StackVersion, lookaheadSymbol Symbol) bool {
+	initialVersionCount := p.stack.VersionCount()
+	canShiftLookahead := false
+
+	version := startingVersion
+	for i := 0; ; i++ {
+		versionCount := p.stack.VersionCount()
+		if int(version) >= versionCount {
+			break
+		}
+
+		// Try to merge with previously created versions.
+		merged := false
+		for j := StackVersion(initialVersionCount); j < version; j++ {
+			if p.stack.Merge(j, version) {
+				merged = true
+				break
+			}
+		}
+		if merged {
+			continue
+		}
+
+		state := p.stack.State(version)
+		hasShiftAction := false
+
+		// Collect unique reduce actions (deduplication).
+		type reduceAction struct {
+			symbol    Symbol
+			count     uint32
+			dynPrec   int16
+			prodID    uint16
+		}
+		var reduceActions []reduceAction
+
+		// Determine symbol range.
+		var firstSym, endSym Symbol
+		if lookaheadSymbol != 0 {
+			firstSym = lookaheadSymbol
+			endSym = lookaheadSymbol + 1
+		} else {
+			firstSym = 1
+			endSym = Symbol(p.language.TokenCount)
+		}
+
+		for sym := firstSym; sym < endSym; sym++ {
+			entry := p.language.tableEntry(state, sym)
+			for j := 0; j < int(entry.ActionCount); j++ {
+				action := entry.Actions[j]
+				switch action.Type {
+				case ParseActionTypeShift, ParseActionTypeRecover:
+					if !action.ShiftExtra && !action.ShiftRepetition {
+						hasShiftAction = true
+					}
+				case ParseActionTypeReduce:
+					if action.ReduceChildCount > 0 {
+						ra := reduceAction{
+							symbol:  action.ReduceSymbol,
+							count:   uint32(action.ReduceChildCount),
+							dynPrec: action.ReduceDynPrec,
+							prodID:  action.ReduceProdID,
+						}
+						// Deduplicate.
+						found := false
+						for _, existing := range reduceActions {
+							if existing == ra {
+								found = true
+								break
+							}
+						}
+						if !found {
+							reduceActions = append(reduceActions, ra)
+						}
+					}
+				}
+			}
+		}
+
+		// Execute all collected reduce actions.
+		var reductionVersion StackVersion = -1
+		for _, ra := range reduceActions {
+			reductionVersion = p.doReduceForPotential(version, ra.symbol, ra.count, ra.dynPrec, ra.prodID)
+		}
+
+		if hasShiftAction {
+			canShiftLookahead = true
+		} else if reductionVersion >= 0 && i < MaxVersionCount {
+			// No shift action but reductions succeeded — replace this version
+			// with the last reduced version and re-process it. This chains
+			// reductions until a state with a shift action is found.
+			p.stack.RenumberVersion(reductionVersion, version)
+			continue
+		} else if lookaheadSymbol != 0 {
+			// No shift and no reductions for this specific symbol — remove.
+			p.stack.RemoveVersion(version)
+		}
+
+		// After processing the starting version, skip to newly created versions.
+		if version == startingVersion {
+			version = StackVersion(versionCount)
+		} else {
+			version++
+		}
+	}
+
+	return canShiftLookahead
+}
+
+// doAllPotentialReductionsUnfiltered is the unfiltered variant (lookaheadSymbol=0).
+func (p *Parser) doAllPotentialReductionsUnfiltered(version StackVersion) {
+	p.doAllPotentialReductions(version, 0)
+}
+
+// doReduceForPotential performs a reduce for doAllPotentialReductions.
+// It splits the version, pops child_count items, and creates a parent node.
+// Returns the new version, or -1 on failure.
+func (p *Parser) doReduceForPotential(version StackVersion, symbol Symbol, childCount uint32, dynPrec int16, prodID uint16) StackVersion {
+	splitVersion := p.stack.Split(version)
+	if splitVersion < 0 {
+		return -1
+	}
+
+	action := ParseActionEntry{
+		Type:              ParseActionTypeReduce,
+		ReduceSymbol:      symbol,
+		ReduceChildCount:  uint8(childCount),
+		ReduceDynPrec:     dynPrec,
+		ReduceProdID:      prodID,
+	}
+	p.doReduce(splitVersion, action, false)
+
+	return splitVersion
+}
+
+// recover attempts to continue parsing after an error. Called from handleError
+// after ERROR_STATE has been pushed and summary recorded, and also called
+// from advanceVersion when a Recover action is encountered.
+// This is a faithful port of C tree-sitter's ts_parser__recover.
+func (p *Parser) recover(version StackVersion, lookahead Subtree) {
+	didRecover := false
+	previousVersionCount := p.stack.VersionCount()
+	position := p.stack.Position(version)
+	summary := p.stack.GetSummary(version)
+	nodeCountSinceError := p.stack.NodeCountSinceError(version)
+	currentErrorCost := p.stack.ErrorCost(version)
+	lookaheadSymbol := GetSymbol(lookahead, p.arena)
+
+	// Strategy 1: Find a previous state on the stack where the lookahead is valid.
+	if summary != nil && lookaheadSymbol != SymbolError {
+		for _, entry := range summary {
+			if entry.State == 0 {
+				continue // Skip ERROR_STATE
+			}
+			if entry.Position.Bytes == position.Bytes {
+				continue
+			}
+
+			depth := entry.Depth
+			if nodeCountSinceError > 0 {
+				depth++
+			}
+
+			// Check for redundant recovery (would merge with existing version).
+			wouldMerge := false
+			for j := 0; j < previousVersionCount; j++ {
+				if p.stack.State(StackVersion(j)) == entry.State &&
+					p.stack.Position(StackVersion(j)).Bytes == position.Bytes {
+					wouldMerge = true
+					break
+				}
+			}
+			if wouldMerge {
+				continue
+			}
+
+			// Estimate recovery cost.
+			newCost := currentErrorCost +
+				entry.Depth*ErrorCostPerSkippedTree +
+				(position.Bytes-entry.Position.Bytes)*ErrorCostPerSkippedChar
+			if position.Point.Row > entry.Position.Point.Row {
+				newCost += (position.Point.Row - entry.Position.Point.Row) * ErrorCostPerSkippedLine
+			}
+			if p.betterVersionExists(version, false, newCost) {
+				break
+			}
+
+			// Check if the lookahead token is valid in this previous state.
+			tableEntry := p.language.tableEntry(entry.State, lookaheadSymbol)
+			if tableEntry.ActionCount > 0 {
+				if p.stack.VersionCount() >= MaxVersionCount {
+					break
+				}
+				// Split the version before attempting Strategy 1 popback.
+				// Strategy 1 destructively modifies the version via Pop. If
+				// the pop doesn't reach the goal state, the version is halted.
+				// In C, this is acceptable because Pop can create version forks
+				// via the GSS. In our single-path Go stack, we must split
+				// explicitly to preserve the original version for Strategy 2.
+				recoveryVersion := p.stack.Split(version)
+				if recoveryVersion < 0 {
+					break
+				}
+				if p.recoverToState(recoveryVersion, depth, entry.State) {
+					didRecover = true
+					break
+				}
+			}
+		}
+	}
+
+	// Remove any inactive versions created during recovery attempts.
+	for i := previousVersionCount; i < p.stack.VersionCount(); i++ {
+		if !p.stack.IsActive(StackVersion(i)) {
+			p.stack.RemoveVersion(StackVersion(i))
+			i--
+		}
+	}
+
+	// At EOF, terminate by accepting.
+	// C pushes an empty ERROR node at state 1, then calls ts_parser__accept
+	// (which also pushes the EOF lookahead). In Go's doAccept, we don't push
+	// the lookahead, and pushing a visible empty ERROR would add a spurious
+	// (ERROR) child. So just push SubtreeZero at state 1 to trigger acceptance.
+	if lookaheadSymbol == SymbolEnd {
+		p.stack.Push(version, 1, SubtreeZero, false, position)
 		p.doAccept(version)
-		return true
+		return
 	}
 
-	// Strategy 1: Try all possible reductions from current state.
-	// This creates split versions with reductions applied. If any split can
-	// shift the lookahead, we halt the original version (it's superseded by
-	// the splits) and invalidate the token cache so the splits re-lex fresh.
-	recovered := p.doAllPotentialReductions(version, token)
-	if recovered {
+	// Strategy 2: Skip the lookahead token by wrapping it in an error_repeat.
+	// In C tree-sitter, both Strategy 1 and Strategy 2 modify the same version.
+	// Strategy 1's popback recovery gets "extended" by Strategy 2 wrapping the
+	// lookahead into the error_repeat. This matches C's behavior where the error
+	// region grows to include the current token.
+
+	// Don't pursue this if there are already too many versions.
+	if didRecover && p.stack.VersionCount() > MaxVersionCount {
 		p.stack.Halt(version)
-		p.cachedTokenValid = false
-		return true
+		return
 	}
 
-	// Strategy 2: Skip the current token.
-	tokenSize := GetSize(token, p.arena)
-	skipCost := ErrorCostPerSkippedTree + ErrorCostPerSkippedChar*tokenSize.Bytes
+	// Don't skip if recovery would be worse than existing versions.
+	tokenSize := GetSize(lookahead, p.arena)
+	newCost := currentErrorCost + ErrorCostPerSkippedTree +
+		tokenSize.Bytes*ErrorCostPerSkippedChar +
+		tokenSize.Point.Row*ErrorCostPerSkippedLine
+	if p.betterVersionExists(version, false, newCost) {
+		p.stack.Halt(version)
+		return
+	}
 
-	if p.stack.VersionCount() < MaxVersionCount {
-		skipVersion := p.stack.Split(version)
-		if skipVersion >= 0 {
-			errNode := p.createErrorNode([]Subtree{token})
-			position := p.stack.Position(skipVersion)
-			tokenPadding := GetPadding(token, p.arena)
-			newPosition := LengthAdd(LengthAdd(position, tokenPadding), tokenSize)
-			p.stack.Push(skipVersion, state, errNode, false, newPosition)
-			p.cachedTokenValid = false
+	// Build error_repeat node with the skipped token.
+	children := []Subtree{lookahead}
 
-			p.stack.AddErrorCost(skipVersion, skipCost)
+	// If tokens have already been skipped (node_count_since_error > 0),
+	// pop the existing error_repeat and merge it with the new token.
+	if nodeCountSinceError > 0 {
+		results := p.stack.Pop(version, 1)
+		if len(results) > 0 {
+			prevSubtrees := results[0].subtrees
+			allChildren := make([]Subtree, 0, len(prevSubtrees)+1)
+			for i := len(prevSubtrees) - 1; i >= 0; i-- {
+				if !prevSubtrees[i].IsZero() {
+					allChildren = append(allChildren, prevSubtrees[i])
+				}
+			}
+			allChildren = append(allChildren, lookahead)
+			children = allChildren
 		}
 	}
 
-	// Strategy 3: Try inserting missing tokens.
-	recovered = p.tryMissingTokens(version, token)
+	errorRepeat := p.createErrorRepeatNode(children)
 
-	if recovered {
-		// Missing token recovery created split versions that supersede this one.
-		// Halt the original version — it has no valid action for the lookahead.
-		p.stack.Halt(version)
-		p.cachedTokenValid = false
-		return true
+	// Compute new position after skipping the token.
+	tokenPadding := GetPadding(lookahead, p.arena)
+	newPosition := LengthAdd(LengthAdd(position, tokenPadding), tokenSize)
+
+	// Push error_repeat with ERROR_STATE (state 0).
+	p.stack.Push(version, 0, errorRepeat, false, newPosition)
+	p.cachedTokenValid = false
+
+	// Track external tokens.
+	if HasExternalTokens(lookahead, p.arena) {
+		p.stack.SetLastExternalToken(version, lookahead)
+	}
+}
+
+// recoverToState pops `depth` items from the stack, wraps them in an ERROR
+// node, and pushes the ERROR node with the goal state. This allows the parser
+// to "pop back" to a previous state where the lookahead is valid.
+// Mirrors C tree-sitter's ts_parser__recover_to_state.
+func (p *Parser) recoverToState(version StackVersion, depth uint32, goalState StateID) bool {
+	results := p.stack.Pop(version, depth)
+	if len(results) == 0 {
+		return false
 	}
 
-	// If no recovery and multiple versions exist, halt this one.
-	if p.stack.ActiveVersionCount() > 1 {
+	// Check if the state matches the goal state. If not, halt the version.
+	// (For the primary result; C does this per-slice for multi-path pops.)
+	actualState := p.stack.State(version)
+	if actualState != goalState {
 		p.stack.Halt(version)
 		return false
 	}
 
-	// Last resort: skip the token on the current version (only version left).
+	// Check for an existing error node at the stack top. If found, merge
+	// its children into the front of the popped subtrees so that consecutive
+	// skipped tokens are collected in a single ERROR node.
+	// Matches C: ts_stack_pop_error in ts_parser__recover_to_state.
+	var existingErrorChildren []Subtree
+	if errTree, ok := p.stack.PopError(version); ok {
+		errorChildren := GetChildren(errTree, p.arena)
+		if len(errorChildren) > 0 {
+			existingErrorChildren = make([]Subtree, len(errorChildren))
+			copy(existingErrorChildren, errorChildren)
+		}
+	}
+
+	// Create ERROR node from popped subtrees (reverse from stack to tree order).
+	// Filter out SubtreeZero entries which come from ERROR_STATE pushes.
+	popped := results[0].subtrees
+	children := make([]Subtree, 0, len(existingErrorChildren)+len(popped))
+	children = append(children, existingErrorChildren...)
+	for i := len(popped) - 1; i >= 0; i-- {
+		if !popped[i].IsZero() {
+			children = append(children, popped[i])
+		}
+	}
+
+	errNode := p.createErrorNode(children)
+
+	// Compute position and error cost.
 	position := p.stack.Position(version)
-	tokenPadding := GetPadding(token, p.arena)
-	newPosition := LengthAdd(LengthAdd(position, tokenPadding), tokenSize)
-	errNode := p.createErrorNode([]Subtree{token})
-	p.stack.Push(version, state, errNode, false, newPosition)
+	errPadding := GetPadding(errNode, p.arena)
+	errSize := GetSize(errNode, p.arena)
+	newPosition := LengthAdd(LengthAdd(position, errPadding), errSize)
+
+	errCost := ErrorCostPerRecovery +
+		ErrorCostPerSkippedTree*depth +
+		errSize.Bytes*ErrorCostPerSkippedChar +
+		errSize.Point.Row*ErrorCostPerSkippedLine
+
+	p.stack.Push(version, goalState, errNode, false, newPosition)
+	p.stack.AddErrorCost(version, errCost)
 	p.cachedTokenValid = false
-	p.stack.AddErrorCost(version, skipCost+ErrorCostPerRecovery)
 
 	return true
 }
 
-// doAllPotentialReductions tries every possible reduction from the current
-// state to see if any lead to a state that can shift the lookahead.
-func (p *Parser) doAllPotentialReductions(version StackVersion, lookahead Subtree) bool {
-	lookaheadSymbol := GetSymbol(lookahead, p.arena)
-	state := p.stack.State(version)
-	recovered := false
-
-	for sym := Symbol(0); sym < Symbol(p.language.SymbolCount); sym++ {
-		entry := p.language.tableEntry(state, sym)
-		for i := 0; i < int(entry.ActionCount); i++ {
-			action := entry.Actions[i]
-			if action.Type != ParseActionTypeReduce {
-				continue
-			}
-
-			if p.stack.VersionCount() >= MaxVersionCount {
-				break
-			}
-
-			testVersion := p.stack.Split(version)
-			if testVersion < 0 {
-				continue
-			}
-
-			p.doReduce(testVersion, action)
-
-			newState := p.stack.State(testVersion)
-			newEntry := p.language.tableEntry(newState, lookaheadSymbol)
-			if newEntry.ActionCount > 0 {
-				recovered = true
-				p.stack.AddErrorCost(testVersion, ErrorCostPerRecovery)
-			} else {
-				p.stack.Halt(testVersion)
-			}
+// betterVersionExists checks if any other stack version is clearly better
+// than the given version would be at the proposed cost. Used during error
+// recovery to avoid pursuing recovery paths that are already dominated.
+// Mirrors C tree-sitter's ts_parser__better_version_exists.
+func (p *Parser) betterVersionExists(version StackVersion, isInError bool, cost uint32) bool {
+	for i := 0; i < p.stack.VersionCount(); i++ {
+		v := StackVersion(i)
+		if v == version || p.stack.IsHalted(v) || p.stack.IsPaused(v) {
+			continue
+		}
+		otherStatus := p.versionStatus(v)
+		proposed := errorStatus{cost: cost, isInError: isInError}
+		switch p.compareVersions(otherStatus, proposed) {
+		case errorComparisonTakeLeft:
+			return true
 		}
 	}
-
-	return recovered
-}
-
-// tryMissingTokens tries hypothesizing that a token was missing.
-func (p *Parser) tryMissingTokens(version StackVersion, lookahead Subtree) bool {
-	state := p.stack.State(version)
-	lookaheadSymbol := GetSymbol(lookahead, p.arena)
-	recovered := false
-
-	for sym := Symbol(0); sym < Symbol(p.language.SymbolCount); sym++ {
-		if sym == lookaheadSymbol || sym == SymbolError || sym == SymbolErrorRepeat {
-			continue
-		}
-
-		entry := p.language.tableEntry(state, sym)
-		if entry.ActionCount == 0 {
-			continue
-		}
-
-		firstAction := entry.Actions[0]
-		if firstAction.Type != ParseActionTypeShift {
-			continue
-		}
-
-		if p.stack.VersionCount() >= MaxVersionCount {
-			break
-		}
-
-		missingToken := p.createMissingToken(sym)
-		testVersion := p.stack.Split(version)
-		if testVersion < 0 {
-			continue
-		}
-
-		p.doShift(testVersion, firstAction, missingToken)
-
-		newState := p.stack.State(testVersion)
-		newEntry := p.language.tableEntry(newState, lookaheadSymbol)
-		if newEntry.ActionCount > 0 {
-			recovered = true
-			p.stack.AddErrorCost(testVersion, ErrorCostPerMissingTree)
-		} else {
-			p.stack.Halt(testVersion)
-		}
-	}
-
-	return recovered
+	return false
 }
 
 // createErrorNode creates an ERROR node wrapping skipped tokens.
@@ -1085,6 +1732,7 @@ func (p *Parser) createErrorNode(skippedTokens []Subtree) Subtree {
 		Children:   children,
 	}
 	data.SetFlag(SubtreeFlagVisible, true)
+	data.SetFlag(SubtreeFlagNamed, true)
 
 	if len(children) > 0 {
 		firstPadding := GetPadding(children[0], p.arena)
@@ -1098,6 +1746,14 @@ func (p *Parser) createErrorNode(skippedTokens []Subtree) Subtree {
 	}
 
 	return st
+}
+
+// createErrorRepeatNode creates an error_repeat node wrapping skipped tokens.
+// Unlike createErrorNode (which uses SymbolError), this uses SymbolErrorRepeat
+// which is the internal symbol for accumulating multiple skipped tokens during
+// streaming error recovery. Matches C's ts_subtree_new_node with error_repeat.
+func (p *Parser) createErrorRepeatNode(children []Subtree) Subtree {
+	return NewNodeSubtree(p.arena, SymbolErrorRepeat, children, 0, p.language)
 }
 
 // createMissingToken creates a MISSING token (zero-width, for error recovery).
@@ -1139,15 +1795,11 @@ const (
 // Mirrors ts_parser__version_status in C.
 func (p *Parser) versionStatus(version StackVersion) errorStatus {
 	cost := p.stack.ErrorCost(version)
-	isPaused := p.stack.IsPaused(version)
-	if isPaused {
-		cost += ErrorCostPerSkippedTree
-	}
 	return errorStatus{
 		cost:              cost,
 		nodeCount:         p.stack.NodeCountSinceError(version),
 		dynamicPrecedence: p.stack.DynamicPrecedence(version),
-		isInError:         isPaused || p.stack.State(version) == 0,
+		isInError:         p.stack.IsPaused(version) || p.stack.State(version) == 0,
 	}
 }
 
@@ -1200,153 +1852,126 @@ func (p *Parser) compareVersions(a, b errorStatus) errorComparison {
 	return errorComparisonNone
 }
 
-// condenseStack merges compatible versions and prunes inferior ones using
-// pair-wise comparison with cost amplification. This matches C tree-sitter's
-// ts_parser__condense_stack algorithm.
-//
-// The algorithm:
-//  1. Remove halted versions immediately
-//  2. Compare each version against all prior versions using compareVersions
-//  3. Decisive kills (TakeLeft/TakeRight) remove versions regardless of state
-//  4. Soft preferences try merge (same state) or swap positions
-//  5. Hard cap removes from the end (relying on ordering from swaps)
-func (p *Parser) condenseStack() {
-	// Phase 1: Merge compatible versions (same state).
-	for i := 0; i < p.stack.VersionCount(); i++ {
-		vi := StackVersion(i)
-		if !p.stack.IsActive(vi) {
-			continue
-		}
-		for j := i + 1; j < p.stack.VersionCount(); j++ {
-			vj := StackVersion(j)
-			if !p.stack.IsActive(vj) {
-				continue
-			}
-			if p.stack.CanMerge(vi, vj) {
-				p.stack.Merge(vi, vj)
-			}
+// condenseStack merges compatible versions, prunes inferior ones, and
+// resumes paused versions for error recovery.
+// This is a faithful port of C tree-sitter's ts_parser__condense_stack:
+// single-pass algorithm that handles all 5 comparison outcomes, uses
+// swaps for PreferRight when merge fails, removes from the end for hard
+// cap, and resumes one paused version per round for bounded error recovery.
+// Returns the minimum error cost of non-error versions.
+func (p *Parser) condenseStack() uint32 {
+	// Check cancellation at the start of condenseStack.
+	if p.ctx != nil {
+		select {
+		case <-p.ctx.Done():
+			return 0
+		default:
 		}
 	}
 
-	// Phase 2: Pair-wise version comparison for decisive kills.
-	// Unlike C's single-pass condenseStack, we use a phased approach that
-	// separates merging (Phase 1), comparison-based kills (Phase 2), cost
-	// pruning (Phase 3), and hard cap (Phase 4). Only decisive kills
-	// (TakeLeft/TakeRight) are applied here — soft preferences and swaps
-	// are not used because they interact badly with our phased approach
-	// (swaps change findActiveVersion tie-breaking, causing regressions).
-	//
-	// Important: we only apply decisive kills between versions at the same
-	// byte position. Versions at different positions may be exploring different
-	// parse paths (e.g., error recovery versions that haven't caught up yet).
-	// Killing them prematurely can prevent the parser from making progress,
-	// causing infinite loops. Cross-position pruning is handled by Phase 3
-	// (absolute cost threshold) and Phase 4 (hard cap).
+	minErrorCost := uint32(math.MaxUint32)
+
 	for i := 0; i < p.stack.VersionCount(); i++ {
-		vi := StackVersion(i)
-		if !p.stack.IsActive(vi) {
+		// Remove halted versions immediately.
+		if p.stack.IsHalted(StackVersion(i)) {
+			p.stack.RemoveVersion(StackVersion(i))
+			i--
 			continue
 		}
-		posI := p.stack.Position(vi)
-		statusI := p.versionStatus(vi)
 
+		statusI := p.versionStatus(StackVersion(i))
+		if !statusI.isInError && statusI.cost < minErrorCost {
+			minErrorCost = statusI.cost
+		}
+
+		// Compare version i against all prior versions j < i.
 		for j := 0; j < i; j++ {
-			vj := StackVersion(j)
-			if !p.stack.IsActive(vj) {
-				continue
+			statusJ := p.versionStatus(StackVersion(j))
+
+			cmpResult := p.compareVersions(statusJ, statusI)
+			posI := p.stack.Position(StackVersion(i))
+			posJ := p.stack.Position(StackVersion(j))
+			if (posI.Bytes >= 45 && posI.Bytes <= 65) || (posJ.Bytes >= 45 && posJ.Bytes <= 65) || (i <= 1 && j == 0) {
+				fmt.Fprintf(os.Stderr, "[DEBUG CONDENSE] cmp i=%d(pos=%d,cost=%d,prec=%d,err=%v) vs j=%d(pos=%d,cost=%d,prec=%d,err=%v) → %d\n",
+					i, posI.Bytes, statusI.cost, statusI.dynamicPrecedence, statusI.isInError,
+					j, posJ.Bytes, statusJ.cost, statusJ.dynamicPrecedence, statusJ.isInError,
+					cmpResult)
 			}
-
-			statusJ := p.versionStatus(vj)
-
-			// Restrict cross-position decisive kills when either version has
-			// high error cost. High-cost versions at different positions are
-			// likely error recovery paths that need time to advance; killing
-			// them prematurely prevents progress, causing infinite loops
-			// (C++ Complex_fold_expression). Low-cost versions at different
-			// positions can be killed cross-position for GLR ambiguity
-			// resolution (Java type arguments vs comparison operators).
-			if p.stack.Position(vj).Bytes != posI.Bytes {
-				maxCost := statusI.cost
-				if statusJ.cost > maxCost {
-					maxCost = statusJ.cost
-				}
-				if maxCost > uint32(MaxCostDifference/4) {
-					continue
-				}
-			}
-
-			switch p.compareVersions(statusJ, statusI) {
+			switch cmpResult {
 			case errorComparisonTakeLeft:
-				p.stack.Halt(vi)
+				// j is decisively better — kill i.
+				if (posI.Bytes >= 45 && posI.Bytes <= 65) || (posJ.Bytes >= 45 && posJ.Bytes <= 65) {
+					fmt.Fprintf(os.Stderr, "[DEBUG CONDENSE] REMOVE i=%d (TakeLeft j=%d)\n", i, j)
+				}
+				p.stack.RemoveVersion(StackVersion(i))
+				i--
 				goto nextVersion
+
+			case errorComparisonPreferLeft, errorComparisonNone:
+				// j is better or equal — try merge (requires same state).
+				if p.stack.Merge(StackVersion(j), StackVersion(i)) {
+					if (posI.Bytes >= 45 && posI.Bytes <= 65) || (posJ.Bytes >= 45 && posJ.Bytes <= 65) {
+						fmt.Fprintf(os.Stderr, "[DEBUG CONDENSE] MERGE i=%d into j=%d (PreferLeft/None)\n", i, j)
+					}
+					i--
+					goto nextVersion
+				}
+
+			case errorComparisonPreferRight:
+				// i is better — try merge, or swap positions.
+				if p.stack.Merge(StackVersion(j), StackVersion(i)) {
+					if (posI.Bytes >= 45 && posI.Bytes <= 65) || (posJ.Bytes >= 45 && posJ.Bytes <= 65) {
+						fmt.Fprintf(os.Stderr, "[DEBUG CONDENSE] MERGE i=%d into j=%d (PreferRight)\n", i, j)
+					}
+					i--
+					goto nextVersion
+				}
+				p.stack.SwapVersions(StackVersion(i), StackVersion(j))
+
 			case errorComparisonTakeRight:
-				p.stack.Halt(vj)
+				// i is decisively better — kill j.
+				if (posI.Bytes >= 45 && posI.Bytes <= 65) || (posJ.Bytes >= 45 && posJ.Bytes <= 65) {
+					fmt.Fprintf(os.Stderr, "[DEBUG CONDENSE] REMOVE j=%d (TakeRight i=%d)\n", j, i)
+				}
+				p.stack.RemoveVersion(StackVersion(j))
+				i--
+				j--
 			}
 		}
 	nextVersion:
 	}
 
-	// Phase 3: Prune by absolute cost (original behavior).
-	if p.stack.ActiveVersionCount() > 1 {
-		bestCost := uint32(0)
-		first := true
-		for i := 0; i < p.stack.VersionCount(); i++ {
-			v := StackVersion(i)
-			if !p.stack.IsActive(v) {
-				continue
-			}
-			cost := p.stack.ErrorCost(v)
-			if first || cost < bestCost {
-				bestCost = cost
-				first = false
-			}
-		}
+	// Hard cap: remove from the end (relies on swap ordering).
+	for p.stack.VersionCount() > MaxVersionCount {
+		p.stack.RemoveVersion(StackVersion(MaxVersionCount))
+	}
 
+	// Resume paused versions for error recovery.
+	// Matches C tree-sitter's ts_parser__condense_stack paused handling:
+	// if no unpaused version exists, resume one paused version and call
+	// handleError. Otherwise, remove all paused versions.
+	if p.stack.VersionCount() > 0 {
+		hasUnpausedVersion := false
 		for i := 0; i < p.stack.VersionCount(); i++ {
 			v := StackVersion(i)
-			if !p.stack.IsActive(v) {
-				continue
-			}
-			if p.stack.ErrorCost(v) > bestCost+MaxCostDifference {
-				p.stack.Halt(v)
+			if p.stack.IsPaused(v) {
+				if !hasUnpausedVersion && p.acceptCount < MaxVersionCount {
+					// Resume this version and handle error recovery.
+					lookahead := p.stack.Resume(v)
+					p.handleError(v, lookahead)
+					hasUnpausedVersion = true
+				} else {
+					// Remove extra paused versions.
+					p.stack.RemoveVersion(v)
+					i--
+				}
+			} else {
+				hasUnpausedVersion = true
 			}
 		}
 	}
 
-	// Phase 4: Hard cap — search for worst version.
-	activeCount := p.stack.ActiveVersionCount()
-	if activeCount > MaxVersionCount {
-		toHalt := activeCount - MaxVersionCount
-		halted := 0
-		for halted < toHalt {
-			worstIdx := -1
-			var worstCost uint32
-			var worstPrec int32
-			for i := 0; i < p.stack.VersionCount(); i++ {
-				v := StackVersion(i)
-				if !p.stack.IsActive(v) {
-					continue
-				}
-				cost := p.stack.ErrorCost(v)
-				prec := p.stack.DynamicPrecedence(v)
-				if worstIdx < 0 || cost > worstCost ||
-					(cost == worstCost && prec < worstPrec) ||
-					(cost == worstCost && prec == worstPrec && i > worstIdx) {
-					worstIdx = i
-					worstCost = cost
-					worstPrec = prec
-				}
-			}
-			if worstIdx < 0 {
-				break
-			}
-			p.stack.Halt(StackVersion(worstIdx))
-			halted++
-		}
-	}
-
-	// Phase 5: Remove halted versions.
-	p.stack.CompactHaltedVersions()
+	return minErrorCost
 }
 
 // --- External scanner helpers ---

@@ -10,6 +10,7 @@ import (
 	jsgrammar "github.com/treesitter-go/treesitter/internal/testgrammars/javascript"
 	rubygrammar "github.com/treesitter-go/treesitter/internal/testgrammars/ruby"
 	tsgrammar "github.com/treesitter-go/treesitter/internal/testgrammars/typescript"
+	tsxgrammar "github.com/treesitter-go/treesitter/internal/testgrammars/tsxgrammar"
 	bashscanner "github.com/treesitter-go/treesitter/scanners/bash"
 	jsscanner "github.com/treesitter-go/treesitter/scanners/javascript"
 	rubyscanner "github.com/treesitter-go/treesitter/scanners/ruby"
@@ -36,6 +37,12 @@ func jsLang() *ts.Language {
 
 func newTSLang() *ts.Language {
 	lang := tsgrammar.TypescriptLanguage()
+	lang.NewExternalScanner = tsscanner.New
+	return lang
+}
+
+func newTSXLang() *ts.Language {
+	lang := tsxgrammar.TsxLanguage()
 	lang.NewExternalScanner = tsscanner.New
 	return lang
 }

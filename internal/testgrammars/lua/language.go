@@ -2223,8 +2223,8 @@ func LuaLanguage() *ts.Language {
 		{LexState: 0, ExternalLexState: 2}, // state 257
 		{LexState: 0, ExternalLexState: 6}, // state 258
 		{LexState: 0, ExternalLexState: 2}, // state 259
-		{LexState: 0}, // state 260
-		{LexState: 0}, // state 261
+		{LexState: ts.LexStateNoLookahead}, // state 260 (no lookahead)
+		{LexState: ts.LexStateNoLookahead}, // state 261 (no lookahead)
 	}
 
 	primaryStateIDs := []ts.StateID{
@@ -3688,7 +3688,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			if !eof {
+			if lookahead > ' ' && !eof && (lookahead < '[' || lookahead > '^') {
 				state = 79
 				lexer.Advance(false)
 				lookahead = lexer.Lookahead
@@ -3823,7 +3823,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			if !eof {
+			if lookahead > ' ' && !eof && (lookahead < '%' || lookahead > '>') && (lookahead < '[' || lookahead > '^') {
 				state = 79
 				lexer.Advance(false)
 				lookahead = lexer.Lookahead
@@ -4028,7 +4028,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			if !eof {
+			if lookahead > ' ' && !eof && (lookahead < '%' || lookahead > '>') && (lookahead < '[' || lookahead > '^') {
 				state = 79
 				lexer.Advance(false)
 				lookahead = lexer.Lookahead
@@ -5021,7 +5021,7 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 				eof = lexer.EOF()
 				continue
 			}
-			if !eof {
+			if !eof && (lookahead < '\t' || lookahead > '\r') {
 				state = 84
 				lexer.Advance(false)
 				lookahead = lexer.Lookahead

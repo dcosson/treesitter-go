@@ -176,9 +176,9 @@ func TestStackMerge(t *testing.T) {
 		t.Fatal("merge should succeed")
 	}
 
-	// Source version should be halted.
-	if !stack.IsHalted(v1) {
-		t.Error("source version should be halted after merge")
+	// Source version should be removed (matches C's ts_stack_merge).
+	if stack.VersionCount() != 1 {
+		t.Errorf("version count after merge = %d, want 1 (source removed)", stack.VersionCount())
 	}
 
 	// Pop from merged version should produce 2 paths.
@@ -225,7 +225,7 @@ func TestStackPauseResume(t *testing.T) {
 		t.Error("should be active initially")
 	}
 
-	stack.Pause(v0)
+	stack.Pause(v0, SubtreeZero)
 	if !stack.IsPaused(v0) {
 		t.Error("should be paused")
 	}
@@ -431,7 +431,7 @@ func TestStackActiveVersionCount(t *testing.T) {
 		t.Errorf("active = %d, want 3", stack.ActiveVersionCount())
 	}
 
-	stack.Pause(StackVersion(1))
+	stack.Pause(StackVersion(1), SubtreeZero)
 	if stack.ActiveVersionCount() != 2 {
 		t.Errorf("active = %d, want 2", stack.ActiveVersionCount())
 	}
@@ -562,5 +562,394 @@ func TestStackPopEmpty(t *testing.T) {
 	results = stack.Pop(v0, 1)
 	if len(results) != 0 {
 		t.Errorf("pop from version with no links = %d, want 0", len(results))
+	}
+}
+
+func TestHasAdvancedSinceErrorNoError(t *testing.T) {
+	arena := NewSubtreeArena(32)
+	stack := NewStack(arena)
+
+	v0 := stack.AddVersion(StateID(1), Length{Bytes: 0})
+
+	// No error cost — should return true.
+	if !stack.HasAdvancedSinceError(v0) {
+		t.Error("should return true when errorCost == 0")
+	}
+}
+
+func TestHasAdvancedSinceErrorWithProgress(t *testing.T) {
+	arena := NewSubtreeArena(32)
+	lang := makeSubtreeTestLanguage()
+	stack := NewStack(arena)
+
+	v0 := stack.AddVersion(StateID(1), Length{Bytes: 0})
+
+	// Push a non-zero-width subtree.
+	leaf := NewLeafSubtree(arena, Symbol(1),
+		Length{Bytes: 0}, Length{Bytes: 5, Point: Point{Column: 5}},
+		StateID(1), false, false, false, lang)
+	stack.Push(v0, StateID(2), leaf, false, Length{Bytes: 5})
+
+	// Add error cost so errorCost > 0.
+	stack.AddErrorCost(v0, 100)
+
+	// Push another non-zero-width subtree AFTER the error.
+	leaf2 := NewLeafSubtree(arena, Symbol(2),
+		Length{Bytes: 0}, Length{Bytes: 3, Point: Point{Column: 3}},
+		StateID(2), false, false, false, lang)
+	stack.Push(v0, StateID(3), leaf2, false, Length{Bytes: 8})
+
+	// Should return true — we advanced with a 3-byte subtree after the error.
+	if !stack.HasAdvancedSinceError(v0) {
+		t.Error("should return true when non-zero-width subtree pushed after error")
+	}
+}
+
+func TestHasAdvancedSinceErrorNoProgress(t *testing.T) {
+	arena := NewSubtreeArena(32)
+	lang := makeSubtreeTestLanguage()
+	stack := NewStack(arena)
+
+	v0 := stack.AddVersion(StateID(1), Length{Bytes: 0})
+
+	// Push a zero-width subtree.
+	leaf := NewLeafSubtree(arena, Symbol(1),
+		Length{Bytes: 0}, Length{Bytes: 0, Point: Point{}},
+		StateID(1), false, false, false, lang)
+	stack.Push(v0, StateID(2), leaf, false, Length{Bytes: 0})
+
+	// Add error cost.
+	stack.AddErrorCost(v0, 100)
+
+	// Push another zero-width subtree after error.
+	leaf2 := NewLeafSubtree(arena, Symbol(2),
+		Length{Bytes: 0}, Length{Bytes: 0, Point: Point{}},
+		StateID(2), false, false, false, lang)
+	stack.Push(v0, StateID(3), leaf2, false, Length{Bytes: 0})
+
+	// Should return false — no non-zero-width subtree after error.
+	if stack.HasAdvancedSinceError(v0) {
+		t.Error("should return false when only zero-width subtrees after error")
+	}
+}
+
+func TestHasAdvancedSinceErrorOutOfBounds(t *testing.T) {
+	arena := NewSubtreeArena(32)
+	stack := NewStack(arena)
+
+	// Non-existent version.
+	if stack.HasAdvancedSinceError(StackVersion(99)) {
+		t.Error("should return false for non-existent version")
+	}
+}
+
+func TestRenumberVersionPreservesSummary(t *testing.T) {
+	arena := NewSubtreeArena(32)
+	lang := makeSubtreeTestLanguage()
+	stack := NewStack(arena)
+
+	// Create two versions.
+	v0 := stack.AddVersion(StateID(1), Length{Bytes: 0})
+	v1 := stack.AddVersion(StateID(2), Length{Bytes: 0})
+
+	// Push a node on v0 so it has links for RecordSummary to walk.
+	leaf := NewLeafSubtree(arena, Symbol(1),
+		Length{Bytes: 0}, Length{Bytes: 1, Point: Point{Column: 1}},
+		StateID(1), false, false, false, lang)
+	stack.Push(v0, StateID(5), leaf, false, Length{Bytes: 1})
+
+	// Record a summary on v0 (the target that will be overwritten).
+	stack.RecordSummary(v0, 10)
+
+	// v1 (the source) has no summary.
+	if stack.GetSummary(v1) != nil {
+		t.Fatal("v1 should have no summary initially")
+	}
+
+	// v0 should have a summary.
+	if stack.GetSummary(v0) == nil {
+		t.Fatal("v0 should have a summary after RecordSummary")
+	}
+
+	// Renumber v1 -> v0. Since v0 has summary but v1 doesn't,
+	// v1 should inherit v0's summary before v0 is overwritten.
+	stack.RenumberVersion(v1, v0)
+
+	// After renumber, v0's head is now what was v1, but with v0's old summary.
+	summary := stack.GetSummary(v0)
+	if summary == nil {
+		t.Error("summary should be preserved on target after renumber")
+	}
+}
+
+func TestRenumberVersionSourceHasSummary(t *testing.T) {
+	arena := NewSubtreeArena(32)
+	lang := makeSubtreeTestLanguage()
+	stack := NewStack(arena)
+
+	// Create two versions.
+	v0 := stack.AddVersion(StateID(1), Length{Bytes: 0})
+
+	// Push some nodes so the summary has entries.
+	leaf := NewLeafSubtree(arena, Symbol(1),
+		Length{Bytes: 0}, Length{Bytes: 1, Point: Point{Column: 1}},
+		StateID(1), false, false, false, lang)
+	stack.Push(v0, StateID(2), leaf, false, Length{Bytes: 1})
+
+	v1 := stack.AddVersion(StateID(3), Length{Bytes: 0})
+
+	// Record summaries on both.
+	stack.RecordSummary(v0, 10)
+	stack.RecordSummary(v1, 10)
+
+	// When source already has a summary, target's summary is NOT transferred
+	// (matches C behavior: only transfer when source is nil).
+	stack.RenumberVersion(v1, v0)
+
+	// v0 should have v1's summary (which came from its own RecordSummary).
+	summary := stack.GetSummary(v0)
+	if summary == nil {
+		t.Error("source's own summary should be preserved")
+	}
+}
+
+func TestRenumberVersionNoOp(t *testing.T) {
+	arena := NewSubtreeArena(32)
+	stack := NewStack(arena)
+
+	v0 := stack.AddVersion(StateID(1), Length{Bytes: 0})
+
+	// Renumber to self is a no-op.
+	stack.RenumberVersion(v0, v0)
+
+	if stack.VersionCount() != 1 {
+		t.Errorf("version count = %d, want 1", stack.VersionCount())
+	}
+	if stack.State(v0) != 1 {
+		t.Errorf("state = %d, want 1", stack.State(v0))
+	}
+}
+
+// TestMergeDynPrecAccumulation verifies that after merging two versions,
+// the surviving node's dynamicPrecedence reflects the best path's accumulated
+// precedence, not just the target's original value.
+func TestMergeDynPrecAccumulation(t *testing.T) {
+	arena := NewSubtreeArena(32)
+	lang := makeSubtreeTestLanguage()
+	stack := NewStack(arena)
+
+	// Create a common base at state 1.
+	v0 := stack.AddVersion(StateID(1), Length{Bytes: 0})
+
+	// Push a leaf onto v0, advancing to state 5.
+	leaf0 := NewLeafSubtree(arena, Symbol(1),
+		Length{Bytes: 0}, Length{Bytes: 3, Point: Point{Column: 3}},
+		StateID(1), false, false, false, lang)
+	stack.Push(v0, StateID(5), leaf0, false, Length{Bytes: 3})
+
+	// Create two versions from state 5.
+	v1 := stack.Split(v0)
+
+	// Create two "reduced" subtrees with different DynPrec.
+	// Simulate call_expression (DynPrec=0) and type_conversion_expression (DynPrec=-1).
+	callNode := NewNodeSubtree(arena, Symbol(10), nil, 1, lang)
+	if !callNode.IsInline() {
+		data := arena.Get(callNode)
+		data.DynamicPrecedence = 0 // call_expression
+	}
+
+	convNode := NewNodeSubtree(arena, Symbol(10), nil, 2, lang)
+	if !convNode.IsInline() {
+		data := arena.Get(convNode)
+		data.DynamicPrecedence = -1 // type_conversion_expression
+	}
+
+	// Push them to both versions, arriving at the same GOTO state.
+	stack.Push(v0, StateID(20), callNode, false, Length{Bytes: 3})
+	stack.Push(v1, StateID(20), convNode, false, Length{Bytes: 3})
+
+	// Both at state 20 — merge.
+	if !stack.CanMerge(v0, v1) {
+		t.Fatal("versions at same state should be mergeable")
+	}
+
+	stack.Merge(v0, v1)
+
+	// After merge, the surviving version should have the HIGHER DynPrec.
+	prec := stack.DynamicPrecedence(v0)
+	if prec < 0 {
+		t.Errorf("DynamicPrecedence after merge = %d, want >= 0 (best path)", prec)
+	}
+}
+
+// TestMergeSameTargetNodeDisambiguation verifies Case 1 of nodeAddLink:
+// when two links point to the same target node with equivalent subtrees,
+// only the higher-DynPrec subtree is kept.
+func TestMergeSameTargetNodeDisambiguation(t *testing.T) {
+	arena := NewSubtreeArena(32)
+	lang := makeSubtreeTestLanguage()
+	stack := NewStack(arena)
+
+	// Create two versions with the same base node.
+	v0 := stack.AddVersion(StateID(1), Length{Bytes: 0})
+	v1 := stack.Split(v0) // Both point to the same node
+
+	// Create subtrees with same symbol but different DynPrec.
+	goodLeaf := NewLeafSubtree(arena, Symbol(5),
+		Length{Bytes: 0}, Length{Bytes: 2, Point: Point{Column: 2}},
+		StateID(5), false, false, false, lang)
+	badLeaf := NewLeafSubtree(arena, Symbol(5),
+		Length{Bytes: 0}, Length{Bytes: 2, Point: Point{Column: 2}},
+		StateID(5), false, false, false, lang)
+
+	// Set different DynPrec on the heap data.
+	if !goodLeaf.IsInline() {
+		arena.Get(goodLeaf).DynamicPrecedence = 10
+	}
+	if !badLeaf.IsInline() {
+		arena.Get(badLeaf).DynamicPrecedence = -5
+	}
+
+	// Push to same GOTO state (both versions share the base node).
+	stack.Push(v0, StateID(10), goodLeaf, false, Length{Bytes: 2})
+	stack.Push(v1, StateID(10), badLeaf, false, Length{Bytes: 2})
+
+	// Merge.
+	stack.Merge(v0, v1)
+
+	// Pop should show only 1 path (disambiguation removed the inferior one),
+	// OR 2 paths but with the better one as links[0].
+	count := stack.PopCount(v0, 1)
+	// With same target node and equivalent subtrees, Case 1 should deduplicate.
+	if count > 2 {
+		t.Errorf("PopCount after disambiguation merge = %d, want <= 2", count)
+	}
+
+	// The surviving version should have the better DynPrec.
+	prec := stack.DynamicPrecedence(v0)
+	if prec < 0 {
+		t.Errorf("DynamicPrecedence = %d, want >= 0 (should reflect best path)", prec)
+	}
+}
+
+// --- PopPending tests ---
+
+func TestPopPendingReturnsPendingSubtree(t *testing.T) {
+	arena := NewSubtreeArena(32)
+	lang := makeSubtreeTestLanguage()
+	stack := NewStack(arena)
+	v0 := stack.AddVersion(StateID(0), Length{Bytes: 0})
+
+	leaf1 := NewLeafSubtree(arena, Symbol(1),
+		Length{Bytes: 0, Point: Point{Column: 0}},
+		Length{Bytes: 3, Point: Point{Column: 3}},
+		StateID(1), false, false, false, lang)
+	stack.Push(v0, 1, leaf1, false, Length{Bytes: 3, Point: Point{Column: 3}})
+
+	leaf2 := NewLeafSubtree(arena, Symbol(2),
+		Length{Bytes: 0, Point: Point{Column: 0}},
+		Length{Bytes: 2, Point: Point{Column: 2}},
+		StateID(2), false, false, false, lang)
+	stack.Push(v0, 2, leaf2, true, Length{Bytes: 5, Point: Point{Column: 5}})
+
+	got, ok := stack.PopPending(v0)
+	if !ok {
+		t.Fatal("expected PopPending to succeed")
+	}
+	if GetSymbol(got, arena) != 2 {
+		t.Errorf("expected symbol 2, got %d", GetSymbol(got, arena))
+	}
+	if stack.State(v0) != 1 {
+		t.Errorf("expected state 1 after PopPending, got %d", stack.State(v0))
+	}
+}
+
+func TestPopPendingReturnsFalseForNonPending(t *testing.T) {
+	arena := NewSubtreeArena(32)
+	lang := makeSubtreeTestLanguage()
+	stack := NewStack(arena)
+	v0 := stack.AddVersion(StateID(0), Length{Bytes: 0})
+
+	leaf := NewLeafSubtree(arena, Symbol(1),
+		Length{Bytes: 0, Point: Point{Column: 0}},
+		Length{Bytes: 3, Point: Point{Column: 3}},
+		StateID(1), false, false, false, lang)
+	stack.Push(v0, 1, leaf, false, Length{Bytes: 3, Point: Point{Column: 3}})
+
+	_, ok := stack.PopPending(v0)
+	if ok {
+		t.Error("expected PopPending to return false for non-pending subtree")
+	}
+}
+
+func TestPopPendingEmptyStack(t *testing.T) {
+	arena := NewSubtreeArena(32)
+	stack := NewStack(arena)
+	v0 := stack.AddVersion(StateID(0), Length{Bytes: 0})
+
+	_, ok := stack.PopPending(v0)
+	if ok {
+		t.Error("expected PopPending to return false on empty stack")
+	}
+}
+
+// --- PopError tests ---
+
+func TestPopErrorReturnsErrorSubtree(t *testing.T) {
+	arena := NewSubtreeArena(32)
+	lang := makeSubtreeTestLanguage()
+	stack := NewStack(arena)
+	v0 := stack.AddVersion(StateID(0), Length{Bytes: 0})
+
+	leaf := NewLeafSubtree(arena, Symbol(1),
+		Length{Bytes: 0, Point: Point{Column: 0}},
+		Length{Bytes: 3, Point: Point{Column: 3}},
+		StateID(1), false, false, false, lang)
+	stack.Push(v0, 1, leaf, false, Length{Bytes: 3, Point: Point{Column: 3}})
+
+	errLeaf := NewLeafSubtree(arena, SymbolError,
+		Length{Bytes: 0, Point: Point{Column: 0}},
+		Length{Bytes: 2, Point: Point{Column: 2}},
+		StateID(2), false, false, false, lang)
+	stack.Push(v0, 2, errLeaf, false, Length{Bytes: 5, Point: Point{Column: 5}})
+
+	got, ok := stack.PopError(v0)
+	if !ok {
+		t.Fatal("expected PopError to succeed")
+	}
+	if GetSymbol(got, arena) != SymbolError {
+		t.Errorf("expected SymbolError, got %d", GetSymbol(got, arena))
+	}
+	if stack.State(v0) != 1 {
+		t.Errorf("expected state 1 after PopError, got %d", stack.State(v0))
+	}
+}
+
+func TestPopErrorReturnsFalseForNonError(t *testing.T) {
+	arena := NewSubtreeArena(32)
+	lang := makeSubtreeTestLanguage()
+	stack := NewStack(arena)
+	v0 := stack.AddVersion(StateID(0), Length{Bytes: 0})
+
+	leaf := NewLeafSubtree(arena, Symbol(1),
+		Length{Bytes: 0, Point: Point{Column: 0}},
+		Length{Bytes: 3, Point: Point{Column: 3}},
+		StateID(1), false, false, false, lang)
+	stack.Push(v0, 1, leaf, false, Length{Bytes: 3, Point: Point{Column: 3}})
+
+	_, ok := stack.PopError(v0)
+	if ok {
+		t.Error("expected PopError to return false for non-error subtree")
+	}
+}
+
+func TestPopErrorEmptyStack(t *testing.T) {
+	arena := NewSubtreeArena(32)
+	stack := NewStack(arena)
+	v0 := stack.AddVersion(StateID(0), Length{Bytes: 0})
+
+	_, ok := stack.PopError(v0)
+	if ok {
+		t.Error("expected PopError to return false on empty stack")
 	}
 }
