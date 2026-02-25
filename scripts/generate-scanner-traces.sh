@@ -129,79 +129,13 @@ echo "=== CLI built at $PATCHED_CLI ==="
 # Create traces output directory
 mkdir -p "$TRACES_DIR"
 
-# Helper: extract individual test inputs from a corpus .txt file.
-# Corpus format:
-#   ==================
-#   Test Name
-#   ==================
-#
-#   <input code>
-#
-#   ---
-#
-#   <expected s-expression>
-#
-# We extract just the input code sections.
-extract_corpus_inputs() {
-  local corpus_file="$1"
-  local output_dir="$2"
-  local lang="$3"
-
-  python3 -c "
-import sys, os, re
-
-corpus_file = sys.argv[1]
-output_dir = sys.argv[2]
-lang = sys.argv[3]
-
-with open(corpus_file, 'r') as f:
-    content = f.read()
-
-# Split by test separator (line of === or more)
-tests = re.split(r'^={3,}\s*$', content, flags=re.MULTILINE)
-
-# Tests come in groups: [preamble, name, body, name, body, ...]
-# Skip the first element if it's empty
-idx = 0
-test_num = 0
-if tests and not tests[0].strip():
-    idx = 1
-
-while idx + 1 < len(tests):
-    name = tests[idx].strip()
-    body = tests[idx + 1] if idx + 1 < len(tests) else ''
-    idx += 2
-
-    # Body is split by --- into input and expected output
-    parts = re.split(r'^-{3,}\s*$', body, flags=re.MULTILINE)
-    if not parts:
-        continue
-
-    # Match the Go corpus parser behavior:
-    # 1. Strip trailing \\r\\n (blank lines before divider)
-    # 2. Strip a single leading \\n (blank line after header)
-    # 3. Re-append trailing \\n
-    input_code = parts[0].rstrip('\\r\\n')
-    if input_code.startswith('\\n'):
-        input_code = input_code[1:]
-    elif input_code.startswith('\\r\\n'):
-        input_code = input_code[2:]
-    if not input_code:
-        continue
-    if not input_code.endswith('\\n'):
-        input_code += '\\n'
-
-    # Write input to a file
-    safe_name = re.sub(r'[^a-zA-Z0-9_-]', '_', name)[:80]
-    out_path = os.path.join(output_dir, f'{test_num:04d}_{safe_name}.txt')
-    with open(out_path, 'w') as out:
-        out.write(input_code)
-
-    test_num += 1
-
-print(f'Extracted {test_num} test inputs from {os.path.basename(corpus_file)}')
-" "$corpus_file" "$output_dir" "$lang"
-}
+# Build the Go corpus extractor tool. This uses our internal/corpustest parser
+# for exact byte-level consistency with the Go test harness, eliminating the
+# previous Python dependency and its universal-newlines CRLF normalization bug.
+echo "=== Building corpus extractor ==="
+EXTRACTOR="$WORK_DIR/extract-corpus-inputs"
+go build -o "$EXTRACTOR" "$PROJECT_DIR/cmd/extract-corpus-inputs"
+echo "  Built $EXTRACTOR"
 
 # Helper: get file extension for a language (for tree-sitter to auto-detect)
 lang_extension() {
@@ -265,36 +199,28 @@ for lang in "${SCANNER_LANGUAGES[@]}"; do
   echo ""
   echo "=== Processing $lang ==="
 
-  # Extract test inputs from corpus files
-  inputs_dir="$WORK_DIR/inputs/$lang"
-  mkdir -p "$inputs_dir"
-
+  # Extract test inputs from corpus files using our Go tool.
+  # The tool writes files with the correct extension directly, so no rename step needed.
   ext="$(lang_extension "$lang")"
+  inputs_dir="$WORK_DIR/inputs/$lang"
 
+  # Build args: pass all existing corpus dirs as positional arguments
+  extractor_args=()
   for corpus_dir in "${corpus_dirs[@]}"; do
-    if [ ! -d "$corpus_dir" ]; then
-      continue
+    if [ -d "$corpus_dir" ]; then
+      extractor_args+=("$corpus_dir")
     fi
-    # Process *.txt files and extensionless files (some grammars like Perl
-    # use extensionless corpus files in the standard format)
-    for corpus_file in "$corpus_dir"/*; do
-      [ -f "$corpus_file" ] || continue
-      fname="$(basename "$corpus_file")"
-      corpus_ext="${fname##*.}"
-      # Accept .txt files or extensionless files (no . in filename)
-      if [ "$corpus_ext" = "txt" ] || [ "$corpus_ext" = "$fname" ]; then
-        extract_corpus_inputs "$corpus_file" "$inputs_dir" "$lang"
-      fi
-    done
   done
 
+  echo "  Extracting test inputs..."
+  "$EXTRACTOR" --lang "$lang" --ext "$ext" --output-dir "$inputs_dir" "${extractor_args[@]}"
+
   # Count extracted inputs
-  input_count=$(find "$inputs_dir" -name '*.txt' 2>/dev/null | wc -l | tr -d ' ')
+  input_count=$(find "$inputs_dir" -name "*.$ext" 2>/dev/null | wc -l | tr -d ' ')
   if [ "$input_count" -eq 0 ]; then
     echo "Warning: no test inputs extracted for $lang, skipping" >&2
     continue
   fi
-  echo "  Extracted $input_count test inputs"
 
   # Build the grammar shared library directly with cc.
   # The tree-sitter CLI's internal grammar build hangs on large grammars
@@ -317,22 +243,13 @@ for lang in "${SCANNER_LANGUAGES[@]}"; do
   fi
   echo "  Built $dylib_path"
 
-  # Rename inputs to have the right extension for tree-sitter language detection
-  renamed_dir="$WORK_DIR/inputs_renamed/$lang"
-  mkdir -p "$renamed_dir"
-  for f in "$inputs_dir"/*.txt; do
-    [ -f "$f" ] || continue
-    base="$(basename "$f" .txt)"
-    cp "$f" "$renamed_dir/${base}.$ext"
-  done
-
   # Now parse all files using --lib-path to bypass CLI's internal grammar build
   trace_file="$TRACES_DIR/$lang.jsonl"
   > "$trace_file"  # truncate
 
   echo "  Generating traces..."
   file_count=0
-  for input_file in "$renamed_dir"/*."$ext"; do
+  for input_file in "$inputs_dir"/*."$ext"; do
     [ -f "$input_file" ] || continue
     file_count=$((file_count + 1))
 
