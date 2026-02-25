@@ -134,7 +134,8 @@ mkdir -p "$TRACES_DIR"
 # previous Python dependency and its universal-newlines CRLF normalization bug.
 echo "=== Building corpus extractor ==="
 EXTRACTOR="$WORK_DIR/extract-corpus-inputs"
-go build -o "$EXTRACTOR" "$PROJECT_DIR/cmd/extract-corpus-inputs"
+cd "$PROJECT_DIR"
+go build -o "$EXTRACTOR" ./cmd/extract-corpus-inputs
 echo "  Built $EXTRACTOR"
 
 # Helper: get file extension for a language (for tree-sitter to auto-detect)
