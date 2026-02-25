@@ -9,7 +9,7 @@ import (
 )
 
 func queryTestLanguage() *ts.Language {
-	lang := tg.JSONLanguage()
+	lang := tg.JsonLanguage()
 	lang.LexFn = jsonLexFn
 	return lang
 }

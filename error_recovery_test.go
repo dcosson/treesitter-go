@@ -24,7 +24,7 @@ type errorRecoveryLanguage struct {
 
 var errorRecoveryLanguages = []errorRecoveryLanguage{
 	// JSON error recovery is fully working — assert all properties.
-	{"json", func() *ts.Language { return tg.JSONLanguage() }, true},
+	{"json", func() *ts.Language { return tg.JsonLanguage() }, true},
 	// Go and JavaScript have known parser limitations (nil trees, byte range issues,
 	// missing ERROR nodes on some malformed inputs). We verify no-panic and log issues.
 	{"go", func() *ts.Language { return golanggrammar.GoLanguage() }, false},

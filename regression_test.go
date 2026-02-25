@@ -162,7 +162,7 @@ func TestRegressionAll(t *testing.T) {
 		lang *ts.Language
 	}
 
-	jsonLang := tg.JSONLanguage()
+	jsonLang := tg.JsonLanguage()
 	jsonLang.LexFn = jsonLexFn
 
 	pyLang := pygrammar.PythonLanguage()

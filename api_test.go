@@ -145,7 +145,7 @@ func TestNodeIsExtra(t *testing.T) {
 func TestNodeIsMissing(t *testing.T) {
 	// Use JSON grammar which has reliable error recovery for malformed input.
 	src := `{"a": }`
-	lang := tg.JSONLanguage()
+	lang := tg.JsonLanguage()
 	p := ts.NewParser()
 	p.SetLanguage(lang)
 	tree := p.ParseString(context.Background(), []byte(src))

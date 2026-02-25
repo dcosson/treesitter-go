@@ -64,7 +64,7 @@ type benchLang struct {
 // benchLanguages returns all 15 supported languages with their input generators.
 func benchLanguages() []benchLang {
 	return []benchLang{
-		{"json", ".json", "json", func() *ts.Language { return tg.JSONLanguage() }, generateJSON},
+		{"json", ".json", "json", func() *ts.Language { return tg.JsonLanguage() }, generateJSON},
 		{"go", ".go", "go", func() *ts.Language { return golanggrammar.GoLanguage() }, generateGo},
 		{"python", ".py", "python", func() *ts.Language {
 			l := pygrammar.PythonLanguage()
@@ -288,7 +288,7 @@ func BenchmarkLatencyDistribution(b *testing.B) {
 
 func BenchmarkParseNestedJSON_500(b *testing.B) {
 	input := generateNestedJSON(2000) // ~500 depth
-	lang := tg.JSONLanguage()
+	lang := tg.JsonLanguage()
 
 	parser := ts.NewParser()
 	parser.SetLanguage(lang)
@@ -319,7 +319,7 @@ func BenchmarkTreeTraversal(b *testing.B) {
 	} {
 		b.Run(size.name, func(b *testing.B) {
 			input := generateJSON(size.bytes)
-			lang := tg.JSONLanguage()
+			lang := tg.JsonLanguage()
 
 			parser := ts.NewParser()
 			parser.SetLanguage(lang)
@@ -349,7 +349,7 @@ func countNodes(n ts.Node) int {
 
 func BenchmarkSExpression_1KB(b *testing.B) {
 	input := generateJSON(1024)
-	lang := tg.JSONLanguage()
+	lang := tg.JsonLanguage()
 
 	parser := ts.NewParser()
 	parser.SetLanguage(lang)
@@ -378,7 +378,7 @@ func TestAllocationsPerParse(t *testing.T) {
 		{"100KB", 100 * 1024},
 	}
 
-	lang := tg.JSONLanguage()
+	lang := tg.JsonLanguage()
 
 	for _, s := range sizes {
 		t.Run(s.name, func(t *testing.T) {
@@ -420,7 +420,7 @@ func TestAllocationsPerParse(t *testing.T) {
 
 func BenchmarkParserReuse(b *testing.B) {
 	input := generateJSON(10 * 1024)
-	lang := tg.JSONLanguage()
+	lang := tg.JsonLanguage()
 
 	b.Run("reuse", func(b *testing.B) {
 		parser := ts.NewParser()
@@ -449,7 +449,7 @@ func BenchmarkParserReuse(b *testing.B) {
 
 func BenchmarkParallelParse(b *testing.B) {
 	input := generateJSON(10 * 1024)
-	lang := tg.JSONLanguage()
+	lang := tg.JsonLanguage()
 
 	for _, goroutines := range []int{1, 2, 4, 8} {
 		b.Run(fmt.Sprintf("goroutines-%d", goroutines), func(b *testing.B) {
@@ -478,7 +478,7 @@ func BenchmarkParallelParse(b *testing.B) {
 
 func BenchmarkParseChunkedInput(b *testing.B) {
 	input := generateJSON(10 * 1024)
-	lang := tg.JSONLanguage()
+	lang := tg.JsonLanguage()
 
 	for _, chunkSize := range []int{64, 256, 1024, 4096} {
 		b.Run(fmt.Sprintf("chunk-%d", chunkSize), func(b *testing.B) {
@@ -523,7 +523,7 @@ func (c *chunkedInput) Read(byteOffset uint32, _ ts.Point) []byte {
 
 func TestGCImpact(t *testing.T) {
 	input := generateJSON(100 * 1024)
-	lang := tg.JSONLanguage()
+	lang := tg.JsonLanguage()
 
 	parser := ts.NewParser()
 	parser.SetLanguage(lang)
@@ -572,7 +572,7 @@ func TestGCImpact(t *testing.T) {
 // --- Scaling Benchmark (parse time vs input size) ---
 
 func BenchmarkParseScaling(b *testing.B) {
-	lang := tg.JSONLanguage()
+	lang := tg.JsonLanguage()
 
 	for _, size := range []int{256, 512, 1024, 2048, 4096, 8192, 16384} {
 		b.Run(fmt.Sprintf("%dB", size), func(b *testing.B) {

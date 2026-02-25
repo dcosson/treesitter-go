@@ -63,7 +63,7 @@ func fuzzParseWithLang(f *testing.F, lang *ts.Language, corpusRepoName string) {
 }
 
 func FuzzParseJSON(f *testing.F) {
-	lang := tg.JSONLanguage()
+	lang := tg.JsonLanguage()
 	lang.LexFn = jsonLexFn
 	seedFromCorpus(f, "tree-sitter-json")
 	f.Fuzz(func(t *testing.T, data []byte) {
