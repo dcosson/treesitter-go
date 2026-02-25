@@ -2,7 +2,7 @@
   "id": "tree-sitter-go-ogi.6",
   "title": "remove-aliases",
   "description": "Remove temporary type aliases and re-exports across packages; use direct package types only",
-  "status": "open",
+  "status": "closed",
   "priority": 2,
   "type": "task",
   "parent": "tree-sitter-go-ogi",
@@ -22,5 +22,7 @@
     "project=treesitter"
   ],
   "created_at": "2026-02-25T09:55:57.705124-08:00",
-  "updated_at": "2026-02-25T09:55:57.705124-08:00"
+  "updated_at": "2026-02-25T11:58:22.448477-08:00",
+  "closed_at": "2026-02-25T11:58:22.448477-08:00",
+  "close_reason": "Closed"
 }
