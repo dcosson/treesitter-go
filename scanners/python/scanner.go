@@ -124,11 +124,9 @@ func (s *Scanner) Serialize(buf []byte) uint32 {
 	}
 
 	// Serialize indent stack (skip first element which is always 0).
-	for i := 1; i < len(s.indents) && int(size)+2 <= len(buf); i++ {
-		v := s.indents[i]
-		buf[size] = byte(v & 0xFF)
-		size++
-		buf[size] = byte((v >> 8) & 0xFF)
+	// C writes 1 byte per indent: buffer[size++] = (char)*array_get(&scanner->indents, iter)
+	for i := 1; i < len(s.indents) && int(size) < len(buf); i++ {
+		buf[size] = byte(s.indents[i])
 		size++
 	}
 
@@ -160,10 +158,10 @@ func (s *Scanner) Deserialize(data []byte) {
 		}
 	}
 
-	for size+1 < len(data) {
-		v := uint16(data[size]) | uint16(data[size+1])<<8
-		s.indents = append(s.indents, v)
-		size += 2
+	// C reads 1 byte per indent: array_push(&scanner->indents, (unsigned char)buffer[size])
+	for size < len(data) {
+		s.indents = append(s.indents, uint16(data[size]))
+		size++
 	}
 }
 

@@ -73,8 +73,10 @@ type heredoc struct {
 
 // Scanner implements ts.ExternalScanner for Bash.
 type Scanner struct {
-	lastGlobParenDepth uint8
-	heredocs           []heredoc
+	lastGlobParenDepth   uint8
+	extWasInDoubleQuote  bool
+	extSawOutsideQuote   bool
+	heredocs             []heredoc
 }
 
 // New creates a new Bash external scanner (ts.ExternalScannerFactory).
@@ -86,11 +88,15 @@ func New() ts.ExternalScanner {
 func (s *Scanner) Serialize(buf []byte) uint32 {
 	size := uint32(0)
 
-	if len(buf) < 2 {
+	if len(buf) < 4 {
 		return 0
 	}
 
 	buf[size] = s.lastGlobParenDepth
+	size++
+	buf[size] = boolByte(s.extWasInDoubleQuote)
+	size++
+	buf[size] = boolByte(s.extSawOutsideQuote)
 	size++
 	buf[size] = byte(len(s.heredocs))
 	size++
@@ -123,7 +129,7 @@ func (s *Scanner) Serialize(buf []byte) uint32 {
 
 // Deserialize restores the scanner state from data.
 func (s *Scanner) Deserialize(data []byte) {
-	if len(data) < 2 {
+	if len(data) < 4 {
 		s.reset()
 		return
 	}
@@ -132,6 +138,10 @@ func (s *Scanner) Deserialize(data []byte) {
 	n := uint32(len(data))
 
 	s.lastGlobParenDepth = data[size]
+	size++
+	s.extWasInDoubleQuote = data[size] != 0
+	size++
+	s.extSawOutsideQuote = data[size] != 0
 	size++
 	heredocCount := int(data[size])
 	size++
@@ -179,6 +189,8 @@ func (s *Scanner) Scan(lexer *ts.Lexer, validSymbols []bool) bool {
 
 func (s *Scanner) reset() {
 	s.lastGlobParenDepth = 0
+	s.extWasInDoubleQuote = false
+	s.extSawOutsideQuote = false
 	s.heredocs = nil
 }
 

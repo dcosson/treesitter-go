@@ -198,8 +198,11 @@ func (s *Scanner) Serialize(buf []byte) uint32 {
 	buf[size] = byte(s.heredocState)
 	size++
 
-	// Serialize heredoc delimiter (length as int32 + contents)
-	if int(size)+4 > len(buf) {
+	// Serialize heredoc delimiter as full 36-byte TSPString struct (memcpy-equivalent).
+	// C uses: memcpy(&buffer[size], &state->heredoc_delim, sizeof(TSPString))
+	// sizeof(TSPString) = 4 (int length) + 8*4 (int32_t contents[8]) = 36 bytes.
+	const tspStringSize = 4 + maxTSPStringLen*4 // 36 bytes
+	if int(size)+tspStringSize > len(buf) {
 		return size
 	}
 	buf[size] = byte(s.heredocDelim.length)
@@ -208,14 +211,8 @@ func (s *Scanner) Serialize(buf []byte) uint32 {
 	buf[size+3] = byte(s.heredocDelim.length >> 24)
 	size += 4
 
-	maxLen := s.heredocDelim.length
-	if maxLen > maxTSPStringLen {
-		maxLen = maxTSPStringLen
-	}
-	for i := 0; i < maxLen; i++ {
-		if int(size)+4 > len(buf) {
-			break
-		}
+	// Always write all 8 content slots (including unused ones as zeros).
+	for i := 0; i < maxTSPStringLen; i++ {
 		v := s.heredocDelim.contents[i]
 		buf[size] = byte(v)
 		buf[size+1] = byte(v >> 8)
@@ -268,18 +265,16 @@ func (s *Scanner) Deserialize(data []byte) {
 	s.heredocState = int(data[off])
 	off++
 
-	// Deserialize heredoc delimiter
-	if off+4 > len(data) {
+	// Deserialize heredoc delimiter as full 36-byte TSPString struct (memcpy-equivalent).
+	const tspStringSize = 4 + maxTSPStringLen*4 // 36 bytes
+	if off+tspStringSize > len(data) {
 		return
 	}
 	s.heredocDelim.length = int(data[off]) | int(data[off+1])<<8 | int(data[off+2])<<16 | int(data[off+3])<<24
 	off += 4
 
-	maxLen := s.heredocDelim.length
-	if maxLen > maxTSPStringLen {
-		maxLen = maxTSPStringLen
-	}
-	for i := 0; i < maxLen && off+4 <= len(data); i++ {
+	// Always read all 8 content slots.
+	for i := 0; i < maxTSPStringLen; i++ {
 		s.heredocDelim.contents[i] = int32(data[off]) | int32(data[off+1])<<8 | int32(data[off+2])<<16 | int32(data[off+3])<<24
 		off += 4
 	}
