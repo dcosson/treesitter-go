@@ -3,6 +3,7 @@ package generate
 import (
 	"fmt"
 	"regexp"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -443,62 +444,83 @@ func extractParseActions(g *Grammar, src string) error {
 }
 
 // parseActionMacros parses action macros from a line fragment.
+// Actions are returned in C source-position order (left to right),
+// matching the order they appear in the generated parser.c. This is
+// critical because C tree-sitter processes actions in array order and
+// the ordering affects GLR merge disambiguation.
 func (g *Grammar) parseActionMacros(line string) []ActionEntry {
-	var actions []ActionEntry
+	type posAction struct {
+		pos    int
+		action ActionEntry
+	}
+	var found []posAction
 
 	// RECOVER()
-	if strings.Contains(line, "RECOVER()") {
-		actions = append(actions, ActionEntry{ActionType: "recover"})
+	recoverRe := regexp.MustCompile(`RECOVER\(\)`)
+	for _, loc := range recoverRe.FindAllStringIndex(line, -1) {
+		found = append(found, posAction{loc[0], ActionEntry{ActionType: "recover"}})
 	}
 
 	// SHIFT_EXTRA()
-	shiftExtraRe := regexp.MustCompile(`(?:^|,)\s*SHIFT_EXTRA\(\)`)
-	for range shiftExtraRe.FindAllString(line, -1) {
-		actions = append(actions, ActionEntry{ActionType: "shift", ShiftExtra: true})
+	shiftExtraRe := regexp.MustCompile(`SHIFT_EXTRA\(\)`)
+	for _, loc := range shiftExtraRe.FindAllStringIndex(line, -1) {
+		found = append(found, posAction{loc[0], ActionEntry{ActionType: "shift", ShiftExtra: true}})
 	}
 
 	// SHIFT_REPEAT(N)
 	shiftRepeatRe := regexp.MustCompile(`SHIFT_REPEAT\((\d+)\)`)
-	for _, m := range shiftRepeatRe.FindAllStringSubmatch(line, -1) {
-		state, _ := strconv.Atoi(m[1])
-		actions = append(actions, ActionEntry{
+	for _, m := range shiftRepeatRe.FindAllStringSubmatchIndex(line, -1) {
+		state, _ := strconv.Atoi(line[m[2]:m[3]])
+		found = append(found, posAction{m[0], ActionEntry{
 			ActionType:      "shift",
 			ShiftState:      uint16(state),
 			ShiftRepetition: true,
-		})
+		}})
 	}
 
 	// SHIFT(N) - must not match SHIFT_EXTRA or SHIFT_REPEAT
 	shiftRe := regexp.MustCompile(`(?:^|[,\s])SHIFT\((\d+)\)`)
-	for _, m := range shiftRe.FindAllStringSubmatch(line, -1) {
-		state, _ := strconv.Atoi(m[1])
-		actions = append(actions, ActionEntry{
+	for _, m := range shiftRe.FindAllStringSubmatchIndex(line, -1) {
+		state, _ := strconv.Atoi(line[m[2]:m[3]])
+		// Use the position of 'S' in SHIFT, not the leading comma/space
+		pos := strings.Index(line[m[0]:m[1]], "SHIFT")
+		found = append(found, posAction{m[0] + pos, ActionEntry{
 			ActionType: "shift",
 			ShiftState: uint16(state),
-		})
+		}})
 	}
 
 	// REDUCE(sym, childCount, dynPrec, prodID)
 	reduceRe := regexp.MustCompile(`REDUCE\((\w+),\s*(\d+),\s*(-?\d+),\s*(\d+)\)`)
-	for _, m := range reduceRe.FindAllStringSubmatch(line, -1) {
-		sym := g.resolveSymbolValue(m[1])
-		childCount, _ := strconv.Atoi(m[2])
-		dynPrec, _ := strconv.Atoi(m[3])
-		prodID, _ := strconv.Atoi(m[4])
-		actions = append(actions, ActionEntry{
+	for _, m := range reduceRe.FindAllStringSubmatchIndex(line, -1) {
+		sym := g.resolveSymbolValue(line[m[2]:m[3]])
+		childCount, _ := strconv.Atoi(line[m[4]:m[5]])
+		dynPrec, _ := strconv.Atoi(line[m[6]:m[7]])
+		prodID, _ := strconv.Atoi(line[m[8]:m[9]])
+		found = append(found, posAction{m[0], ActionEntry{
 			ActionType:       "reduce",
 			ReduceSymbol:     sym,
 			ReduceChildCount: childCount,
 			ReduceDynPrec:    dynPrec,
 			ReduceProdID:     uint16(prodID),
-		})
+		}})
 	}
 
 	// ACCEPT_INPUT()
-	if strings.Contains(line, "ACCEPT_INPUT()") {
-		actions = append(actions, ActionEntry{ActionType: "accept"})
+	acceptRe := regexp.MustCompile(`ACCEPT_INPUT\(\)`)
+	for _, loc := range acceptRe.FindAllStringIndex(line, -1) {
+		found = append(found, posAction{loc[0], ActionEntry{ActionType: "accept"}})
 	}
 
+	// Sort by source position to preserve C ordering.
+	sort.Slice(found, func(i, j int) bool {
+		return found[i].pos < found[j].pos
+	})
+
+	actions := make([]ActionEntry, len(found))
+	for i, f := range found {
+		actions[i] = f.action
+	}
 	return actions
 }
 

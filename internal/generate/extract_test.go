@@ -383,6 +383,63 @@ func TestParseIfTransitionsSingleCharNegation(t *testing.T) {
 	}
 }
 
+func TestParseActionMacrosSourceOrder(t *testing.T) {
+	g := &Grammar{}
+
+	// Test that actions are returned in C source-position order,
+	// not grouped by type. This is critical for GLR merge disambiguation.
+	tests := []struct {
+		name  string
+		line  string
+		types []string
+	}{
+		{
+			name:  "reduce before shift",
+			line:  `REDUCE(sym_foo, 2, 0, 1), SHIFT(42)`,
+			types: []string{"reduce", "shift"},
+		},
+		{
+			name:  "shift before reduce",
+			line:  `SHIFT(42), REDUCE(sym_bar, 1, -1, 2)`,
+			types: []string{"shift", "reduce"},
+		},
+		{
+			name:  "multiple reduces in order",
+			line:  `REDUCE(sym_a, 1, 0, 1), REDUCE(sym_b, 2, -1, 2)`,
+			types: []string{"reduce", "reduce"},
+		},
+		{
+			name:  "shift_extra then reduce then shift",
+			line:  `SHIFT_EXTRA(), REDUCE(sym_x, 1, 0, 3), SHIFT(10)`,
+			types: []string{"shift", "reduce", "shift"},
+		},
+		{
+			name:  "recover alone",
+			line:  `RECOVER()`,
+			types: []string{"recover"},
+		},
+		{
+			name:  "accept at end",
+			line:  `SHIFT(1), ACCEPT_INPUT()`,
+			types: []string{"shift", "accept"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			actions := g.parseActionMacros(tt.line)
+			if len(actions) != len(tt.types) {
+				t.Fatalf("got %d actions, want %d", len(actions), len(tt.types))
+			}
+			for i, want := range tt.types {
+				if actions[i].ActionType != want {
+					t.Errorf("actions[%d].ActionType = %q, want %q", i, actions[i].ActionType, want)
+				}
+			}
+		})
+	}
+}
+
 func TestExtractPrimaryStateIDs(t *testing.T) {
 	src := testParserC(t)
 	g, err := ExtractGrammar(src)
