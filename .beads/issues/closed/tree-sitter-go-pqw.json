@@ -1,0 +1,17 @@
+{
+  "id": "tree-sitter-go-pqw",
+  "title": "Grammar extraction: PREC_DYNAMIC actions not reaching correct parse states",
+  "description": "Perl autoquoted_bareword rule has PREC_DYNAMIC(20) on Alt 1 but at parse state 1521 both reductions have dp=0. The dynPrec=20 actions exist at different states (2063/2065) never reached. C parser produces correct output, suggesting grammar data extraction difference. Investigate extract.go and state mapping. Affects Perl/autoquote_edge_cases.",
+  "status": "closed",
+  "priority": 2,
+  "type": "bug",
+  "created_by": "Danny Cosson",
+  "owner": "dcosson@gmail.com",
+  "labels": [
+    "project=tree-sitter-go"
+  ],
+  "created_at": "2026-02-17T21:18:03.062947-08:00",
+  "updated_at": "2026-02-17T22:01:16.665809-08:00",
+  "closed_at": "2026-02-17T22:01:03.303555-08:00",
+  "close_reason": "Root cause: stale Go grammar files not regenerated after fetch-grammars updated C sources. Fixed in 7111c60."
+}

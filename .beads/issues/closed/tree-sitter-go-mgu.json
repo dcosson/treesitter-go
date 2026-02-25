@@ -1,0 +1,24 @@
+{
+  "id": "tree-sitter-go-mgu",
+  "title": "tree-sitter-go-accept",
+  "description": "Match C ts_parser__accept: push EOF lookahead before PopAll, process ALL slices from PopAll (not just one), use selectTree to pick best root from multiple candidates. Depends on tree-sitter-go-pop (PopAll multi-path). Root cause for missing root wrapper (module/source_file) in error test outputs.",
+  "status": "closed",
+  "priority": 2,
+  "type": "task",
+  "dependencies": [
+    {
+      "id": "tree-sitter-go-a53",
+      "type": "blocks"
+    }
+  ],
+  "created_by": "Danny Cosson",
+  "owner": "dcosson@gmail.com",
+  "labels": [
+    "project=tree-sitter-go",
+    "area=parser"
+  ],
+  "created_at": "2026-02-24T15:31:41.164286-08:00",
+  "updated_at": "2026-02-24T21:54:41.864016-08:00",
+  "closed_at": "2026-02-24T21:54:41.864016-08:00",
+  "close_reason": "Closed"
+}

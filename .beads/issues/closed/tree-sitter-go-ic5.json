@@ -1,0 +1,14 @@
+{
+  "id": "tree-sitter-go-ic5",
+  "title": "glr-version-regressions",
+  "description": "",
+  "status": "closed",
+  "priority": 2,
+  "type": "task",
+  "created_by": "Danny Cosson",
+  "owner": "dcosson@gmail.com",
+  "created_at": "2026-02-18T09:15:32.919621-08:00",
+  "updated_at": "2026-02-18T11:16:39.80939-08:00",
+  "closed_at": "2026-02-18T11:16:39.80939-08:00",
+  "close_reason": "Closed"
+}

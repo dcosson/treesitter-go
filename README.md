@@ -93,16 +93,48 @@ oldTree := tree.Edit(edit)
 newTree := parser.ParseString(context.Background(), newSource, oldTree)
 ```
 
-## Adding a Grammar
+## Generation Pipeline
 
-Grammars are extracted from tree-sitter's generated C `parser.c` files and compiled into Go data. The `internal/generate` package provides the extraction and code generation tools.
+Each supported language starts from an upstream `tree-sitter-{lang}` grammar repo. The pipeline converts the C-generated parser tables into pure Go, while external scanners are hand-ported:
+
+```mermaid
+flowchart LR
+    subgraph Upstream ["Upstream grammar repo"]
+        GJS[grammar.js] -->|tree-sitter generate| PC[src/parser.c]
+        GJS -->|tree-sitter generate| SC[src/scanner.c]
+    end
+
+    subgraph Fetch ["make fetch-test-grammars"]
+        PC -->|git clone| LOCAL_PC[testdata/grammars/\ntree-sitter-lang/\nsrc/parser.c]
+        SC -->|git clone| LOCAL_SC[testdata/grammars/\ntree-sitter-lang/\nsrc/scanner.c]
+    end
+
+    subgraph Generate ["Go code generation"]
+        LOCAL_PC -->|tsgo-generate| LGO[internal/testgrammars/\nlang/language.go]
+        LOCAL_SC -->|hand-port to Go| SGO[scanners/lang/\nscanner.go]
+    end
+
+    subgraph Runtime ["Pure-Go runtime"]
+        LGO -->|parse tables| PARSER[parser.go]
+        SGO -->|ExternalScanner interface| PARSER
+    end
+```
+
+The key steps:
+
+1. **Upstream** — each `tree-sitter-{lang}` repo defines a `grammar.js` and optionally a hand-written `scanner.c`. Running `tree-sitter generate` produces `src/parser.c` (large auto-generated parse tables) and compiles the scanner.
+2. **Fetch** — `make fetch-test-grammars` clones the upstream repos (with pre-generated `parser.c`) into `testdata/grammars/`.
+3. **Transpile** — `cmd/tsgo-generate` reads `parser.c` and emits an equivalent Go file with the same parse tables as Go data structures. External scanners must be manually ported to Go since they contain arbitrary C logic.
+4. **Runtime** — the pure-Go parser engine (`parser.go`) consumes the generated `language.go` tables and calls into Go scanner implementations via the `ExternalScanner` interface.
+
+## Adding a Grammar
 
 To add a new grammar:
 
 1. Obtain the tree-sitter grammar's `parser.c` (usually from the grammar's repo under `src/parser.c`)
-2. Use `internal/generate.ExtractGrammar()` to parse the C tables
-3. Use `internal/generate.GenerateLanguage()` to emit a Go `language.go` file
-4. If the grammar has an external scanner (`scanner.c`), port it to Go implementing the `ExternalScanner` interface
+2. Run `tsgo-generate -parser src/parser.c -package langgrammar -output language.go`
+3. If the grammar has an external scanner (`scanner.c`), port it to Go implementing the `ExternalScanner` interface
+4. Add corpus tests from the upstream grammar's `test/corpus/` directory
 
 Pre-built grammars for 15 languages are available in `internal/testgrammars/`.
 

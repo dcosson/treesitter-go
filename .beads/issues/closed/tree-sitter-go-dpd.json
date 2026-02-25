@@ -1,0 +1,33 @@
+{
+  "id": "tree-sitter-go-dpd",
+  "title": "P1 integration: run full corpus after all P1 fixes",
+  "description": "After all P1 fixes are implemented (has_advanced_since_error, breakdown_lookahead, pop_pending/pop_error), integrate them together and run the full 1619 corpus tests. Report pass/fail counts and analyze any new regressions or improvements. Ensure build clean and all unit tests pass.",
+  "status": "closed",
+  "priority": 1,
+  "type": "task",
+  "dependencies": [
+    {
+      "id": "tree-sitter-go-g9r",
+      "type": "blocks"
+    },
+    {
+      "id": "tree-sitter-go-m3z",
+      "type": "blocks"
+    },
+    {
+      "id": "tree-sitter-go-k67",
+      "type": "blocks"
+    }
+  ],
+  "created_by": "Danny Cosson",
+  "owner": "dcosson@gmail.com",
+  "labels": [
+    "project=tree-sitter-go",
+    "P1"
+  ],
+  "assignee": "coder-1",
+  "created_at": "2026-02-17T17:01:38.180999-08:00",
+  "updated_at": "2026-02-17T18:11:40.56273-08:00",
+  "closed_at": "2026-02-17T18:08:45.51361-08:00",
+  "close_reason": "P1 integration corpus: 1525 PASS / 57 FAIL (Lua SKIP). Identical to DynPrec baseline — P1 fixes are correctness-neutral on cold-parse corpus. Expected since breakdownLookahead and PopPending/PopError affect incremental parsing paths."
+}

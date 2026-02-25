@@ -1,0 +1,28 @@
+{
+  "id": "tree-sitter-go-a53",
+  "title": "tree-sitter-go-pop",
+  "description": "PopAll multi-path: match C stack__iter traversing ALL links through merged GSS nodes instead of only links[0]. Returns StackSliceArray. Affects doAccept/acceptTree, recover error node creation, recoverToState. This is the single highest-impact fix for error recovery and accept-path correctness.",
+  "status": "closed",
+  "priority": 2,
+  "type": "task",
+  "dependents": [
+    {
+      "id": "tree-sitter-go-936",
+      "type": "blocks"
+    },
+    {
+      "id": "tree-sitter-go-mgu",
+      "type": "blocks"
+    }
+  ],
+  "created_by": "Danny Cosson",
+  "owner": "dcosson@gmail.com",
+  "labels": [
+    "project=tree-sitter-go",
+    "area=stack"
+  ],
+  "created_at": "2026-02-24T15:31:07.992667-08:00",
+  "updated_at": "2026-02-25T08:38:42.92981-08:00",
+  "closed_at": "2026-02-25T08:38:42.92981-08:00",
+  "close_reason": "Closed"
+}

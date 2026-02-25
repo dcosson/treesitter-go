@@ -1,0 +1,14 @@
+{
+  "id": "tree-sitter-go-xos",
+  "title": "tree-sitter-go-her",
+  "description": "Restructure handleError to match C ts_parser__handle_error (parser.c:1439-1530). Combine missing token insertion and ERROR_STATE push into single loop with correct version iteration and merge scoping. Port recoverToState trailing extras and Strategy 2 extra-token marking. Highest-leverage fix for 7 error recovery failures.",
+  "status": "closed",
+  "priority": 2,
+  "type": "task",
+  "created_by": "Danny Cosson",
+  "owner": "dcosson@gmail.com",
+  "created_at": "2026-02-24T14:49:39.502975-08:00",
+  "updated_at": "2026-02-24T15:32:15.326165-08:00",
+  "closed_at": "2026-02-24T15:32:15.326165-08:00",
+  "close_reason": "Closed"
+}

@@ -1,0 +1,31 @@
+{
+  "id": "tree-sitter-go-k67",
+  "title": "Port pop_pending and pop_error stack ops",
+  "description": "Port ts_stack_pop_pending and ts_stack_pop_error from C stack.c. pop_pending handles fragile/pending nodes during reduce for proper incremental reparsing. pop_error pops single error subtree from stack top. Include unit tests.",
+  "status": "closed",
+  "priority": 1,
+  "type": "task",
+  "dependencies": [
+    {
+      "id": "tree-sitter-go-g9r",
+      "type": "blocks"
+    }
+  ],
+  "dependents": [
+    {
+      "id": "tree-sitter-go-dpd",
+      "type": "blocks"
+    }
+  ],
+  "created_by": "Danny Cosson",
+  "owner": "dcosson@gmail.com",
+  "labels": [
+    "project=tree-sitter-go",
+    "P1"
+  ],
+  "assignee": "coder-1",
+  "created_at": "2026-02-17T17:01:28.334055-08:00",
+  "updated_at": "2026-02-17T18:11:40.616189-08:00",
+  "closed_at": "2026-02-17T18:02:16.079811-08:00",
+  "close_reason": "Implemented PopPending and PopError in stack.go, integrated PopError into recoverToState. Pushed on feat/pop-pending-error (563bedc). 6 unit tests, no regressions."
+}

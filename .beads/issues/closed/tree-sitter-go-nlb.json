@@ -2,7 +2,7 @@
   "id": "tree-sitter-go-nlb",
   "title": "Parser: call_expression vs type_conversion_expression ambiguity (Go + possibly others)",
   "description": "After the trailing newline fix, 7 of Go's remaining 12 corpus failures are caused by the parser resolving f(x) as type_conversion_expression instead of call_expression. Examples: println(x) → type_conversion_expression(type_identifier, identifier), time.After(1) → type_conversion_expression(qualified_type, int_literal), c(d) → type_conversion_expression(type_identifier, identifier). Affected tests: Nested_call_expressions, Type_assertion_expressions, Type_conversion_expressions, For_statements, Nested_statement_blocks, Type_switch_statements, Select_statements. The Go grammar uses dynamic precedence to prefer call_expression. Root cause is likely in how we generate or handle precedence values in the grammar generator / parser. Investigation pending.\n\n**Reviewer investigation 2026-02-16:**\nThe Go grammar tables correctly assign DynPrec=0 to call_expression reductions and DynPrec=-1 to type_conversion_expression reductions. Both paths share the same children, so the only precedence difference is in the reduce action's DynPrec.\n\nCode path analysis:\n1. **Merge path**: SummarizeChildren accumulates children DynPrec. doReduce adds action's DynPrec. Merge (stack.go:476-481) compares link subtree DynPrec and swaps if new \u003e first. This SHOULD correctly put call_expression as links[0] since its DynPrec (0) \u003e type_conversion (-1).\n2. **doAccept path**: compares finished trees by error cost, then DynPrec. call (0) \u003e type_conv (-1), so call should win.\n3. **condenseStack path**: compareVersions returns PreferLeft for higher DynPrec. With decisive-kills-only, this is ignored — both versions survive.\n\nDespite theoretically correct paths, the parser consistently picks type_conversion. Needs deeper runtime tracing to determine:\n- Whether the versions merge (same state after goto?) or diverge\n- If they merge, whether the DynPrec comparison in Merge is actually seeing the right values\n- If they don't merge, whether one version gets killed before accepting\n- Whether the action ordering in the grammar tables causes a specific fork ordering that matters\n\nThis is NOT caused by the UMS changes — the issue existed pre-ums and is unchanged post-ums.",
-  "status": "open",
+  "status": "closed",
   "priority": 2,
   "type": "bug",
   "created_by": "Danny Cosson",
@@ -11,5 +11,7 @@
     "parser"
   ],
   "created_at": "2026-02-16T15:07:06.506216-08:00",
-  "updated_at": "2026-02-16T21:10:48.24866-08:00"
+  "updated_at": "2026-02-25T08:38:42.971971-08:00",
+  "closed_at": "2026-02-25T08:38:42.971971-08:00",
+  "close_reason": "Closed"
 }

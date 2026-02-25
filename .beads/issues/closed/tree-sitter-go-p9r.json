@@ -2,7 +2,7 @@
   "id": "tree-sitter-go-p9r",
   "title": "Lua scanner block comment bug",
   "description": "Lua scanner: block comment level matching fails for multi-block inputs. TestCorpusLua/comment fails with wrong root and block comment content parsed as code. Scanner endingChar/levelCount state may not reset properly between consecutive block comments. See docs/wcu21-empty-tree-analysis.md.",
-  "status": "open",
+  "status": "closed",
   "priority": 3,
   "type": "bug",
   "dependents": [
@@ -17,5 +17,7 @@
     "project=tree-sitter-go"
   ],
   "created_at": "2026-02-17T21:03:11.077529-08:00",
-  "updated_at": "2026-02-17T21:03:11.077529-08:00"
+  "updated_at": "2026-02-25T08:38:42.982092-08:00",
+  "closed_at": "2026-02-25T08:38:42.982092-08:00",
+  "close_reason": "Closed"
 }

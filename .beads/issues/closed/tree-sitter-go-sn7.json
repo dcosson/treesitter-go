@@ -1,0 +1,17 @@
+{
+  "id": "tree-sitter-go-sn7",
+  "title": "Missing external_scanner_state_change guard in recover Strategy 2",
+  "description": "recover() Strategy 2 (token skip path) is missing the C check: if (did_recover \u0026\u0026 ts_subtree_has_external_scanner_state_change(lookahead)) { halt; return; }. This guard prevents token skipping when the lookahead has an external scanner state change AND a popback recovery already succeeded. Without it, the parser may create conflicting recovery paths for languages with external scanners (Ruby heredocs, Perl, etc.). Low priority but should be added for correctness. See C reference: ts_parser__recover in parser.c.",
+  "status": "closed",
+  "priority": 3,
+  "type": "bug",
+  "created_by": "Danny Cosson",
+  "owner": "dcosson@gmail.com",
+  "labels": [
+    "project=tree-sitter-go"
+  ],
+  "created_at": "2026-02-18T07:02:12.553125-08:00",
+  "updated_at": "2026-02-24T15:32:15.336133-08:00",
+  "closed_at": "2026-02-24T15:32:15.336133-08:00",
+  "close_reason": "Closed"
+}

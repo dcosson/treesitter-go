@@ -2,7 +2,7 @@
   "id": "tree-sitter-go-9zr",
   "title": "Faithful C condenseStack single-pass port",
   "description": "## Objective\n\nReplace the 5-phase condenseStack with C's single-pass algorithm as originally planned in Step 5 of docs/ums-glr-timeout-analysis.md. The current implementation diverges significantly — it only applies decisive kills and ignores soft preferences (PreferLeft/PreferRight), which causes structural ambiguity failures (e.g., Go call/type_conv cluster, many of the 99 remaining corpus failures).\n\n## Background\n\nSee docs/ums-plan-vs-implementation-audit.md for the full gap analysis. Key findings:\n- Steps 1-4 of the UMS plan were done faithfully\n- Step 5 uses a phased approach that omits soft preferences and swaps\n- SwapVersions exists but is dead code\n- Round-robin was added to compensate for missing swaps\n\n## Tasks\n\n1. Replace the 5-phase condenseStack with C's single-pass algorithm:\n   - Single nested loop: for each version i, compare against all prior j \u003c i\n   - Handle TakeLeft/TakeRight (decisive kills) — already working\n   - Handle PreferLeft/None → try merge (same state required)\n   - Handle PreferRight → try merge, else SWAP\n   - Remove same-position restriction on Phase 2\n   - Remove vestigial Phase 3 (absolute cost threshold)\n   - Hard cap: remove from end (relies on swap ordering)\n\n2. Complete Step 6: Change Merge from halt-source to remove-source\n   - Match C's ts_stack_merge which removes the source version\n   - Update index management in condenseStack loop accordingly\n\n3. Investigate swap regressions: Find what specific tests broke when swaps were\n   tried previously. Determine if they were real regressions or tests passing for\n   wrong reasons. Fix the root cause.\n\n4. Test round-robin necessity: After swaps work, test whether round-robin\n   findActiveVersion is still needed. If swaps properly reorder versions,\n   starvation may be naturally prevented.\n\n5. Write condenseStack unit tests (planned Step 7, not done)\n\n6. Full corpus verification: target \u003e= 1520 pass (no regressions from coder-2's\n   current 1520/99/1619)\n\n## Acceptance Criteria\n\n- condenseStack matches C's ts_parser__condense_stack algorithm structure\n- PreferLeft/PreferRight/None outcomes are handled (not just decisive kills)\n- SwapVersions is called when needed (no longer dead code)\n- Go call/type_conv cluster (bead nlb) resolves correctly\n- No regressions from current 1520 pass rate\n- condenseStack has unit tests",
-  "status": "open",
+  "status": "closed",
   "priority": 0,
   "type": "task",
   "dependencies": [
@@ -18,5 +18,7 @@
     "condenseStack"
   ],
   "created_at": "2026-02-16T21:55:49.058103-08:00",
-  "updated_at": "2026-02-16T21:55:56.28798-08:00"
+  "updated_at": "2026-02-25T08:38:42.991662-08:00",
+  "closed_at": "2026-02-25T08:38:42.991662-08:00",
+  "close_reason": "Closed"
 }

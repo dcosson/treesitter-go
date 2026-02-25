@@ -1,0 +1,35 @@
+{
+  "id": "tree-sitter-go-ja9",
+  "title": "Port C advance-all parse loop and handleError for faithful GLR",
+  "description": "## Objective\n\nPort C tree-sitter's advance-all parse loop structure AND ts_parser__handle_error to complete the faithful GLR implementation. These two components are tightly coupled and must be ported together.\n\n## Background\n\nBead 9zr ported condenseStack successfully (single-pass, all 5 comparison outcomes, swaps, reviewer-approved). However, the surrounding parse loop and error recovery still differ from C:\n\n1. **Parse loop**: Our loop uses findActiveVersion to pick one version and advance it. C advances ALL versions in index order each round, then condenses once. The advance-all approach was attempted in 9zr but caused hangs because handleError creates cascading split versions that cycle endlessly.\n\n2. **handleError**: Our implementation does more inline work (potential reductions, splits, missing tokens, skip). C's ts_parser__handle_error uses a simpler pause/resume pattern integrated with the parse loop. The pause mechanism is how C bounds error recovery — a paused version is only resumed by condenseStack one at a time.\n\nThe advance-all loop cannot work correctly without also matching C's handleError pause/resume pattern. They are coupled.\n\n## Current State (post-9zr)\n\n- condenseStack: faithful C port (single-pass, all 5 outcomes, swaps) ✅\n- compareVersions/versionStatus: exact C match ✅\n- Parse loop: still advance-one-at-a-time with findActiveVersion ⚠️\n- handleError: structurally different from C (inline work vs pause/resume) ⚠️\n- Corpus: 1533/1619 (94.7%), 86 failures, net +7 from 9zr\n\n## Regressions from 9zr (8 tests)\n\nThese are caused by the advance-one + swap interaction and should be fixed by this bead:\n- C++: Complex_fold_expression, pointer_declarations_vs_expressions, Requires_clauses_and_expressions\n- Go: Function_types\n- Lua: comment\n- Perl: ambiguous_funcs, unary_minus_autoquoting\n- Python: Simple_Tuples\n\n## Tasks\n\n1. **Port C's ts_parser__handle_error** to match the pause/resume pattern:\n   - C pauses the error recovery version immediately after creating it\n   - condenseStack resumes ONE paused version per round\n   - This bounds error recovery and prevents cascading version explosion\n   - Study C's parser.c ts_parser__handle_error carefully\n\n2. **Refactor parse loop to advance-all-in-order**:\n   - Advance each version exactly once per round (matching C)\n   - Call condenseStack once per round (not per-version)\n   - Remove findActiveVersion entirely\n   - Remove round-robin starvation detection (no longer needed with swaps)\n\n3. **Enable strict CanMerge** (same position, same error cost, same external scanner state) — this was attempted in 9zr but reverted due to advance-one incompatibility\n\n4. **Fix the 8 regressions** listed above\n\n5. **Full corpus verification**: target \u003e= 1533 pass (no regressions from 9zr), ideally more from fixing the 8 regressions\n\n## Key Files\n\n- parser.go — Parse loop, findActiveVersion, handleError, condenseStack\n- stack.go — CanMerge (to tighten), Pause/Resume\n- C reference: tree-sitter lib/src/parser.c — ts_parser__handle_error, main parse loop\n- docs/9zr-review.md — reviewer's analysis including advance-all inner loop issue\n- docs/ums-glr-timeout-analysis.md — original C reference code\n\n## Acceptance Criteria\n\n- Parse loop matches C's advance-all-in-order structure\n- handleError matches C's pause/resume pattern\n- findActiveVersion removed\n- CanMerge matches C (5 conditions)\n- 0 regressions vs 9zr baseline (86 failures)\n- Ideally fixes some of the 8 regressions from 9zr\n- All unit tests pass",
+  "status": "closed",
+  "priority": 0,
+  "type": "task",
+  "dependencies": [
+    {
+      "id": "tree-sitter-go-wcu",
+      "type": "blocks"
+    },
+    {
+      "id": "tree-sitter-go-9zr",
+      "type": "blocks"
+    }
+  ],
+  "dependents": [
+    {
+      "id": "tree-sitter-go-kpn",
+      "type": "related"
+    }
+  ],
+  "created_by": "Danny Cosson",
+  "owner": "dcosson@gmail.com",
+  "labels": [
+    "glr",
+    "condenseStack"
+  ],
+  "assignee": "coder-2",
+  "created_at": "2026-02-17T07:56:03.675872-08:00",
+  "updated_at": "2026-02-17T17:00:13.841182-08:00",
+  "closed_at": "2026-02-17T17:00:13.841182-08:00",
+  "close_reason": "Closed"
+}
