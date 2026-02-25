@@ -100,7 +100,7 @@ This makes cross-referencing and auditing trivial.
 | ts_stack_has_advanced_since_error | 647 | HasAdvancedSinceError | 245 | OK |
 | ts_stack_dynamic_precedence | 643 | DynamicPrecedence | 211 | OK |
 | ts_stack_push | — (inline) | Push | 310 | MISMATCH — caller supplies position |
-| ts_stack_pop_count | 534 | PopCountSlices / PopCount | — | FIXED (TBD) — see Stack Operations |
+| ts_stack_pop_count | 534 | PopCountSlices / PopCount | — | FIXED (0e63341) — see Stack Operations |
 | ts_stack_pop_all | 597 | PopAll | 443 | FIXED (316754c) |
 | ts_stack_pop_pending | 552 | PopPending | 513 | MISMATCH — no stack__iter fanout |
 | ts_stack_pop_error | 575 | PopError | 537 | MISMATCH — no stack__iter fanout |
@@ -124,9 +124,9 @@ This makes cross-referencing and auditing trivial.
 | stack__subtree_node_count | 126 | subtreeNodeCount | 612 | OK |
 | stack__subtree_is_equivalent | 181 | subtreeIsEquivalent | 628 | OK |
 | stack_node_add_link (internal) | ~100 | nodeAddLink | 665 | OK (GC) |
-| stack__iter (internal) | 324 | iterate (internal) | — | FIXED (TBD) |
+| stack__iter (internal) | 324 | iterate (internal) | — | FIXED (0e63341) |
 | ts_stack__add_version (internal) | 286 | AddVersion | 854 | MISMATCH — adds new node, not existing |
-| ts_stack__add_slice (internal) | 304 | addSlice (internal) | — | FIXED (TBD) |
+| ts_stack__add_slice (internal) | 304 | addSlice (internal) | — | FIXED (0e63341) |
 
 **Go-only functions (no C equivalent):**
 | Go Name | Line | Notes |
