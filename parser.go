@@ -1228,11 +1228,12 @@ func (p *Parser) buildAcceptTree(allSubtrees []Subtree) Subtree {
 		return allSubtrees[0]
 	}
 
-	// Find the root node: search backward from end (most recently pushed)
-	// for the first non-extra subtree. Matches C's backward search
-	// (parser.c:1061: for j = trees.size - 1; j + 1 > 0; j--).
+	// Find the root node: the first non-extra subtree in source order.
+	// Note: C's ts_parser__accept (parser.c:1061) searches from right to left
+	// after pushing EOF. Go currently searches left to right. This difference
+	// needs investigation — see bead tree-sitter-go-mgu for accept path work.
 	rootIdx := -1
-	for j := len(allSubtrees) - 1; j >= 0; j-- {
+	for j := 0; j < len(allSubtrees); j++ {
 		if allSubtrees[j].IsZero() {
 			continue
 		}
@@ -1696,63 +1697,111 @@ func (p *Parser) recover(version StackVersion, lookahead Subtree) {
 // recoverToState pops `depth` items from the stack, wraps them in an ERROR
 // node, and pushes the ERROR node with the goal state. This allows the parser
 // to "pop back" to a previous state where the lookahead is valid.
-// Mirrors C tree-sitter's ts_parser__recover_to_state.
+// Faithful port of C tree-sitter's ts_parser__recover_to_state (parser.c:1191-1248).
+// Key difference from previous Go version: iterates ALL Pop results (GSS paths),
+// creating separate versions for each, keeping those that match goalState and
+// halting those that don't.
 func (p *Parser) recoverToState(version StackVersion, depth uint32, goalState StateID) bool {
 	results := p.stack.Pop(version, depth)
 	if len(results) == 0 {
 		return false
 	}
 
-	// Check if the state matches the goal state. If not, halt the version.
-	// (For the primary result; C does this per-slice for multi-path pops.)
-	actualState := p.stack.State(version)
-	if actualState != goalState {
-		p.stack.Halt(version)
-		return false
-	}
+	// Iterate all pop results. The first result is associated with `version`
+	// (Pop updates the head). Additional results need new versions via ForkAtNode.
+	// This matches C's loop over StackSliceArray in ts_parser__recover_to_state.
+	var previousNode *StackNode
+	didRecover := false
 
-	// Check for an existing error node at the stack top. If found, merge
-	// its children into the front of the popped subtrees so that consecutive
-	// skipped tokens are collected in a single ERROR node.
-	// Matches C: ts_stack_pop_error in ts_parser__recover_to_state.
-	var existingErrorChildren []Subtree
-	if errTree, ok := p.stack.PopError(version); ok {
-		errorChildren := GetChildren(errTree, p.arena)
-		if len(errorChildren) > 0 {
-			existingErrorChildren = make([]Subtree, len(errorChildren))
-			copy(existingErrorChildren, errorChildren)
+	for i, result := range results {
+		// Determine the version for this pop result.
+		var sliceVersion StackVersion
+		if i == 0 {
+			sliceVersion = version
+		} else {
+			// Skip duplicate nodes (same as C's previous_version check).
+			if result.node == previousNode {
+				continue
+			}
+			sliceVersion = p.stack.ForkAtNode(result.node, version)
 		}
-	}
 
-	// Create ERROR node from popped subtrees (reverse from stack to tree order).
-	// Filter out SubtreeZero entries which come from ERROR_STATE pushes.
-	popped := results[0].subtrees
-	children := make([]Subtree, 0, len(existingErrorChildren)+len(popped))
-	children = append(children, existingErrorChildren...)
-	for i := len(popped) - 1; i >= 0; i-- {
-		if !popped[i].IsZero() {
-			children = append(children, popped[i])
+		// Check if this version's state matches the goal state.
+		if p.stack.State(sliceVersion) != goalState {
+			p.stack.Halt(sliceVersion)
+			continue
 		}
+
+		// Check for an existing error node at the stack top. If found, splice
+		// its children into the front of the popped subtrees so that consecutive
+		// skipped tokens are collected in a single ERROR node.
+		// Matches C: ts_stack_pop_error in ts_parser__recover_to_state.
+		var existingErrorChildren []Subtree
+		if errTree, ok := p.stack.PopError(sliceVersion); ok {
+			errorChildren := GetChildren(errTree, p.arena)
+			if len(errorChildren) > 0 {
+				existingErrorChildren = make([]Subtree, len(errorChildren))
+				copy(existingErrorChildren, errorChildren)
+			}
+		}
+
+		// Build children array: existing error children + popped subtrees in
+		// source order (reverse from stack order). Filter out SubtreeZero entries
+		// which come from ERROR_STATE pushes.
+		popped := result.subtrees
+		children := make([]Subtree, 0, len(existingErrorChildren)+len(popped))
+		children = append(children, existingErrorChildren...)
+		for j := len(popped) - 1; j >= 0; j-- {
+			if !popped[j].IsZero() {
+				children = append(children, popped[j])
+			}
+		}
+
+		// Separate trailing extras (comments, whitespace) from the ERROR node.
+		// They get pushed individually after the ERROR node, matching C's
+		// ts_subtree_array_remove_trailing_extras + re-push loop.
+		var trailingExtras []Subtree
+		for len(children) > 0 {
+			last := children[len(children)-1]
+			if !IsExtra(last, p.arena) {
+				break
+			}
+			trailingExtras = append(trailingExtras, last)
+			children = children[:len(children)-1]
+		}
+
+		// Create and push ERROR node (only if there are children).
+		// Error cost is embedded in the error node via createErrorNode and
+		// accumulated by Push — no explicit AddErrorCost needed (matching C).
+		if len(children) > 0 {
+			errNode := p.createErrorNode(children)
+			position := p.stack.Position(sliceVersion)
+			errPadding := GetPadding(errNode, p.arena)
+			errSize := GetSize(errNode, p.arena)
+			newPosition := LengthAdd(LengthAdd(position, errPadding), errSize)
+			p.stack.Push(sliceVersion, goalState, errNode, false, newPosition)
+		}
+
+		// Re-push trailing extras individually at the goal state.
+		// Matches C: parser.c:1239-1242.
+		for j := len(trailingExtras) - 1; j >= 0; j-- {
+			extra := trailingExtras[j]
+			pos := p.stack.Position(sliceVersion)
+			extraPadding := GetPadding(extra, p.arena)
+			extraSize := GetSize(extra, p.arena)
+			newPos := LengthAdd(LengthAdd(pos, extraPadding), extraSize)
+			p.stack.Push(sliceVersion, goalState, extra, false, newPos)
+		}
+
+		previousNode = result.node
+		didRecover = true
 	}
 
-	errNode := p.createErrorNode(children)
+	if didRecover {
+		p.cachedTokenValid = false
+	}
 
-	// Compute position and error cost.
-	position := p.stack.Position(version)
-	errPadding := GetPadding(errNode, p.arena)
-	errSize := GetSize(errNode, p.arena)
-	newPosition := LengthAdd(LengthAdd(position, errPadding), errSize)
-
-	errCost := ErrorCostPerRecovery +
-		ErrorCostPerSkippedTree*depth +
-		errSize.Bytes*ErrorCostPerSkippedChar +
-		errSize.Point.Row*ErrorCostPerSkippedLine
-
-	p.stack.Push(version, goalState, errNode, false, newPosition)
-	p.stack.AddErrorCost(version, errCost)
-	p.cachedTokenValid = false
-
-	return true
+	return didRecover
 }
 
 // betterVersionExists checks if any other stack version is clearly better

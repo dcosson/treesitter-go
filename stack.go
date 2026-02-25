@@ -642,18 +642,22 @@ func (s *Stack) Split(version StackVersion) StackVersion {
 }
 
 // ForkAtNode creates a new active version pointing at the given node.
-// Used during multi-path reduce to create versions for alt pop paths.
-// Inherits lastExternalToken from the source version for correct scanner state.
+// Used during multi-path reduce and error recovery to create versions for
+// alt pop paths. Inherits lastExternalToken and nodeCountAtLastError from
+// the source version, matching C's ts_stack__add_version.
 func (s *Stack) ForkAtNode(node *StackNode, sourceVersion StackVersion) StackVersion {
 	newVersion := StackVersion(len(s.heads))
 	var extToken Subtree
+	var nodeCountAtLastError uint32
 	if int(sourceVersion) < len(s.heads) {
 		extToken = s.heads[sourceVersion].lastExternalToken
+		nodeCountAtLastError = s.heads[sourceVersion].nodeCountAtLastError
 	}
 	s.heads = append(s.heads, StackHead{
-		node:              node,
-		status:            StackStatusActive,
-		lastExternalToken: extToken,
+		node:                 node,
+		status:               StackStatusActive,
+		lastExternalToken:    extToken,
+		nodeCountAtLastError: nodeCountAtLastError,
 	})
 	return newVersion
 }
