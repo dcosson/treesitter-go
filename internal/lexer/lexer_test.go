@@ -1,4 +1,4 @@
-package treesitter
+package lexer
 
 import (
 	"testing"

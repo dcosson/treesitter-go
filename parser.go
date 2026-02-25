@@ -25,15 +25,15 @@ type Parser struct {
 
 	// Token cache: avoids re-lexing when the parser inspects the
 	// current token multiple times (e.g. across versions).
-	cachedToken            Subtree
-	cachedTokenState       StateID
-	cachedTokenExtState    uint16
-	cachedTokenPosition    Length
-	cachedTokenValid       bool
+	cachedToken         Subtree
+	cachedTokenState    StateID
+	cachedTokenExtState uint16
+	cachedTokenPosition Length
+	cachedTokenValid    bool
 
 	// External scanner support.
-	externalScanner      ExternalScanner
-	serializationBuffer  [TreeSitterSerializationBufferSize]byte
+	externalScanner     ExternalScanner
+	serializationBuffer [TreeSitterSerializationBufferSize]byte
 
 	// Error recovery state.
 	acceptCount       uint32
@@ -63,9 +63,9 @@ const (
 	ErrorCostPerSkippedLine = 30
 	ErrorCostPerSkippedChar = 1
 
-	MaxVersionCount     = 6
-	MaxCostDifference   = 18 * ErrorCostPerSkippedTree // = 1800, matches C master
-	MaxSummaryDepth     = 16
+	MaxVersionCount   = 6
+	MaxCostDifference = 18 * ErrorCostPerSkippedTree // = 1800, matches C master
+	MaxSummaryDepth   = 16
 
 	defaultCancellationInterval = 100
 )
@@ -466,8 +466,8 @@ func (p *Parser) lexToken(version StackVersion, state StateID, position Length) 
 			// the current position (matching AcceptToken behavior). Without
 			// this, TokenEndPosition stays at Length{} (zero), causing size
 			// underflow when the token is at a non-zero position.
-			if !p.lexer.markEndCalled {
-				p.lexer.TokenEndPosition = p.lexer.currentPosition
+			if !p.lexer.MarkEndCalled() {
+				p.lexer.TokenEndPosition = p.lexer.CurrentPosition()
 			}
 
 			// Serialize the scanner state to check if it changed.
@@ -1274,10 +1274,10 @@ func (p *Parser) doAllPotentialReductions(startingVersion StackVersion, lookahea
 
 		// Collect unique reduce actions (deduplication).
 		type reduceAction struct {
-			symbol    Symbol
-			count     uint32
-			dynPrec   int16
-			prodID    uint16
+			symbol  Symbol
+			count   uint32
+			dynPrec int16
+			prodID  uint16
 		}
 		var reduceActions []reduceAction
 
@@ -1354,8 +1354,6 @@ func (p *Parser) doAllPotentialReductions(startingVersion StackVersion, lookahea
 	return canShiftLookahead
 }
 
-
-
 // doReduceForPotential performs a reduce for doAllPotentialReductions.
 // It splits the version, pops child_count items, and creates a parent node.
 // Returns the new version, or -1 on failure.
@@ -1366,11 +1364,11 @@ func (p *Parser) doReduceForPotential(version StackVersion, symbol Symbol, child
 	}
 
 	action := ParseActionEntry{
-		Type:              ParseActionTypeReduce,
-		ReduceSymbol:      symbol,
-		ReduceChildCount:  uint8(childCount),
-		ReduceDynPrec:     dynPrec,
-		ReduceProdID:      prodID,
+		Type:             ParseActionTypeReduce,
+		ReduceSymbol:     symbol,
+		ReduceChildCount: uint8(childCount),
+		ReduceDynPrec:    dynPrec,
+		ReduceProdID:     prodID,
 	}
 	p.doReduce(splitVersion, action, false)
 
