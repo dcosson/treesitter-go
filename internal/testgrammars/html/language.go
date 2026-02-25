@@ -112,20 +112,20 @@ func HtmlLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 22},
 		// [37]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 93, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 39, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 93, ShiftRepetition: true},
 		// [40]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 57, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 39, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 57, ShiftRepetition: true},
 		// [43]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 89, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 39, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 89, ShiftRepetition: true},
 		// [46]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 6, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 39, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 6, ShiftRepetition: true},
 		// [49]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 39, ReduceChildCount: 2},
@@ -137,20 +137,20 @@ func HtmlLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 8},
 		// [55]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 77, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 39, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 77, ShiftRepetition: true},
 		// [58]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 52, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 39, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 52, ShiftRepetition: true},
 		// [61]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 85, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 39, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 85, ShiftRepetition: true},
 		// [64]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 8, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 39, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 8, ShiftRepetition: true},
 		// [67]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 35, ReduceChildCount: 3},
@@ -240,8 +240,8 @@ func HtmlLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 40, ReduceChildCount: 2},
 		// [125]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 45, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 40, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 45, ShiftRepetition: true},
 		// [128]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeShift, ShiftState: 18},
@@ -271,8 +271,8 @@ func HtmlLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 51},
 		// [146]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 51, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 40, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 51, ShiftRepetition: true},
 		// [149]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeShift, ShiftState: 66},

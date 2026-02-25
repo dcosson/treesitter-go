@@ -618,8 +618,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 2970},
 		// [117]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 639},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 259, ReduceChildCount: 1, ReduceDynPrec: -1, ReduceProdID: 1},
+		{Type: ts.ParseActionTypeShift, ShiftState: 639},
 		// [120]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: false},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 211, ReduceChildCount: 1, ReduceProdID: 1},
@@ -644,8 +644,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 3039},
 		// [135]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 560},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 211, ReduceChildCount: 1, ReduceProdID: 1},
+		{Type: ts.ParseActionTypeShift, ShiftState: 560},
 		// [138]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeShift, ShiftState: 81},
@@ -696,8 +696,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 438},
 		// [170]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 5668},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 211, ReduceChildCount: 1, ReduceProdID: 1},
+		{Type: ts.ParseActionTypeShift, ShiftState: 5668},
 		// [173]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: false},
 		{Type: ts.ParseActionTypeShift, ShiftState: 981},
@@ -712,8 +712,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 560},
 		// [181]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 483},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 211, ReduceChildCount: 1, ReduceProdID: 1},
+		{Type: ts.ParseActionTypeShift, ShiftState: 483},
 		// [184]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeShift, ShiftState: 4493},
@@ -770,8 +770,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 1380},
 		// [220]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 540},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 259, ReduceChildCount: 1, ReduceDynPrec: -1, ReduceProdID: 1},
+		{Type: ts.ParseActionTypeShift, ShiftState: 540},
 		// [223]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 259, ReduceChildCount: 1, ReduceDynPrec: -1, ReduceProdID: 1},
@@ -948,207 +948,207 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
 		// [339]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 1342, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 1342, ShiftRepetition: true},
 		// [342]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 696, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 696, ShiftRepetition: true},
 		// [345]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: false},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
 		// [347]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 1285, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 1285, ShiftRepetition: true},
 		// [350]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 1190, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 1190, ShiftRepetition: true},
 		// [353]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 4, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 4, ShiftRepetition: true},
 		// [356]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 482, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 482, ShiftRepetition: true},
 		// [359]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 2921, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 2921, ShiftRepetition: true},
 		// [362]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 5444, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 5444, ShiftRepetition: true},
 		// [365]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 3692, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 3692, ShiftRepetition: true},
 		// [368]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 1192, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 1192, ShiftRepetition: true},
 		// [371]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 3469, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 3469, ShiftRepetition: true},
 		// [374]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 482, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 482, ShiftRepetition: true},
 		// [377]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 5445, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 5445, ShiftRepetition: true},
 		// [380]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 5232, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 5232, ShiftRepetition: true},
 		// [383]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 4687, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 4687, ShiftRepetition: true},
 		// [386]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 194, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 194, ShiftRepetition: true},
 		// [389]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 810, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 810, ShiftRepetition: true},
 		// [392]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 437, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 437, ShiftRepetition: true},
 		// [395]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 5211, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 5211, ShiftRepetition: true},
 		// [398]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 54, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 54, ShiftRepetition: true},
 		// [401]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 5270, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 5270, ShiftRepetition: true},
 		// [404]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 5009, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 5009, ShiftRepetition: true},
 		// [407]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 4984, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 4984, ShiftRepetition: true},
 		// [410]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 5400, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 5400, ShiftRepetition: true},
 		// [413]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 297, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 297, ShiftRepetition: true},
 		// [416]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 345, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 345, ShiftRepetition: true},
 		// [419]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 164, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 164, ShiftRepetition: true},
 		// [422]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 229, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 229, ShiftRepetition: true},
 		// [425]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 3290, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 3290, ShiftRepetition: true},
 		// [428]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 728, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 728, ShiftRepetition: true},
 		// [431]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 3693, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 3693, ShiftRepetition: true},
 		// [434]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 99, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 99, ShiftRepetition: true},
 		// [437]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 486, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 486, ShiftRepetition: true},
 		// [440]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 5655, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 5655, ShiftRepetition: true},
 		// [443]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 981, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 981, ShiftRepetition: true},
 		// [446]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 586, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 586, ShiftRepetition: true},
 		// [449]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 4404, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 4404, ShiftRepetition: true},
 		// [452]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 4411, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 4411, ShiftRepetition: true},
 		// [455]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 3861, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 3861, ShiftRepetition: true},
 		// [458]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 2222, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 2222, ShiftRepetition: true},
 		// [461]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 5634, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 5634, ShiftRepetition: true},
 		// [464]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 2222, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 2222, ShiftRepetition: true},
 		// [467]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 2267, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 2267, ShiftRepetition: true},
 		// [470]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 4290, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 4290, ShiftRepetition: true},
 		// [473]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 1326, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 1326, ShiftRepetition: true},
 		// [476]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 707, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 707, ShiftRepetition: true},
 		// [479]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 1191, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 1191, ShiftRepetition: true},
 		// [482]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 5557, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 5557, ShiftRepetition: true},
 		// [485]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 5602, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 5602, ShiftRepetition: true},
 		// [488]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 5490, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 352, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 5490, ShiftRepetition: true},
 		// [491]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: false},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 205, ReduceChildCount: 4, ReduceProdID: 236},
@@ -1421,8 +1421,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 4389},
 		// [671]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 52},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 264, ReduceChildCount: 1, ReduceProdID: 7},
+		{Type: ts.ParseActionTypeShift, ShiftState: 52},
 		// [674]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: false},
 		{Type: ts.ParseActionTypeShift, ShiftState: 5648},
@@ -1464,23 +1464,23 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 1499},
 		// [700]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 195},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 211, ReduceChildCount: 1, ReduceProdID: 1},
+		{Type: ts.ParseActionTypeShift, ShiftState: 195},
 		// [703]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 241},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 211, ReduceChildCount: 1, ReduceProdID: 1},
+		{Type: ts.ParseActionTypeShift, ShiftState: 241},
 		// [706]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: false},
 		{Type: ts.ParseActionTypeShift, ShiftState: 87},
 		// [708]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 981},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 211, ReduceChildCount: 1, ReduceProdID: 1},
+		{Type: ts.ParseActionTypeShift, ShiftState: 981},
 		// [711]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 3852},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 211, ReduceChildCount: 1, ReduceProdID: 1},
+		{Type: ts.ParseActionTypeShift, ShiftState: 3852},
 		// [714]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeShift, ShiftState: 1687},
@@ -1741,8 +1741,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 1415},
 		// [886]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 621},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 259, ReduceChildCount: 1, ReduceDynPrec: -1, ReduceProdID: 1},
+		{Type: ts.ParseActionTypeShift, ShiftState: 621},
 		// [889]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: false},
 		{Type: ts.ParseActionTypeShift, ShiftState: 1237},
@@ -1764,15 +1764,15 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 260, ReduceChildCount: 2, ReduceProdID: 32},
 		// [902]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 322},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 211, ReduceChildCount: 1, ReduceProdID: 1},
+		{Type: ts.ParseActionTypeShift, ShiftState: 322},
 		// [905]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: false},
 		{Type: ts.ParseActionTypeShift, ShiftState: 322},
 		// [907]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 485},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 259, ReduceChildCount: 1, ReduceDynPrec: -1, ReduceProdID: 1},
+		{Type: ts.ParseActionTypeShift, ShiftState: 485},
 		// [910]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: false},
 		{Type: ts.ParseActionTypeShift, ShiftState: 621},
@@ -3348,14 +3348,14 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 361, ReduceChildCount: 1},
 		// [1959]
 		{Type: ts.ParseActionTypeHeader, Count: 3, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 3001},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 360, ReduceChildCount: 1},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 361, ReduceChildCount: 1},
+		{Type: ts.ParseActionTypeShift, ShiftState: 3001},
 		// [1963]
 		{Type: ts.ParseActionTypeHeader, Count: 3, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 3260},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 360, ReduceChildCount: 1},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 361, ReduceChildCount: 1},
+		{Type: ts.ParseActionTypeShift, ShiftState: 3260},
 		// [1967]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 361, ReduceChildCount: 1},
@@ -3888,25 +3888,25 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 4483},
 		// [2321]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 2817},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 211, ReduceChildCount: 1, ReduceProdID: 1},
+		{Type: ts.ParseActionTypeShift, ShiftState: 2817},
 		// [2324]
 		{Type: ts.ParseActionTypeHeader, Count: 3, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 199},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 211, ReduceChildCount: 1, ReduceProdID: 1},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 264, ReduceChildCount: 1, ReduceProdID: 7},
+		{Type: ts.ParseActionTypeShift, ShiftState: 199},
 		// [2328]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 417},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 211, ReduceChildCount: 1, ReduceProdID: 1},
+		{Type: ts.ParseActionTypeShift, ShiftState: 417},
 		// [2331]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: false},
 		{Type: ts.ParseActionTypeShift, ShiftState: 3634},
 		// [2333]
 		{Type: ts.ParseActionTypeHeader, Count: 3, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 4996},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 211, ReduceChildCount: 1, ReduceProdID: 1},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 264, ReduceChildCount: 1, ReduceProdID: 7},
+		{Type: ts.ParseActionTypeShift, ShiftState: 4996},
 		// [2337]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeShift, ShiftState: 3816},
@@ -4026,15 +4026,15 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 5829},
 		// [2415]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 199},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 211, ReduceChildCount: 1, ReduceProdID: 1},
+		{Type: ts.ParseActionTypeShift, ShiftState: 199},
 		// [2418]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: false},
 		{Type: ts.ParseActionTypeShift, ShiftState: 3638},
 		// [2420]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 4996},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 211, ReduceChildCount: 1, ReduceProdID: 1},
+		{Type: ts.ParseActionTypeShift, ShiftState: 4996},
 		// [2423]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: false},
 		{Type: ts.ParseActionTypeShift, ShiftState: 5586},
@@ -5709,23 +5709,23 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 314, ReduceChildCount: 1, ReduceProdID: 13},
 		// [3539]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 5593},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 211, ReduceChildCount: 1},
+		{Type: ts.ParseActionTypeShift, ShiftState: 5593},
 		// [3542]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 211, ReduceChildCount: 1},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 314, ReduceChildCount: 1, ReduceProdID: 13},
 		// [3545]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 1098},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 211, ReduceChildCount: 1},
+		{Type: ts.ParseActionTypeShift, ShiftState: 1098},
 		// [3548]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 314, ReduceChildCount: 1, ReduceProdID: 13},
 		// [3550]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 488},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 259, ReduceChildCount: 1, ReduceDynPrec: -1},
+		{Type: ts.ParseActionTypeShift, ShiftState: 488},
 		// [3553]
 		{Type: ts.ParseActionTypeHeader, Count: 3, Reusable: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 211, ReduceChildCount: 1},
@@ -5736,19 +5736,19 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 1006},
 		// [3559]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 5156},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 314, ReduceChildCount: 1, ReduceProdID: 13},
+		{Type: ts.ParseActionTypeShift, ShiftState: 5156},
 		// [3562]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: false},
 		{Type: ts.ParseActionTypeShift, ShiftState: 526},
 		// [3564]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 5587},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 211, ReduceChildCount: 1},
+		{Type: ts.ParseActionTypeShift, ShiftState: 5587},
 		// [3567]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 1001},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 211, ReduceChildCount: 1},
+		{Type: ts.ParseActionTypeShift, ShiftState: 1001},
 		// [3570]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: false},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 253, ReduceChildCount: 2},
@@ -5793,8 +5793,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 4813},
 		// [3598]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 245},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 211, ReduceChildCount: 1, ReduceProdID: 1},
+		{Type: ts.ParseActionTypeShift, ShiftState: 245},
 		// [3601]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: false},
 		{Type: ts.ParseActionTypeShift, ShiftState: 397},
@@ -5811,8 +5811,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 335, ReduceChildCount: 1},
 		// [3611]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 397},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 259, ReduceChildCount: 1, ReduceDynPrec: -1},
+		{Type: ts.ParseActionTypeShift, ShiftState: 397},
 		// [3614]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 211, ReduceChildCount: 1},
@@ -5822,8 +5822,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 259, ReduceChildCount: 1, ReduceDynPrec: -1},
 		// [3619]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 542},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 259, ReduceChildCount: 1, ReduceDynPrec: -1},
+		{Type: ts.ParseActionTypeShift, ShiftState: 542},
 		// [3622]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 259, ReduceChildCount: 1, ReduceDynPrec: -1},
@@ -5835,8 +5835,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 353, ReduceChildCount: 2, ReduceProdID: 24},
 		// [3628]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 4290, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 353, ReduceChildCount: 2, ReduceProdID: 24},
+		{Type: ts.ParseActionTypeShift, ShiftState: 4290, ShiftRepetition: true},
 		// [3631]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: false},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 254, ReduceChildCount: 3, ReduceProdID: 75},
@@ -5884,8 +5884,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 377},
 		// [3662]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 3294},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 353, ReduceChildCount: 2, ReduceProdID: 24},
+		{Type: ts.ParseActionTypeShift, ShiftState: 3294},
 		// [3665]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: false},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 272, ReduceChildCount: 3},
@@ -5911,8 +5911,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 303, ReduceChildCount: 3, ReduceProdID: 76},
 		// [3681]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 328},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 211, ReduceChildCount: 1},
+		{Type: ts.ParseActionTypeShift, ShiftState: 328},
 		// [3684]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeShift, ShiftState: 328},
@@ -5928,8 +5928,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 303, ReduceChildCount: 3, ReduceProdID: 75},
 		// [3693]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 623},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 259, ReduceChildCount: 1, ReduceDynPrec: -1},
+		{Type: ts.ParseActionTypeShift, ShiftState: 623},
 		// [3696]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: false},
 		{Type: ts.ParseActionTypeShift, ShiftState: 1126},
@@ -6100,12 +6100,12 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 5581},
 		// [3808]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 1520},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 264, ReduceChildCount: 1, ReduceProdID: 7},
+		{Type: ts.ParseActionTypeShift, ShiftState: 1520},
 		// [3811]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 2511},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 264, ReduceChildCount: 1, ReduceProdID: 7},
+		{Type: ts.ParseActionTypeShift, ShiftState: 2511},
 		// [3814]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 264, ReduceChildCount: 1, ReduceProdID: 7},
@@ -6162,91 +6162,91 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 1492},
 		// [3850]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 3227, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 366, ReduceChildCount: 2, ReduceProdID: 24},
+		{Type: ts.ParseActionTypeShift, ShiftState: 3227, ShiftRepetition: true},
 		// [3853]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 2867, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 366, ReduceChildCount: 2, ReduceProdID: 24},
+		{Type: ts.ParseActionTypeShift, ShiftState: 2867, ShiftRepetition: true},
 		// [3856]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 366, ReduceChildCount: 2, ReduceProdID: 24},
 		// [3858]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 1485, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 366, ReduceChildCount: 2, ReduceProdID: 24},
+		{Type: ts.ParseActionTypeShift, ShiftState: 1485, ShiftRepetition: true},
 		// [3861]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 334, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 366, ReduceChildCount: 2, ReduceProdID: 24},
+		{Type: ts.ParseActionTypeShift, ShiftState: 334, ShiftRepetition: true},
 		// [3864]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 2268, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 366, ReduceChildCount: 2, ReduceProdID: 24},
+		{Type: ts.ParseActionTypeShift, ShiftState: 2268, ShiftRepetition: true},
 		// [3867]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 5625, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 366, ReduceChildCount: 2, ReduceProdID: 24},
+		{Type: ts.ParseActionTypeShift, ShiftState: 5625, ShiftRepetition: true},
 		// [3870]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 4393, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 366, ReduceChildCount: 2, ReduceProdID: 24},
+		{Type: ts.ParseActionTypeShift, ShiftState: 4393, ShiftRepetition: true},
 		// [3873]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 4396, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 366, ReduceChildCount: 2, ReduceProdID: 24},
+		{Type: ts.ParseActionTypeShift, ShiftState: 4396, ShiftRepetition: true},
 		// [3876]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 3062, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 366, ReduceChildCount: 2, ReduceProdID: 24},
+		{Type: ts.ParseActionTypeShift, ShiftState: 3062, ShiftRepetition: true},
 		// [3879]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 3903, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 366, ReduceChildCount: 2, ReduceProdID: 24},
+		{Type: ts.ParseActionTypeShift, ShiftState: 3903, ShiftRepetition: true},
 		// [3882]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 1725, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 366, ReduceChildCount: 2, ReduceProdID: 24},
+		{Type: ts.ParseActionTypeShift, ShiftState: 1725, ShiftRepetition: true},
 		// [3885]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 1929, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 366, ReduceChildCount: 2, ReduceProdID: 24},
+		{Type: ts.ParseActionTypeShift, ShiftState: 1929, ShiftRepetition: true},
 		// [3888]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 2401, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 366, ReduceChildCount: 2, ReduceProdID: 24},
+		{Type: ts.ParseActionTypeShift, ShiftState: 2401, ShiftRepetition: true},
 		// [3891]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 1728, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 366, ReduceChildCount: 2, ReduceProdID: 24},
+		{Type: ts.ParseActionTypeShift, ShiftState: 1728, ShiftRepetition: true},
 		// [3894]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 1933, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 366, ReduceChildCount: 2, ReduceProdID: 24},
+		{Type: ts.ParseActionTypeShift, ShiftState: 1933, ShiftRepetition: true},
 		// [3897]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 2451, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 366, ReduceChildCount: 2, ReduceProdID: 24},
+		{Type: ts.ParseActionTypeShift, ShiftState: 2451, ShiftRepetition: true},
 		// [3900]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 2774, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 366, ReduceChildCount: 2, ReduceProdID: 24},
+		{Type: ts.ParseActionTypeShift, ShiftState: 2774, ShiftRepetition: true},
 		// [3903]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 2824, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 366, ReduceChildCount: 2, ReduceProdID: 24},
+		{Type: ts.ParseActionTypeShift, ShiftState: 2824, ShiftRepetition: true},
 		// [3906]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 2064},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 264, ReduceChildCount: 1, ReduceProdID: 7},
+		{Type: ts.ParseActionTypeShift, ShiftState: 2064},
 		// [3909]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 1797},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 264, ReduceChildCount: 1, ReduceProdID: 7},
+		{Type: ts.ParseActionTypeShift, ShiftState: 1797},
 		// [3912]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 1706},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 264, ReduceChildCount: 1, ReduceProdID: 7},
+		{Type: ts.ParseActionTypeShift, ShiftState: 1706},
 		// [3915]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeShift, ShiftState: 211},
@@ -6264,8 +6264,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 757},
 		// [3925]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 1726},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 264, ReduceChildCount: 1, ReduceProdID: 7},
+		{Type: ts.ParseActionTypeShift, ShiftState: 1726},
 		// [3928]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeShift, ShiftState: 1766},
@@ -7335,8 +7335,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 4629},
 		// [4644]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 153},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 233, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 153},
 		// [4647]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeShift, ShiftState: 1656},
@@ -7370,8 +7370,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 2383},
 		// [4668]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 5360},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 264, ReduceChildCount: 1, ReduceProdID: 7},
+		{Type: ts.ParseActionTypeShift, ShiftState: 5360},
 		// [4671]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 213, ReduceChildCount: 3, ReduceProdID: 30},
@@ -7513,8 +7513,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 243, ReduceChildCount: 3, ReduceProdID: 72},
 		// [4764]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 153},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 243, ReduceChildCount: 3, ReduceProdID: 72},
+		{Type: ts.ParseActionTypeShift, ShiftState: 153},
 		// [4767]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 238, ReduceChildCount: 3, ReduceProdID: 72},
@@ -7539,8 +7539,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 244, ReduceChildCount: 2, ReduceProdID: 8},
 		// [4782]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 153},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 244, ReduceChildCount: 2, ReduceProdID: 8},
+		{Type: ts.ParseActionTypeShift, ShiftState: 153},
 		// [4785]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: false},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 245, ReduceChildCount: 2, ReduceProdID: 8},
@@ -7549,8 +7549,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 245, ReduceChildCount: 2, ReduceProdID: 8},
 		// [4789]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 153},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 245, ReduceChildCount: 2, ReduceProdID: 8},
+		{Type: ts.ParseActionTypeShift, ShiftState: 153},
 		// [4792]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 212, ReduceChildCount: 2},
@@ -7649,19 +7649,19 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 214, ReduceChildCount: 3, ReduceProdID: 31},
 		// [4856]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 160},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 233, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 160},
 		// [4859]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 214, ReduceChildCount: 2},
 		// [4861]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 160},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 243, ReduceChildCount: 3, ReduceProdID: 72},
+		{Type: ts.ParseActionTypeShift, ShiftState: 160},
 		// [4864]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 160},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 244, ReduceChildCount: 2, ReduceProdID: 8},
+		{Type: ts.ParseActionTypeShift, ShiftState: 160},
 		// [4867]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: false},
 		{Type: ts.ParseActionTypeShift, ShiftState: 399},
@@ -7739,8 +7739,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 1686},
 		// [4917]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 161},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 245, ReduceChildCount: 2, ReduceProdID: 8},
+		{Type: ts.ParseActionTypeShift, ShiftState: 161},
 		// [4920]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeShift, ShiftState: 1335},
@@ -7800,8 +7800,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 688},
 		// [4958]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 161},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 243, ReduceChildCount: 3, ReduceProdID: 72},
+		{Type: ts.ParseActionTypeShift, ShiftState: 161},
 		// [4961]
 		{Type: ts.ParseActionTypeHeader, Count: 3, Reusable: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 213, ReduceChildCount: 2},
@@ -7832,16 +7832,16 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 2859},
 		// [4981]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 161},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 244, ReduceChildCount: 2, ReduceProdID: 8},
+		{Type: ts.ParseActionTypeShift, ShiftState: 161},
 		// [4984]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 161},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 233, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 161},
 		// [4987]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 160},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 245, ReduceChildCount: 2, ReduceProdID: 8},
+		{Type: ts.ParseActionTypeShift, ShiftState: 160},
 		// [4990]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeShift, ShiftState: 2817},
@@ -7883,12 +7883,12 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 239, ReduceChildCount: 2, ReduceProdID: 93},
 		// [5016]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 518},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 239, ReduceChildCount: 2, ReduceProdID: 93},
+		{Type: ts.ParseActionTypeShift, ShiftState: 518},
 		// [5019]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 154},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 243, ReduceChildCount: 3, ReduceProdID: 72},
+		{Type: ts.ParseActionTypeShift, ShiftState: 154},
 		// [5022]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeShift, ShiftState: 930},
@@ -7903,12 +7903,12 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 997},
 		// [5030]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 154},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 245, ReduceChildCount: 2, ReduceProdID: 8},
+		{Type: ts.ParseActionTypeShift, ShiftState: 154},
 		// [5033]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 154},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 233, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 154},
 		// [5036]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 216, ReduceChildCount: 3, ReduceProdID: 89},
@@ -7938,8 +7938,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 2559},
 		// [5055]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 154},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 244, ReduceChildCount: 2, ReduceProdID: 8},
+		{Type: ts.ParseActionTypeShift, ShiftState: 154},
 		// [5058]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: false},
 		{Type: ts.ParseActionTypeShift, ShiftState: 3939},
@@ -8147,20 +8147,20 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 593},
 		// [5197]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 162},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 243, ReduceChildCount: 3, ReduceProdID: 72},
+		{Type: ts.ParseActionTypeShift, ShiftState: 162},
 		// [5200]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 162},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 244, ReduceChildCount: 2, ReduceProdID: 8},
+		{Type: ts.ParseActionTypeShift, ShiftState: 162},
 		// [5203]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 162},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 233, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 162},
 		// [5206]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 162},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 245, ReduceChildCount: 2, ReduceProdID: 8},
+		{Type: ts.ParseActionTypeShift, ShiftState: 162},
 		// [5209]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeShift, ShiftState: 2844},
@@ -8277,8 +8277,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 1526},
 		// [5285]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 158},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 243, ReduceChildCount: 3, ReduceProdID: 72},
+		{Type: ts.ParseActionTypeShift, ShiftState: 158},
 		// [5288]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeShift, ShiftState: 1207},
@@ -8424,16 +8424,16 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 3489},
 		// [5384]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 158},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 244, ReduceChildCount: 2, ReduceProdID: 8},
+		{Type: ts.ParseActionTypeShift, ShiftState: 158},
 		// [5387]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 158},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 233, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 158},
 		// [5390]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 158},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 245, ReduceChildCount: 2, ReduceProdID: 8},
+		{Type: ts.ParseActionTypeShift, ShiftState: 158},
 		// [5393]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeShift, ShiftState: 2831},
@@ -8719,8 +8719,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 607},
 		// [5583]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 157},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 243, ReduceChildCount: 3, ReduceProdID: 72},
+		{Type: ts.ParseActionTypeShift, ShiftState: 157},
 		// [5586]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: false},
 		{Type: ts.ParseActionTypeShift, ShiftState: 599},
@@ -8837,8 +8837,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 396},
 		// [5662]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 155},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 243, ReduceChildCount: 3, ReduceProdID: 72},
+		{Type: ts.ParseActionTypeShift, ShiftState: 155},
 		// [5665]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 358, ReduceChildCount: 2, ReduceProdID: 30},
@@ -8848,28 +8848,28 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 3399},
 		// [5670]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 157},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 244, ReduceChildCount: 2, ReduceProdID: 8},
+		{Type: ts.ParseActionTypeShift, ShiftState: 157},
 		// [5673]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 157},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 233, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 157},
 		// [5676]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 157},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 245, ReduceChildCount: 2, ReduceProdID: 8},
+		{Type: ts.ParseActionTypeShift, ShiftState: 157},
 		// [5679]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 155},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 244, ReduceChildCount: 2, ReduceProdID: 8},
+		{Type: ts.ParseActionTypeShift, ShiftState: 155},
 		// [5682]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 155},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 233, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 155},
 		// [5685]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 155},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 245, ReduceChildCount: 2, ReduceProdID: 8},
+		{Type: ts.ParseActionTypeShift, ShiftState: 155},
 		// [5688]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 262, ReduceChildCount: 3, ReduceProdID: 90},
@@ -9013,20 +9013,20 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 671},
 		// [5783]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 151},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 243, ReduceChildCount: 3, ReduceProdID: 72},
+		{Type: ts.ParseActionTypeShift, ShiftState: 151},
 		// [5786]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 151},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 244, ReduceChildCount: 2, ReduceProdID: 8},
+		{Type: ts.ParseActionTypeShift, ShiftState: 151},
 		// [5789]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 151},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 233, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 151},
 		// [5792]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 151},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 245, ReduceChildCount: 2, ReduceProdID: 8},
+		{Type: ts.ParseActionTypeShift, ShiftState: 151},
 		// [5795]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeShift, ShiftState: 3320},
@@ -9089,12 +9089,12 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 565},
 		// [5835]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 152},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 243, ReduceChildCount: 3, ReduceProdID: 72},
+		{Type: ts.ParseActionTypeShift, ShiftState: 152},
 		// [5838]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 651},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 239, ReduceChildCount: 2, ReduceProdID: 93},
+		{Type: ts.ParseActionTypeShift, ShiftState: 651},
 		// [5841]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeShift, ShiftState: 3694},
@@ -9138,16 +9138,16 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 220, ReduceChildCount: 4, ReduceProdID: 150},
 		// [5871]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 152},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 244, ReduceChildCount: 2, ReduceProdID: 8},
+		{Type: ts.ParseActionTypeShift, ShiftState: 152},
 		// [5874]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 152},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 233, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 152},
 		// [5877]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 152},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 245, ReduceChildCount: 2, ReduceProdID: 8},
+		{Type: ts.ParseActionTypeShift, ShiftState: 152},
 		// [5880]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: false},
 		{Type: ts.ParseActionTypeShift, ShiftState: 2647},
@@ -9404,8 +9404,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 366, ReduceChildCount: 2, ReduceProdID: 108},
 		// [6052]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 2720, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 366, ReduceChildCount: 2, ReduceProdID: 108},
+		{Type: ts.ParseActionTypeShift, ShiftState: 2720, ShiftRepetition: true},
 		// [6055]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeShift, ShiftState: 2718},
@@ -9417,8 +9417,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 366, ReduceChildCount: 1},
 		// [6061]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 2716, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 366, ReduceChildCount: 1},
+		{Type: ts.ParseActionTypeShift, ShiftState: 2716, ShiftRepetition: true},
 		// [6064]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeShift, ShiftState: 2716},
@@ -9550,8 +9550,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 3897},
 		// [6150]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 3903, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 353, ReduceChildCount: 2, ReduceProdID: 24},
+		{Type: ts.ParseActionTypeShift, ShiftState: 3903, ShiftRepetition: true},
 		// [6153]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeShift, ShiftState: 3833},
@@ -10227,8 +10227,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 1056},
 		// [6602]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 1056},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 314, ReduceChildCount: 1, ReduceProdID: 13},
+		{Type: ts.ParseActionTypeShift, ShiftState: 1056},
 		// [6605]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeShift, ShiftState: 1068},
@@ -10333,8 +10333,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 339, ReduceChildCount: 6, ReduceProdID: 251},
 		// [6673]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 5156},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 314, ReduceChildCount: 1, ReduceProdID: 13},
+		{Type: ts.ParseActionTypeShift, ShiftState: 5156},
 		// [6676]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 339, ReduceChildCount: 5, ReduceProdID: 209},
@@ -10493,8 +10493,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 392},
 		// [6780]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 5140},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 185, ReduceChildCount: 1, ReduceProdID: 5},
+		{Type: ts.ParseActionTypeShift, ShiftState: 5140},
 		// [6783]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 228, ReduceChildCount: 1, ReduceProdID: 3},
@@ -11169,8 +11169,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 3859},
 		// [7231]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 542},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 259, ReduceChildCount: 1, ReduceDynPrec: -1},
+		{Type: ts.ParseActionTypeShift, ShiftState: 542},
 		// [7234]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeShift, ShiftState: 4224},
@@ -11323,8 +11323,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 4228},
 		// [7334]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 491, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 362, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 491, ShiftRepetition: true},
 		// [7337]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeShift, ShiftState: 1462},
@@ -11357,15 +11357,15 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 4260},
 		// [7357]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 5845, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 357, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 5845, ShiftRepetition: true},
 		// [7360]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 357, ReduceChildCount: 2},
 		// [7362]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 320, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 357, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 320, ShiftRepetition: true},
 		// [7365]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: false},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 289, ReduceChildCount: 2, ReduceProdID: 142},
@@ -11416,22 +11416,22 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 4354},
 		// [7397]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 3832, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 365, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 3832, ShiftRepetition: true},
 		// [7400]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 365, ReduceChildCount: 2},
 		// [7402]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 393, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 365, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 393, ShiftRepetition: true},
 		// [7405]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeShift, ShiftState: 4189},
 		// [7407]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 1477, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 373, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 1477, ShiftRepetition: true},
 		// [7410]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 373, ReduceChildCount: 2},
@@ -11638,8 +11638,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 903},
 		// [7546]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 946},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 228, ReduceChildCount: 1, ReduceProdID: 3},
+		{Type: ts.ParseActionTypeShift, ShiftState: 946},
 		// [7549]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeShift, ShiftState: 3955},
@@ -11666,12 +11666,12 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 857},
 		// [7565]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 1053},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 228, ReduceChildCount: 1, ReduceProdID: 3},
+		{Type: ts.ParseActionTypeShift, ShiftState: 1053},
 		// [7568]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 964},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 228, ReduceChildCount: 2, ReduceProdID: 23},
+		{Type: ts.ParseActionTypeShift, ShiftState: 964},
 		// [7571]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeShift, ShiftState: 503},
@@ -11695,8 +11695,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 4048},
 		// [7585]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 1059},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 228, ReduceChildCount: 2, ReduceProdID: 23},
+		{Type: ts.ParseActionTypeShift, ShiftState: 1059},
 		// [7588]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 266, ReduceChildCount: 2, ReduceProdID: 36},
@@ -11759,8 +11759,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 4092},
 		// [7628]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 953},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 228, ReduceChildCount: 1, ReduceProdID: 3},
+		{Type: ts.ParseActionTypeShift, ShiftState: 953},
 		// [7631]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeShift, ShiftState: 1621},
@@ -11790,12 +11790,12 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 827},
 		// [7649]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 1096},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 228, ReduceChildCount: 1, ReduceProdID: 3},
+		{Type: ts.ParseActionTypeShift, ShiftState: 1096},
 		// [7652]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 973},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 228, ReduceChildCount: 2, ReduceProdID: 23},
+		{Type: ts.ParseActionTypeShift, ShiftState: 973},
 		// [7655]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 311, ReduceChildCount: 2},
@@ -11813,12 +11813,12 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 372, ReduceChildCount: 2},
 		// [7665]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 1034, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 372, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 1034, ShiftRepetition: true},
 		// [7668]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 4136, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 372, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 4136, ShiftRepetition: true},
 		// [7671]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 342, ReduceChildCount: 2},
@@ -11935,8 +11935,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 488},
 		// [7747]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 1002},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 228, ReduceChildCount: 2, ReduceProdID: 23},
+		{Type: ts.ParseActionTypeShift, ShiftState: 1002},
 		// [7750]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 339, ReduceChildCount: 5, ReduceProdID: 245},
@@ -11993,8 +11993,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 345, ReduceChildCount: 4, ReduceProdID: 203},
 		// [7786]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 397},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 259, ReduceChildCount: 1, ReduceDynPrec: -1},
+		{Type: ts.ParseActionTypeShift, ShiftState: 397},
 		// [7789]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 266, ReduceChildCount: 4, ReduceProdID: 205},
@@ -12009,23 +12009,23 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 345, ReduceChildCount: 6, ReduceProdID: 277},
 		// [7797]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 962},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 228, ReduceChildCount: 1, ReduceProdID: 3},
+		{Type: ts.ParseActionTypeShift, ShiftState: 962},
 		// [7800]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 345, ReduceChildCount: 6, ReduceProdID: 278},
 		// [7802]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 1037},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 228, ReduceChildCount: 1, ReduceProdID: 3},
+		{Type: ts.ParseActionTypeShift, ShiftState: 1037},
 		// [7805]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 967},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 228, ReduceChildCount: 2, ReduceProdID: 23},
+		{Type: ts.ParseActionTypeShift, ShiftState: 967},
 		// [7808]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 1043},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 228, ReduceChildCount: 2, ReduceProdID: 23},
+		{Type: ts.ParseActionTypeShift, ShiftState: 1043},
 		// [7811]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 266, ReduceChildCount: 6, ReduceProdID: 283},
@@ -12181,15 +12181,15 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 3505},
 		// [7913]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 1019, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 369, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 1019, ShiftRepetition: true},
 		// [7916]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeShift, ShiftState: 3465},
 		// [7918]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 488},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 259, ReduceChildCount: 1, ReduceDynPrec: -1},
+		{Type: ts.ParseActionTypeShift, ShiftState: 488},
 		// [7921]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeShift, ShiftState: 4661},
@@ -12255,15 +12255,15 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 1048},
 		// [7963]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 3568, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 356, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 3568, ShiftRepetition: true},
 		// [7966]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 356, ReduceChildCount: 2},
 		// [7968]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 433, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 362, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 433, ShiftRepetition: true},
 		// [7971]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeShift, ShiftState: 3943},
@@ -12317,8 +12317,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 368, ReduceChildCount: 2, ReduceProdID: 168},
 		// [8005]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 355, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 368, ReduceChildCount: 2, ReduceProdID: 168},
+		{Type: ts.ParseActionTypeShift, ShiftState: 355, ShiftRepetition: true},
 		// [8008]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeShift, ShiftState: 2770},
@@ -12330,8 +12330,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 370, ReduceChildCount: 2, ReduceProdID: 227},
 		// [8014]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 4398, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 370, ReduceChildCount: 2, ReduceProdID: 227},
+		{Type: ts.ParseActionTypeShift, ShiftState: 4398, ShiftRepetition: true},
 		// [8017]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 370, ReduceChildCount: 2, ReduceProdID: 227},
@@ -12371,15 +12371,15 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 363, ReduceChildCount: 2},
 		// [8042]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 4494, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 363, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 4494, ShiftRepetition: true},
 		// [8045]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: false},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 364, ReduceChildCount: 2},
 		// [8047]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 4495, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 364, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 4495, ShiftRepetition: true},
 		// [8050]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeShift, ShiftState: 4381},
@@ -12667,8 +12667,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 5166},
 		// [8240]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 4958, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 374, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 4958, ShiftRepetition: true},
 		// [8243]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 374, ReduceChildCount: 2},
@@ -12698,8 +12698,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 1871},
 		// [8261]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 289, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 360, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 289, ShiftRepetition: true},
 		// [8264]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 169, ReduceChildCount: 2},
@@ -12756,8 +12756,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 169, ReduceChildCount: 4},
 		// [8300]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 3492, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 354, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 3492, ShiftRepetition: true},
 		// [8303]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 354, ReduceChildCount: 2},
@@ -12796,8 +12796,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 5330},
 		// [8327]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 3380, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 355, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 3380, ShiftRepetition: true},
 		// [8330]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 355, ReduceChildCount: 2},
@@ -12875,15 +12875,15 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 368, ReduceChildCount: 2, ReduceProdID: 51},
 		// [8380]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 218, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 367, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 218, ShiftRepetition: true},
 		// [8383]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 367, ReduceChildCount: 2},
 		// [8385]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 400, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 362, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 400, ShiftRepetition: true},
 		// [8388]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 266, ReduceChildCount: 9, ReduceProdID: 333},
@@ -12928,8 +12928,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 266, ReduceChildCount: 10, ReduceProdID: 339},
 		// [8416]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 945, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 375, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 945, ShiftRepetition: true},
 		// [8419]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 375, ReduceChildCount: 2},
@@ -12986,22 +12986,22 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 270, ReduceChildCount: 5, ReduceProdID: 243},
 		// [8455]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 2429, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 358, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 2429, ShiftRepetition: true},
 		// [8458]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 358, ReduceChildCount: 2},
 		// [8460]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 2794, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 371, ReduceChildCount: 2, ReduceProdID: 229},
+		{Type: ts.ParseActionTypeShift, ShiftState: 2794, ShiftRepetition: true},
 		// [8463]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 371, ReduceChildCount: 2, ReduceProdID: 229},
 		// [8465]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 2315, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 359, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 2315, ShiftRepetition: true},
 		// [8468]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 359, ReduceChildCount: 2},
@@ -13049,12 +13049,12 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeShift, ShiftState: 5462},
 		// [8498]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 280, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 360, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 280, ShiftRepetition: true},
 		// [8501]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 254, ShiftRepetition: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 361, ReduceChildCount: 2},
+		{Type: ts.ParseActionTypeShift, ShiftState: 254, ShiftRepetition: true},
 		// [8504]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeShift, ShiftState: 900},
@@ -13189,8 +13189,8 @@ func TypescriptLanguage() *ts.Language {
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 222, ReduceChildCount: 1},
 		// [8592]
 		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 623},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 259, ReduceChildCount: 1, ReduceDynPrec: -1},
+		{Type: ts.ParseActionTypeShift, ShiftState: 623},
 		// [8595]
 		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
 		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 185, ReduceChildCount: 3, ReduceProdID: 94},
