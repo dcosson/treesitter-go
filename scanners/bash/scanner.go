@@ -277,6 +277,9 @@ func advanceWord(lexer *ts.Lexer) ([]byte, bool) {
 		advance(lexer)
 	}
 
+	// C appends '\0' to the word (included in String.size for serialization).
+	unquotedWord = append(unquotedWord, 0)
+
 	if quote != 0 && lexer.Lookahead == quote {
 		advance(lexer)
 	}
@@ -338,6 +341,11 @@ func (s *Scanner) scanHeredocEndIdentifier(h *heredoc, lexer *ts.Lexer) bool {
 		advance(lexer)
 		offset += runeSize
 	}
+
+	// C appends '\0' to current_leading_word, then uses strcmp (which
+	// compares up to the first null). Our delimiter also has '\0' from
+	// advanceWord, so including it here makes the comparison match.
+	h.currentLeadingWord = append(h.currentLeadingWord, 0)
 
 	return string(h.currentLeadingWord) == string(h.delimiter)
 }

@@ -177,16 +177,25 @@ while idx + 1 < len(tests):
     if not parts:
         continue
 
-    input_code = parts[0].strip()
+    # Match the Go corpus parser behavior:
+    # 1. Strip trailing \\r\\n (blank lines before divider)
+    # 2. Strip a single leading \\n (blank line after header)
+    # 3. Re-append trailing \\n
+    input_code = parts[0].rstrip('\\r\\n')
+    if input_code.startswith('\\n'):
+        input_code = input_code[1:]
+    elif input_code.startswith('\\r\\n'):
+        input_code = input_code[2:]
     if not input_code:
         continue
+    if not input_code.endswith('\\n'):
+        input_code += '\\n'
 
     # Write input to a file
     safe_name = re.sub(r'[^a-zA-Z0-9_-]', '_', name)[:80]
     out_path = os.path.join(output_dir, f'{test_num:04d}_{safe_name}.txt')
     with open(out_path, 'w') as out:
         out.write(input_code)
-        out.write('\n')
 
     test_num += 1
 
