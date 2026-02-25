@@ -81,7 +81,7 @@ func scannerLanguages() []scannerLangConfig {
 		{name: "python", repoName: "tree-sitter-python", newScanner: pyscanner.New, corpusDirs: []string{"test/corpus"}},
 		{name: "ruby", repoName: "tree-sitter-ruby", newScanner: rubyscanner.New, corpusDirs: []string{"test/corpus"}},
 		{name: "rust", repoName: "tree-sitter-rust", newScanner: rustscanner.New, corpusDirs: []string{"test/corpus"}},
-		{name: "typescript", repoName: "tree-sitter-typescript", newScanner: tsscanner.New, corpusDirs: []string{"typescript/test/corpus", "common/test/corpus"}},
+		{name: "typescript", repoName: "tree-sitter-typescript", newScanner: tsscanner.New, corpusDirs: []string{"test/corpus", "typescript/test/corpus", "common/test/corpus"}},
 	}
 }
 
@@ -151,13 +151,24 @@ func loadCorpusInputs(grammarsDir string, cfg scannerLangConfig) (map[string][]b
 			continue
 		}
 
-		// Read corpus files in the same order as the trace generator (glob *.txt)
-		files, err := filepath.Glob(filepath.Join(corpusDir, "*.txt"))
+		// Read corpus files in the same order as the trace generator.
+		// Include *.txt files and extensionless files (some grammars like Perl
+		// use extensionless corpus files).
+		entries, err := os.ReadDir(corpusDir)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("reading %s: %w", corpusDir, err)
 		}
 
-		for _, f := range files {
+		for _, entry := range entries {
+			if entry.IsDir() {
+				continue
+			}
+			ext := filepath.Ext(entry.Name())
+			if ext != ".txt" && ext != "" {
+				continue
+			}
+
+			f := filepath.Join(corpusDir, entry.Name())
 			data, err := os.ReadFile(f)
 			if err != nil {
 				return nil, fmt.Errorf("reading %s: %w", f, err)

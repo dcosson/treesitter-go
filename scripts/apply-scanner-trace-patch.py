@@ -214,8 +214,31 @@ def apply_patch(parser_c_path):
     print(f"Successfully patched {parser_c_path}")
 
 
+def patch_build_rs(build_rs_path):
+    """Add -DTS_SCANNER_TRACE to the cc::Build configuration in build.rs."""
+    with open(build_rs_path, 'r') as f:
+        content = f.read()
+
+    # Insert .define("TS_SCANNER_TRACE", None) before .warnings(false)
+    marker = '.warnings(false)'
+    if marker not in content:
+        print(f"Warning: could not find '{marker}' in build.rs, skipping build.rs patch", file=sys.stderr)
+        return
+
+    content = content.replace(marker, '.define("TS_SCANNER_TRACE", None)\n        ' + marker)
+
+    with open(build_rs_path, 'w') as f:
+        f.write(content)
+
+    print(f"Successfully patched {build_rs_path}")
+
+
 if __name__ == '__main__':
     if len(sys.argv) < 2:
-        print(f"Usage: {sys.argv[0]} <path/to/parser.c> [patch_file (ignored)]", file=sys.stderr)
+        print(f"Usage: {sys.argv[0]} <path/to/parser.c> [--build-rs path/to/build.rs]", file=sys.stderr)
         sys.exit(1)
     apply_patch(sys.argv[1])
+
+    # Also patch build.rs if --build-rs is provided
+    if len(sys.argv) >= 4 and sys.argv[2] == '--build-rs':
+        patch_build_rs(sys.argv[3])

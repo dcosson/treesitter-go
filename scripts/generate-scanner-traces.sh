@@ -110,12 +110,13 @@ cd "$WORK_DIR/tree-sitter"
 
 # Use the Python patcher which matches on code patterns rather than line numbers.
 # This is robust across tree-sitter versions.
+# Also patch build.rs to add -DTS_SCANNER_TRACE to the cc::Build config,
+# ensuring the define is present regardless of CFLAGS caching.
 python3 "$SCRIPT_DIR/apply-scanner-trace-patch.py" \
-  "$WORK_DIR/tree-sitter/lib/src/parser.c"
+  "$WORK_DIR/tree-sitter/lib/src/parser.c" \
+  --build-rs "$WORK_DIR/tree-sitter/lib/binding_rust/build.rs"
 
 echo "=== Building patched tree-sitter CLI ==="
-# Enable the trace instrumentation via CFLAGS
-export CFLAGS="${CFLAGS:-} -DTS_SCANNER_TRACE"
 cargo build --release 2>&1 | tail -3
 
 PATCHED_CLI="$WORK_DIR/tree-sitter/target/release/tree-sitter"
@@ -233,10 +234,11 @@ for lang in "${SCANNER_LANGUAGES[@]}"; do
     continue
   fi
 
-  # TypeScript has a nested structure
+  # TypeScript has a nested structure: the grammar is in typescript/ but
+  # corpus tests may be at the top-level test/corpus.
   if [ "$lang" = "typescript" ]; then
     grammar_path="$grammar_dir/typescript"
-    corpus_dirs=("$grammar_dir/typescript/test/corpus" "$grammar_dir/common/test/corpus")
+    corpus_dirs=("$grammar_dir/test/corpus" "$grammar_dir/typescript/test/corpus" "$grammar_dir/common/test/corpus")
   else
     grammar_path="$grammar_dir"
     corpus_dirs=("$grammar_dir/test/corpus")
@@ -274,9 +276,16 @@ for lang in "${SCANNER_LANGUAGES[@]}"; do
     if [ ! -d "$corpus_dir" ]; then
       continue
     fi
-    for corpus_file in "$corpus_dir"/*.txt; do
+    # Process *.txt files and extensionless files (some grammars like Perl
+    # use extensionless corpus files in the standard format)
+    for corpus_file in "$corpus_dir"/*; do
       [ -f "$corpus_file" ] || continue
-      extract_corpus_inputs "$corpus_file" "$inputs_dir" "$lang"
+      fname="$(basename "$corpus_file")"
+      corpus_ext="${fname##*.}"
+      # Accept .txt files or extensionless files (no . in filename)
+      if [ "$corpus_ext" = "txt" ] || [ "$corpus_ext" = "$fname" ]; then
+        extract_corpus_inputs "$corpus_file" "$inputs_dir" "$lang"
+      fi
     done
   done
 
@@ -306,8 +315,9 @@ for lang in "${SCANNER_LANGUAGES[@]}"; do
     continue
   fi
 
-  # Run parse on the first file to trigger grammar compilation (ignore stderr trace output)
-  "$PATCHED_CLI" parse --config-path "$TS_CONFIG" "$first_input" \
+  # Run parse on the first file to trigger grammar compilation (ignore stderr trace output).
+  # Large grammars (Ruby: 471K lines, C++: 530K lines) can take minutes to compile.
+  timeout 300 "$PATCHED_CLI" parse --config-path "$TS_CONFIG" "$first_input" \
     --quiet 2>/dev/null || true
 
   # Now parse all files and capture trace output
@@ -326,7 +336,7 @@ for lang in "${SCANNER_LANGUAGES[@]}"; do
     # Run the patched CLI; stderr has JSONL trace lines, stdout has parse output
     # We capture stderr and tag each line with the source file info
     trace_stderr="$WORK_DIR/trace_stderr.tmp"
-    "$PATCHED_CLI" parse --config-path "$TS_CONFIG" "$input_file" \
+    timeout 30 "$PATCHED_CLI" parse --config-path "$TS_CONFIG" "$input_file" \
       --quiet 2>"$trace_stderr" || true
 
     # Read each trace line and add the file/lang metadata.
