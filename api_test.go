@@ -3,7 +3,7 @@ package treesitter_test
 import (
 	"context"
 	"fmt"
-	iparser "github.com/treesitter-go/treesitter/internal/parser"
+	iparser "github.com/treesitter-go/treesitter/parser"
 	"strings"
 	"testing"
 	"time"

@@ -3,6 +3,8 @@ package treesitter
 import (
 	"bytes"
 	"sync"
+
+	"github.com/treesitter-go/treesitter/internal/core"
 )
 
 // Graph-Structured Stack (GSS) for GLR parsing.
@@ -188,9 +190,9 @@ func (s *Stack) ErrorCost(version StackVersion) uint32 {
 	// This matches C's ts_stack_error_cost which adds ERROR_COST_PER_RECOVERY
 	// (= 500) for versions in error recovery state.
 	if head.status == StackStatusPaused {
-		cost += ErrorCostPerRecovery
+		cost += core.ErrorCostPerRecovery
 	} else if head.node.state == 0 && head.node.linkCount > 0 && head.node.links[0].subtree.IsZero() {
-		cost += ErrorCostPerRecovery
+		cost += core.ErrorCostPerRecovery
 	}
 	return cost
 }

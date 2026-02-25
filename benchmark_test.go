@@ -4,7 +4,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	iparser "github.com/treesitter-go/treesitter/internal/parser"
+	iparser "github.com/treesitter-go/treesitter/parser"
 	"os"
 	"os/exec"
 	"path/filepath"

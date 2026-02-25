@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
-	iparser "github.com/treesitter-go/treesitter/internal/parser"
+	iparser "github.com/treesitter-go/treesitter/parser"
 	"time"
 
 	perlgrammar "github.com/treesitter-go/treesitter/internal/testgrammars/perl"

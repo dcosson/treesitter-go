@@ -3,7 +3,7 @@ package difftest
 import (
 	"context"
 	"flag"
-	iparser "github.com/treesitter-go/treesitter/internal/parser"
+	iparser "github.com/treesitter-go/treesitter/parser"
 	"os"
 	"os/exec"
 	"path/filepath"
