@@ -906,7 +906,7 @@ func TestHiddenChildAliasedToVisible(t *testing.T) {
 	}
 
 	// Check visible child count: SummarizeChildren should count the aliased child.
-	strLitData := arena.Get(strLit.subtree)
+	strLitData := arena.Get(strLit.GetSubtree())
 	if strLitData.VisibleChildCount != 1 {
 		t.Errorf("string_literal.VisibleChildCount = %d, want 1", strLitData.VisibleChildCount)
 	}

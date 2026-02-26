@@ -6,16 +6,16 @@ import (
 	"fmt"
 	"math"
 
-	ts "github.com/treesitter-go/treesitter"
 	"github.com/treesitter-go/treesitter/internal/core"
 	istack "github.com/treesitter-go/treesitter/internal/stack"
 	st "github.com/treesitter-go/treesitter/internal/subtree"
+	itree "github.com/treesitter-go/treesitter/internal/tree"
 	"github.com/treesitter-go/treesitter/language"
 	plexer "github.com/treesitter-go/treesitter/lexer"
 )
 
 type Language = language.Language
-type Tree = ts.Tree
+type Tree = itree.Tree
 type Input = plexer.Input
 type Lexer = plexer.Lexer
 type Stack = istack.Stack
@@ -26,7 +26,7 @@ type SubtreeArena = st.SubtreeArena
 type Length = core.Length
 type StateID = core.StateID
 type Symbol = core.Symbol
-type ReusableNode = ts.ReusableNode
+type ReusableNode = itree.ReusableNode
 type ExternalScanner = language.ExternalScanner
 type ParseActionEntry = core.ParseActionEntry
 type FieldMapEntry = core.FieldMapEntry
@@ -42,8 +42,8 @@ var (
 	NewLexer        = plexer.NewLexer
 	NewStringInput  = plexer.NewStringInput
 	NewSubtreeArena = st.NewSubtreeArena
-	NewTree         = ts.NewTree
-	NewReusableNode = ts.NewReusableNode
+	NewTree         = itree.NewTree
+	NewReusableNode = itree.NewReusableNode
 
 	LengthZero  = core.LengthZero
 	SubtreeZero = st.SubtreeZero

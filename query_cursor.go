@@ -578,23 +578,23 @@ func (qc *QueryCursor) isStepDone(stepIndex uint16) bool {
 // It looks up the parent node's production ID, then finds the field map entry
 // matching the current child's structural child index.
 func (qc *QueryCursor) currentFieldID() FieldID {
-	stack := qc.cursor.stack
+	stack := qc.cursor.Stack
 	if len(stack) < 2 {
 		return 0
 	}
 	// Walk up through hidden nodes to find the visible parent and child indices.
-	arena := qc.cursor.tree.Arena()
-	childStructuralIndex := stack[len(stack)-1].structuralChildIndex
+	arena := qc.cursor.Tree.Arena()
+	childStructuralIndex := stack[len(stack)-1].StructuralChildIndex
 
 	// Find the nearest visible ancestor with a production ID.
 	for depth := len(stack) - 2; depth >= 0; depth-- {
 		parentEntry := &stack[depth]
-		if !IsVisible(parentEntry.subtree, arena) && depth > 0 {
+		if !IsVisible(parentEntry.Subtree, arena) && depth > 0 {
 			// Hidden node: accumulate structuralChildIndex and keep going up.
-			childStructuralIndex += parentEntry.structuralChildIndex
+			childStructuralIndex += parentEntry.StructuralChildIndex
 			continue
 		}
-		prodID := GetProductionID(parentEntry.subtree, arena)
+		prodID := GetProductionID(parentEntry.Subtree, arena)
 		fieldEntries := qc.query.language.FieldMapForProduction(prodID)
 		for _, entry := range fieldEntries {
 			if uint16(childStructuralIndex) == entry.ChildIndex {
