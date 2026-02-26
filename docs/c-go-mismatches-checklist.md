@@ -27,9 +27,9 @@ This makes cross-referencing and auditing trivial.
 | ts_parser__reduce | 931 | doReduce | 794 | MISMATCH — no inline merge, no return value |
 | ts_parser__shift | 908 | doShift | 756 | OK |
 | ts_parser__accept | 1048 | doAccept | 961 | FIXED (43ee822) |
-| ts_parser__lex | 505 | lexToken | 516 | FIXED (b145e6a) — error-mode retry loop + included-range transition coverage added |
-| ts_parser__get_cached_token | 703 | getCachedToken | 755 | FIXED (b145e6a) — cache key now includes byte index + last external token state |
-| ts_parser__set_cached_token | 724 | setCachedToken | 775 | FIXED (b145e6a) — cache now stores token with last external token context |
+| ts_parser__lex | 505 | lexToken | 409 | MISMATCH — no error-mode lex loop/included ranges |
+| ts_parser__get_cached_token | 703 | — (inline in lexToken?) | — | MISMATCH — cache ignores last ext token/reuse |
+| ts_parser__set_cached_token | 724 | — (inline in lexToken?) | — | MISMATCH — caches token only (no ext token) |
 | ts_parser__handle_error | 1439 | handleError | 1129 | FIXED (3da71fa) |
 | ts_parser__recover | 1250 | recover | 1384 | MISMATCH — Strategy 2 multi-path |
 | ts_parser__recover_to_state | 1191 | recoverToState | 1560 | FIXED (8ce6698) |
@@ -42,7 +42,7 @@ This makes cross-referencing and auditing trivial.
 | ts_parser__compare_versions | 246 | compareVersions | 1779 | OK |
 | ts_parser__version_status | 289 | versionStatus | 1760 | MISMATCH — paused cost not added |
 | ts_parser__better_version_exists | 304 | betterVersionExists | 1667 | MISMATCH — no finished tree/pos/merge checks |
-| ts_parser__can_reuse_first_leaf | 470 | canReuseFirstLeaf | 782 | FIXED (b145e6a) |
+| ts_parser__can_reuse_first_leaf | 470 | — (inline?) | — | MISMATCH — reuse checks incomplete |
 | ts_parser__reuse_node | 753 | tryReuseNode | 643 | MISMATCH — no range diffs/breakdown_top |
 | ts_parser__check_progress | 1536 | — | — | MISSING — no progress callback checks |
 | ts_parser__balance_subtree | 1867 | — | — | MISSING — no subtree balancing |
