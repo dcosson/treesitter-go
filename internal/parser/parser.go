@@ -687,19 +687,8 @@ func (p *Parser) lexToken(version StackVersion, state StateID, position Length) 
 
 		if !errorMode {
 			if p.lexer.EOF() {
-				// Preserve existing Go behavior at EOF: emit SymbolEnd directly.
-				// Without this, retrying in ERROR_STATE can yield scanner-only
-				// tokens at EOF (e.g. bash/perl), causing spurious root errors.
 				p.lexer.MarkEnd()
 				p.lexer.AcceptToken(SymbolEnd)
-				break
-			}
-			if p.stack.HasAdvancedSinceError(version) {
-				// Outside error recovery, keep existing behavior for now and
-				// report a simple error token immediately.
-				p.lexer.Advance(false)
-				p.lexer.MarkEnd()
-				p.lexer.AcceptToken(SymbolError)
 				break
 			}
 			errorMode = true
