@@ -1,0 +1,32 @@
+{
+  "id": "tree-sitter-go-15v.7",
+  "title": "Phase 7: Move and clean up test files",
+  "description": "Move internal-focused tests into their respective packages:\n- subtree_test.go → internal/subtree/\n- stack_test.go → internal/stack/ (if not already handled in Phase 2)\n- tree_test.go, tree_cursor_test.go → internal/tree/\n- query_test.go → internal/query/\n\nDelete ~14 untracked debug test files.\n\nKeep in root: api_test.go (public API integration tests), corpus, regression, benchmark, fuzz, grammar batch tests (cross-cutting integration tests that exercise the full stack).\n\nVerify all tests pass after moves.",
+  "status": "open",
+  "priority": 2,
+  "type": "task",
+  "parent": "tree-sitter-go-15v",
+  "dependencies": [
+    {
+      "id": "tree-sitter-go-15v",
+      "type": "parent-child"
+    },
+    {
+      "id": "tree-sitter-go-15v.8",
+      "type": "blocks"
+    }
+  ],
+  "dependents": [
+    {
+      "id": "tree-sitter-go-15v.6",
+      "type": "blocks"
+    }
+  ],
+  "created_by": "Danny Cosson",
+  "owner": "dcosson@gmail.com",
+  "labels": [
+    "project=tree-sitter-go"
+  ],
+  "created_at": "2026-02-26T12:32:33.199461-08:00",
+  "updated_at": "2026-02-26T12:32:33.199461-08:00"
+}

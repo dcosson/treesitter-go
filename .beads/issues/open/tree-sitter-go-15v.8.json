@@ -1,0 +1,32 @@
+{
+  "id": "tree-sitter-go-15v.8",
+  "title": "Phase 8: Rename corpora to realworld",
+  "description": "Rename all corpora references to realworld to disambiguate from corpus tests:\n1. Rename testdata/corpora/ → testdata/realworld/\n2. Rename testdata/corpora-manifest.json → testdata/realworld-manifest.json\n3. Rename corpora_diff_test.go → realworld_diff_test.go\n4. Update TestDifferentialCorpora → TestDifferentialRealworld\n5. Update Makefile targets: test-corpora-diff → test-realworld-diff, fetch-corpora → fetch-realworld\n6. Update README\n7. Verify all tests pass",
+  "status": "open",
+  "priority": 2,
+  "type": "task",
+  "parent": "tree-sitter-go-15v",
+  "dependencies": [
+    {
+      "id": "tree-sitter-go-15v",
+      "type": "parent-child"
+    },
+    {
+      "id": "tree-sitter-go-15v.9",
+      "type": "blocks"
+    }
+  ],
+  "dependents": [
+    {
+      "id": "tree-sitter-go-15v.7",
+      "type": "blocks"
+    }
+  ],
+  "created_by": "Danny Cosson",
+  "owner": "dcosson@gmail.com",
+  "labels": [
+    "project=tree-sitter-go"
+  ],
+  "created_at": "2026-02-26T12:32:39.260806-08:00",
+  "updated_at": "2026-02-26T12:32:39.260806-08:00"
+}
