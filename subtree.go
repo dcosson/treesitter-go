@@ -264,6 +264,7 @@ type SubtreeHeapData struct {
 	ErrorCost            uint32
 	DynamicPrecedence    int32
 	LookaheadBytes       uint32
+	LookaheadChar        int32 // First character of a lex error (for UNEXPECTED rendering)
 	RepeatDepth          uint16
 	ProductionID         uint16
 	FirstLeaf            FirstLeaf

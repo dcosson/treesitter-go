@@ -761,9 +761,7 @@ func (p *Parser) lexToken(version StackVersion, state StateID, position Length) 
 		if lookaheadEndByte >= errorEndPosition.Bytes {
 			lookaheadBytes = lookaheadEndByte - errorEndPosition.Bytes
 		}
-		_ = firstErrorCharacter
-
-		token := p.createLexErrorToken(state, padding, size, lookaheadBytes)
+		token := p.createLexErrorToken(state, firstErrorCharacter, padding, size, lookaheadBytes)
 		p.cachedToken = token
 		p.cachedTokenPosition = position
 		p.cachedTokenState = StateID(lexMode.LexState)
@@ -1973,7 +1971,7 @@ func (p *Parser) createMissingToken(symbol Symbol, padding Length, lookaheadByte
 
 // createLexErrorToken creates a leaf-like error token for lex-time skipped
 // input, matching ts_subtree_new_error behavior in the C runtime.
-func (p *Parser) createLexErrorToken(parseState StateID, padding, size Length, lookaheadBytes uint32) Subtree {
+func (p *Parser) createLexErrorToken(parseState StateID, lookaheadChar int32, padding, size Length, lookaheadBytes uint32) Subtree {
 	st, data := p.arena.Alloc()
 	*data = SubtreeHeapData{
 		Symbol:         SymbolError,
@@ -1981,6 +1979,7 @@ func (p *Parser) createLexErrorToken(parseState StateID, padding, size Length, l
 		Padding:        padding,
 		Size:           size,
 		LookaheadBytes: lookaheadBytes,
+		LookaheadChar:  lookaheadChar,
 		FirstLeaf: FirstLeaf{
 			Symbol:     SymbolError,
 			ParseState: parseState,

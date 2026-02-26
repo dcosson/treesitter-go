@@ -1,6 +1,9 @@
 package treesitter
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 // Tree represents a complete parse tree. It holds the root subtree, the
 // language used for parsing, included ranges, and references to all arenas
@@ -527,14 +530,24 @@ func writeSExprSubtree(s Subtree, arena *SubtreeArena, lang *Language, buf *stri
 
 	isVisible := IsVisible(s, arena) || aliasSymbol != 0
 	isMissing := IsMissing(s, arena)
+	// UNEXPECTED: error leaf with content (matches C subtree.c:848-851).
+	isUnexpected := sym == SymbolError && len(GetChildren(s, arena)) == 0 &&
+		GetSize(s, arena).Bytes > 0
 
-	if isVisible && (isNamed || isMissing) {
+	// Visible nodes are rendered if named, MISSING, or UNEXPECTED.
+	shouldRender := isVisible && (isNamed || isMissing || isUnexpected)
+
+	if shouldRender {
 		buf.WriteByte(' ')
 		if fieldName != "" {
 			buf.WriteString(fieldName)
 			buf.WriteString(": ")
 		}
-		if isMissing {
+		if isUnexpected {
+			// Matches C: (UNEXPECTED 'c') for printable ASCII, (UNEXPECTED N) for others.
+			buf.WriteString("(UNEXPECTED ")
+			writeCharLiteral(buf, getLookaheadChar(s, arena))
+		} else if isMissing {
 			// Matches C subtree.c: (MISSING symbolname) for named, (MISSING "symbolname") for anonymous.
 			buf.WriteString("(MISSING ")
 			aliasIsNamed := aliasSymbol != 0 && lang.SymbolIsNamed(aliasSymbol)
@@ -608,9 +621,44 @@ func writeSExprSubtree(s Subtree, arena *SubtreeArena, lang *Language, buf *stri
 		}
 	}
 
-	if isVisible && (isNamed || isMissing) {
+	if shouldRender {
 		buf.WriteByte(')')
 	}
+}
+
+// getLookaheadChar returns the LookaheadChar stored in a heap subtree (used for UNEXPECTED rendering).
+func getLookaheadChar(s Subtree, arena *SubtreeArena) int32 {
+	if s.IsInline() {
+		return 0
+	}
+	return arena.Get(s).LookaheadChar
+}
+
+// writeCharLiteral writes a character literal matching C's ts_subtree__write_char_to_string.
+func writeCharLiteral(buf *strings.Builder, chr int32) {
+	switch {
+	case chr == -1:
+		buf.WriteString("INVALID")
+	case chr == 0:
+		buf.WriteString("'\\0'")
+	case chr == '\n':
+		buf.WriteString("'\\n'")
+	case chr == '\t':
+		buf.WriteString("'\\t'")
+	case chr == '\r':
+		buf.WriteString("'\\r'")
+	case chr > 0 && chr < 128 && isPrintable(byte(chr)):
+		buf.WriteByte('\'')
+		buf.WriteByte(byte(chr))
+		buf.WriteByte('\'')
+	default:
+		buf.WriteString(fmt.Sprintf("%d", chr))
+	}
+}
+
+// isPrintable returns true if b is a printable ASCII character (matching C's isprint).
+func isPrintable(b byte) bool {
+	return b >= 0x20 && b <= 0x7e
 }
 
 // nonInheritedFieldForChild checks the field map for a non-inherited entry
