@@ -18,6 +18,10 @@
     {
       "id": "tree-sitter-go-e0w.2",
       "type": "blocks"
+    },
+    {
+      "id": "tree-sitter-go-e0w.5",
+      "type": "blocks"
     }
   ],
   "dependents": [
