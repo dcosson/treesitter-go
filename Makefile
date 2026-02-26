@@ -18,14 +18,14 @@ test-corpus-json:
 	go test ./... -run TestCorpus/json -v
 
 test-regression:
-	go test -v -race -run 'TestRegression' -count=1 -timeout 5m .
+	go test -v -race -run 'TestRegression' -count=1 -timeout 5m ./e2etest/
 
 fetch-realworld:
 	go run ./cmd/fetch-realworld -manifest testdata/realworld-manifest.json -output testdata/realworld/
 
 test-realworld-diff:
 ifdef TREE_SITTER_CLI
-	go test -v -race -run 'TestDifferentialRealworld' -count=1 -timeout 30m .
+	go test -v -race -run 'TestDifferentialRealworld' -count=1 -timeout 30m ./e2etest/
 else
 	@echo "tree-sitter CLI not found. Run 'make deps' to install."
 	@exit 1
@@ -75,23 +75,23 @@ generate-scanner-traces:
 	scripts/generate-scanner-traces.sh
 
 test-scanner-traces:
-	go test -v -race -run 'TestScannerTraces' -count=1 -timeout 10m .
+	go test -v -race -run 'TestScannerTraces' -count=1 -timeout 10m ./e2etest/
 
 FUZZ_TIME ?= 30s
 
 fuzz:
 	@echo "Running all fuzz targets ($(FUZZ_TIME) each)..."
-	@grep -o 'func Fuzz[A-Za-z]*' fuzz_test.go | sed 's/^func //' | while read target; do \
+	@grep -o 'func Fuzz[A-Za-z]*' e2etest/fuzz_test.go | sed 's/^func //' | while read target; do \
 		echo "--- $$target ($(FUZZ_TIME)) ---"; \
-		go test -fuzz=$$target -fuzztime=$(FUZZ_TIME) -timeout=0 . || exit 1; \
+		go test -fuzz=$$target -fuzztime=$(FUZZ_TIME) -timeout=0 ./e2etest/ || exit 1; \
 	done
 	@echo "All fuzz targets passed."
 
 bench:
 ifdef TREE_SITTER_CLI
-	go test . -run=NOMATCH -bench=. -benchmem -count=5 -timeout 10m \
+	go test ./e2etest/ -run=NOMATCH -bench=. -benchmem -count=5 -timeout 10m \
 		-ts-cli=$(TREE_SITTER_CLI) | tee bench-results.txt
 else
-	go test . -run=NOMATCH -bench=. -benchmem -count=5 -timeout 10m | tee bench-results.txt
+	go test ./e2etest/ -run=NOMATCH -bench=. -benchmem -count=5 -timeout 10m | tee bench-results.txt
 	@echo "Note: tree-sitter CLI not found, Go-vs-C comparison skipped."
 endif

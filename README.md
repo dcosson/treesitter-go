@@ -164,15 +164,17 @@ The following grammars are included for testing and can be used as references fo
 
 ### Test Types
 
-| Test | Command | Content | Requires CLI? | Notes |
-|------|---------|---------|:---:|-------|
-| **Unit tests** | `make test` | Hand-written tests for parser, lexer, stack, subtree, API, external scanners | No | Skips corpus and differential tests. Tests core runtime behavior with small focused inputs. |
-| **Corpus tests** | `make test-corpus` | Tree-sitter's official test suites (1634 cases across 15 languages) | No | Each grammar repo ships a `corpus/` directory with input/expected-output pairs. Fetched with `make fetch-test-grammars` into `testdata/grammars/`. |
-| **Regression tests** | `make test-regression` | Curated inputs that previously caused bugs (hangs, panics, wrong output) | No | Stored in `testdata/regression/<lang>/`. Guards against regressions in specific edge cases. |
-| **Differential tests** | `make diff-test` | Small set of per-grammar sample inputs compared against C tree-sitter CLI output | **Yes** | Tests in `internal/difftest/`. Verifies our S-expression output matches the C reference exactly. |
-| **Realworld diff tests** | `make test-realworld-diff` | Real-world source files from open-source projects compared against C CLI | **Yes** | Fetched via `make fetch-realworld` from GitHub repos. Parses hundreds of real files per language and diffs against C reference output. |
-| **Benchmarks** | `make bench` | Auto-generated synthetic inputs (varying sizes per language) | Optional | Measures parse throughput (bytes/sec) for all 15 languages at multiple sizes. If CLI is available, also benchmarks C parser for comparison. |
-| **Grammar batch tests** | `go test -run TestGrammarBatch` | Subset of corpus tests used during grammar generation validation | No | Runs during development to verify grammar extraction + code generation. |
+| Test | Command | Code Location | Requires CLI? | Notes |
+|------|---------|---------------|:---:|-------|
+| **Unit tests** | `make test` | `internal/*/`, `scanners/*/`, `language/` | No | Skips corpus and differential tests. Tests core runtime behavior with small focused inputs. |
+| **Corpus tests** | `make test-corpus` | `e2etest/corpus_*.go` | No | Tree-sitter's official test suites (1634 cases across 15 languages). Fixtures in `testdata/grammars/*/test/corpus/`. |
+| **Regression tests** | `make test-regression` | `e2etest/regression_test.go` | No | Curated inputs in `testdata/regression/<lang>/`. Guards against regressions in specific edge cases. |
+| **Differential tests** | `make diff-test` | `internal/difftest/` | **Yes** | Small set of per-grammar sample inputs compared against C tree-sitter CLI output. |
+| **Realworld diff tests** | `make test-realworld-diff` | `e2etest/realworld_diff_test.go` | **Yes** | Real-world OSS files fetched via `make fetch-realworld`, compared against C CLI output. |
+| **Benchmarks** | `make bench` | `e2etest/benchmark_test.go` | Optional | Parse throughput (bytes/sec) for all 15 languages. If CLI available, also benchmarks C parser. |
+| **Grammar batch tests** | `make test` (included) | `e2etest/grammar_batch*_test.go` | No | Hand-written integration tests for specific language constructs across all 15 languages. |
+| **Scanner traces** | `make test-scanner-traces` | `e2etest/scanner_trace_test.go` | No | External scanner parity — replays recorded C scanner calls against Go scanners. |
+| **Fuzz tests** | `make fuzz` | `e2etest/fuzz_test.go` | No | Runs all fuzz targets (parse + scanner roundtrip). Finds crashes/panics. |
 
 ### Setup
 
@@ -210,15 +212,48 @@ See `docs/corpus-progress.csv` for detailed per-commit history.
 
 ## Architecture
 
-The implementation faithfully ports the C tree-sitter runtime to Go:
+The implementation faithfully ports the C tree-sitter runtime to Go, organized into focused packages:
 
-- **`parser.go`** — GLR parser with version forking, merging, error recovery
-- **`lexer.go`** — DFA-based lexer with keyword extraction and external scanner integration
-- **`stack.go`** — Graph-structured stack (GSS) supporting split, merge, pause/resume
-- **`subtree.go`** — Arena-allocated subtree nodes with inline optimization for small trees
-- **`tree.go`** — Parse tree with Node API for navigation, field access, S-expression output
-- **`language.go`** — Language definition holding parse tables, lex tables, symbol metadata
-- **`types.go`** — Core types: Symbol, StateID, FieldID, Length, Point, Range
+### Public API
+
+- **`treesitter.go`** — Single-file public facade. Type aliases and constructor wrappers only, zero logic. All external consumers import this package.
+- **`language/`** — Language definition, `ExternalScanner` and `ExternalScannerFactory` interfaces
+- **`lexer/`** — `Lexer`, `Input`, and `StringInput` types for scanner integration
+
+### Internal packages
+
+- **`internal/parser/`** — GLR parser with version forking, merging, error recovery
+- **`internal/lexer/`** — DFA-based lexer with keyword extraction and external scanner integration
+- **`internal/stack/`** — Graph-structured stack (GSS) supporting split, merge, pause/resume
+- **`internal/subtree/`** — Arena-allocated subtree nodes with inline optimization for small trees
+- **`internal/tree/`** — Parse tree with Node, TreeCursor, S-expression output
+- **`internal/query/`** — Query compilation and pattern matching
+- **`internal/core/`** — Primitive types: Symbol, StateID, FieldID, Length, Point, Range
+- **`internal/generate/`** — Code generation: converts C `parser.c` tables into Go source
+
+### Language support
+
+- **`internal/testgrammars/<lang>/`** — Generated parse tables for 15 languages
+- **`scanners/<lang>/`** — Hand-ported external scanner implementations
+
+### Import graph
+
+No internal package imports the root package. Dependencies flow strictly bottom-up:
+
+```
+internal/core  (foundation — no internal imports)
+    │
+    ├──> lexer/              (public, imports core)
+    ├──> language/           (imports core + lexer/)
+    ├──> internal/subtree/   (imports core)
+    │      │
+    │      ├──> internal/stack/    (imports core + subtree)
+    │      ├──> internal/tree/     (imports core + subtree + language/)
+    │      ├──> internal/query/    (imports core + subtree + tree + language/)
+    │      └──> internal/parser/   (imports core + subtree + stack + tree + lexer/ + language/)
+    │
+    └──> ROOT (treesitter.go) — imports all above, re-exports as aliases
+```
 
 ## License
 
