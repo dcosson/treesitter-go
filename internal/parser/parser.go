@@ -7,110 +7,114 @@ import (
 	"math"
 
 	ts "github.com/treesitter-go/treesitter"
+	"github.com/treesitter-go/treesitter/internal/core"
 	istack "github.com/treesitter-go/treesitter/internal/stack"
+	st "github.com/treesitter-go/treesitter/internal/subtree"
+	"github.com/treesitter-go/treesitter/language"
 	plexer "github.com/treesitter-go/treesitter/lexer"
 )
 
-type Language = ts.Language
+type Language = language.Language
 type Tree = ts.Tree
 type Input = plexer.Input
 type Lexer = plexer.Lexer
 type Stack = istack.Stack
 type StackNode = istack.StackNode
 type StackVersion = istack.StackVersion
-type Subtree = ts.Subtree
-type SubtreeArena = ts.SubtreeArena
-type Length = ts.Length
-type StateID = ts.StateID
-type Symbol = ts.Symbol
+type Subtree = st.Subtree
+type SubtreeArena = st.SubtreeArena
+type Length = core.Length
+type StateID = core.StateID
+type Symbol = core.Symbol
 type ReusableNode = ts.ReusableNode
-type ExternalScanner = ts.ExternalScanner
-type ParseActionEntry = ts.ParseActionEntry
-type FieldMapEntry = ts.FieldMapEntry
-type SymbolMetadata = ts.SymbolMetadata
-type LexMode = ts.LexMode
-type InputEdit = ts.InputEdit
+type ExternalScanner = language.ExternalScanner
+type ParseActionEntry = core.ParseActionEntry
+type FieldMapEntry = core.FieldMapEntry
+type FieldMapSlice = core.FieldMapSlice
+type SymbolMetadata = core.SymbolMetadata
+type LexMode = core.LexMode
+type InputEdit = core.InputEdit
 
-type Point = ts.Point
+type Point = core.Point
 
 var (
 	NewStack        = istack.NewStack
 	NewLexer        = plexer.NewLexer
 	NewStringInput  = plexer.NewStringInput
-	NewSubtreeArena = ts.NewSubtreeArena
+	NewSubtreeArena = st.NewSubtreeArena
 	NewTree         = ts.NewTree
 	NewReusableNode = ts.NewReusableNode
 
-	LengthZero  = ts.LengthZero
-	SubtreeZero = ts.SubtreeZero
+	LengthZero  = core.LengthZero
+	SubtreeZero = st.SubtreeZero
 
-	LengthAdd           = ts.LengthAdd
-	LengthSub           = ts.LengthSub
-	LengthSaturatingSub = ts.LengthSaturatingSub
+	LengthAdd           = core.LengthAdd
+	LengthSub           = core.LengthSub
+	LengthSaturatingSub = st.LengthSaturatingSub
 
-	GetErrorCost              = ts.GetErrorCost
-	GetDynamicPrecedence      = ts.GetDynamicPrecedence
-	GetPadding                = ts.GetPadding
-	GetSize                   = ts.GetSize
-	GetTotalBytes             = ts.GetTotalBytes
-	GetChildren               = ts.GetChildren
-	GetSymbol                 = ts.GetSymbol
-	GetParseState             = ts.GetParseState
-	GetIsKeyword              = ts.GetIsKeyword
-	HasExternalTokens         = ts.HasExternalTokens
-	SetExternalScannerState   = ts.SetExternalScannerState
-	ExternalScannerStateEqual = ts.ExternalScannerStateEqual
-	GetLeafSymbol             = ts.GetLeafSymbol
-	GetLookaheadBytes         = ts.GetLookaheadBytes
-	IsExtra                   = ts.IsExtra
-	IsVisible                 = ts.IsVisible
-	GetVisibleDescendantCount = ts.GetVisibleDescendantCount
-	GetExternalScannerState   = ts.GetExternalScannerState
-	GetRepeatDepth            = ts.GetRepeatDepth
-	GetChildCount             = ts.GetChildCount
-	GetProductionID           = ts.GetProductionID
-	GetNamedChildCount        = ts.GetNamedChildCount
-	GetVisibleChildCount      = ts.GetVisibleChildCount
+	GetErrorCost              = st.GetErrorCost
+	GetDynamicPrecedence      = st.GetDynamicPrecedence
+	GetPadding                = st.GetPadding
+	GetSize                   = st.GetSize
+	GetTotalBytes             = st.GetTotalBytes
+	GetChildren               = st.GetChildren
+	GetSymbol                 = st.GetSymbol
+	GetParseState             = st.GetParseState
+	GetIsKeyword              = st.GetIsKeyword
+	HasExternalTokens         = st.HasExternalTokens
+	SetExternalScannerState   = st.SetExternalScannerState
+	ExternalScannerStateEqual = st.ExternalScannerStateEqual
+	GetLeafSymbol             = st.GetLeafSymbol
+	GetLookaheadBytes         = st.GetLookaheadBytes
+	IsExtra                   = st.IsExtra
+	IsVisible                 = st.IsVisible
+	GetVisibleDescendantCount = st.GetVisibleDescendantCount
+	GetExternalScannerState   = st.GetExternalScannerState
+	GetRepeatDepth            = st.GetRepeatDepth
+	GetChildCount             = st.GetChildCount
+	GetProductionID           = st.GetProductionID
+	GetNamedChildCount        = st.GetNamedChildCount
+	GetVisibleChildCount      = st.GetVisibleChildCount
 
-	NewLeafSubtree                = ts.NewLeafSubtree
-	NewNodeSubtree                = ts.NewNodeSubtree
-	SetParseState                 = ts.SetParseState
-	SetExtra                      = ts.SetExtra
-	SetSubtreeSymbol              = ts.SetSubtreeSymbol
-	HasChanges                    = ts.HasChanges
-	IsMissing                     = ts.IsMissing
-	IsFragileLeft                 = ts.IsFragileLeft
-	IsFragileRight                = ts.IsFragileRight
-	GetFirstLeaf                  = ts.GetFirstLeaf
-	SummarizeChildren             = ts.SummarizeChildren
-	HasExternalScannerStateChange = ts.HasExternalScannerStateChange
-	ComputeSizeFromChildren       = ts.ComputeSizeFromChildren
-	NewInlineSubtree              = ts.NewInlineSubtree
+	NewLeafSubtree                = st.NewLeafSubtree
+	NewNodeSubtree                = st.NewNodeSubtree
+	SetParseState                 = st.SetParseState
+	SetExtra                      = st.SetExtra
+	SetSubtreeSymbol              = st.SetSubtreeSymbol
+	HasChanges                    = st.HasChanges
+	IsMissing                     = st.IsMissing
+	IsFragileLeft                 = st.IsFragileLeft
+	IsFragileRight                = st.IsFragileRight
+	GetFirstLeaf                  = st.GetFirstLeaf
+	SummarizeChildren             = st.SummarizeChildren
+	HasExternalScannerStateChange = st.HasExternalScannerStateChange
+	ComputeSizeFromChildren       = st.ComputeSizeFromChildren
+	NewInlineSubtree              = st.NewInlineSubtree
 )
 
-type FirstLeaf = ts.FirstLeaf
-type SubtreeHeapData = ts.SubtreeHeapData
+type FirstLeaf = st.FirstLeaf
+type SubtreeHeapData = st.SubtreeHeapData
 
 const (
-	TreeSitterSerializationBufferSize = ts.TreeSitterSerializationBufferSize
-	LexStateNoLookahead               = ts.LexStateNoLookahead
+	TreeSitterSerializationBufferSize = st.TreeSitterSerializationBufferSize
+	LexStateNoLookahead               = core.LexStateNoLookahead
 
-	ParseActionTypeShift   = ts.ParseActionTypeShift
-	ParseActionTypeHeader  = ts.ParseActionTypeHeader
-	ParseActionTypeReduce  = ts.ParseActionTypeReduce
-	ParseActionTypeAccept  = ts.ParseActionTypeAccept
-	ParseActionTypeRecover = ts.ParseActionTypeRecover
+	ParseActionTypeShift   = core.ParseActionTypeShift
+	ParseActionTypeHeader  = core.ParseActionTypeHeader
+	ParseActionTypeReduce  = core.ParseActionTypeReduce
+	ParseActionTypeAccept  = core.ParseActionTypeAccept
+	ParseActionTypeRecover = core.ParseActionTypeRecover
 
-	SymbolEnd         = ts.SymbolEnd
-	SymbolError       = ts.SymbolError
-	SymbolErrorRepeat = ts.SymbolErrorRepeat
+	SymbolEnd         = core.SymbolEnd
+	SymbolError       = core.SymbolError
+	SymbolErrorRepeat = core.SymbolErrorRepeat
 
-	SubtreeFlagHasExternalScannerStateChange = ts.SubtreeFlagHasExternalScannerStateChange
-	SubtreeFlagVisible                       = ts.SubtreeFlagVisible
-	SubtreeFlagNamed                         = ts.SubtreeFlagNamed
-	SubtreeFlagMissing                       = ts.SubtreeFlagMissing
-	SubtreeFlagHasExternalTokens             = ts.SubtreeFlagHasExternalTokens
-	SubtreeFlagDependsOnColumn               = ts.SubtreeFlagDependsOnColumn
+	SubtreeFlagHasExternalScannerStateChange = st.SubtreeFlagHasExternalScannerStateChange
+	SubtreeFlagVisible                       = st.SubtreeFlagVisible
+	SubtreeFlagNamed                         = st.SubtreeFlagNamed
+	SubtreeFlagMissing                       = st.SubtreeFlagMissing
+	SubtreeFlagHasExternalTokens             = st.SubtreeFlagHasExternalTokens
+	SubtreeFlagDependsOnColumn               = st.SubtreeFlagDependsOnColumn
 )
 
 // Parser is the GLR parsing engine. It drives the Lexer and Language to

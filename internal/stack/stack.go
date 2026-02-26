@@ -5,37 +5,37 @@ import (
 	"fmt"
 	"sync"
 
-	ts "github.com/treesitter-go/treesitter"
 	"github.com/treesitter-go/treesitter/internal/core"
+	st "github.com/treesitter-go/treesitter/internal/subtree"
 )
 
-type StateID = ts.StateID
-type Length = ts.Length
-type Symbol = ts.Symbol
-type Subtree = ts.Subtree
-type SubtreeArena = ts.SubtreeArena
+type StateID = core.StateID
+type Length = core.Length
+type Symbol = core.Symbol
+type Subtree = st.Subtree
+type SubtreeArena = st.SubtreeArena
 
-var SubtreeZero = ts.SubtreeZero
-var LengthZero = ts.LengthZero
+var SubtreeZero = st.SubtreeZero
+var LengthZero = core.LengthZero
 
 const (
-	SymbolError          Symbol = ts.SymbolError
-	SymbolErrorRepeat    Symbol = ts.SymbolErrorRepeat
+	SymbolError          Symbol = core.SymbolError
+	SymbolErrorRepeat    Symbol = core.SymbolErrorRepeat
 	ErrorCostPerRecovery        = core.ErrorCostPerRecovery
 )
 
 var (
-	GetTotalBytes             = ts.GetTotalBytes
-	GetErrorCost              = ts.GetErrorCost
-	GetDynamicPrecedence      = ts.GetDynamicPrecedence
-	GetPadding                = ts.GetPadding
-	GetSize                   = ts.GetSize
-	GetChildCount             = ts.GetChildCount
-	GetSymbol                 = ts.GetSymbol
-	GetVisibleDescendantCount = ts.GetVisibleDescendantCount
-	GetExternalScannerState   = ts.GetExternalScannerState
-	IsExtra                   = ts.IsExtra
-	IsVisible                 = ts.IsVisible
+	GetTotalBytes             = st.GetTotalBytes
+	GetErrorCost              = st.GetErrorCost
+	GetDynamicPrecedence      = st.GetDynamicPrecedence
+	GetPadding                = st.GetPadding
+	GetSize                   = st.GetSize
+	GetChildCount             = st.GetChildCount
+	GetSymbol                 = st.GetSymbol
+	GetVisibleDescendantCount = st.GetVisibleDescendantCount
+	GetExternalScannerState   = st.GetExternalScannerState
+	IsExtra                   = st.IsExtra
+	IsVisible                 = st.IsVisible
 )
 
 // Graph-Structured Stack (GSS) for GLR parsing.

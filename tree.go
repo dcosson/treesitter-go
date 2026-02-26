@@ -77,7 +77,7 @@ func (t *Tree) Edit(edit *InputEdit) *Tree {
 	}
 
 	forkedArena := t.Arena().Fork()
-	newRoot := editSubtree(t.root, edit, forkedArena)
+	newRoot := EditSubtree(t.root, edit, forkedArena)
 
 	return &Tree{
 		root:           newRoot,

@@ -1,9 +1,9 @@
 package parser
 
-import ts "github.com/treesitter-go/treesitter"
+import st "github.com/treesitter-go/treesitter/internal/subtree"
 
 func editSubtree(s Subtree, edit *InputEdit, arena *SubtreeArena) Subtree {
-	return ts.EditSubtree(s, edit, arena)
+	return st.EditSubtree(s, edit, arena)
 }
 
 func saturatingSub(a, b uint32) uint32 {
@@ -38,7 +38,7 @@ func makeSubtreeTestLanguage() *Language {
 			"key",
 			"value",
 		},
-		FieldMapSlices: []ts.FieldMapSlice{
+		FieldMapSlices: []FieldMapSlice{
 			{},
 			{Index: 0, Length: 2},
 		},

@@ -6,7 +6,7 @@ import (
 )
 
 func TestSubtreeInlineCreation(t *testing.T) {
-	s := newInlineSubtree(
+	s := NewInlineSubtree(
 		Symbol(42),
 		StateID(100),
 		Length{Bytes: 3, Point: Point{Row: 0, Column: 3}},
@@ -69,7 +69,7 @@ func TestSubtreeInlineCreation(t *testing.T) {
 
 func TestSubtreeInlineFlags(t *testing.T) {
 	// Test with extra=true, keyword=true, named=false
-	s := newInlineSubtree(
+	s := NewInlineSubtree(
 		Symbol(10),
 		StateID(0),
 		Length{},
@@ -96,7 +96,7 @@ func TestSubtreeInlineFlags(t *testing.T) {
 
 func TestSubtreeInlineMaxValues(t *testing.T) {
 	// Test with maximum values that fit inline.
-	s := newInlineSubtree(
+	s := NewInlineSubtree(
 		Symbol(255),
 		StateID(65535),
 		Length{Bytes: 255, Point: Point{Column: 255}},
@@ -181,7 +181,7 @@ func TestSubtreeCanInline(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := subtreeCanInline(tt.padding, tt.size, tt.symbol, tt.external)
+			got := SubtreeCanInline(tt.padding, tt.size, tt.symbol, tt.external)
 			if got != tt.want {
 				t.Errorf("subtreeCanInline = %v, want %v", got, tt.want)
 			}
@@ -283,7 +283,7 @@ func TestSubtreeInlineVsHeapDiscrimination(t *testing.T) {
 	arena := NewSubtreeArena(16)
 
 	// Create an inline subtree.
-	inl := newInlineSubtree(Symbol(5), StateID(10), Length{Bytes: 1, Point: Point{Column: 1}}, Length{Bytes: 2, Point: Point{Column: 2}}, true, true, false, false)
+	inl := NewInlineSubtree(Symbol(5), StateID(10), Length{Bytes: 1, Point: Point{Column: 1}}, Length{Bytes: 2, Point: Point{Column: 2}}, true, true, false, false)
 
 	// Create a heap subtree.
 	heap, data := arena.Alloc()
@@ -341,9 +341,9 @@ func TestSubtreeIDEquality(t *testing.T) {
 	}
 
 	// Inline subtrees: same data = same ID, different data = different ID.
-	inl1 := newInlineSubtree(Symbol(1), StateID(0), Length{}, Length{Bytes: 1, Point: Point{Column: 1}}, true, false, false, false)
-	inl2 := newInlineSubtree(Symbol(2), StateID(0), Length{}, Length{Bytes: 1, Point: Point{Column: 1}}, true, false, false, false)
-	inl1_dup := newInlineSubtree(Symbol(1), StateID(0), Length{}, Length{Bytes: 1, Point: Point{Column: 1}}, true, false, false, false)
+	inl1 := NewInlineSubtree(Symbol(1), StateID(0), Length{}, Length{Bytes: 1, Point: Point{Column: 1}}, true, false, false, false)
+	inl2 := NewInlineSubtree(Symbol(2), StateID(0), Length{}, Length{Bytes: 1, Point: Point{Column: 1}}, true, false, false, false)
+	inl1_dup := NewInlineSubtree(Symbol(1), StateID(0), Length{}, Length{Bytes: 1, Point: Point{Column: 1}}, true, false, false, false)
 
 	idInl1 := SubtreeIDOf(inl1)
 	idInl2 := SubtreeIDOf(inl2)
@@ -860,7 +860,7 @@ func TestSubtreeAccessorsMissing(t *testing.T) {
 	}
 
 	// Inline subtrees are never missing.
-	inl := newInlineSubtree(Symbol(5), StateID(0), Length{}, Length{Bytes: 1, Point: Point{Column: 1}}, true, false, false, false)
+	inl := NewInlineSubtree(Symbol(5), StateID(0), Length{}, Length{Bytes: 1, Point: Point{Column: 1}}, true, false, false, false)
 	if IsMissing(inl, arena) {
 		t.Error("inline should not be missing")
 	}
@@ -881,7 +881,7 @@ func TestSubtreeAccessorsFragile(t *testing.T) {
 	}
 
 	// Inline subtrees are never fragile.
-	inl := newInlineSubtree(Symbol(1), StateID(0), Length{}, Length{Bytes: 1, Point: Point{Column: 1}}, true, false, false, false)
+	inl := NewInlineSubtree(Symbol(1), StateID(0), Length{}, Length{Bytes: 1, Point: Point{Column: 1}}, true, false, false, false)
 	if IsFragileLeft(inl, arena) {
 		t.Error("inline should not be fragile left")
 	}
