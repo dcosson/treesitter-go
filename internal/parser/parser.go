@@ -554,82 +554,89 @@ func (p *Parser) lexToken(version StackVersion, state StateID, position Length) 
 	foundExternalToken := false
 	var externalScannerStateLen uint32
 	var externalScannerStateChanged bool
+	isKeyword := false
+	errorMode := state == 0
+	currentLexMode := lexMode
 
-	// Try external scanner first if this state enables external tokens.
-	if lexMode.ExternalLexState != 0 && p.externalScanner != nil {
-		p.lexer.Start(position)
+	for {
+		foundExternalToken = false
+		externalScannerStateLen = 0
+		externalScannerStateChanged = false
 
-		// Deserialize from the last external token for this version.
-		lastExtToken := p.stack.LastExternalToken(version)
-		p.externalScannerDeserialize(lastExtToken)
+		// Try external scanner first if this state enables external tokens.
+		if currentLexMode.ExternalLexState != 0 && p.externalScanner != nil {
+			p.lexer.Start(position)
 
-		// Get valid symbols for this external lex state.
-		validSymbols := p.language.EnabledExternalTokens(lexMode.ExternalLexState)
+			// Deserialize from the last external token for this version.
+			lastExtToken := p.stack.LastExternalToken(version)
+			p.externalScannerDeserialize(lastExtToken)
 
-		// Call the external scanner.
-		if validSymbols != nil && p.externalScanner.Scan(p.lexer, validSymbols) {
-			// If the scanner didn't call MarkEnd, default the token end to
-			// the current position (matching AcceptToken behavior). Without
-			// this, TokenEndPosition stays at Length{} (zero), causing size
-			// underflow when the token is at a non-zero position.
-			if !p.lexer.MarkEndCalled() {
-				p.lexer.TokenEndPosition = p.lexer.CurrentPosition()
-			}
+			// Get valid symbols for this external lex state.
+			validSymbols := p.language.EnabledExternalTokens(currentLexMode.ExternalLexState)
 
-			// Serialize the scanner state to check if it changed.
-			externalScannerStateLen = p.externalScannerSerialize()
-			externalScannerStateChanged = !ExternalScannerStateEqual(
-				lastExtToken, p.arena,
-				p.serializationBuffer[:externalScannerStateLen],
-				externalScannerStateLen,
-			)
-
-			// Reject empty external tokens that would cause infinite loops.
-			// Matches C tree-sitter logic: empty tokens (tokenEnd <= position)
-			// with no scanner state change are rejected when the parser is in
-			// error recovery (state 0) or the token is "extra" (doesn't change
-			// parse state). Tokens WITH scanner state changes are always
-			// accepted, even if zero-width (e.g. Ruby HeredocBodyStart,
-			// Python indent/dedent).
-			if p.lexer.TokenEndPosition.Bytes <= position.Bytes && !externalScannerStateChanged {
-				extTokenIndex := p.lexer.ResultSymbol
-				var grammarSymbol Symbol
-				if int(extTokenIndex) < len(p.language.ExternalSymbolMap) {
-					grammarSymbol = p.language.ExternalSymbolMap[extTokenIndex]
+			// Call the external scanner.
+			if validSymbols != nil && p.externalScanner.Scan(p.lexer, validSymbols) {
+				// If the scanner didn't call MarkEnd, default the token end to
+				// the current position (matching AcceptToken behavior). Without
+				// this, TokenEndPosition stays at Length{} (zero), causing size
+				// underflow when the token is at a non-zero position.
+				if !p.lexer.MarkEndCalled() {
+					p.lexer.TokenEndPosition = p.lexer.CurrentPosition()
 				}
-				nextParseState := p.language.NextState(state, grammarSymbol)
-				tokenIsExtra := nextParseState == state
+
+				// Serialize the scanner state to check if it changed.
+				externalScannerStateLen = p.externalScannerSerialize()
+				externalScannerStateChanged = !ExternalScannerStateEqual(
+					lastExtToken, p.arena,
+					p.serializationBuffer[:externalScannerStateLen],
+					externalScannerStateLen,
+				)
 
 				// Reject empty external tokens that would cause infinite loops.
-				// Matches C: error_mode || !has_advanced_since_error || token_is_extra
-				if state == 0 || !p.stack.HasAdvancedSinceError(version) || tokenIsExtra {
-					// Fall through to internal lex — reject this empty token.
-				} else {
-					// Accept: not in error recovery, has advanced, and not extra.
+				// Matches C tree-sitter logic: empty tokens (tokenEnd <= position)
+				// with no scanner state change are rejected when error_mode is
+				// active or the token is "extra" (doesn't change parse state).
+				// Tokens WITH scanner state changes are always accepted, even if
+				// zero-width (e.g. Ruby HeredocBodyStart, Python indent/dedent).
+				if p.lexer.TokenEndPosition.Bytes <= position.Bytes && !externalScannerStateChanged {
+					extTokenIndex := p.lexer.ResultSymbol
+					var grammarSymbol Symbol
 					if int(extTokenIndex) < len(p.language.ExternalSymbolMap) {
-						p.lexer.ResultSymbol = grammarSymbol
+						grammarSymbol = p.language.ExternalSymbolMap[extTokenIndex]
+					}
+					nextParseState := p.language.NextState(state, grammarSymbol)
+					tokenIsExtra := nextParseState == state
+
+					// Reject empty external tokens that would cause infinite loops.
+					// Matches C: error_mode || !has_advanced_since_error || token_is_extra
+					if errorMode || !p.stack.HasAdvancedSinceError(version) || tokenIsExtra {
+						// Fall through to internal lex — reject this empty token.
+					} else {
+						// Accept: not in error recovery, has advanced, and not extra.
+						if int(extTokenIndex) < len(p.language.ExternalSymbolMap) {
+							p.lexer.ResultSymbol = grammarSymbol
+						}
+						foundExternalToken = true
+					}
+				} else {
+					// Non-empty token or scanner state changed — always accept.
+					extTokenIndex := p.lexer.ResultSymbol
+					if int(extTokenIndex) < len(p.language.ExternalSymbolMap) {
+						p.lexer.ResultSymbol = p.language.ExternalSymbolMap[extTokenIndex]
 					}
 					foundExternalToken = true
 				}
-			} else {
-				// Non-empty token or scanner state changed — always accept.
-				extTokenIndex := p.lexer.ResultSymbol
-				if int(extTokenIndex) < len(p.language.ExternalSymbolMap) {
-					p.lexer.ResultSymbol = p.language.ExternalSymbolMap[extTokenIndex]
-				}
-				foundExternalToken = true
 			}
 		}
-	}
 
-	// If no external token, run the internal lex function.
-	isKeyword := false
-	if !foundExternalToken {
+		if foundExternalToken {
+			break
+		}
+
 		p.lexer.Start(position)
-
 		found := false
 		if p.language.LexFn != nil {
-			found = p.language.LexFn(p.lexer, StateID(lexMode.LexState))
+			found = p.language.LexFn(p.lexer, StateID(currentLexMode.LexState))
 		}
 
 		// If the result is the keyword capture token, try keyword lex.
@@ -662,7 +669,7 @@ func (p *Parser) lexToken(version StackVersion, state StateID, position Length) 
 				// (for error recovery). Keywords with neither are reverted to
 				// the keyword capture token (e.g., `blank_identifier` → `identifier`).
 				lookupResult := p.language.Lookup(state, keywordSymbol)
-				isReserved := p.language.IsReservedWord(uint32(lexMode.ReservedWordSetID), keywordSymbol)
+				isReserved := p.language.IsReservedWord(uint32(currentLexMode.ReservedWordSetID), keywordSymbol)
 				if lookupResult != 0 || isReserved {
 					p.lexer.ResultSymbol = keywordSymbol
 				} else {
@@ -674,18 +681,43 @@ func (p *Parser) lexToken(version StackVersion, state StateID, position Length) 
 			p.lexer.TokenEndPosition = keywordEndPos
 		}
 
-		if !found && p.lexer.EOF() {
+		if found {
+			break
+		}
+
+		if !errorMode {
+			if p.lexer.EOF() {
+				// Preserve existing Go behavior at EOF: emit SymbolEnd directly.
+				// Without this, retrying in ERROR_STATE can yield scanner-only
+				// tokens at EOF (e.g. bash/perl), causing spurious root errors.
+				p.lexer.MarkEnd()
+				p.lexer.AcceptToken(SymbolEnd)
+				break
+			}
+			if p.stack.HasAdvancedSinceError(version) {
+				// Outside error recovery, keep existing behavior for now and
+				// report a simple error token immediately.
+				p.lexer.Advance(false)
+				p.lexer.MarkEnd()
+				p.lexer.AcceptToken(SymbolError)
+				break
+			}
+			errorMode = true
+			currentLexMode = p.language.LexModes[0]
+			continue
+		}
+
+		if p.lexer.EOF() {
 			// At EOF — produce end-of-input token.
 			p.lexer.MarkEnd()
 			p.lexer.AcceptToken(SymbolEnd)
-		} else if !found {
+		} else {
 			// No token found — advance by one character and report error.
-			if !p.lexer.EOF() {
-				p.lexer.Advance(false)
-			}
+			p.lexer.Advance(false)
 			p.lexer.MarkEnd()
 			p.lexer.AcceptToken(SymbolError)
 		}
+		break
 	}
 
 	// Compute padding and size.
