@@ -2,7 +2,7 @@
   "id": "tree-sitter-go-15v",
   "title": "Package restructure",
   "description": "Move all implementation out of the root package into internal packages. Root becomes a single treesitter.go file with only type aliases, constructors, and constants. See docs/package-restructure-design.md for full plan.",
-  "status": "open",
+  "status": "closed",
   "priority": 2,
   "type": "epic",
   "dependents": [
@@ -49,5 +49,7 @@
     "project=tree-sitter-go"
   ],
   "created_at": "2026-02-26T12:29:27.289641-08:00",
-  "updated_at": "2026-02-26T12:29:27.289641-08:00"
+  "updated_at": "2026-02-26T13:39:05.800727-08:00",
+  "closed_at": "2026-02-26T13:39:05.800726-08:00",
+  "close_reason": "Package restructure epic complete. All 8 phases plus verification done."
 }
