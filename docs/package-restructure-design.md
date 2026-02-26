@@ -85,21 +85,16 @@ internal/core  (foundation, no internal imports)
 ### Package Structure
 
 ```
-treesitter/                    # root — CLEAN PUBLIC API ONLY
-  parser.go                    # Parser type alias from internal/parser
-  language.go                  # Language type alias from language/
-  lexer.go                     # Lexer, Input type aliases from lexer/
-  types.go                     # core type aliases from internal/core
-  tree.go                      # Tree, Node
-  tree_cursor.go               # TreeCursor
-  query.go                     # Query
-  query_cursor.go              # QueryCursor
-treesitter/parser/             # public facade (may merge into root)
+treesitter/                    # root — SINGLE FILE, pure type aliases + constructors
+  treesitter.go                # ALL public API: type aliases, constructors, constants
+treesitter/parser/             # REMOVED (merged into root as alias)
 treesitter/language/           # Language, ExternalScanner — unchanged
 treesitter/lexer/              # Lexer, Input, StringInput — single copy
 treesitter/internal/core/      # primitive types — unchanged
-treesitter/internal/subtree/   # Subtree, SubtreeArena, all accessors
-treesitter/internal/stack/     # GSS stack — single implementation
+treesitter/internal/subtree/   # Subtree, SubtreeArena, all accessors  ← NEW
+treesitter/internal/tree/      # Tree, Node, TreeCursor, S-expression  ← NEW
+treesitter/internal/query/     # Query, QueryCursor, compiler          ← NEW
+treesitter/internal/stack/     # GSS stack — single implementation (absorb root's stack.go)
 treesitter/internal/parser/    # GLR parser engine
 treesitter/internal/lexer/     # REMOVED (use lexer/ directly)
 treesitter/internal/generate/  # unchanged
@@ -109,76 +104,133 @@ treesitter/internal/testgrammars/<lang>/  # unchanged
 treesitter/scanners/<lang>/    # unchanged
 ```
 
+The root package is a **single file** (`treesitter.go`) containing only type
+aliases, constructor wrappers, and constants. Zero logic.
+
 ### Import Graph (Target)
 
 ```
-internal/core  (foundation)
+internal/core  (foundation — no internal imports)
     │
     ├──> lexer/              (single copy, imports core)
     │
     ├──> language/           (imports core + lexer/)
     │
-    ├──> internal/subtree/   (imports core)  ← NEW
+    ├──> internal/subtree/   (imports core)
     │      │
-    │      ├──> internal/stack/    (imports core + internal/subtree)
+    │      ├──> internal/stack/    (imports core + subtree)
     │      │
-    │      └──> internal/parser/   (imports core + subtree + stack + lexer/ + language/)
+    │      ├──> internal/tree/     (imports core + subtree + language/)
+    │      │
+    │      ├──> internal/query/    (imports core + subtree + tree + language/)
+    │      │
+    │      └──> internal/parser/   (imports core + subtree + stack + tree + lexer/ + language/)
     │
-    └──> ROOT PACKAGE        (imports everything above, re-exports public API)
+    └──> ROOT (treesitter.go) — imports ALL above, re-exports as aliases
            │
-           ├──> parser/  (optional public facade, or merge into root)
-           ├──> internal/testgrammars/*  (import internal/subtree + core)
+           ├──> internal/testgrammars/*  (import core + subtree)
            └──> scanners/*  (import lexer/ + core)
 ```
 
 Key improvement: **no internal package imports the root package.** The dependency
-flow is strictly bottom-up.
+flow is strictly bottom-up. The root is a pure leaf in the import graph.
 
-### Root Package Public API (Exhaustive)
+### Root Package: treesitter.go (Exhaustive)
 
-After restructuring, the root package exports ONLY:
+The single file contains ONLY type aliases, constructor wrappers, and constants:
 
-**Types (re-exported via type aliases):**
-- `Language`, `ExternalScanner`, `ExternalScannerFactory` — from `language/`
-- `Lexer`, `Input`, `StringInput` — from `lexer/`
-- `Parser` — from `internal/parser` (or `parser/` facade)
-- `Symbol`, `StateID`, `FieldID` — from `internal/core`
-- `Point`, `Range`, `Length`, `InputEdit` — from `internal/core`
-- `LexMode`, `SymbolMetadata` — from `internal/core` (needed by grammar tables)
-- `ParseActionType`, `ParseActionEntry`, `TableEntry`, `FieldMapSlice`, `FieldMapEntry` — from `internal/core` (needed by grammar tables)
+```go
+package treesitter
 
-**Types (defined in root):**
-- `Tree` — parse tree (holds root subtree, language, arenas)
-- `Node` — lightweight tree navigation handle
-- `TreeCursor` — efficient DFS traversal
-- `Query` — compiled S-expression pattern
-- `QueryCursor` — query execution engine
-- `QueryMatch`, `QueryCapture`, `PredicateStep` — query result types
-- `QueryError`, `QueryErrorType` — query compilation errors
+import (
+    "github.com/treesitter-go/treesitter/internal/core"
+    "github.com/treesitter-go/treesitter/internal/parser"
+    "github.com/treesitter-go/treesitter/internal/query"
+    "github.com/treesitter-go/treesitter/internal/tree"
+    "github.com/treesitter-go/treesitter/language"
+    "github.com/treesitter-go/treesitter/lexer"
+)
 
-**Constants:**
-- `SymbolEnd`, `SymbolError`, `SymbolErrorRepeat`
-- `ParseActionType*` constants
-- Error cost constants (needed by grammar tables and scanners)
+// --- Language & Lexer ---
+type Language = language.Language
+type ExternalScanner = language.ExternalScanner
+type ExternalScannerFactory = language.ExternalScannerFactory
+type Lexer = lexer.Lexer
+type Input = lexer.Input
+type StringInput = lexer.StringInput
 
-**Functions:**
-- `NewParser() *Parser`
-- `NewQuery(lang, source) (*Query, error)`
-- `NewQueryCursor(query) *QueryCursor`
-- `NewTreeCursor(node) TreeCursor`
-- `LengthAdd`, `LengthSub` (convenience)
+// --- Parser ---
+type Parser = parser.Parser
+func NewParser() *Parser { return parser.NewParser() }
 
-**NOT exported (moves to internal/subtree):**
-- `Subtree`, `SubtreeArena`, `SubtreeHeapData`, `SubtreeFlags`, `SubtreeID`, `FirstLeaf`
-- All `Get*`, `Is*`, `Set*` accessor functions
-- `SummarizeChildren`, `NewLeafSubtree`, `NewNodeSubtree`, `ComputeSizeFromChildren`
-- `EditSubtree`, `LengthSaturatingSub`
-- `ReusableNode`
-- `SubtreeZero`, `NewInlineSubtree`
+// --- Tree & Node ---
+type Tree = tree.Tree
+type Node = tree.Node
+type TreeCursor = tree.TreeCursor
+func NewTreeCursor(n Node) TreeCursor { return tree.NewTreeCursor(n) }
 
-**NOT exported (consolidated into internal/stack):**
-- Root `Stack`, `StackNode`, `StackLink`, `StackHead`, `StackVersion`, `StackIterator`
-- Root `NewStack`
+// --- Query ---
+type Query = query.Query
+type QueryCursor = query.QueryCursor
+type QueryMatch = query.QueryMatch
+type QueryCapture = query.QueryCapture
+type PredicateStep = query.PredicateStep
+type PredicateStepType = query.PredicateStepType
+type QueryError = query.QueryError
+type QueryErrorType = query.QueryErrorType
+func NewQuery(lang *Language, src string) (*Query, error) { return query.NewQuery(lang, src) }
+func NewQueryCursor(q *Query) *QueryCursor { return query.NewQueryCursor(q) }
+
+// --- Core types ---
+type Symbol = core.Symbol
+type StateID = core.StateID
+type FieldID = core.FieldID
+type Point = core.Point
+type Range = core.Range
+type Length = core.Length
+type InputEdit = core.InputEdit
+type LexMode = core.LexMode
+type SymbolMetadata = core.SymbolMetadata
+type ParseActionType = core.ParseActionType
+type ParseActionEntry = core.ParseActionEntry
+type TableEntry = core.TableEntry
+type FieldMapSlice = core.FieldMapSlice
+type FieldMapEntry = core.FieldMapEntry
+
+// --- Constants ---
+const (
+    SymbolEnd         = core.SymbolEnd
+    SymbolError       = core.SymbolError
+    SymbolErrorRepeat = core.SymbolErrorRepeat
+    // ... ParseActionType*, error cost constants, etc.
+)
+
+// --- Convenience ---
+var LengthZero = core.LengthZero
+func LengthAdd(a, b Length) Length { return core.LengthAdd(a, b) }
+func LengthSub(a, b Length) Length { return core.LengthSub(a, b) }
+```
+
+### internal/tree
+
+Holds the implementations currently in `tree.go`, `tree_cursor.go`:
+- `Tree` struct (root subtree, language, arenas)
+- `Node` struct (lightweight navigation handle) with all methods:
+  `String()`, `Child()`, `NamedChild()`, `ChildByFieldName()`, `Parent()`,
+  `StartByte()`, `EndByte()`, `Type()`, `Symbol()`, `IsNamed()`, etc.
+- `TreeCursor` struct with `GotoFirstChild()`, `GotoNextSibling()`, `GotoParent()`
+- S-expression rendering (`writeSExprSubtree`, MISSING/UNEXPECTED handling)
+
+Imports: `internal/core`, `internal/subtree`, `language/`
+
+### internal/query
+
+Holds the implementations currently in `query.go`, `query_cursor.go`:
+- `Query` struct — compiled query with recursive descent parser
+- `QueryCursor` struct — query execution, pattern matching
+- `QueryMatch`, `QueryCapture`, `PredicateStep`, `QueryError` types
+
+Imports: `internal/core`, `internal/subtree`, `internal/tree`, `language/`
 
 ### Grammar Tables and Scanners
 
@@ -186,27 +238,12 @@ The generated grammar files (`internal/testgrammars/<lang>/language.go`) and
 scanner files (`scanners/<lang>/scanner.go`) currently import the root package for
 types like `Symbol`, `ParseActionEntry`, `ExternalScanner`, `Lexer`, etc.
 
-After restructuring, they will need to import from the appropriate packages:
+After restructuring, they import from the appropriate packages directly:
 - Grammar tables: `internal/core` for `Symbol`, `ParseActionEntry`, `TableEntry`, etc.
-- Scanners: `lexer/` for `Lexer`, `internal/core` for `Symbol`
+- Scanners: `lexer/` for `Lexer`, `internal/core` for `Symbol`,
+  `language/` for `ExternalScanner`
 
-The `tsgo-generate` tool will need to be updated to emit the new import paths.
-
-### Tree and Node
-
-`Tree` and `Node` remain in the root package. They currently reference `Subtree`
-and `SubtreeArena` directly. After the move:
-
-- `Tree` holds a `subtree.Subtree` and `*subtree.SubtreeArena` (unexported fields)
-- `Node` holds a `subtree.Subtree` (unexported field)
-- All internal access goes through `internal/subtree` package functions
-- Public methods on `Tree` and `Node` remain unchanged
-
-### Query
-
-`Query` and `QueryCursor` currently use `Subtree` accessors directly for tree
-matching. After the move, they'll import `internal/subtree` for these operations.
-Their public API is unchanged.
+The `tsgo-generate` tool will be updated to emit the new import paths.
 
 ## Migration Steps
 
@@ -219,43 +256,67 @@ The migration should be done incrementally, with tests passing at every step.
 2. Update `internal/stack` to import `internal/subtree` instead of root package
 3. Update `internal/parser` to import `internal/subtree` instead of root package
 4. Root package re-exports subtree types temporarily (type aliases) to avoid
-   breaking grammar tables and scanners
+   breaking other packages
 5. Verify all tests pass
 
-### Phase 2: Remove duplicate Stack
+### Phase 2: Remove duplicate Stack and Lexer
 
-1. Delete `stack.go` from root package
+1. Delete `stack.go` from root package (duplicate of `internal/stack`)
 2. Move `stack_test.go` tests into `internal/stack/` (or delete if redundant)
+3. Delete `internal/lexer/` (duplicate of `lexer/`)
+4. Update any imports from `internal/lexer` to `lexer/`
+5. Verify all tests pass
+
+### Phase 3: Create internal/tree
+
+1. Move `tree.go` and `tree_cursor.go` logic into `internal/tree/`
+2. Root package replaces implementations with type aliases to `internal/tree`
 3. Verify all tests pass
 
-### Phase 3: Remove duplicate Lexer
+### Phase 4: Create internal/query
 
-1. Delete `internal/lexer/` (the duplicate)
-2. Update any imports from `internal/lexer` to `lexer/`
-3. Root package already re-exports from `lexer/` — no change needed
+1. Move `query.go` and `query_cursor.go` logic into `internal/query/`
+2. Root package replaces implementations with type aliases to `internal/query`
+3. Verify all tests pass
+
+### Phase 5: Update grammar tables and scanners
+
+1. Update `tsgo-generate` to emit imports from `internal/core` instead of root
+2. Regenerate all 15 grammar tables
+3. Update scanner imports to use `lexer/` and `language/` directly
 4. Verify all tests pass
 
-### Phase 4: Update grammar tables and scanners
+### Phase 6: Consolidate root into treesitter.go
 
-1. Update `tsgo-generate` to emit imports from `internal/core` and `internal/subtree`
-   instead of root package
-2. Regenerate all grammar tables
-3. Update scanner imports to use `lexer/` and `internal/core` directly
-4. Verify all tests pass
+1. Remove all root package files except `treesitter.go`
+2. Collapse remaining type aliases and constructors into the single file
+3. Move `ReusableNode` into `internal/parser` (only used there)
+4. Delete `parser/` public facade (merged into root alias)
+5. Verify the root package is a single file with zero logic
+6. Verify all tests pass
 
-### Phase 5: Clean root package
+### Phase 7: Move and clean up test files
 
-1. Remove subtree type aliases from root package (no longer needed)
-2. Move `ReusableNode` into `internal/parser` (it's only used there)
-3. Verify the root package exports only the target public API
-4. Verify all tests pass
+1. Move internal-focused tests into their packages:
+   - `subtree_test.go` → `internal/subtree/`
+   - `stack_test.go` → `internal/stack/`
+   - `tree_test.go`, `tree_cursor_test.go` → `internal/tree/`
+   - `query_test.go` → `internal/query/`
+2. Delete ~14 untracked debug test files
+3. Keep in root: `api_test.go` (public API integration tests)
+4. Keep in root: corpus, regression, benchmark, fuzz, grammar batch tests
+   (these are cross-cutting integration tests that exercise the full stack)
 
-### Phase 6: Move test files
+### Phase 8: Rename corpora → realworld
 
-1. Move internal-focused tests (stack_test.go, subtree_test.go) into their packages
-2. Clean up untracked debug test files (~14 files)
-3. Keep public API tests (api_test.go, tree_test.go, query_test.go) in root
-4. Keep integration tests (corpus, regression, benchmark, fuzz) in root
+1. Rename `testdata/corpora/` → `testdata/realworld/`
+2. Rename `testdata/corpora-manifest.json` → `testdata/realworld-manifest.json`
+3. Rename `corpora_diff_test.go` → `realworld_diff_test.go`
+4. Update `TestDifferentialCorpora` → `TestDifferentialRealworld`
+5. Update Makefile targets: `test-corpora-diff` → `test-realworld-diff`,
+   `fetch-corpora` → `fetch-realworld`
+6. Update README
+7. Verify all tests pass
 
 ---
 
