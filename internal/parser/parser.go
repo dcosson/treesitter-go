@@ -338,6 +338,10 @@ func (p *Parser) findActiveVersion() int {
 func (p *Parser) advanceVersion(version StackVersion) bool {
 	state := p.stack.State(version)
 	position := p.stack.Position(version)
+	if p.debug {
+		fmt.Printf("[advance-start] v=%d state=%d total_versions=%d active_versions=%d\n",
+			version, state, p.stack.VersionCount(), p.stack.ActiveVersionCount())
+	}
 
 	// Step 1: Try to reuse a node from the old tree (incremental parsing).
 	// Only attempt reuse when there's a single active version (no GLR ambiguity).
@@ -1713,6 +1717,10 @@ func (p *Parser) recover(version StackVersion, lookahead Subtree) {
 	//   array_push(&children, lookahead);
 	//   MutableSubtree error_repeat = ts_subtree_new_node(error_repeat, &children, ...);
 	errorRepeat := p.createErrorRepeatNode([]Subtree{lookahead})
+	if p.debug {
+		fmt.Printf("[recover] Strategy2 skip_token start v=%d state=%d pos=%d sym=%d\n",
+			version, p.stack.State(version), position.Bytes, lookaheadSymbol)
+	}
 
 	// If tokens have already been skipped (node_count_since_error > 0),
 	// pop the existing error_repeat and wrap both together. Matches C:
@@ -1766,6 +1774,10 @@ func (p *Parser) recover(version StackVersion, lookahead Subtree) {
 // halting those that don't.
 func (p *Parser) recoverToState(version StackVersion, depth uint32, goalState StateID) bool {
 	slices := p.stack.PopCountSlices(version, depth)
+	if p.debug {
+		fmt.Printf("[recoverToState] entry version=%d depth=%d goal=%d slices=%d\n",
+			version, depth, goalState, len(slices))
+	}
 	if len(slices) == 0 {
 		return false
 	}
@@ -1776,6 +1788,16 @@ func (p *Parser) recoverToState(version StackVersion, depth uint32, goalState St
 
 	for _, slice := range slices {
 		sliceVersion := slice.Version()
+		if p.debug {
+			state := StateID(0)
+			pos := uint32(0)
+			if int(sliceVersion) < p.stack.VersionCount() {
+				state = p.stack.State(sliceVersion)
+				pos = p.stack.Position(sliceVersion).Bytes
+			}
+			fmt.Printf("[recoverToState]   slice v=%d state=%d pos=%d subtrees=%d\n",
+				sliceVersion, state, pos, len(slice.Subtrees()))
+		}
 		if int(sliceVersion) >= p.stack.VersionCount() {
 			continue
 		}
@@ -1785,6 +1807,10 @@ func (p *Parser) recoverToState(version StackVersion, depth uint32, goalState St
 
 		// Check if this version's state matches the goal state.
 		if p.stack.State(sliceVersion) != goalState {
+			if p.debug {
+				fmt.Printf("[recoverToState]   halt v=%d state=%d != goal=%d\n",
+					sliceVersion, p.stack.State(sliceVersion), goalState)
+			}
 			p.stack.Halt(sliceVersion)
 			continue
 		}
@@ -1843,6 +1869,10 @@ func (p *Parser) recoverToState(version StackVersion, depth uint32, goalState St
 			errSize := GetSize(errNode, p.arena)
 			newPosition := LengthAdd(LengthAdd(position, errPadding), errSize)
 			p.stack.Push(sliceVersion, goalState, errNode, false, newPosition)
+			if p.debug {
+				fmt.Printf("[recoverToState]   push ERROR v=%d state=%d pos=%d children=%d\n",
+					sliceVersion, goalState, newPosition.Bytes, len(children))
+			}
 		}
 
 		// Re-push trailing extras individually at the goal state.
@@ -1862,6 +1892,9 @@ func (p *Parser) recoverToState(version StackVersion, depth uint32, goalState St
 
 	if didRecover {
 		p.cachedTokenValid = false
+	}
+	if p.debug {
+		fmt.Printf("[recoverToState] exit didRecover=%v vcount=%d\n", didRecover, p.stack.VersionCount())
 	}
 
 	return didRecover
@@ -1995,11 +2028,18 @@ const (
 // Mirrors ts_parser__version_status in C.
 func (p *Parser) versionStatus(version StackVersion) errorStatus {
 	cost := p.stack.ErrorCost(version)
+	isPaused := p.stack.IsPaused(version)
+	// C's ts_parser__version_status adds ERROR_COST_PER_SKIPPED_TREE for paused
+	// versions (parser.c:295). This makes paused versions slightly more costly
+	// in condense comparisons.
+	if isPaused {
+		cost += ErrorCostPerSkippedTree
+	}
 	return errorStatus{
 		cost:              cost,
 		nodeCount:         p.stack.NodeCountSinceError(version),
 		dynamicPrecedence: p.stack.DynamicPrecedence(version),
-		isInError:         p.stack.IsPaused(version) || p.stack.State(version) == 0,
+		isInError:         isPaused || p.stack.State(version) == 0,
 	}
 }
 
@@ -2090,9 +2130,11 @@ func (p *Parser) condenseStack() uint32 {
 
 			cmpResult := p.compareVersions(statusJ, statusI)
 			if p.debug && (statusI.isInError || statusJ.isInError) {
-				fmt.Printf("[condense] compare v%d(err=%v cost=%d nc=%d) vs v%d(err=%v cost=%d nc=%d) → %d\n",
-					j, statusJ.isInError, statusJ.cost, statusJ.nodeCount,
-					i, statusI.isInError, statusI.cost, statusI.nodeCount,
+				fmt.Printf("[condense] compare v%d(state=%d pos=%d err=%v cost=%d nc=%d dp=%d) vs v%d(state=%d pos=%d err=%v cost=%d nc=%d dp=%d) → %d\n",
+					j, p.stack.State(StackVersion(j)), p.stack.Position(StackVersion(j)).Bytes,
+					statusJ.isInError, statusJ.cost, statusJ.nodeCount, statusJ.dynamicPrecedence,
+					i, p.stack.State(StackVersion(i)), p.stack.Position(StackVersion(i)).Bytes,
+					statusI.isInError, statusI.cost, statusI.nodeCount, statusI.dynamicPrecedence,
 					cmpResult)
 			}
 			switch cmpResult {
@@ -2160,6 +2202,10 @@ func (p *Parser) condenseStack() uint32 {
 					// Resume this version and handle error recovery.
 					lookahead := p.stack.Resume(v)
 					p.handleError(v, lookahead)
+					if p.debug {
+						fmt.Printf("[condense] after-handleError v=%d total_versions=%d active_versions=%d\n",
+							v, p.stack.VersionCount(), p.stack.ActiveVersionCount())
+					}
 					hasUnpausedVersion = true
 				} else {
 					// Remove extra paused versions.
