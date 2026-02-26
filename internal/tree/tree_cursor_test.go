@@ -1,6 +1,11 @@
-package treesitter
+package tree
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/treesitter-go/treesitter/internal/core"
+	st "github.com/treesitter-go/treesitter/internal/subtree"
+)
 
 func TestTreeCursorBasic(t *testing.T) {
 	tree, _ := buildTestTree()
@@ -204,9 +209,9 @@ func TestTreeCursorPositions(t *testing.T) {
 //
 // This tests that cursor and node traversal handle arbitrary hidden depth.
 func buildDeeplyNestedHiddenTree() (*Tree, *SubtreeArena) {
-	arena := NewSubtreeArena(32)
+	arena := st.NewSubtreeArena(32)
 	lang := &Language{
-		SymbolMetadata: []SymbolMetadata{
+		SymbolMetadata: []core.SymbolMetadata{
 			{Visible: false, Named: false}, // 0: end
 			{Visible: false, Named: false}, // 1: _hidden1
 			{Visible: false, Named: false}, // 2: _hidden2
@@ -217,22 +222,22 @@ func buildDeeplyNestedHiddenTree() (*Tree, *SubtreeArena) {
 	}
 
 	// Leaf: number at byte 0, size 1
-	num := NewLeafSubtree(arena, Symbol(3),
+	num := st.NewLeafSubtree(arena, Symbol(3),
 		Length{Bytes: 0, Point: Point{Column: 0}},
 		Length{Bytes: 1, Point: Point{Column: 1}},
-		StateID(1), false, false, false, lang)
+		core.StateID(1), false, false, false, lang)
 
 	// _hidden2 -> number
-	hidden2 := NewNodeSubtree(arena, Symbol(2), []Subtree{num}, 0, lang)
-	SummarizeChildren(hidden2, arena, lang)
+	hidden2 := st.NewNodeSubtree(arena, Symbol(2), []Subtree{num}, 0, lang)
+	st.SummarizeChildren(hidden2, arena, lang)
 
 	// _hidden1 -> _hidden2
-	hidden1 := NewNodeSubtree(arena, Symbol(1), []Subtree{hidden2}, 0, lang)
-	SummarizeChildren(hidden1, arena, lang)
+	hidden1 := st.NewNodeSubtree(arena, Symbol(1), []Subtree{hidden2}, 0, lang)
+	st.SummarizeChildren(hidden1, arena, lang)
 
 	// document -> _hidden1
-	doc := NewNodeSubtree(arena, Symbol(4), []Subtree{hidden1}, 0, lang)
-	SummarizeChildren(doc, arena, lang)
+	doc := st.NewNodeSubtree(arena, Symbol(4), []Subtree{hidden1}, 0, lang)
+	st.SummarizeChildren(doc, arena, lang)
 
 	tree := NewTree(doc, lang, nil, []*SubtreeArena{arena})
 	return tree, arena
@@ -246,9 +251,9 @@ func buildDeeplyNestedHiddenTree() (*Tree, *SubtreeArena) {
 // After visiting string, GotoNextSibling should find number (through _hidden),
 // then GotoNextSibling again should find ";".
 func buildHiddenSiblingTree() (*Tree, *SubtreeArena) {
-	arena := NewSubtreeArena(32)
+	arena := st.NewSubtreeArena(32)
 	lang := &Language{
-		SymbolMetadata: []SymbolMetadata{
+		SymbolMetadata: []core.SymbolMetadata{
 			{Visible: false, Named: false}, // 0: end
 			{Visible: true, Named: true},   // 1: string
 			{Visible: true, Named: true},   // 2: number
@@ -261,34 +266,34 @@ func buildHiddenSiblingTree() (*Tree, *SubtreeArena) {
 	}
 
 	// string at byte 0, size 3
-	str := NewLeafSubtree(arena, Symbol(1),
+	str := st.NewLeafSubtree(arena, Symbol(1),
 		Length{Bytes: 0, Point: Point{Column: 0}},
 		Length{Bytes: 3, Point: Point{Column: 3}},
-		StateID(1), false, false, false, lang)
+		core.StateID(1), false, false, false, lang)
 
 	// number at byte 3, size 2
-	num := NewLeafSubtree(arena, Symbol(2),
+	num := st.NewLeafSubtree(arena, Symbol(2),
 		Length{Bytes: 0, Point: Point{Column: 0}},
 		Length{Bytes: 2, Point: Point{Column: 2}},
-		StateID(2), false, false, false, lang)
+		core.StateID(2), false, false, false, lang)
 
 	// _hidden -> number
-	hidden := NewNodeSubtree(arena, Symbol(3), []Subtree{num}, 0, lang)
-	SummarizeChildren(hidden, arena, lang)
+	hidden := st.NewNodeSubtree(arena, Symbol(3), []Subtree{num}, 0, lang)
+	st.SummarizeChildren(hidden, arena, lang)
 
 	// ";" at byte 5, size 1
-	semi := NewLeafSubtree(arena, Symbol(4),
+	semi := st.NewLeafSubtree(arena, Symbol(4),
 		Length{Bytes: 0, Point: Point{Column: 0}},
 		Length{Bytes: 1, Point: Point{Column: 1}},
-		StateID(3), false, false, false, lang)
+		core.StateID(3), false, false, false, lang)
 
 	// container -> string, _hidden(number), ";"
-	container := NewNodeSubtree(arena, Symbol(5), []Subtree{str, hidden, semi}, 0, lang)
-	SummarizeChildren(container, arena, lang)
+	container := st.NewNodeSubtree(arena, Symbol(5), []Subtree{str, hidden, semi}, 0, lang)
+	st.SummarizeChildren(container, arena, lang)
 
 	// document -> container
-	doc := NewNodeSubtree(arena, Symbol(6), []Subtree{container}, 0, lang)
-	SummarizeChildren(doc, arena, lang)
+	doc := st.NewNodeSubtree(arena, Symbol(6), []Subtree{container}, 0, lang)
+	st.SummarizeChildren(doc, arena, lang)
 
 	tree := NewTree(doc, lang, nil, []*SubtreeArena{arena})
 	return tree, arena
@@ -376,9 +381,9 @@ func TestTreeCursorDeepHiddenNodes(t *testing.T) {
 //
 // Alias sequence for prodID 1: [name_sym, 0, value_sym] (structural indices 0, 1, 2)
 func buildAliasedTree() (*Tree, *SubtreeArena) {
-	arena := NewSubtreeArena(32)
+	arena := st.NewSubtreeArena(32)
 	lang := &Language{
-		SymbolMetadata: []SymbolMetadata{
+		SymbolMetadata: []core.SymbolMetadata{
 			{Visible: false, Named: false}, // 0: end
 			{Visible: true, Named: true},   // 1: identifier
 			{Visible: true, Named: false},  // 2: ":"
@@ -399,30 +404,30 @@ func buildAliasedTree() (*Tree, *SubtreeArena) {
 	}
 
 	// identifier at byte 0, size 3
-	ident := NewLeafSubtree(arena, Symbol(1),
+	ident := st.NewLeafSubtree(arena, Symbol(1),
 		Length{Bytes: 0, Point: Point{Column: 0}},
 		Length{Bytes: 3, Point: Point{Column: 3}},
-		StateID(1), false, false, false, lang)
+		core.StateID(1), false, false, false, lang)
 
 	// ":" at byte 3, size 1
-	colon := NewLeafSubtree(arena, Symbol(2),
+	colon := st.NewLeafSubtree(arena, Symbol(2),
 		Length{Bytes: 0, Point: Point{Column: 0}},
 		Length{Bytes: 1, Point: Point{Column: 1}},
-		StateID(2), false, false, false, lang)
+		core.StateID(2), false, false, false, lang)
 
 	// number at byte 4, size 2
-	num := NewLeafSubtree(arena, Symbol(3),
+	num := st.NewLeafSubtree(arena, Symbol(3),
 		Length{Bytes: 0, Point: Point{Column: 0}},
 		Length{Bytes: 2, Point: Point{Column: 2}},
-		StateID(3), false, false, false, lang)
+		core.StateID(3), false, false, false, lang)
 
 	// wrapper (prodID=1) -> identifier, ":", number
-	wrapper := NewNodeSubtree(arena, Symbol(4), []Subtree{ident, colon, num}, 1, lang)
-	SummarizeChildren(wrapper, arena, lang)
+	wrapper := st.NewNodeSubtree(arena, Symbol(4), []Subtree{ident, colon, num}, 1, lang)
+	st.SummarizeChildren(wrapper, arena, lang)
 
 	// document -> wrapper
-	doc := NewNodeSubtree(arena, Symbol(5), []Subtree{wrapper}, 0, lang)
-	SummarizeChildren(doc, arena, lang)
+	doc := st.NewNodeSubtree(arena, Symbol(5), []Subtree{wrapper}, 0, lang)
+	st.SummarizeChildren(doc, arena, lang)
 
 	tree := NewTree(doc, lang, nil, []*SubtreeArena{arena})
 	return tree, arena
@@ -536,9 +541,9 @@ func TestNodeChildAliasResolution(t *testing.T) {
 //
 // This tests that alias resolution uses the immediate parent (even if hidden).
 func buildHiddenAliasedTree() (*Tree, *SubtreeArena) {
-	arena := NewSubtreeArena(32)
+	arena := st.NewSubtreeArena(32)
 	lang := &Language{
-		SymbolMetadata: []SymbolMetadata{
+		SymbolMetadata: []core.SymbolMetadata{
 			{Visible: false, Named: false}, // 0: end
 			{Visible: false, Named: false}, // 1: _rule (hidden)
 			{Visible: true, Named: true},   // 2: number
@@ -556,18 +561,18 @@ func buildHiddenAliasedTree() (*Tree, *SubtreeArena) {
 	}
 
 	// number at byte 0, size 2
-	num := NewLeafSubtree(arena, Symbol(2),
+	num := st.NewLeafSubtree(arena, Symbol(2),
 		Length{Bytes: 0, Point: Point{Column: 0}},
 		Length{Bytes: 2, Point: Point{Column: 2}},
-		StateID(1), false, false, false, lang)
+		core.StateID(1), false, false, false, lang)
 
 	// _rule (prodID=1) -> number
-	rule := NewNodeSubtree(arena, Symbol(1), []Subtree{num}, 1, lang)
-	SummarizeChildren(rule, arena, lang)
+	rule := st.NewNodeSubtree(arena, Symbol(1), []Subtree{num}, 1, lang)
+	st.SummarizeChildren(rule, arena, lang)
 
 	// document -> _rule
-	doc := NewNodeSubtree(arena, Symbol(3), []Subtree{rule}, 0, lang)
-	SummarizeChildren(doc, arena, lang)
+	doc := st.NewNodeSubtree(arena, Symbol(3), []Subtree{rule}, 0, lang)
+	st.SummarizeChildren(doc, arena, lang)
 
 	tree := NewTree(doc, lang, nil, []*SubtreeArena{arena})
 	return tree, arena
@@ -641,9 +646,9 @@ func TestNodeChildDeepHiddenNodes(t *testing.T) {
 //
 // Alias sequence for prodID 1: [name_sym, value_sym]
 func buildAliasedTreeWithExtras() (*Tree, *SubtreeArena) {
-	arena := NewSubtreeArena(32)
+	arena := st.NewSubtreeArena(32)
 	lang := &Language{
-		SymbolMetadata: []SymbolMetadata{
+		SymbolMetadata: []core.SymbolMetadata{
 			{Visible: false, Named: false}, // 0: end
 			{Visible: true, Named: true},   // 1: identifier
 			{Visible: true, Named: true},   // 2: number
@@ -664,33 +669,33 @@ func buildAliasedTreeWithExtras() (*Tree, *SubtreeArena) {
 	}
 
 	// identifier at byte 0, size 3
-	ident := NewLeafSubtree(arena, Symbol(1),
+	ident := st.NewLeafSubtree(arena, Symbol(1),
 		Length{Bytes: 0, Point: Point{Column: 0}},
 		Length{Bytes: 3, Point: Point{Column: 3}},
-		StateID(1), false, false, false, lang)
+		core.StateID(1), false, false, false, lang)
 
 	// comment (extra) at byte 3, size 4
 	// Use hasExternalTokens=true to force heap allocation so SetExtra works.
-	comment := NewLeafSubtree(arena, Symbol(7),
+	comment := st.NewLeafSubtree(arena, Symbol(7),
 		Length{Bytes: 0, Point: Point{Column: 0}},
 		Length{Bytes: 4, Point: Point{Column: 4}},
-		StateID(2), true, false, false, lang)
+		core.StateID(2), true, false, false, lang)
 	// Mark the comment as extra.
-	SetExtra(comment, arena)
+	st.SetExtra(comment, arena)
 
 	// number at byte 7, size 2
-	num := NewLeafSubtree(arena, Symbol(2),
+	num := st.NewLeafSubtree(arena, Symbol(2),
 		Length{Bytes: 0, Point: Point{Column: 0}},
 		Length{Bytes: 2, Point: Point{Column: 2}},
-		StateID(3), false, false, false, lang)
+		core.StateID(3), false, false, false, lang)
 
 	// wrapper (prodID=1) -> identifier, comment(extra), number
-	wrapper := NewNodeSubtree(arena, Symbol(3), []Subtree{ident, comment, num}, 1, lang)
-	SummarizeChildren(wrapper, arena, lang)
+	wrapper := st.NewNodeSubtree(arena, Symbol(3), []Subtree{ident, comment, num}, 1, lang)
+	st.SummarizeChildren(wrapper, arena, lang)
 
 	// document -> wrapper
-	doc := NewNodeSubtree(arena, Symbol(4), []Subtree{wrapper}, 0, lang)
-	SummarizeChildren(doc, arena, lang)
+	doc := st.NewNodeSubtree(arena, Symbol(4), []Subtree{wrapper}, 0, lang)
+	st.SummarizeChildren(doc, arena, lang)
 
 	tree := NewTree(doc, lang, nil, []*SubtreeArena{arena})
 	return tree, arena
@@ -757,34 +762,34 @@ func TestAliasResolutionSkipsExtras(t *testing.T) {
 // The first visible child "{" has padding=2. Without the fix, GotoFirstChild
 // would double-count this padding, causing incorrect byte positions.
 func TestTreeCursorNonZeroFirstChildPadding(t *testing.T) {
-	arena := NewSubtreeArena(64)
+	arena := st.NewSubtreeArena(64)
 	lang := makeSubtreeTestLanguage()
 
 	// "{" at byte 2 (after 2 spaces of padding), size 1
-	lbrace := NewLeafSubtree(arena, Symbol(1),
+	lbrace := st.NewLeafSubtree(arena, Symbol(1),
 		Length{Bytes: 2, Point: Point{Column: 2}}, // padding = 2
 		Length{Bytes: 1, Point: Point{Column: 1}},
-		StateID(1), false, false, false, lang)
+		core.StateID(1), false, false, false, lang)
 
 	// "1" (number) at byte 3, size 1 (no padding between { and 1)
-	numVal := NewLeafSubtree(arena, Symbol(7),
+	numVal := st.NewLeafSubtree(arena, Symbol(7),
 		Length{Bytes: 0, Point: Point{Column: 0}},
 		Length{Bytes: 1, Point: Point{Column: 1}},
-		StateID(4), false, false, false, lang)
+		core.StateID(4), false, false, false, lang)
 
 	// "}" at byte 4, size 1
-	rbrace := NewLeafSubtree(arena, Symbol(2),
+	rbrace := st.NewLeafSubtree(arena, Symbol(2),
 		Length{Bytes: 0, Point: Point{Column: 0}},
 		Length{Bytes: 1, Point: Point{Column: 1}},
-		StateID(5), false, false, false, lang)
+		core.StateID(5), false, false, false, lang)
 
 	// object -> "{" number "}"
-	object := NewNodeSubtree(arena, Symbol(3), []Subtree{lbrace, numVal, rbrace}, 0, lang)
-	SummarizeChildren(object, arena, lang)
+	object := st.NewNodeSubtree(arena, Symbol(3), []Subtree{lbrace, numVal, rbrace}, 0, lang)
+	st.SummarizeChildren(object, arena, lang)
 
 	// document -> object (SummarizeChildren sets document.padding = object.padding = 2)
-	document := NewNodeSubtree(arena, Symbol(8), []Subtree{object}, 0, lang)
-	SummarizeChildren(document, arena, lang)
+	document := st.NewNodeSubtree(arena, Symbol(8), []Subtree{object}, 0, lang)
+	st.SummarizeChildren(document, arena, lang)
 
 	tree := NewTree(document, lang, nil, []*SubtreeArena{arena})
 	root := tree.RootNode()
@@ -852,9 +857,9 @@ func TestTreeCursorNonZeroFirstChildPadding(t *testing.T) {
 // Without alias-aware visibility, _string_content would be skipped as hidden and
 // string_literal would appear to have no visible children.
 func buildHiddenChildAliasedToVisible() (*Tree, *SubtreeArena) {
-	arena := NewSubtreeArena(32)
+	arena := st.NewSubtreeArena(32)
 	lang := &Language{
-		SymbolMetadata: []SymbolMetadata{
+		SymbolMetadata: []core.SymbolMetadata{
 			{Visible: false, Named: false}, // 0: end
 			{Visible: false, Named: false}, // 1: _string_content (hidden)
 			{Visible: true, Named: true},   // 2: string_literal
@@ -872,18 +877,18 @@ func buildHiddenChildAliasedToVisible() (*Tree, *SubtreeArena) {
 	}
 
 	// _string_content at byte 0, size 5 (e.g. "hello")
-	content := NewLeafSubtree(arena, Symbol(1),
+	content := st.NewLeafSubtree(arena, Symbol(1),
 		Length{Bytes: 0, Point: Point{Column: 0}},
 		Length{Bytes: 5, Point: Point{Column: 5}},
-		StateID(1), false, false, false, lang)
+		core.StateID(1), false, false, false, lang)
 
 	// string_literal (prodID=1) -> _string_content
-	strLit := NewNodeSubtree(arena, Symbol(2), []Subtree{content}, 1, lang)
-	SummarizeChildren(strLit, arena, lang)
+	strLit := st.NewNodeSubtree(arena, Symbol(2), []Subtree{content}, 1, lang)
+	st.SummarizeChildren(strLit, arena, lang)
 
 	// source_file -> string_literal
-	root := NewNodeSubtree(arena, Symbol(3), []Subtree{strLit}, 0, lang)
-	SummarizeChildren(root, arena, lang)
+	root := st.NewNodeSubtree(arena, Symbol(3), []Subtree{strLit}, 0, lang)
+	st.SummarizeChildren(root, arena, lang)
 
 	tree := NewTree(root, lang, nil, []*SubtreeArena{arena})
 	return tree, arena

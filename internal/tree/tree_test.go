@@ -1,6 +1,48 @@
-package treesitter
+package tree
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/treesitter-go/treesitter/internal/core"
+	st "github.com/treesitter-go/treesitter/internal/subtree"
+)
+
+// makeSubtreeTestLanguage creates a minimal Language for testing.
+func makeSubtreeTestLanguage() *Language {
+	return &Language{
+		SymbolMetadata: []core.SymbolMetadata{
+			{Visible: false, Named: false}, // 0: end
+			{Visible: true, Named: false},  // 1: "{"
+			{Visible: true, Named: false},  // 2: "}"
+			{Visible: true, Named: true},   // 3: object
+			{Visible: true, Named: true},   // 4: pair
+			{Visible: true, Named: true},   // 5: string
+			{Visible: true, Named: false},  // 6: ":"
+			{Visible: true, Named: true},   // 7: number
+			{Visible: true, Named: true},   // 8: document
+			{Visible: false, Named: false}, // 9: _value (hidden)
+			{Visible: true, Named: false},  // 10: ","
+			{Visible: true, Named: true},   // 11: comment (extra)
+		},
+		SymbolNames: []string{
+			"end", "{", "}", "object", "pair", "string",
+			":", "number", "document", "_value", ",", "comment",
+		},
+		FieldNames: []string{
+			"",      // 0: no field
+			"key",   // 1
+			"value", // 2
+		},
+		FieldMapSlices: []core.FieldMapSlice{
+			{},                    // prodID 0: no fields
+			{Index: 0, Length: 2}, // prodID 1: pair -> key:0 value:2
+		},
+		FieldMapEntries: []FieldMapEntry{
+			{FieldID: 1, ChildIndex: 0}, // key -> child 0
+			{FieldID: 2, ChildIndex: 2}, // value -> child 2
+		},
+	}
+}
 
 // buildTestTree constructs a small JSON-like tree for testing:
 //
@@ -10,51 +52,51 @@ import "testing"
 // Source: {"a":1}
 // Bytes:  01234567
 func buildTestTree() (*Tree, *SubtreeArena) {
-	arena := NewSubtreeArena(64)
+	arena := st.NewSubtreeArena(64)
 	lang := makeSubtreeTestLanguage()
 
 	// Leaf tokens:
 	// "{" at byte 0, size 1
-	lbrace := NewLeafSubtree(arena, Symbol(1),
+	lbrace := st.NewLeafSubtree(arena, Symbol(1),
 		Length{Bytes: 0, Point: Point{Column: 0}},
 		Length{Bytes: 1, Point: Point{Column: 1}},
-		StateID(1), false, false, false, lang)
+		core.StateID(1), false, false, false, lang)
 
 	// "a" (string) at byte 1, size 3 ("a")
-	strKey := NewLeafSubtree(arena, Symbol(5),
+	strKey := st.NewLeafSubtree(arena, Symbol(5),
 		Length{Bytes: 0, Point: Point{Column: 0}},
 		Length{Bytes: 3, Point: Point{Column: 3}},
-		StateID(2), false, false, false, lang)
+		core.StateID(2), false, false, false, lang)
 
 	// ":" at byte 4, size 1
-	colon := NewLeafSubtree(arena, Symbol(6),
+	colon := st.NewLeafSubtree(arena, Symbol(6),
 		Length{Bytes: 0, Point: Point{Column: 0}},
 		Length{Bytes: 1, Point: Point{Column: 1}},
-		StateID(3), false, false, false, lang)
+		core.StateID(3), false, false, false, lang)
 
 	// "1" (number) at byte 5, size 1
-	numVal := NewLeafSubtree(arena, Symbol(7),
+	numVal := st.NewLeafSubtree(arena, Symbol(7),
 		Length{Bytes: 0, Point: Point{Column: 0}},
 		Length{Bytes: 1, Point: Point{Column: 1}},
-		StateID(4), false, false, false, lang)
+		core.StateID(4), false, false, false, lang)
 
 	// "}" at byte 6, size 1
-	rbrace := NewLeafSubtree(arena, Symbol(2),
+	rbrace := st.NewLeafSubtree(arena, Symbol(2),
 		Length{Bytes: 0, Point: Point{Column: 0}},
 		Length{Bytes: 1, Point: Point{Column: 1}},
-		StateID(5), false, false, false, lang)
+		core.StateID(5), false, false, false, lang)
 
 	// pair -> string ":" number (prodID 1 for field mapping)
-	pair := NewNodeSubtree(arena, Symbol(4), []Subtree{strKey, colon, numVal}, 1, lang)
-	SummarizeChildren(pair, arena, lang)
+	pair := st.NewNodeSubtree(arena, Symbol(4), []Subtree{strKey, colon, numVal}, 1, lang)
+	st.SummarizeChildren(pair, arena, lang)
 
 	// object -> "{" pair "}"
-	object := NewNodeSubtree(arena, Symbol(3), []Subtree{lbrace, pair, rbrace}, 0, lang)
-	SummarizeChildren(object, arena, lang)
+	object := st.NewNodeSubtree(arena, Symbol(3), []Subtree{lbrace, pair, rbrace}, 0, lang)
+	st.SummarizeChildren(object, arena, lang)
 
 	// document -> object
-	document := NewNodeSubtree(arena, Symbol(8), []Subtree{object}, 0, lang)
-	SummarizeChildren(document, arena, lang)
+	document := st.NewNodeSubtree(arena, Symbol(8), []Subtree{object}, 0, lang)
+	st.SummarizeChildren(document, arena, lang)
 
 	tree := NewTree(document, lang, nil, []*SubtreeArena{arena})
 	return tree, arena
@@ -417,9 +459,9 @@ func TestNodeStringSExprFieldPropagation(t *testing.T) {
 	//                        -> _declarator -> identifier (visible)
 	// The declaration has inherited fields pointing to hidden children.
 	// Non-inherited fields on hidden children should propagate to visible grandchildren.
-	arena := NewSubtreeArena(64)
+	arena := st.NewSubtreeArena(64)
 	lang := &Language{
-		SymbolMetadata: []SymbolMetadata{
+		SymbolMetadata: []core.SymbolMetadata{
 			{Visible: false, Named: false}, // 0: end
 			{Visible: true, Named: true},   // 1: declaration
 			{Visible: false, Named: true},  // 2: _specifiers (hidden)
@@ -437,7 +479,7 @@ func TestNodeStringSExprFieldPropagation(t *testing.T) {
 			"type", // 1
 			"name", // 2
 		},
-		FieldMapSlices: []FieldMapSlice{
+		FieldMapSlices: []core.FieldMapSlice{
 			{},                    // prodID 0: no fields
 			{Index: 0, Length: 2}, // prodID 1: declaration -> type(inherited), name(inherited)
 			{Index: 2, Length: 1}, // prodID 2: _specifiers -> type(non-inherited)
@@ -452,30 +494,30 @@ func TestNodeStringSExprFieldPropagation(t *testing.T) {
 	}
 
 	// Build: type_identifier (leaf)
-	typeID := NewLeafSubtree(arena, Symbol(4),
+	typeID := st.NewLeafSubtree(arena, Symbol(4),
 		Length{Bytes: 0}, Length{Bytes: 3, Point: Point{Column: 3}},
-		StateID(1), false, false, false, lang)
+		core.StateID(1), false, false, false, lang)
 
 	// Build: _specifiers -> type_identifier (hidden, prodID 2)
-	specifiers := NewNodeSubtree(arena, Symbol(2), []Subtree{typeID}, 2, lang)
-	SummarizeChildren(specifiers, arena, lang)
+	specifiers := st.NewNodeSubtree(arena, Symbol(2), []Subtree{typeID}, 2, lang)
+	st.SummarizeChildren(specifiers, arena, lang)
 
 	// Build: identifier (leaf)
-	ident := NewLeafSubtree(arena, Symbol(5),
+	ident := st.NewLeafSubtree(arena, Symbol(5),
 		Length{Bytes: 0}, Length{Bytes: 1, Point: Point{Column: 1}},
-		StateID(2), false, false, false, lang)
+		core.StateID(2), false, false, false, lang)
 
 	// Build: _declarator_wrapper -> identifier (hidden, prodID 3)
-	declWrapper := NewNodeSubtree(arena, Symbol(3), []Subtree{ident}, 3, lang)
-	SummarizeChildren(declWrapper, arena, lang)
+	declWrapper := st.NewNodeSubtree(arena, Symbol(3), []Subtree{ident}, 3, lang)
+	st.SummarizeChildren(declWrapper, arena, lang)
 
 	// Build: declaration -> _specifiers _declarator_wrapper (prodID 1)
-	decl := NewNodeSubtree(arena, Symbol(1), []Subtree{specifiers, declWrapper}, 1, lang)
-	SummarizeChildren(decl, arena, lang)
+	decl := st.NewNodeSubtree(arena, Symbol(1), []Subtree{specifiers, declWrapper}, 1, lang)
+	st.SummarizeChildren(decl, arena, lang)
 
 	// Build: program -> declaration
-	program := NewNodeSubtree(arena, Symbol(6), []Subtree{decl}, 0, lang)
-	SummarizeChildren(program, arena, lang)
+	program := st.NewNodeSubtree(arena, Symbol(6), []Subtree{decl}, 0, lang)
+	st.SummarizeChildren(program, arena, lang)
 
 	tree := NewTree(program, lang, nil, []*SubtreeArena{arena})
 	root := tree.RootNode()

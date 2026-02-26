@@ -1,8 +1,10 @@
-package treesitter
+package subtree
 
 import (
 	"testing"
 	"unsafe"
+
+	"github.com/treesitter-go/treesitter/internal/core"
 )
 
 func TestSubtreeInlineCreation(t *testing.T) {
@@ -492,11 +494,11 @@ func makeSubtreeTestLanguage() *Language {
 			"key",   // 1
 			"value", // 2
 		},
-		FieldMapSlices: []FieldMapSlice{
+		FieldMapSlices: []core.FieldMapSlice{
 			{},                    // prodID 0: no fields
 			{Index: 0, Length: 2}, // prodID 1: pair -> key:0 value:2
 		},
-		FieldMapEntries: []FieldMapEntry{
+		FieldMapEntries: []core.FieldMapEntry{
 			{FieldID: 1, ChildIndex: 0}, // key -> child 0
 			{FieldID: 2, ChildIndex: 2}, // value -> child 2
 		},
