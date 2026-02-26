@@ -2,6 +2,7 @@ package stack
 
 import (
 	"bytes"
+	"fmt"
 	"sync"
 
 	ts "github.com/treesitter-go/treesitter"
@@ -1359,4 +1360,72 @@ func (s *Stack) RenumberVersion(from, to StackVersion) {
 	}
 	s.heads[to] = s.heads[from]
 	s.RemoveVersion(from)
+}
+
+// DumpDAG prints the full DAG structure from a version's head, walking all links.
+// symNames maps symbol IDs to names for readable output.
+func (s *Stack) DumpDAG(version StackVersion, symNames []string, label string) {
+	if int(version) >= len(s.heads) {
+		fmt.Printf("[DAG %s] v=%d: invalid version\n", label, version)
+		return
+	}
+	head := &s.heads[version]
+	if head.node == nil {
+		fmt.Printf("[DAG %s] v=%d: nil head\n", label, version)
+		return
+	}
+
+	fmt.Printf("[DAG %s] v=%d head state=%d pos=%d errCost=%d\n",
+		label, version, head.node.state, head.node.position.Bytes, head.node.errorCost)
+
+	// BFS through the DAG, tracking visited nodes by pointer to avoid cycles.
+	type nodeInfo struct {
+		node  *StackNode
+		id    int
+		depth int
+	}
+	visited := map[*StackNode]int{}
+	queue := []nodeInfo{{node: head.node, id: 0, depth: 0}}
+	visited[head.node] = 0
+	nextID := 1
+
+	for len(queue) > 0 {
+		info := queue[0]
+		queue = queue[1:]
+		n := info.node
+
+		fmt.Printf("[DAG %s]   N%d(state=%d pos=%d err=%d depth=%d) links=%d\n",
+			label, info.id, n.state, n.position.Bytes, n.errorCost, info.depth, n.linkCount)
+
+		for i := uint16(0); i < n.linkCount; i++ {
+			link := &n.links[i]
+			subtreeDesc := "ZERO"
+			if !link.subtree.IsZero() {
+				sym := GetSymbol(link.subtree, s.arena)
+				symName := fmt.Sprintf("%d", sym)
+				if int(sym) < len(symNames) && symNames[sym] != "" {
+					symName = symNames[sym]
+				}
+				extra := ""
+				if IsExtra(link.subtree, s.arena) {
+					extra = " EXTRA"
+				}
+				errCost := GetErrorCost(link.subtree, s.arena)
+				subtreeDesc = fmt.Sprintf("sym=%d(%s)%s errCost=%d", sym, symName, extra, errCost)
+			}
+			targetID := -1
+			if link.node != nil {
+				if id, ok := visited[link.node]; ok {
+					targetID = id
+				} else {
+					targetID = nextID
+					visited[link.node] = nextID
+					nextID++
+					queue = append(queue, nodeInfo{node: link.node, id: targetID, depth: info.depth + 1})
+				}
+			}
+			fmt.Printf("[DAG %s]     link[%d]: %s pending=%v → N%d(state=%d)\n",
+				label, i, subtreeDesc, link.isPending, targetID, link.node.State())
+		}
+	}
 }

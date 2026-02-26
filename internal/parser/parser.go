@@ -392,6 +392,14 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 		tokenSymbol = GetSymbol(token, p.arena)
 	}
 
+	if p.debug {
+		symName := ""
+		if p.language != nil && int(tokenSymbol) < len(p.language.SymbolNames) {
+			symName = p.language.SymbolNames[tokenSymbol]
+		}
+		fmt.Printf("[advance] v=%d state=%d pos=%d token=%d(%s)\n", version, state, position.Bytes, tokenSymbol, symName)
+	}
+
 	// Inner reduce loop: keep reducing until we can shift or accept.
 	// This avoids re-lexing after every reduce.
 	for reduceCount := 0; reduceCount < 1000; reduceCount++ {
@@ -425,6 +433,13 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 			// This applies even in ERROR_STATE (state 0). C tree-sitter
 			// always pauses and lets condenseStack resume with handleError,
 			// which records a fresh summary matching the current stack state.
+			if p.debug {
+				sn := ""
+				if p.language != nil && int(tokenSymbol) < len(p.language.SymbolNames) {
+					sn = p.language.SymbolNames[tokenSymbol]
+				}
+				fmt.Printf("[advance]   PAUSE v=%d state=%d sym=%d(%s)\n", version, state, tokenSymbol, sn)
+			}
 			p.stack.Pause(version, token)
 			return true
 		}
@@ -456,6 +471,9 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 				if GetChildCount(token, p.arena) > 0 {
 					p.breakdownLookahead(&token, state)
 					action.ShiftState = p.language.NextState(state, GetSymbol(token, p.arena))
+				}
+				if p.debug {
+					fmt.Printf("[advance]   SHIFT v=%d → state=%d extra=%v\n", version, action.ShiftState, action.ShiftExtra)
 				}
 				p.doShift(version, action, token)
 				return true
@@ -1040,6 +1058,14 @@ func (p *Parser) doReduce(version StackVersion, action ParseActionEntry, endOfNo
 
 		baseState := p.stack.State(sliceVersion)
 		gotoState := p.language.NextState(baseState, symbol)
+		if p.debug {
+			symName := ""
+			if p.language != nil && int(symbol) < len(p.language.SymbolNames) {
+				symName = p.language.SymbolNames[symbol]
+			}
+			fmt.Printf("[reduce] v=%d base=%d sym=%d(%s) child=%d → goto=%d\n",
+				sliceVersion, baseState, symbol, symName, childCount, gotoState)
+		}
 		if endOfNonTerminalExtra && gotoState == baseState {
 			node = SetExtra(node, p.arena)
 		}
@@ -1534,6 +1560,19 @@ func (p *Parser) recover(version StackVersion, lookahead Subtree) {
 	currentErrorCost := p.stack.ErrorCost(version)
 	lookaheadSymbol := GetSymbol(lookahead, p.arena)
 
+	if p.debug {
+		symName := ""
+		if p.language != nil && int(lookaheadSymbol) < len(p.language.SymbolNames) {
+			symName = p.language.SymbolNames[lookaheadSymbol]
+		}
+		summaryLen := 0
+		if summary != nil {
+			summaryLen = len(summary)
+		}
+		fmt.Printf("[recover] v=%d pos=%d sym=%d(%s) ncse=%d summary=%d errCost=%d\n",
+			version, position.Bytes, lookaheadSymbol, symName, nodeCountSinceError, summaryLen, currentErrorCost)
+	}
+
 	// Strategy 1: Find a previous state on the stack where the lookahead is valid.
 	if summary != nil && lookaheadSymbol != SymbolError {
 		for _, entry := range summary {
@@ -1559,6 +1598,9 @@ func (p *Parser) recover(version StackVersion, lookahead Subtree) {
 				}
 			}
 			if wouldMerge {
+				if p.debug {
+					fmt.Printf("[recover]   skip state=%d depth=%d (would merge)\n", entry.State, depth)
+				}
 				continue
 			}
 
@@ -1570,6 +1612,9 @@ func (p *Parser) recover(version StackVersion, lookahead Subtree) {
 				newCost += (position.Point.Row - entry.Position.Point.Row) * ErrorCostPerSkippedLine
 			}
 			if p.betterVersionExists(version, false, newCost) {
+				if p.debug {
+					fmt.Printf("[recover]   break at state=%d depth=%d (better version exists, cost=%d)\n", entry.State, depth, newCost)
+				}
 				break
 			}
 
@@ -1577,8 +1622,19 @@ func (p *Parser) recover(version StackVersion, lookahead Subtree) {
 			// If so, recover to that state. PopCountSlices is non-destructive,
 			// so no Split is needed — pass version directly, matching C.
 			tableEntry := p.language.TableEntry(entry.State, lookaheadSymbol)
+			if p.debug {
+				fmt.Printf("[recover]   checking state=%d depth=%d actions=%d\n", entry.State, depth, tableEntry.ActionCount)
+			}
 			if tableEntry.ActionCount > 0 {
 				if p.recoverToState(version, depth, entry.State) {
+					if p.debug {
+						fmt.Printf("[recover]   -> recoverToState SUCCESS goalState=%d depth=%d vcount=%d\n",
+							entry.State, depth, p.stack.VersionCount())
+						for vi := 0; vi < p.stack.VersionCount(); vi++ {
+							fmt.Printf("[recover]     v%d: state=%d active=%v pos=%d\n",
+								vi, p.stack.State(StackVersion(vi)), p.stack.IsActive(StackVersion(vi)), p.stack.Position(StackVersion(vi)).Bytes)
+						}
+					}
 					didRecover = true
 					break
 				}
@@ -1602,6 +1658,10 @@ func (p *Parser) recover(version StackVersion, lookahead Subtree) {
 		p.stack.Push(version, 1, emptyError, false, position)
 		p.doAccept(version, lookahead)
 		return
+	}
+
+	if p.debug {
+		fmt.Printf("[recover] Strategy 1 done: didRecover=%v vcount=%d\n", didRecover, p.stack.VersionCount())
 	}
 
 	// Strategy 2: Skip the lookahead token by wrapping it in an error_repeat.
@@ -1771,8 +1831,13 @@ func (p *Parser) recoverToState(version StackVersion, depth uint32, goalState St
 		// Create and push ERROR node (only if there are children).
 		// Error cost is embedded in the error node via createErrorNode and
 		// accumulated by Push — no explicit AddErrorCost needed (matching C).
+		// Mark as extra: C's ts_subtree_new_error_node is called with extra=true
+		// in recoverToState (parser.c:1233). This is critical because extra subtrees
+		// don't count toward pop depth in stack iteration, allowing reductions to
+		// "see through" the recovery ERROR to reach the original parse stack.
 		if len(children) > 0 {
 			errNode := p.createErrorNode(children)
+			errNode = SetExtra(errNode, p.arena)
 			position := p.stack.Position(sliceVersion)
 			errPadding := GetPadding(errNode, p.arena)
 			errSize := GetSize(errNode, p.arena)
@@ -2024,9 +2089,18 @@ func (p *Parser) condenseStack() uint32 {
 			statusJ := p.versionStatus(StackVersion(j))
 
 			cmpResult := p.compareVersions(statusJ, statusI)
+			if p.debug && (statusI.isInError || statusJ.isInError) {
+				fmt.Printf("[condense] compare v%d(err=%v cost=%d nc=%d) vs v%d(err=%v cost=%d nc=%d) → %d\n",
+					j, statusJ.isInError, statusJ.cost, statusJ.nodeCount,
+					i, statusI.isInError, statusI.cost, statusI.nodeCount,
+					cmpResult)
+			}
 			switch cmpResult {
 			case errorComparisonTakeLeft:
 				// j is decisively better — kill i.
+				if p.debug {
+					fmt.Printf("[condense]   KILL v%d (takeLeft by v%d)\n", i, j)
+				}
 				p.stack.RemoveVersion(StackVersion(i))
 				i--
 				goto nextVersion
@@ -2034,6 +2108,9 @@ func (p *Parser) condenseStack() uint32 {
 			case errorComparisonPreferLeft, errorComparisonNone:
 				// j is better or equal — try merge (requires same state).
 				if p.stack.Merge(StackVersion(j), StackVersion(i)) {
+					if p.debug {
+						fmt.Printf("[condense]   MERGE v%d into v%d\n", i, j)
+					}
 					i--
 					goto nextVersion
 				}
@@ -2041,13 +2118,22 @@ func (p *Parser) condenseStack() uint32 {
 			case errorComparisonPreferRight:
 				// i is better — try merge, or swap positions.
 				if p.stack.Merge(StackVersion(j), StackVersion(i)) {
+					if p.debug {
+						fmt.Printf("[condense]   MERGE v%d into v%d (preferRight)\n", i, j)
+					}
 					i--
 					goto nextVersion
+				}
+				if p.debug {
+					fmt.Printf("[condense]   SWAP v%d ↔ v%d\n", i, j)
 				}
 				p.stack.SwapVersions(StackVersion(i), StackVersion(j))
 
 			case errorComparisonTakeRight:
 				// i is decisively better — kill j.
+				if p.debug {
+					fmt.Printf("[condense]   KILL v%d (takeRight by v%d)\n", j, i)
+				}
 				p.stack.RemoveVersion(StackVersion(j))
 				i--
 				j--
