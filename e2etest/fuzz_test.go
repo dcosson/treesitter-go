@@ -1,4 +1,4 @@
-package treesitter_test
+package e2etest_test
 
 import (
 	"bytes"

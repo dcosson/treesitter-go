@@ -1,4 +1,4 @@
-package treesitter
+package language
 
 import (
 	"testing"

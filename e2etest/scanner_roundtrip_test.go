@@ -2,7 +2,7 @@
 // These tests verify that serialize → deserialize → continued scanning produces
 // correct results, validating that scanner state is faithfully preserved across
 // incremental parse boundaries.
-package treesitter_test
+package e2etest_test
 
 import (
 	"testing"

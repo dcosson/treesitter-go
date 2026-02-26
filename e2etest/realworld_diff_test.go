@@ -6,7 +6,7 @@
 //  2. Downloaded realworld files (install via `make fetch-realworld`)
 //
 // Run: go test -v -run TestDifferentialRealworld -timeout 30m .
-package treesitter_test
+package e2etest_test
 
 import (
 	"context"
