@@ -460,14 +460,14 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 				return true
 
 			case ParseActionTypeReduce:
-				// Split to preserve original version (matching C's non-destructive pop).
-				splitVersion := p.stack.Split(version)
-				if splitVersion < 0 {
-					continue
-				}
-				p.doReduce(splitVersion, action, nullLookahead)
+				// PopCountSlices is non-destructive (like C's ts_stack_pop_count),
+				// so no Split is needed. Pass version directly, matching C's
+				// ts_parser__advance which calls ts_parser__reduce(version, ...).
+				rv := p.doReduce(version, action, nullLookahead)
 				didReduce = true
-				lastReductionVersion = splitVersion
+				if rv >= 0 {
+					lastReductionVersion = rv
+				}
 
 			case ParseActionTypeAccept:
 				p.doAccept(version, token)
@@ -885,29 +885,20 @@ func (p *Parser) doShift(version StackVersion, action ParseActionEntry, token Su
 }
 
 // doReduce pops children from the stack and creates an internal node.
-// endOfNonTerminalExtra indicates the reduction is happening during
-// non-terminal extra processing (null lookahead). Only when this is true
-// AND the goto state equals the base state should the node be marked as
-// extra. This matches C tree-sitter's ts_parser__reduce:
-//
-//	if (end_of_non_terminal_extra && next_state == state) parent->extra = true;
-//
-// When Pop returns multiple paths through a merged stack DAG, paths that
-// converge to the same base node represent alternative children for the
-// same reduction. These are resolved in-place using selectChildren (port
-// of C's ts_parser__select_children) rather than creating separate
-// versions. Only paths with different base nodes create new versions.
-func (p *Parser) doReduce(version StackVersion, action ParseActionEntry, endOfNonTerminalExtra bool) {
+// Returns the first new stack version created, or -1 if none (matching C's
+// ts_parser__reduce which returns initial_version_count or STACK_VERSION_NONE).
+func (p *Parser) doReduce(version StackVersion, action ParseActionEntry, endOfNonTerminalExtra bool) StackVersion {
 	childCount := uint32(action.ReduceChildCount)
 	symbol := action.ReduceSymbol
 	productionID := action.ReduceProdID
 	dynPrec := action.ReduceDynPrec
+	initialVersionCount := StackVersion(p.stack.VersionCount())
 
 	// Pop children using C-style stack slices (version-per-path grouping by base node).
 	slices := p.stack.PopCountSlices(version, childCount)
 	if len(slices) == 0 {
 		p.stack.Halt(version)
-		return
+		return -1
 	}
 
 	// Group consecutive slices by slice version (matching C ts_parser__reduce).
@@ -1017,6 +1008,11 @@ func (p *Parser) doReduce(version StackVersion, action ParseActionEntry, endOfNo
 		}
 	}
 
+	// Return the first new stack version that was created (matching C).
+	if StackVersion(p.stack.VersionCount()) > initialVersionCount {
+		return initialVersionCount
+	}
+	return -1
 }
 
 // selectChildren compares two sets of children for the same reduction.
@@ -1448,14 +1444,10 @@ func (p *Parser) doAllPotentialReductions(startingVersion StackVersion, lookahea
 }
 
 // doReduceForPotential performs a reduce for doAllPotentialReductions.
-// It splits the version, pops child_count items, and creates a parent node.
+// PopCountSlices is non-destructive, so no split is needed — pass version
+// directly, matching C's ts_parser__do_all_potential_reductions.
 // Returns the new version, or -1 on failure.
 func (p *Parser) doReduceForPotential(version StackVersion, symbol Symbol, childCount uint32, dynPrec int16, prodID uint16) StackVersion {
-	splitVersion := p.stack.Split(version)
-	if splitVersion < 0 {
-		return -1
-	}
-
 	action := ParseActionEntry{
 		Type:             ParseActionTypeReduce,
 		ReduceSymbol:     symbol,
@@ -1463,9 +1455,7 @@ func (p *Parser) doReduceForPotential(version StackVersion, symbol Symbol, child
 		ReduceDynPrec:    dynPrec,
 		ReduceProdID:     prodID,
 	}
-	p.doReduce(splitVersion, action, false)
-
-	return splitVersion
+	return p.doReduce(version, action, false)
 }
 
 // recover attempts to continue parsing after an error. Called from handleError
