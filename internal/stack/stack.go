@@ -427,6 +427,13 @@ func (s *Stack) Push(version StackVersion, state StateID, subtree Subtree, isPen
 		newNode.linkCount = 1
 	}
 
+	// Match C: if (!subtree.ptr) head->node_count_at_last_error = new_node->node_count;
+	// Pushing a zero subtree means entering error state — reset the error
+	// baseline so NodeCountSinceError() returns 0.
+	if subtree.IsZero() {
+		head.nodeCountAtLastError = newNode.nodeCount
+	}
+
 	head.node = newNode
 }
 
@@ -1211,73 +1218,110 @@ func (s *Stack) RecordSummary(version StackVersion, maxDepth uint32) {
 		return
 	}
 
-	position := head.node.position
-
-	// Iterative BFS with iterator array, matching C's ts_stack__iter pattern.
-	iterators := make([]summaryIterator, 0, MaxIteratorCount)
-	iterators = append(iterators, summaryIterator{node: head.node, depth: 0})
-
-	// Visited set to prevent re-walking shared subgraph paths.
-	visited := make(map[*StackNode]bool)
-
+	// Direct port of C's stack__iter with summarize_stack_callback.
+	// C uses DFS with NO visited set — same node may be visited at different
+	// depths via different GSS paths. This is critical for correct recovery:
+	// if a state is reachable at depth 3 via one path and depth 5 via another,
+	// both entries must be recorded.
 	var entries []StackSummaryEntry
 
+	type iter struct {
+		node          *StackNode
+		subtreeCount  uint32
+	}
+
+	iterators := make([]iter, 0, MaxIteratorCount)
+	iterators = append(iterators, iter{node: head.node, subtreeCount: 0})
+
 	for len(iterators) > 0 {
-		// Process in FIFO order (BFS).
-		iter := iterators[0]
-		iterators = iterators[1:]
+		// Process all current iterators, collecting new ones for next round.
+		// Matches C's stack__iter: for (i = 0, size = self->iterators.size; i < size; i++)
+		size := len(iterators)
+		for i := 0; i < size; i++ {
+			it := iterators[i]
+			node := it.node
+			depth := it.subtreeCount
 
-		node := iter.node
-		if node == nil || node.linkCount == 0 || iter.depth > maxDepth {
-			continue
-		}
-
-		for i := uint16(0); i < node.linkCount; i++ {
-			link := &node.links[i]
-			next := link.node
-			if next == nil {
+			// Callback: summarize_stack_callback (reference/stack.c:606-622)
+			// Stop if depth exceeds max.
+			if depth > maxDepth {
+				// Remove this iterator (stop).
+				iterators = append(iterators[:i], iterators[i+1:]...)
+				i--
+				size--
 				continue
 			}
 
-			if visited[next] {
+			// Record entry: deduplicate by (depth, state) scanning backward.
+			// Matches C: for (i = summary->size - 1; i + 1 > 0; i--)
+			state := node.state
+			duplicate := false
+			for j := len(entries) - 1; j >= 0; j-- {
+				if entries[j].Depth < depth {
+					break
+				}
+				if entries[j].Depth == depth && entries[j].State == state {
+					duplicate = true
+					break
+				}
+			}
+			if !duplicate {
+				entries = append(entries, StackSummaryEntry{
+					Position: node.position,
+					Depth:    depth,
+					State:    state,
+				})
+			}
+
+			// Stop if leaf node (no links).
+			if node.linkCount == 0 {
+				iterators = append(iterators[:i], iterators[i+1:]...)
+				i--
+				size--
 				continue
 			}
-			visited[next] = true
 
-			newDepth := iter.depth
-			// Depth counting matches C's stack__iter (reference/stack.c:398-413):
-			// - NULL/SubtreeZero links: always count (they represent ERROR_STATE pushes)
-			// - Non-null, non-extra subtrees: count
-			// - Extra subtrees (comments, whitespace): do NOT count
-			if link.subtree.IsZero() || !IsExtra(link.subtree, s.arena) {
-				newDepth++
+			// Follow links. Matches C's stack__iter link traversal
+			// (reference/stack.c:382-414).
+			// C processes links[1..N-1] first (spawning new iterators),
+			// then reuses the current iterator for links[0].
+			for j := uint16(1); j < node.linkCount; j++ {
+				if len(iterators) >= MaxIteratorCount {
+					continue
+				}
+				link := &node.links[j]
+				if link.node == nil {
+					continue
+				}
+				newCount := depth
+				if link.subtree.IsZero() {
+					newCount++
+				} else if !IsExtra(link.subtree, s.arena) {
+					newCount++
+				}
+				iterators = append(iterators, iter{
+					node:         link.node,
+					subtreeCount: newCount,
+				})
 			}
 
-			// Record entry for non-error states at different positions.
-			if next.state != 0 && next.position.Bytes != position.Bytes {
-				entry := StackSummaryEntry{
-					Position: next.position,
-					Depth:    newDepth,
-					State:    next.state,
-				}
-				// Deduplicate by (state, depth).
-				found := false
-				for _, e := range entries {
-					if e.State == entry.State && e.Depth == entry.Depth {
-						found = true
-						break
-					}
-				}
-				if !found {
-					entries = append(entries, entry)
-				}
+			// Reuse current iterator for link[0] (matches C).
+			link := &node.links[0]
+			if link.node == nil {
+				iterators = append(iterators[:i], iterators[i+1:]...)
+				i--
+				size--
+				continue
 			}
-
-			// Enqueue next node if within depth and iterator budget.
-			if newDepth <= maxDepth {
-				if len(iterators) < MaxIteratorCount {
-					iterators = append(iterators, summaryIterator{node: next, depth: newDepth})
-				}
+			newCount := depth
+			if link.subtree.IsZero() {
+				newCount++
+			} else if !IsExtra(link.subtree, s.arena) {
+				newCount++
+			}
+			iterators[i] = iter{
+				node:         link.node,
+				subtreeCount: newCount,
 			}
 		}
 	}

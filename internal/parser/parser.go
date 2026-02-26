@@ -1467,6 +1467,7 @@ func (p *Parser) recover(version StackVersion, lookahead Subtree) {
 	previousVersionCount := p.stack.VersionCount()
 	position := p.stack.Position(version)
 	summary := p.stack.GetSummary(version)
+
 	nodeCountSinceError := p.stack.NodeCountSinceError(version)
 	currentErrorCost := p.stack.ErrorCost(version)
 	lookaheadSymbol := GetSymbol(lookahead, p.arena)
@@ -1511,22 +1512,11 @@ func (p *Parser) recover(version StackVersion, lookahead Subtree) {
 			}
 
 			// Check if the lookahead token is valid in this previous state.
+			// If so, recover to that state. PopCountSlices is non-destructive,
+			// so no Split is needed — pass version directly, matching C.
 			tableEntry := p.language.TableEntry(entry.State, lookaheadSymbol)
 			if tableEntry.ActionCount > 0 {
-				if p.stack.VersionCount() >= MaxVersionCount {
-					break
-				}
-				// Split the version before attempting Strategy 1 popback.
-				// Strategy 1 destructively modifies the version via Pop. If
-				// the pop doesn't reach the goal state, the version is halted.
-				// In C, this is acceptable because Pop can create version forks
-				// via the GSS. In our single-path Go stack, we must split
-				// explicitly to preserve the original version for Strategy 2.
-				recoveryVersion := p.stack.Split(version)
-				if recoveryVersion < 0 {
-					break
-				}
-				if p.recoverToState(recoveryVersion, depth, entry.State) {
+				if p.recoverToState(version, depth, entry.State) {
 					didRecover = true
 					break
 				}
@@ -1596,28 +1586,41 @@ func (p *Parser) recover(version StackVersion, lookahead Subtree) {
 		}
 	}
 
-	// Build error_repeat node with the skipped token.
-	children := []Subtree{lookahead}
+	// Wrap the lookahead token in an error_repeat. Matches C:
+	//   SubtreeArray children = array_new();
+	//   array_push(&children, lookahead);
+	//   MutableSubtree error_repeat = ts_subtree_new_node(error_repeat, &children, ...);
+	errorRepeat := p.createErrorRepeatNode([]Subtree{lookahead})
 
 	// If tokens have already been skipped (node_count_since_error > 0),
-	// pop the existing error_repeat and merge it with the new token.
+	// pop the existing error_repeat and wrap both together. Matches C:
+	//   array_push(&pop[0]->subtrees, error_repeat);
+	//   error_repeat = ts_subtree_new_node(error_repeat, &pop[0]->subtrees, ...);
 	if nodeCountSinceError > 0 {
 		slices := p.stack.PopCountSlices(version, 1)
 		if len(slices) > 0 {
+			// Handle multiple merged versions: keep first, discard rest (matching C).
+			if len(slices) > 1 {
+				for i := 1; i < len(slices); i++ {
+					sv := slices[i].Version()
+					if int(sv) < p.stack.VersionCount() {
+						p.stack.RemoveVersion(sv)
+					}
+				}
+			}
 			p.stack.RenumberVersion(slices[0].Version(), version)
+			// Build children: popped subtrees (source order) + new error_repeat.
 			prevSubtrees := slices[0].Subtrees()
 			allChildren := make([]Subtree, 0, len(prevSubtrees)+1)
-			for i := len(prevSubtrees) - 1; i >= 0; i-- {
+			for i := 0; i < len(prevSubtrees); i++ {
 				if !prevSubtrees[i].IsZero() {
 					allChildren = append(allChildren, prevSubtrees[i])
 				}
 			}
-			allChildren = append(allChildren, lookahead)
-			children = allChildren
+			allChildren = append(allChildren, errorRepeat)
+			errorRepeat = p.createErrorRepeatNode(allChildren)
 		}
 	}
-
-	errorRepeat := p.createErrorRepeatNode(children)
 
 	// Compute new position after skipping the token.
 	newPosition := LengthAdd(LengthAdd(position, tokenPadding), tokenSize)
@@ -1677,13 +1680,14 @@ func (p *Parser) recoverToState(version StackVersion, depth uint32, goalState St
 			}
 		}
 
-		// Build children array: existing error children + popped subtrees in
-		// source order (reverse from stack order). Filter out SubtreeZero entries
+		// Build children array: existing error children + popped subtrees.
+		// PopCountSlices already returns subtrees in source order (reversed
+		// by iterate), so iterate forward. Filter out SubtreeZero entries
 		// which come from ERROR_STATE pushes.
 		popped := slice.Subtrees()
 		children := make([]Subtree, 0, len(existingErrorChildren)+len(popped))
 		children = append(children, existingErrorChildren...)
-		for j := len(popped) - 1; j >= 0; j-- {
+		for j := 0; j < len(popped); j++ {
 			if !popped[j].IsZero() {
 				children = append(children, popped[j])
 			}
@@ -1789,7 +1793,9 @@ func (p *Parser) createErrorNode(skippedTokens []Subtree) Subtree {
 // which is the internal symbol for accumulating multiple skipped tokens during
 // streaming error recovery. Matches C's ts_subtree_new_node with error_repeat.
 func (p *Parser) createErrorRepeatNode(children []Subtree) Subtree {
-	return NewNodeSubtree(p.arena, SymbolErrorRepeat, children, 0, p.language)
+	node := NewNodeSubtree(p.arena, SymbolErrorRepeat, children, 0, p.language)
+	SummarizeChildren(node, p.arena, p.language)
+	return node
 }
 
 // createMissingToken creates a MISSING leaf token (zero-width, for error recovery).
