@@ -322,21 +322,55 @@ The migration should be done incrementally, with tests passing at every step.
 
 ## Testing Overview
 
-### Test Types
+### `make test` — Primary Test Suite
 
-| Test | Command | What it Tests | External Dependencies |
-|------|---------|---------------|----------------------|
-| **Unit tests** | `make test` | Core runtime: parser, lexer, stack, subtree, API, scanners | None |
-| **Corpus tests** | `make test-corpus` | Grammar test suites — 1619 cases across 15 languages, input + expected S-expression | Grammars (`make fetch-test-grammars`) |
-| **Regression tests** | `make test-regression` | Curated inputs that previously caused bugs | None (fixtures in repo) |
-| **Differential tests** | `make diff-test` | Small sample inputs, Go vs C tree-sitter CLI output | C CLI (`make deps`) |
-| **Realworld diff tests** | `make test-realworld-diff` | Real-world OSS source files, Go vs C CLI output | C CLI + fetched files (`make fetch-realworld`) |
-| **Scanner trace tests** | `make test-scanner-traces` | External scanner parity — replays C scanner calls against Go scanners | Grammars + traces (committed) |
-| **Benchmarks** | `make bench` | Parse throughput (bytes/sec) at multiple sizes for all languages | Optional: C CLI for comparison |
-| **Fuzz tests** | `go test -fuzz=FuzzParse<Lang>` | Crash-finding — parser never panics on arbitrary input | None |
-| **Grammar batch tests** | `go test -run TestGrammarBatch` | Hand-written integration tests for specific language constructs | Grammars |
+`make test` runs `go test -skip 'TestCorpus|TestDifferential' ./...`. This is the
+main development command. It runs everything except corpus tests (which need fetched
+grammar repos) and differential tests (which need the C CLI). It includes:
 
-**Rename: "corpora diff" → "realworld diff"**
+| Included in `make test` | Standalone Command | What it Tests |
+|:-:|------|-------------|
+| Y | `make test-regression` | Curated inputs that previously caused bugs (hangs, panics, wrong output). Fixtures in `testdata/regressions/<lang>/` |
+| Y | `make test-scanner-traces` | External scanner parity — replays recorded C scanner calls against Go scanners. Traces committed in `testdata/scanner-traces/` |
+| Y | `go test -run TestGrammarBatch` | Hand-written integration tests for specific language constructs across all 15 languages |
+| Y | `go test -run TestApi` | Public API tests — Node, Tree, TreeCursor |
+| Y | `go test -run TestErrorRecovery` | Malformed input handling — no panics, ERROR nodes produced |
+| Y | (internal packages) | Unit tests for parser, lexer, stack, subtree, corpustest framework, scanners |
+
+### Additional Test Suites (not in `make test`)
+
+These require fetched data or external tools:
+
+| Command | What it Tests | Setup Required |
+|---------|---------------|----------------|
+| `make test-corpus` | Grammar test suites — 1619 cases across 15 languages. Each case has input + expected S-expression from upstream grammar repos. | `make fetch-test-grammars` |
+| `make diff-test` | Small sample inputs compared Go vs C tree-sitter CLI output | `make deps` (installs C CLI) |
+| `make test-realworld-diff` | Real-world OSS source files (kubernetes, flask, rails, etc.) compared Go vs C CLI | `make deps` + `make fetch-realworld` |
+| `make bench` | Parse throughput (bytes/sec) at multiple sizes for all 15 languages. Optional C CLI comparison. | Optional: `make deps` for C comparison |
+| `make fuzz` | Run all fuzz targets for 30s each (parse + scanner roundtrip). Finds crashes/panics. | None |
+| `make fuzz FUZZ_TIME=5m` | Same, with custom duration per target | None |
+| `go test -fuzz=FuzzParseGo -fuzztime=60s .` | Single-language fuzz | None |
+
+### Exhaustive Test Run (CI / Pre-Release)
+
+To run every test:
+
+```bash
+# 1. Setup (one-time)
+make deps                  # Install C CLI
+make fetch-test-grammars   # Fetch grammar repos
+make fetch-realworld       # Fetch real-world source files
+
+# 2. Run all tests
+make test                  # Unit + regression + scanner traces + grammar batch + ...
+make test-corpus           # Grammar corpus tests (1619 cases)
+make diff-test             # Go vs C differential
+make test-realworld-diff   # Real-world file differential
+make fuzz                  # Fuzz all targets (30s each, ~10 min total)
+make bench                 # Benchmarks (optional, not correctness)
+```
+
+### Rename: "corpora diff" → "realworld diff"
 
 The current "corpora diff tests" (fetching real-world source files from GitHub and
 comparing Go vs C output) are confusingly named alongside "corpus tests" (grammar

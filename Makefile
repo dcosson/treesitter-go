@@ -1,6 +1,6 @@
 TREE_SITTER_CLI := $(shell which tree-sitter 2>/dev/null)
 
-.PHONY: build test bench bench-grammars fetch-test-grammars fetch-corpora test-corpus test-corpus-json test-regression test-corpora-diff deps diff-test generate-scanner-traces test-scanner-traces
+.PHONY: build test bench bench-grammars fetch-test-grammars fetch-corpora test-corpus test-corpus-json test-regression test-corpora-diff deps diff-test generate-scanner-traces test-scanner-traces fuzz
 
 build:
 	go build ./...
@@ -51,22 +51,13 @@ GRAMMAR_DIR := testdata/grammars
 
 bench-grammars:
 ifdef TREE_SITTER_CLI
-	mkdir -p $(BENCH_DYLIB_DIR)
-	$(TREE_SITTER_CLI) build $(GRAMMAR_DIR)/tree-sitter-json -o $(BENCH_DYLIB_DIR)/json.dylib
-	$(TREE_SITTER_CLI) build $(GRAMMAR_DIR)/tree-sitter-go -o $(BENCH_DYLIB_DIR)/go.dylib
-	$(TREE_SITTER_CLI) build $(GRAMMAR_DIR)/tree-sitter-python -o $(BENCH_DYLIB_DIR)/python.dylib
-	$(TREE_SITTER_CLI) build $(GRAMMAR_DIR)/tree-sitter-javascript -o $(BENCH_DYLIB_DIR)/javascript.dylib
-	$(TREE_SITTER_CLI) build $(GRAMMAR_DIR)/tree-sitter-typescript/typescript -o $(BENCH_DYLIB_DIR)/typescript.dylib
-	$(TREE_SITTER_CLI) build $(GRAMMAR_DIR)/tree-sitter-c -o $(BENCH_DYLIB_DIR)/c.dylib
-	$(TREE_SITTER_CLI) build $(GRAMMAR_DIR)/tree-sitter-cpp -o $(BENCH_DYLIB_DIR)/cpp.dylib
-	$(TREE_SITTER_CLI) build $(GRAMMAR_DIR)/tree-sitter-rust -o $(BENCH_DYLIB_DIR)/rust.dylib
-	$(TREE_SITTER_CLI) build $(GRAMMAR_DIR)/tree-sitter-java -o $(BENCH_DYLIB_DIR)/java.dylib
-	$(TREE_SITTER_CLI) build $(GRAMMAR_DIR)/tree-sitter-ruby -o $(BENCH_DYLIB_DIR)/ruby.dylib
-	$(TREE_SITTER_CLI) build $(GRAMMAR_DIR)/tree-sitter-bash -o $(BENCH_DYLIB_DIR)/bash.dylib
-	$(TREE_SITTER_CLI) build $(GRAMMAR_DIR)/tree-sitter-css -o $(BENCH_DYLIB_DIR)/css.dylib
-	$(TREE_SITTER_CLI) build $(GRAMMAR_DIR)/tree-sitter-html -o $(BENCH_DYLIB_DIR)/html.dylib
-	$(TREE_SITTER_CLI) build $(GRAMMAR_DIR)/tree-sitter-perl -o $(BENCH_DYLIB_DIR)/perl.dylib
-	$(TREE_SITTER_CLI) build $(GRAMMAR_DIR)/tree-sitter-lua -o $(BENCH_DYLIB_DIR)/lua.dylib
+	@mkdir -p $(BENCH_DYLIB_DIR)
+	@find $(GRAMMAR_DIR) -name grammar.json -path '*/src/grammar.json' | while read gj; do \
+		grammar_dir=$$(dirname $$(dirname "$$gj")); \
+		lang=$$(basename "$$grammar_dir" | sed 's/^tree-sitter-//'); \
+		echo "Building $$lang dylib from $$grammar_dir"; \
+		$(TREE_SITTER_CLI) build "$$grammar_dir" -o $(BENCH_DYLIB_DIR)/$$lang.dylib; \
+	done
 else
 	@echo "tree-sitter CLI not found. Run 'make deps' to install."
 	@exit 1
@@ -85,6 +76,16 @@ generate-scanner-traces:
 
 test-scanner-traces:
 	go test -v -race -run 'TestScannerTraces' -count=1 -timeout 10m .
+
+FUZZ_TIME ?= 30s
+
+fuzz:
+	@echo "Running all fuzz targets ($(FUZZ_TIME) each)..."
+	@grep -o 'func Fuzz[A-Za-z]*' fuzz_test.go | sed 's/^func //' | while read target; do \
+		echo "--- $$target ($(FUZZ_TIME)) ---"; \
+		go test -fuzz=$$target -fuzztime=$(FUZZ_TIME) -timeout=0 . || exit 1; \
+	done
+	@echo "All fuzz targets passed."
 
 bench:
 ifdef TREE_SITTER_CLI
