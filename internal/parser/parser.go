@@ -1934,16 +1934,12 @@ func (p *Parser) createErrorNode(skippedTokens []Subtree) Subtree {
 	data.SetFlag(SubtreeFlagVisible, true)
 	data.SetFlag(SubtreeFlagNamed, true)
 
-	if len(children) > 0 {
-		firstPadding := GetPadding(children[0], p.arena)
-		data.Padding = firstPadding
-		data.Size = ComputeSizeFromChildren(children, p.arena, firstPadding)
-	}
-
-	data.ErrorCost = ErrorCostPerRecovery + ErrorCostPerSkippedChar*data.Size.Bytes
-	if data.Size.Point.Row > 0 {
-		data.ErrorCost += ErrorCostPerSkippedLine * data.Size.Point.Row
-	}
+	// Use SummarizeChildren to compute size, error cost, and other metrics,
+	// matching C's ts_subtree_new_error_node → ts_subtree_new_node →
+	// ts_subtree_summarize_children. SummarizeChildren adds
+	// ERROR_COST_PER_SKIPPED_TREE per visible child, ERROR_COST_PER_RECOVERY,
+	// and per-byte/per-line costs for ERROR nodes.
+	SummarizeChildren(st, p.arena, p.language)
 
 	return st
 }

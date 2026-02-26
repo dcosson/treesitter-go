@@ -526,15 +526,29 @@ func writeSExprSubtree(s Subtree, arena *SubtreeArena, lang *Language, buf *stri
 	}
 
 	isVisible := IsVisible(s, arena) || aliasSymbol != 0
+	isMissing := IsMissing(s, arena)
 
-	if isVisible && isNamed {
+	if isVisible && (isNamed || isMissing) {
 		buf.WriteByte(' ')
 		if fieldName != "" {
 			buf.WriteString(fieldName)
 			buf.WriteString(": ")
 		}
-		buf.WriteByte('(')
-		buf.WriteString(lang.SymbolName(sym))
+		if isMissing {
+			// Matches C subtree.c: (MISSING symbolname) for named, (MISSING "symbolname") for anonymous.
+			buf.WriteString("(MISSING ")
+			aliasIsNamed := aliasSymbol != 0 && lang.SymbolIsNamed(aliasSymbol)
+			if aliasIsNamed || IsNamed(s, arena) {
+				buf.WriteString(lang.SymbolName(sym))
+			} else {
+				buf.WriteByte('"')
+				buf.WriteString(lang.SymbolName(sym))
+				buf.WriteByte('"')
+			}
+		} else {
+			buf.WriteByte('(')
+			buf.WriteString(lang.SymbolName(sym))
+		}
 	}
 
 	// Iterate raw children to track structural child indices for field lookup.
@@ -594,10 +608,7 @@ func writeSExprSubtree(s Subtree, arena *SubtreeArena, lang *Language, buf *stri
 		}
 	}
 
-	if isVisible && isNamed {
-		if IsMissing(s, arena) {
-			buf.WriteString(" MISSING")
-		}
+	if isVisible && (isNamed || isMissing) {
 		buf.WriteByte(')')
 	}
 }

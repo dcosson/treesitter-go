@@ -908,7 +908,24 @@ func SummarizeChildren(s Subtree, arena *SubtreeArena, lang *Language) {
 		}
 
 		// Accumulate error costs.
-		errorCost += GetErrorCost(child, arena)
+		childSym := GetSymbol(child, arena)
+		if childSym != SymbolErrorRepeat {
+			errorCost += GetErrorCost(child, arena)
+		}
+
+		// For ERROR/error_repeat parent nodes, add ERROR_COST_PER_SKIPPED_TREE
+		// for each visible non-extra child that is not an empty error leaf.
+		// Matches C subtree.c:395-404.
+		grandchildCount := GetChildCount(child, arena)
+		if data.Symbol == SymbolError || data.Symbol == SymbolErrorRepeat {
+			if !childExtra && !(childSym == SymbolError && grandchildCount == 0) {
+				if IsVisible(child, arena) {
+					errorCost += errorCostPerSkippedTree
+				} else if grandchildCount > 0 {
+					errorCost += errorCostPerSkippedTree * GetVisibleChildCount(child, arena)
+				}
+			}
+		}
 
 		// Accumulate dynamic precedence.
 		dynamicPrecedence += GetDynamicPrecedence(child, arena)
