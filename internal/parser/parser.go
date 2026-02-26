@@ -110,6 +110,7 @@ const (
 	SubtreeFlagNamed                         = ts.SubtreeFlagNamed
 	SubtreeFlagMissing                       = ts.SubtreeFlagMissing
 	SubtreeFlagHasExternalTokens             = ts.SubtreeFlagHasExternalTokens
+	SubtreeFlagDependsOnColumn               = ts.SubtreeFlagDependsOnColumn
 )
 
 // Parser is the GLR parsing engine. It drives the Lexer and Language to
@@ -557,6 +558,12 @@ func (p *Parser) lexToken(version StackVersion, state StateID, position Length) 
 	isKeyword := false
 	errorMode := state == 0
 	currentLexMode := lexMode
+	scanPosition := position
+	skippedError := false
+	firstErrorCharacter := int32(0)
+	errorStartPosition := LengthZero
+	errorEndPosition := LengthZero
+	lookaheadEndByte := position.Bytes
 
 	for {
 		foundExternalToken = false
@@ -565,7 +572,7 @@ func (p *Parser) lexToken(version StackVersion, state StateID, position Length) 
 
 		// Try external scanner first if this state enables external tokens.
 		if currentLexMode.ExternalLexState != 0 && p.externalScanner != nil {
-			p.lexer.Start(position)
+			p.lexer.Start(scanPosition)
 
 			// Deserialize from the last external token for this version.
 			lastExtToken := p.stack.LastExternalToken(version)
@@ -576,6 +583,7 @@ func (p *Parser) lexToken(version StackVersion, state StateID, position Length) 
 
 			// Call the external scanner.
 			if validSymbols != nil && p.externalScanner.Scan(p.lexer, validSymbols) {
+				lookaheadEndByte = p.lexer.CurrentPosition().Bytes
 				// If the scanner didn't call MarkEnd, default the token end to
 				// the current position (matching AcceptToken behavior). Without
 				// this, TokenEndPosition stays at Length{} (zero), causing size
@@ -633,11 +641,12 @@ func (p *Parser) lexToken(version StackVersion, state StateID, position Length) 
 			break
 		}
 
-		p.lexer.Start(position)
+		p.lexer.Start(scanPosition)
 		found := false
 		if p.language.LexFn != nil {
 			found = p.language.LexFn(p.lexer, StateID(currentLexMode.LexState))
 		}
+		lookaheadEndByte = p.lexer.CurrentPosition().Bytes
 
 		// If the result is the keyword capture token, try keyword lex.
 		// Keyword lex starts from token_start_position (after whitespace)
@@ -693,20 +702,52 @@ func (p *Parser) lexToken(version StackVersion, state StateID, position Length) 
 			}
 			errorMode = true
 			currentLexMode = p.language.LexModes[0]
+			scanPosition = position
 			continue
 		}
 
-		if p.lexer.EOF() {
-			// At EOF — produce end-of-input token.
-			p.lexer.MarkEnd()
-			p.lexer.AcceptToken(SymbolEnd)
-		} else {
-			// No token found — advance by one character and report error.
-			p.lexer.Advance(false)
-			p.lexer.MarkEnd()
-			p.lexer.AcceptToken(SymbolError)
+		if !skippedError {
+			skippedError = true
+			errorStartPosition = p.lexer.TokenStartPosition()
+			errorEndPosition = errorStartPosition
+			firstErrorCharacter = int32(p.lexer.Lookahead)
 		}
-		break
+
+		if p.lexer.CurrentPosition().Bytes == errorEndPosition.Bytes {
+			if p.lexer.EOF() {
+				if errorEndPosition.Bytes == errorStartPosition.Bytes {
+					// Avoid producing a zero-width error token at EOF, which can
+					// cause no-progress loops in recovery.
+					skippedError = false
+					p.lexer.MarkEnd()
+					p.lexer.AcceptToken(SymbolEnd)
+				}
+				break
+			}
+			p.lexer.Advance(false)
+			lookaheadEndByte = p.lexer.CurrentPosition().Bytes
+		}
+
+		errorEndPosition = p.lexer.CurrentPosition()
+		scanPosition = errorEndPosition
+	}
+
+	if skippedError {
+		padding := LengthSub(errorStartPosition, position)
+		size := LengthSub(errorEndPosition, errorStartPosition)
+		lookaheadBytes := uint32(0)
+		if lookaheadEndByte >= errorEndPosition.Bytes {
+			lookaheadBytes = lookaheadEndByte - errorEndPosition.Bytes
+		}
+		_ = firstErrorCharacter
+
+		token := p.createLexErrorToken(state, padding, size, lookaheadBytes)
+		p.cachedToken = token
+		p.cachedTokenPosition = position
+		p.cachedTokenState = StateID(lexMode.LexState)
+		p.cachedTokenExtState = lexMode.ExternalLexState
+		p.cachedTokenValid = true
+		return token
 	}
 
 	// Compute padding and size.
@@ -1833,6 +1874,33 @@ func (p *Parser) createMissingToken(symbol Symbol, padding Length, lookaheadByte
 	data.SetFlag(SubtreeFlagVisible, meta.Visible)
 	data.SetFlag(SubtreeFlagNamed, meta.Named)
 	data.SetFlag(SubtreeFlagMissing, true)
+	return st
+}
+
+// createLexErrorToken creates a leaf-like error token for lex-time skipped
+// input, matching ts_subtree_new_error behavior in the C runtime.
+func (p *Parser) createLexErrorToken(parseState StateID, padding, size Length, lookaheadBytes uint32) Subtree {
+	st, data := p.arena.Alloc()
+	*data = SubtreeHeapData{
+		Symbol:         SymbolError,
+		ParseState:     parseState,
+		Padding:        padding,
+		Size:           size,
+		LookaheadBytes: lookaheadBytes,
+		FirstLeaf: FirstLeaf{
+			Symbol:     SymbolError,
+			ParseState: parseState,
+		},
+	}
+	data.SetFlag(SubtreeFlagVisible, true)
+	data.SetFlag(SubtreeFlagNamed, true)
+	data.SetFlag(SubtreeFlagDependsOnColumn, padding.Point.Row > 0)
+
+	data.ErrorCost = ErrorCostPerRecovery + ErrorCostPerSkippedChar*size.Bytes
+	if size.Point.Row > 0 {
+		data.ErrorCost += ErrorCostPerSkippedLine * size.Point.Row
+	}
+
 	return st
 }
 
