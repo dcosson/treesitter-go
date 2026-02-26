@@ -170,7 +170,7 @@ The following grammars are included for testing and can be used as references fo
 | **Corpus tests** | `make test-corpus` | Tree-sitter's official test suites (1634 cases across 15 languages) | No | Each grammar repo ships a `corpus/` directory with input/expected-output pairs. Fetched with `make fetch-test-grammars` into `testdata/grammars/`. |
 | **Regression tests** | `make test-regression` | Curated inputs that previously caused bugs (hangs, panics, wrong output) | No | Stored in `testdata/regression/<lang>/`. Guards against regressions in specific edge cases. |
 | **Differential tests** | `make diff-test` | Small set of per-grammar sample inputs compared against C tree-sitter CLI output | **Yes** | Tests in `internal/difftest/`. Verifies our S-expression output matches the C reference exactly. |
-| **Corpora diff tests** | `make test-corpora-diff` | Real-world source files from open-source projects compared against C CLI | **Yes** | Fetched via `make fetch-corpora` from GitHub repos. Parses hundreds of real files per language and diffs against C reference output. |
+| **Realworld diff tests** | `make test-realworld-diff` | Real-world source files from open-source projects compared against C CLI | **Yes** | Fetched via `make fetch-realworld` from GitHub repos. Parses hundreds of real files per language and diffs against C reference output. |
 | **Benchmarks** | `make bench` | Auto-generated synthetic inputs (varying sizes per language) | Optional | Measures parse throughput (bytes/sec) for all 15 languages at multiple sizes. If CLI is available, also benchmarks C parser for comparison. |
 | **Grammar batch tests** | `go test -run TestGrammarBatch` | Subset of corpus tests used during grammar generation validation | No | Runs during development to verify grammar extraction + code generation. |
 
@@ -180,11 +180,11 @@ The following grammars are included for testing and can be used as references fo
 # Fetch grammar repos (needed for corpus tests, regression tests)
 make fetch-test-grammars
 
-# Install tree-sitter CLI (needed for diff tests, corpora diff tests, CLI benchmarks)
+# Install tree-sitter CLI (needed for diff tests, realworld diff tests, CLI benchmarks)
 make deps
 
-# Fetch real-world source corpora (needed for corpora diff tests)
-make fetch-corpora
+# Fetch real-world source files (needed for realworld diff tests)
+make fetch-realworld
 
 # Build grammar dylibs for CLI benchmarks (optional, macOS)
 make bench-grammars

@@ -1,6 +1,6 @@
 TREE_SITTER_CLI := $(shell which tree-sitter 2>/dev/null)
 
-.PHONY: build test bench bench-grammars fetch-test-grammars fetch-corpora test-corpus test-corpus-json test-regression test-corpora-diff deps diff-test generate-scanner-traces test-scanner-traces fuzz
+.PHONY: build test bench bench-grammars fetch-test-grammars fetch-realworld test-corpus test-corpus-json test-regression test-realworld-diff deps diff-test generate-scanner-traces test-scanner-traces fuzz
 
 build:
 	go build ./...
@@ -20,12 +20,12 @@ test-corpus-json:
 test-regression:
 	go test -v -race -run 'TestRegression' -count=1 -timeout 5m .
 
-fetch-corpora:
-	go run ./cmd/fetch-corpora -manifest testdata/corpora-manifest.json -output testdata/corpora/
+fetch-realworld:
+	go run ./cmd/fetch-realworld -manifest testdata/realworld-manifest.json -output testdata/realworld/
 
-test-corpora-diff:
+test-realworld-diff:
 ifdef TREE_SITTER_CLI
-	go test -v -race -run 'TestDifferentialCorpora' -count=1 -timeout 30m .
+	go test -v -race -run 'TestDifferentialRealworld' -count=1 -timeout 30m .
 else
 	@echo "tree-sitter CLI not found. Run 'make deps' to install."
 	@exit 1

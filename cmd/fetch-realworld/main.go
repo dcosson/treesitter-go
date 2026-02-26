@@ -1,16 +1,16 @@
-// fetch-corpora downloads real-world source files from GitHub for differential testing.
+// fetch-realworld downloads real-world source files from GitHub for differential testing.
 //
-// It reads a corpora-manifest.json file that specifies projects, git refs (tags/branches),
+// It reads a realworld-manifest.json file that specifies projects, git refs (tags/branches),
 // and file paths. For each file, it downloads the raw content from GitHub and stores it
-// in testdata/corpora/<language>/<project>/.
+// in testdata/realworld/<language>/<project>/.
 //
 // The tool resolves each ref to a commit SHA and records it in a fetched-manifest.json
 // alongside the downloaded files.
 //
 // Usage:
 //
-//	go run ./cmd/fetch-corpora [-manifest testdata/corpora-manifest.json] [-output testdata/corpora/]
-//	go run ./cmd/fetch-corpora -verify  # verify all files exist without downloading
+//	go run ./cmd/fetch-realworld [-manifest testdata/realworld-manifest.json] [-output testdata/realworld/]
+//	go run ./cmd/fetch-realworld -verify  # verify all files exist without downloading
 package main
 
 import (
@@ -25,7 +25,7 @@ import (
 	"time"
 )
 
-// Manifest is the top-level corpora manifest.
+// Manifest is the top-level realworld manifest.
 type Manifest struct {
 	Description string    `json:"description"`
 	Projects    []Project `json:"projects"`
@@ -58,8 +58,8 @@ type FetchedProject struct {
 }
 
 func main() {
-	manifestPath := flag.String("manifest", "testdata/corpora-manifest.json", "path to corpora manifest")
-	outputDir := flag.String("output", "testdata/corpora", "output directory")
+	manifestPath := flag.String("manifest", "testdata/realworld-manifest.json", "path to realworld manifest")
+	outputDir := flag.String("output", "testdata/realworld", "output directory")
 	verify := flag.Bool("verify", false, "verify files exist without downloading")
 	force := flag.Bool("force", false, "re-download even if files exist")
 	flag.Parse()
@@ -213,7 +213,7 @@ func runVerify(manifest Manifest, outputDir string) {
 
 	fmt.Printf("\nVerify: %d found, %d missing (of %d total)\n", found, missing, total)
 	if missing > 0 {
-		fmt.Println("Run 'go run ./cmd/fetch-corpora' to download missing files.")
+		fmt.Println("Run 'go run ./cmd/fetch-realworld' to download missing files.")
 		os.Exit(1)
 	}
 

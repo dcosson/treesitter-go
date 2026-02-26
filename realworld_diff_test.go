@@ -1,11 +1,11 @@
-// corpora_diff_test.go runs differential testing against real-world source files.
+// realworld_diff_test.go runs differential testing against real-world source files.
 //
 // These tests compare Go parser output against the reference C tree-sitter CLI
 // on source files downloaded from popular open-source projects. The tests require:
 //  1. The tree-sitter CLI (install via `make deps`)
-//  2. Downloaded corpora files (install via `make fetch-corpora`)
+//  2. Downloaded realworld files (install via `make fetch-realworld`)
 //
-// Run: go test -v -run TestDifferentialCorpora -timeout 30m .
+// Run: go test -v -run TestDifferentialRealworld -timeout 30m .
 package treesitter_test
 
 import (
@@ -35,21 +35,21 @@ import (
 	tsgrammar "github.com/treesitter-go/treesitter/internal/testgrammars/typescript"
 )
 
-// corporaDir is the base directory for downloaded corpora files.
-const corporaDir = "testdata/corpora"
+// realworldDir is the base directory for downloaded realworld files.
+const realworldDir = "testdata/realworld"
 
-// corporaLanguage describes a language's grammar, extensions, and corpora subdirectories.
-type corporaLanguage struct {
+// realworldLanguage describes a language's grammar, extensions, and realworld subdirectories.
+type realworldLanguage struct {
 	name       string
 	lang       *ts.Language
 	scope      string
 	extensions []string
-	projects   []string // subdirectory names under testdata/corpora/<name>/
+	projects   []string // subdirectory names under testdata/realworld/<name>/
 }
 
-// allCorporaLanguages returns the full set of languages with their corpora projects.
-func allCorporaLanguages() []corporaLanguage {
-	return []corporaLanguage{
+// allRealworldLanguages returns the full set of languages with their realworld projects.
+func allRealworldLanguages() []realworldLanguage {
+	return []realworldLanguage{
 		{
 			name: "go", lang: golanggrammar.GoLanguage(),
 			scope: "source.go", extensions: []string{".go"},
@@ -128,8 +128,8 @@ func allCorporaLanguages() []corporaLanguage {
 	}
 }
 
-// makeCorporaParseFunc creates a ParseFunc for the given language.
-func makeCorporaParseFunc(lang *ts.Language) func([]byte) (string, error) {
+// makeRealworldParseFunc creates a ParseFunc for the given language.
+func makeRealworldParseFunc(lang *ts.Language) func([]byte) (string, error) {
 	return func(input []byte) (string, error) {
 		p := iparser.NewParser()
 		p.SetLanguage(lang)
@@ -146,9 +146,9 @@ func makeCorporaParseFunc(lang *ts.Language) func([]byte) (string, error) {
 // GLR parser edge cases that take very long; we skip those gracefully.
 const perFileParseTimeout = 60 * time.Second
 
-// parseCorporaFileWithTimeout parses a file with a timeout, returning
+// parseRealworldFileWithTimeout parses a file with a timeout, returning
 // the S-expression or an error. Returns ("", nil) if the parse times out.
-func parseCorporaFileWithTimeout(t *testing.T, lang *ts.Language, input []byte, fileName string) string {
+func parseRealworldFileWithTimeout(t *testing.T, lang *ts.Language, input []byte, fileName string) string {
 	t.Helper()
 
 	ctx, cancel := context.WithTimeout(context.Background(), perFileParseTimeout)
@@ -184,25 +184,25 @@ func parseCorporaFileWithTimeout(t *testing.T, lang *ts.Language, input []byte, 
 	}
 }
 
-// TestDifferentialCorpora runs differential testing on all downloaded corpora.
+// TestDifferentialRealworld runs differential testing on all downloaded realworld.
 // It walks each project's directory and compares Go vs C parser output.
-func TestDifferentialCorpora(t *testing.T) {
-	for _, cl := range allCorporaLanguages() {
+func TestDifferentialRealworld(t *testing.T) {
+	for _, cl := range allRealworldLanguages() {
 		cl := cl
 		t.Run(cl.name, func(t *testing.T) {
 			if cl.lang == nil {
 				t.Skip("grammar not wired up")
 			}
 
-			parseFunc := makeCorporaParseFunc(cl.lang)
+			parseFunc := makeRealworldParseFunc(cl.lang)
 
 			for _, proj := range cl.projects {
 				proj := proj
-				projDir := filepath.Join(corporaDir, cl.name, proj)
+				projDir := filepath.Join(realworldDir, cl.name, proj)
 
 				t.Run(proj, func(t *testing.T) {
 					if _, err := os.Stat(projDir); os.IsNotExist(err) {
-						t.Skipf("corpora not downloaded: run 'make fetch-corpora' first")
+						t.Skipf("realworld not downloaded: run 'make fetch-realworld' first")
 					}
 
 					difftest.RunDifferentialDir(t, projDir, cl.extensions, parseFunc)
@@ -212,11 +212,11 @@ func TestDifferentialCorpora(t *testing.T) {
 	}
 }
 
-// TestCorporaParseOnly runs parse-only (no CLI comparison) on all downloaded corpora.
+// TestRealworldParseOnly runs parse-only (no CLI comparison) on all downloaded realworld.
 // This verifies the Go parser doesn't panic or hang on real-world input.
 // Files that exceed perFileParseTimeout are skipped (known GLR parser limitation).
-func TestCorporaParseOnly(t *testing.T) {
-	for _, cl := range allCorporaLanguages() {
+func TestRealworldParseOnly(t *testing.T) {
+	for _, cl := range allRealworldLanguages() {
 		cl := cl
 		t.Run(cl.name, func(t *testing.T) {
 			if cl.lang == nil {
@@ -225,11 +225,11 @@ func TestCorporaParseOnly(t *testing.T) {
 
 			for _, proj := range cl.projects {
 				proj := proj
-				projDir := filepath.Join(corporaDir, cl.name, proj)
+				projDir := filepath.Join(realworldDir, cl.name, proj)
 
 				t.Run(proj, func(t *testing.T) {
 					if _, err := os.Stat(projDir); os.IsNotExist(err) {
-						t.Skipf("corpora not downloaded: run 'make fetch-corpora' first")
+						t.Skipf("realworld not downloaded: run 'make fetch-realworld' first")
 					}
 
 					entries, err := os.ReadDir(projDir)
@@ -259,11 +259,11 @@ func TestCorporaParseOnly(t *testing.T) {
 								t.Fatalf("reading %s: %v", filePath, err)
 							}
 
-							sexp := parseCorporaFileWithTimeout(t, cl.lang, input, entry.Name())
+							sexp := parseRealworldFileWithTimeout(t, cl.lang, input, entry.Name())
 
 							// Log (don't fail) for empty S-expressions — many language
 							// parsers aren't fully working yet in the Go port. The
-							// differential test (TestDifferentialCorpora) checks correctness;
+							// differential test (TestDifferentialRealworld) checks correctness;
 							// this test only verifies no panics or hangs.
 							if sexp == "" && !t.Skipped() {
 								t.Logf("WARNING: Go parser returned empty S-expression for %s (%d bytes)", entry.Name(), len(input))
@@ -276,14 +276,14 @@ func TestCorporaParseOnly(t *testing.T) {
 	}
 }
 
-// TestCorporaStats prints a summary of the corpora files available for testing.
-func TestCorporaStats(t *testing.T) {
+// TestRealworldStats prints a summary of the realworld files available for testing.
+func TestRealworldStats(t *testing.T) {
 	total := 0
 	byLang := make(map[string]int)
 
-	for _, cl := range allCorporaLanguages() {
+	for _, cl := range allRealworldLanguages() {
 		for _, proj := range cl.projects {
-			projDir := filepath.Join(corporaDir, cl.name, proj)
+			projDir := filepath.Join(realworldDir, cl.name, proj)
 			entries, err := os.ReadDir(projDir)
 			if err != nil {
 				continue
@@ -302,10 +302,10 @@ func TestCorporaStats(t *testing.T) {
 	}
 
 	if total == 0 {
-		t.Skip("no corpora files downloaded: run 'make fetch-corpora' first")
+		t.Skip("no realworld files downloaded: run 'make fetch-realworld' first")
 	}
 
-	t.Logf("Total corpora files: %d", total)
+	t.Logf("Total realworld files: %d", total)
 	for lang, count := range byLang {
 		t.Logf("  %s: %d files", lang, count)
 	}

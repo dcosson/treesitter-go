@@ -49,7 +49,7 @@ const fuzzParseTimeout = 5 * time.Second
 func fuzzParseWithLang(f *testing.F, lang *ts.Language, corpusRepoName string) {
 	f.Helper()
 	seedFromCorpus(f, corpusRepoName)
-	seedFromCorpora(f, corpusRepoName)
+	seedFromRealworld(f, corpusRepoName)
 
 	f.Fuzz(func(t *testing.T, data []byte) {
 		p := iparser.NewParser()
@@ -274,19 +274,19 @@ func seedFromCorpus(f *testing.F, repoName string) {
 	}
 }
 
-// seedFromCorpora adds seed inputs from real source files in testdata/corpora/<lang>/.
-func seedFromCorpora(f *testing.F, repoName string) {
+// seedFromRealworld adds seed inputs from real source files in testdata/realworld/<lang>/.
+func seedFromRealworld(f *testing.F, repoName string) {
 	f.Helper()
-	// Map repo names to corpora directory names.
-	langDir := repoNameToCorpusLang(repoName)
+	// Map repo names to realworld directory names.
+	langDir := repoNameToRealworldLang(repoName)
 	if langDir == "" {
 		return
 	}
-	corporaDir := filepath.Join("testdata", "corpora", langDir)
-	if _, err := os.Stat(corporaDir); os.IsNotExist(err) {
+	realworldDir := filepath.Join("testdata", "realworld", langDir)
+	if _, err := os.Stat(realworldDir); os.IsNotExist(err) {
 		return
 	}
-	entries, err := os.ReadDir(corporaDir)
+	entries, err := os.ReadDir(realworldDir)
 	if err != nil {
 		return
 	}
@@ -294,7 +294,7 @@ func seedFromCorpora(f *testing.F, repoName string) {
 		if entry.IsDir() {
 			continue
 		}
-		data, err := os.ReadFile(filepath.Join(corporaDir, entry.Name()))
+		data, err := os.ReadFile(filepath.Join(realworldDir, entry.Name()))
 		if err != nil {
 			continue
 		}
@@ -304,8 +304,8 @@ func seedFromCorpora(f *testing.F, repoName string) {
 	}
 }
 
-// repoNameToCorpusLang maps a grammar repo name to the corpora directory name.
-func repoNameToCorpusLang(repoName string) string {
+// repoNameToRealworldLang maps a grammar repo name to the realworld directory name.
+func repoNameToRealworldLang(repoName string) string {
 	switch repoName {
 	case "tree-sitter-json":
 		return "json"

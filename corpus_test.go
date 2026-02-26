@@ -119,17 +119,17 @@ func TestRegressionJSON(t *testing.T) {
 	difftest.RunRegressionTests(t, regressionDir, jsonParseFunc(lang))
 }
 
-// TestDifferentialJSONCorpora runs differential testing on real-world JSON files.
-func TestDifferentialJSONCorpora(t *testing.T) {
-	corporaDir := "testdata/corpora/json"
-	if _, err := os.Stat(corporaDir); os.IsNotExist(err) {
-		t.Skip("JSON corpora not found")
+// TestDifferentialJSONRealworld runs differential testing on real-world JSON files.
+func TestDifferentialJSONRealworld(t *testing.T) {
+	realworldDir := "testdata/realworld/json"
+	if _, err := os.Stat(realworldDir); os.IsNotExist(err) {
+		t.Skip("JSON realworld data not found")
 	}
 
 	lang := tg.JsonLanguage()
 	lang.LexFn = jsonLexFn
 
-	difftest.RunDifferentialDir(t, corporaDir, []string{".json"}, jsonParseFunc(lang))
+	difftest.RunDifferentialDir(t, realworldDir, []string{".json"}, jsonParseFunc(lang))
 }
 
 // jsonParseFunc returns a ParseFunc for the JSON language.
