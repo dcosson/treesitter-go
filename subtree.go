@@ -2,6 +2,8 @@ package treesitter
 
 import (
 	"math"
+
+	"github.com/treesitter-go/treesitter/internal/core"
 )
 
 // --- Subtree: compact 8-byte value type ---
@@ -717,11 +719,18 @@ func GetVisibleDescendantCount(s Subtree, arena *SubtreeArena) uint32 {
 }
 
 // GetErrorCost returns the error cost for a subtree.
+// Matches C's ts_subtree_error_cost (subtree.h:331): missing nodes dynamically
+// return ERROR_COST_PER_MISSING_TREE + ERROR_COST_PER_RECOVERY (= 610) regardless
+// of the stored ErrorCost field.
 func GetErrorCost(s Subtree, arena *SubtreeArena) uint32 {
 	if s.IsInline() {
 		return 0
 	}
-	return arena.Get(s).ErrorCost
+	data := arena.Get(s)
+	if data.HasFlag(SubtreeFlagMissing) {
+		return core.ErrorCostPerMissingTree + core.ErrorCostPerRecovery
+	}
+	return data.ErrorCost
 }
 
 // GetDynamicPrecedence returns the dynamic precedence for a subtree.
