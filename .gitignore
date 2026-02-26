@@ -1,9 +1,5 @@
 # Binaries
-treesitter-go
-/fetch-realworld
-/fetch-grammars
-/debug_parse
-/treesitter.test
+bin/
 *.exe
 
 # IDE
