@@ -4,235 +4,238 @@
 // Symbols: 25, States: 32 (7 large, 25 small)
 package testgrammars
 
-import ts "github.com/treesitter-go/treesitter"
+import (
+	core "github.com/treesitter-go/treesitter/internal/core"
+	language "github.com/treesitter-go/treesitter/language"
+	lex "github.com/treesitter-go/treesitter/lexer"
+)
 
 // Grammar symbol IDs.
 const (
-	SymEnd ts.Symbol = 0
-	SymLBrace ts.Symbol = 1
-	SymComma ts.Symbol = 2
-	SymRBrace ts.Symbol = 3
-	SymColon ts.Symbol = 4
-	SymLBrack ts.Symbol = 5
-	SymRBrack ts.Symbol = 6
-	SymDQuote ts.Symbol = 7
-	SymStringContent ts.Symbol = 8
-	SymEscapeSequence ts.Symbol = 9
-	SymNumber ts.Symbol = 10
-	SymTrue ts.Symbol = 11
-	SymFalse ts.Symbol = 12
-	SymNull ts.Symbol = 13
-	SymComment ts.Symbol = 14
-	SymDocument ts.Symbol = 15
-	SymAuxValue ts.Symbol = 16
-	SymObject ts.Symbol = 17
-	SymPair ts.Symbol = 18
-	SymArray ts.Symbol = 19
-	SymString ts.Symbol = 20
-	SymAuxStringContent ts.Symbol = 21
-	SymDocumentRepeat1 ts.Symbol = 22
-	SymObjectRepeat1 ts.Symbol = 23
-	SymArrayRepeat1 ts.Symbol = 24
+	SymEnd              core.Symbol = 0
+	SymLBrace           core.Symbol = 1
+	SymComma            core.Symbol = 2
+	SymRBrace           core.Symbol = 3
+	SymColon            core.Symbol = 4
+	SymLBrack           core.Symbol = 5
+	SymRBrack           core.Symbol = 6
+	SymDQuote           core.Symbol = 7
+	SymStringContent    core.Symbol = 8
+	SymEscapeSequence   core.Symbol = 9
+	SymNumber           core.Symbol = 10
+	SymTrue             core.Symbol = 11
+	SymFalse            core.Symbol = 12
+	SymNull             core.Symbol = 13
+	SymComment          core.Symbol = 14
+	SymDocument         core.Symbol = 15
+	SymAuxValue         core.Symbol = 16
+	SymObject           core.Symbol = 17
+	SymPair             core.Symbol = 18
+	SymArray            core.Symbol = 19
+	SymString           core.Symbol = 20
+	SymAuxStringContent core.Symbol = 21
+	SymDocumentRepeat1  core.Symbol = 22
+	SymObjectRepeat1    core.Symbol = 23
+	SymArrayRepeat1     core.Symbol = 24
 )
 
 // Grammar field IDs.
 const (
-	FieldKey ts.FieldID = 1
-	FieldValue ts.FieldID = 2
+	FieldKey   core.FieldID = 1
+	FieldValue core.FieldID = 2
 )
 
 // JsonLanguage returns the compiled json grammar as a Language.
-func JsonLanguage() *ts.Language {
-	parseActions := []ts.ParseActionEntry{
+func JsonLanguage() *language.Language {
+	parseActions := []core.ParseActionEntry{
 		// [0]
-		{Type: ts.ParseActionTypeHeader, Count: 0, Reusable: false},
+		{Type: core.ParseActionTypeHeader, Count: 0, Reusable: false},
 		// [1]
-		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: false},
-		{Type: ts.ParseActionTypeRecover},
+		{Type: core.ParseActionTypeHeader, Count: 1, Reusable: false},
+		{Type: core.ParseActionTypeRecover},
 		// [3]
-		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftExtra: true},
+		{Type: core.ParseActionTypeHeader, Count: 1, Reusable: true},
+		{Type: core.ParseActionTypeShift, ShiftExtra: true},
 		// [5]
-		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
-		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 15, ReduceChildCount: 0},
+		{Type: core.ParseActionTypeHeader, Count: 1, Reusable: true},
+		{Type: core.ParseActionTypeReduce, ReduceSymbol: 15, ReduceChildCount: 0},
 		// [7]
-		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 16},
+		{Type: core.ParseActionTypeHeader, Count: 1, Reusable: true},
+		{Type: core.ParseActionTypeShift, ShiftState: 16},
 		// [9]
-		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 4},
+		{Type: core.ParseActionTypeHeader, Count: 1, Reusable: true},
+		{Type: core.ParseActionTypeShift, ShiftState: 4},
 		// [11]
-		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 17},
+		{Type: core.ParseActionTypeHeader, Count: 1, Reusable: true},
+		{Type: core.ParseActionTypeShift, ShiftState: 17},
 		// [13]
-		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 8},
+		{Type: core.ParseActionTypeHeader, Count: 1, Reusable: true},
+		{Type: core.ParseActionTypeShift, ShiftState: 8},
 		// [15]
-		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
-		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 15, ReduceChildCount: 1},
+		{Type: core.ParseActionTypeHeader, Count: 1, Reusable: true},
+		{Type: core.ParseActionTypeReduce, ReduceSymbol: 15, ReduceChildCount: 1},
 		// [17]
-		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
-		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 22, ReduceChildCount: 2},
+		{Type: core.ParseActionTypeHeader, Count: 1, Reusable: true},
+		{Type: core.ParseActionTypeReduce, ReduceSymbol: 22, ReduceChildCount: 2},
 		// [19]
-		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 22, ReduceChildCount: 2},
-		{Type: ts.ParseActionTypeShift, ShiftState: 16, ShiftRepetition: true},
+		{Type: core.ParseActionTypeHeader, Count: 2, Reusable: true},
+		{Type: core.ParseActionTypeReduce, ReduceSymbol: 22, ReduceChildCount: 2},
+		{Type: core.ParseActionTypeShift, ShiftState: 16, ShiftRepetition: true},
 		// [22]
-		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 22, ReduceChildCount: 2},
-		{Type: ts.ParseActionTypeShift, ShiftState: 4, ShiftRepetition: true},
+		{Type: core.ParseActionTypeHeader, Count: 2, Reusable: true},
+		{Type: core.ParseActionTypeReduce, ReduceSymbol: 22, ReduceChildCount: 2},
+		{Type: core.ParseActionTypeShift, ShiftState: 4, ShiftRepetition: true},
 		// [25]
-		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 22, ReduceChildCount: 2},
-		{Type: ts.ParseActionTypeShift, ShiftState: 17, ShiftRepetition: true},
+		{Type: core.ParseActionTypeHeader, Count: 2, Reusable: true},
+		{Type: core.ParseActionTypeReduce, ReduceSymbol: 22, ReduceChildCount: 2},
+		{Type: core.ParseActionTypeShift, ShiftState: 17, ShiftRepetition: true},
 		// [28]
-		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 22, ReduceChildCount: 2},
-		{Type: ts.ParseActionTypeShift, ShiftState: 8, ShiftRepetition: true},
+		{Type: core.ParseActionTypeHeader, Count: 2, Reusable: true},
+		{Type: core.ParseActionTypeReduce, ReduceSymbol: 22, ReduceChildCount: 2},
+		{Type: core.ParseActionTypeShift, ShiftState: 8, ShiftRepetition: true},
 		// [31]
-		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 9},
+		{Type: core.ParseActionTypeHeader, Count: 1, Reusable: true},
+		{Type: core.ParseActionTypeShift, ShiftState: 9},
 		// [33]
-		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
-		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 20, ReduceChildCount: 2},
+		{Type: core.ParseActionTypeHeader, Count: 1, Reusable: true},
+		{Type: core.ParseActionTypeReduce, ReduceSymbol: 20, ReduceChildCount: 2},
 		// [35]
-		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
-		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 20, ReduceChildCount: 3},
+		{Type: core.ParseActionTypeHeader, Count: 1, Reusable: true},
+		{Type: core.ParseActionTypeReduce, ReduceSymbol: 20, ReduceChildCount: 3},
 		// [37]
-		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
-		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 17, ReduceChildCount: 2},
+		{Type: core.ParseActionTypeHeader, Count: 1, Reusable: true},
+		{Type: core.ParseActionTypeReduce, ReduceSymbol: 17, ReduceChildCount: 2},
 		// [39]
-		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
-		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 16, ReduceChildCount: 1},
+		{Type: core.ParseActionTypeHeader, Count: 1, Reusable: true},
+		{Type: core.ParseActionTypeReduce, ReduceSymbol: 16, ReduceChildCount: 1},
 		// [41]
-		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
-		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 19, ReduceChildCount: 2},
+		{Type: core.ParseActionTypeHeader, Count: 1, Reusable: true},
+		{Type: core.ParseActionTypeReduce, ReduceSymbol: 19, ReduceChildCount: 2},
 		// [43]
-		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
-		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 17, ReduceChildCount: 3},
+		{Type: core.ParseActionTypeHeader, Count: 1, Reusable: true},
+		{Type: core.ParseActionTypeReduce, ReduceSymbol: 17, ReduceChildCount: 3},
 		// [45]
-		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
-		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 17, ReduceChildCount: 4},
+		{Type: core.ParseActionTypeHeader, Count: 1, Reusable: true},
+		{Type: core.ParseActionTypeReduce, ReduceSymbol: 17, ReduceChildCount: 4},
 		// [47]
-		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
-		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 19, ReduceChildCount: 3},
+		{Type: core.ParseActionTypeHeader, Count: 1, Reusable: true},
+		{Type: core.ParseActionTypeReduce, ReduceSymbol: 19, ReduceChildCount: 3},
 		// [49]
-		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
-		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 19, ReduceChildCount: 4},
+		{Type: core.ParseActionTypeHeader, Count: 1, Reusable: true},
+		{Type: core.ParseActionTypeReduce, ReduceSymbol: 19, ReduceChildCount: 4},
 		// [51]
-		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 7},
+		{Type: core.ParseActionTypeHeader, Count: 1, Reusable: true},
+		{Type: core.ParseActionTypeShift, ShiftState: 7},
 		// [53]
-		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 5},
+		{Type: core.ParseActionTypeHeader, Count: 1, Reusable: false},
+		{Type: core.ParseActionTypeShift, ShiftState: 5},
 		// [55]
-		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 18},
+		{Type: core.ParseActionTypeHeader, Count: 1, Reusable: true},
+		{Type: core.ParseActionTypeShift, ShiftState: 18},
 		// [57]
-		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftExtra: true},
+		{Type: core.ParseActionTypeHeader, Count: 1, Reusable: false},
+		{Type: core.ParseActionTypeShift, ShiftExtra: true},
 		// [59]
-		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: false},
-		{Type: ts.ParseActionTypeShift, ShiftState: 6},
+		{Type: core.ParseActionTypeHeader, Count: 1, Reusable: false},
+		{Type: core.ParseActionTypeShift, ShiftState: 6},
 		// [61]
-		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 19},
+		{Type: core.ParseActionTypeHeader, Count: 1, Reusable: true},
+		{Type: core.ParseActionTypeShift, ShiftState: 19},
 		// [63]
-		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: false},
-		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 21, ReduceChildCount: 2},
+		{Type: core.ParseActionTypeHeader, Count: 1, Reusable: false},
+		{Type: core.ParseActionTypeReduce, ReduceSymbol: 21, ReduceChildCount: 2},
 		// [65]
-		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 21, ReduceChildCount: 2},
-		{Type: ts.ParseActionTypeShift, ShiftState: 19, ShiftRepetition: true},
+		{Type: core.ParseActionTypeHeader, Count: 2, Reusable: true},
+		{Type: core.ParseActionTypeReduce, ReduceSymbol: 21, ReduceChildCount: 2},
+		{Type: core.ParseActionTypeShift, ShiftState: 19, ShiftRepetition: true},
 		// [68]
-		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 23},
+		{Type: core.ParseActionTypeHeader, Count: 1, Reusable: true},
+		{Type: core.ParseActionTypeShift, ShiftState: 23},
 		// [70]
-		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 11},
+		{Type: core.ParseActionTypeHeader, Count: 1, Reusable: true},
+		{Type: core.ParseActionTypeShift, ShiftState: 11},
 		// [72]
-		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 10},
+		{Type: core.ParseActionTypeHeader, Count: 1, Reusable: true},
+		{Type: core.ParseActionTypeShift, ShiftState: 10},
 		// [74]
-		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 14},
+		{Type: core.ParseActionTypeHeader, Count: 1, Reusable: true},
+		{Type: core.ParseActionTypeShift, ShiftState: 14},
 		// [76]
-		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 12},
+		{Type: core.ParseActionTypeHeader, Count: 1, Reusable: true},
+		{Type: core.ParseActionTypeShift, ShiftState: 12},
 		// [78]
-		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 15},
+		{Type: core.ParseActionTypeHeader, Count: 1, Reusable: true},
+		{Type: core.ParseActionTypeShift, ShiftState: 15},
 		// [80]
-		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 23, ReduceChildCount: 2},
-		{Type: ts.ParseActionTypeShift, ShiftState: 23, ShiftRepetition: true},
+		{Type: core.ParseActionTypeHeader, Count: 2, Reusable: true},
+		{Type: core.ParseActionTypeReduce, ReduceSymbol: 23, ReduceChildCount: 2},
+		{Type: core.ParseActionTypeShift, ShiftState: 23, ShiftRepetition: true},
 		// [83]
-		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
-		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 23, ReduceChildCount: 2},
+		{Type: core.ParseActionTypeHeader, Count: 1, Reusable: true},
+		{Type: core.ParseActionTypeReduce, ReduceSymbol: 23, ReduceChildCount: 2},
 		// [85]
-		{Type: ts.ParseActionTypeHeader, Count: 2, Reusable: true},
-		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 24, ReduceChildCount: 2},
-		{Type: ts.ParseActionTypeShift, ShiftState: 10, ShiftRepetition: true},
+		{Type: core.ParseActionTypeHeader, Count: 2, Reusable: true},
+		{Type: core.ParseActionTypeReduce, ReduceSymbol: 24, ReduceChildCount: 2},
+		{Type: core.ParseActionTypeShift, ShiftState: 10, ShiftRepetition: true},
 		// [88]
-		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
-		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 24, ReduceChildCount: 2},
+		{Type: core.ParseActionTypeHeader, Count: 1, Reusable: true},
+		{Type: core.ParseActionTypeReduce, ReduceSymbol: 24, ReduceChildCount: 2},
 		// [90]
-		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
-		{Type: ts.ParseActionTypeReduce, ReduceSymbol: 18, ReduceChildCount: 3, ReduceProdID: 1},
+		{Type: core.ParseActionTypeHeader, Count: 1, Reusable: true},
+		{Type: core.ParseActionTypeReduce, ReduceSymbol: 18, ReduceChildCount: 3, ReduceProdID: 1},
 		// [92]
-		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
-		{Type: ts.ParseActionTypeAccept},
+		{Type: core.ParseActionTypeHeader, Count: 1, Reusable: true},
+		{Type: core.ParseActionTypeAccept},
 		// [94]
-		{Type: ts.ParseActionTypeHeader, Count: 1, Reusable: true},
-		{Type: ts.ParseActionTypeShift, ShiftState: 13},
+		{Type: core.ParseActionTypeHeader, Count: 1, Reusable: true},
+		{Type: core.ParseActionTypeShift, ShiftState: 13},
 	}
 
 	parseTable := []uint16{
 		// State 0
-		1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		// State 1
-		5, 7, 0, 0, 0, 9, 0, 11, 0, 0, 13, 13, 13, 13, 3, 30, 2, 8, 0, 8, 8, 0, 2, 0, 0, 
+		5, 7, 0, 0, 0, 9, 0, 11, 0, 0, 13, 13, 13, 13, 3, 30, 2, 8, 0, 8, 8, 0, 2, 0, 0,
 		// State 2
-		15, 7, 0, 0, 0, 9, 0, 11, 0, 0, 13, 13, 13, 13, 3, 0, 3, 8, 0, 8, 8, 0, 3, 0, 0, 
+		15, 7, 0, 0, 0, 9, 0, 11, 0, 0, 13, 13, 13, 13, 3, 0, 3, 8, 0, 8, 8, 0, 3, 0, 0,
 		// State 3
-		17, 19, 0, 0, 0, 22, 0, 25, 0, 0, 28, 28, 28, 28, 3, 0, 3, 8, 0, 8, 8, 0, 3, 0, 0, 
+		17, 19, 0, 0, 0, 22, 0, 25, 0, 0, 28, 28, 28, 28, 3, 0, 3, 8, 0, 8, 8, 0, 3, 0, 0,
 		// State 4
-		0, 7, 0, 0, 0, 9, 31, 11, 0, 0, 13, 13, 13, 13, 3, 0, 21, 8, 0, 8, 8, 0, 0, 0, 0, 
+		0, 7, 0, 0, 0, 9, 31, 11, 0, 0, 13, 13, 13, 13, 3, 0, 21, 8, 0, 8, 8, 0, 0, 0, 0,
 		// State 5
-		33, 33, 33, 33, 33, 33, 33, 33, 0, 0, 33, 33, 33, 33, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		33, 33, 33, 33, 33, 33, 33, 33, 0, 0, 33, 33, 33, 33, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		// State 6
-		35, 35, 35, 35, 35, 35, 35, 35, 0, 0, 35, 35, 35, 35, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 
+		35, 35, 35, 35, 35, 35, 35, 35, 0, 0, 35, 35, 35, 35, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 	}
 
 	smallParseTable := []uint16{
-		2, 3, 1, 14, 37, 11, 0, 1, 2, 3, 5, 6, 7, 10, 11, 12, 13, 2, 3, 1, 
-		14, 39, 11, 0, 1, 2, 3, 5, 6, 7, 10, 11, 12, 13, 2, 3, 1, 14, 41, 11, 
-		0, 1, 2, 3, 5, 6, 7, 10, 11, 12, 13, 7, 3, 1, 14, 7, 1, 1, 9, 1, 
-		5, 11, 1, 7, 29, 1, 16, 8, 3, 17, 19, 20, 13, 4, 10, 11, 12, 13, 2, 3, 
-		1, 14, 43, 11, 0, 1, 2, 3, 5, 6, 7, 10, 11, 12, 13, 2, 3, 1, 14, 45, 
-		11, 0, 1, 2, 3, 5, 6, 7, 10, 11, 12, 13, 7, 3, 1, 14, 7, 1, 1, 9, 
-		1, 5, 11, 1, 7, 28, 1, 16, 8, 3, 17, 19, 20, 13, 4, 10, 11, 12, 13, 2, 
-		3, 1, 14, 47, 11, 0, 1, 2, 3, 5, 6, 7, 10, 11, 12, 13, 2, 3, 1, 14, 
-		49, 11, 0, 1, 2, 3, 5, 6, 7, 10, 11, 12, 13, 5, 3, 1, 14, 11, 1, 7, 
-		51, 1, 3, 20, 1, 18, 31, 1, 20, 4, 53, 1, 7, 57, 1, 14, 18, 1, 21, 55, 
-		2, 8, 9, 4, 57, 1, 14, 59, 1, 7, 19, 1, 21, 61, 2, 8, 9, 4, 57, 1, 
-		14, 63, 1, 7, 19, 1, 21, 65, 2, 8, 9, 4, 3, 1, 14, 68, 1, 2, 70, 1, 
-		3, 22, 1, 23, 4, 3, 1, 14, 72, 1, 2, 74, 1, 6, 24, 1, 24, 4, 3, 1, 
-		14, 68, 1, 2, 76, 1, 3, 25, 1, 23, 4, 3, 1, 14, 11, 1, 7, 27, 1, 18, 
-		31, 1, 20, 4, 3, 1, 14, 72, 1, 2, 78, 1, 6, 26, 1, 24, 4, 3, 1, 14, 
-		80, 1, 2, 83, 1, 3, 25, 1, 23, 4, 3, 1, 14, 85, 1, 2, 88, 1, 6, 26, 
-		1, 24, 2, 3, 1, 14, 83, 2, 2, 3, 2, 3, 1, 14, 90, 2, 2, 3, 2, 3, 
-		1, 14, 88, 2, 2, 6, 2, 3, 1, 14, 92, 1, 0, 2, 3, 1, 14, 94, 1, 4, 
-		
+		2, 3, 1, 14, 37, 11, 0, 1, 2, 3, 5, 6, 7, 10, 11, 12, 13, 2, 3, 1,
+		14, 39, 11, 0, 1, 2, 3, 5, 6, 7, 10, 11, 12, 13, 2, 3, 1, 14, 41, 11,
+		0, 1, 2, 3, 5, 6, 7, 10, 11, 12, 13, 7, 3, 1, 14, 7, 1, 1, 9, 1,
+		5, 11, 1, 7, 29, 1, 16, 8, 3, 17, 19, 20, 13, 4, 10, 11, 12, 13, 2, 3,
+		1, 14, 43, 11, 0, 1, 2, 3, 5, 6, 7, 10, 11, 12, 13, 2, 3, 1, 14, 45,
+		11, 0, 1, 2, 3, 5, 6, 7, 10, 11, 12, 13, 7, 3, 1, 14, 7, 1, 1, 9,
+		1, 5, 11, 1, 7, 28, 1, 16, 8, 3, 17, 19, 20, 13, 4, 10, 11, 12, 13, 2,
+		3, 1, 14, 47, 11, 0, 1, 2, 3, 5, 6, 7, 10, 11, 12, 13, 2, 3, 1, 14,
+		49, 11, 0, 1, 2, 3, 5, 6, 7, 10, 11, 12, 13, 5, 3, 1, 14, 11, 1, 7,
+		51, 1, 3, 20, 1, 18, 31, 1, 20, 4, 53, 1, 7, 57, 1, 14, 18, 1, 21, 55,
+		2, 8, 9, 4, 57, 1, 14, 59, 1, 7, 19, 1, 21, 61, 2, 8, 9, 4, 57, 1,
+		14, 63, 1, 7, 19, 1, 21, 65, 2, 8, 9, 4, 3, 1, 14, 68, 1, 2, 70, 1,
+		3, 22, 1, 23, 4, 3, 1, 14, 72, 1, 2, 74, 1, 6, 24, 1, 24, 4, 3, 1,
+		14, 68, 1, 2, 76, 1, 3, 25, 1, 23, 4, 3, 1, 14, 11, 1, 7, 27, 1, 18,
+		31, 1, 20, 4, 3, 1, 14, 72, 1, 2, 78, 1, 6, 26, 1, 24, 4, 3, 1, 14,
+		80, 1, 2, 83, 1, 3, 25, 1, 23, 4, 3, 1, 14, 85, 1, 2, 88, 1, 6, 26,
+		1, 24, 2, 3, 1, 14, 83, 2, 2, 3, 2, 3, 1, 14, 90, 2, 2, 3, 2, 3,
+		1, 14, 88, 2, 2, 6, 2, 3, 1, 14, 92, 1, 0, 2, 3, 1, 14, 94, 1, 4,
 	}
 
 	smallParseTableMap := []uint32{
-		0, 17, 34, 51, 78, 95, 112, 139, 156, 173, 
-		189, 203, 217, 231, 244, 257, 270, 283, 296, 309, 
-		322, 330, 338, 346, 353, 
+		0, 17, 34, 51, 78, 95, 112, 139, 156, 173,
+		189, 203, 217, 231, 244, 257, 270, 283, 296, 309,
+		322, 330, 338, 346, 353,
 	}
 
-	lexModes := []ts.LexMode{
+	lexModes := []core.LexMode{
 		{LexState: 0}, // state 0
 		{LexState: 0}, // state 1
 		{LexState: 0}, // state 2
@@ -267,78 +270,78 @@ func JsonLanguage() *ts.Language {
 		{LexState: 0}, // state 31
 	}
 
-	primaryStateIDs := []ts.StateID{
-		0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 
-		10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 
-		20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 
-		30, 31, 
+	primaryStateIDs := []core.StateID{
+		0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+		10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+		20, 21, 22, 23, 24, 25, 26, 27, 28, 29,
+		30, 31,
 	}
 
-	aliasSequences := make([]ts.Symbol, 8)
+	aliasSequences := make([]core.Symbol, 8)
 	_ = aliasSequences
 
-	symbolMetadata := []ts.SymbolMetadata{
-		{Visible: false, Named: true}, // 0: end
-		{Visible: true, Named: false}, // 1: {
-		{Visible: true, Named: false}, // 2: ,
-		{Visible: true, Named: false}, // 3: }
-		{Visible: true, Named: false}, // 4: :
-		{Visible: true, Named: false}, // 5: [
-		{Visible: true, Named: false}, // 6: ]
-		{Visible: true, Named: false}, // 7: "
-		{Visible: true, Named: true}, // 8: string_content
-		{Visible: true, Named: true}, // 9: escape_sequence
-		{Visible: true, Named: true}, // 10: number
-		{Visible: true, Named: true}, // 11: true
-		{Visible: true, Named: true}, // 12: false
-		{Visible: true, Named: true}, // 13: null
-		{Visible: true, Named: true}, // 14: comment
-		{Visible: true, Named: true}, // 15: document
+	symbolMetadata := []core.SymbolMetadata{
+		{Visible: false, Named: true},                  // 0: end
+		{Visible: true, Named: false},                  // 1: {
+		{Visible: true, Named: false},                  // 2: ,
+		{Visible: true, Named: false},                  // 3: }
+		{Visible: true, Named: false},                  // 4: :
+		{Visible: true, Named: false},                  // 5: [
+		{Visible: true, Named: false},                  // 6: ]
+		{Visible: true, Named: false},                  // 7: "
+		{Visible: true, Named: true},                   // 8: string_content
+		{Visible: true, Named: true},                   // 9: escape_sequence
+		{Visible: true, Named: true},                   // 10: number
+		{Visible: true, Named: true},                   // 11: true
+		{Visible: true, Named: true},                   // 12: false
+		{Visible: true, Named: true},                   // 13: null
+		{Visible: true, Named: true},                   // 14: comment
+		{Visible: true, Named: true},                   // 15: document
 		{Visible: false, Named: true, Supertype: true}, // 16: _value
-		{Visible: true, Named: true}, // 17: object
-		{Visible: true, Named: true}, // 18: pair
-		{Visible: true, Named: true}, // 19: array
-		{Visible: true, Named: true}, // 20: string
-		{Visible: false, Named: false}, // 21: _string_content
-		{Visible: false, Named: false}, // 22: document_repeat1
-		{Visible: false, Named: false}, // 23: object_repeat1
-		{Visible: false, Named: false}, // 24: array_repeat1
+		{Visible: true, Named: true},                   // 17: object
+		{Visible: true, Named: true},                   // 18: pair
+		{Visible: true, Named: true},                   // 19: array
+		{Visible: true, Named: true},                   // 20: string
+		{Visible: false, Named: false},                 // 21: _string_content
+		{Visible: false, Named: false},                 // 22: document_repeat1
+		{Visible: false, Named: false},                 // 23: object_repeat1
+		{Visible: false, Named: false},                 // 24: array_repeat1
 	}
 
 	symbolNames := []string{
-		"end", // 0
-		"{", // 1
-		",", // 2
-		"}", // 3
-		":", // 4
-		"[", // 5
-		"]", // 6
-		"\"", // 7
-		"string_content", // 8
-		"escape_sequence", // 9
-		"number", // 10
-		"true", // 11
-		"false", // 12
-		"null", // 13
-		"comment", // 14
-		"document", // 15
-		"_value", // 16
-		"object", // 17
-		"pair", // 18
-		"array", // 19
-		"string", // 20
-		"_string_content", // 21
+		"end",              // 0
+		"{",                // 1
+		",",                // 2
+		"}",                // 3
+		":",                // 4
+		"[",                // 5
+		"]",                // 6
+		"\"",               // 7
+		"string_content",   // 8
+		"escape_sequence",  // 9
+		"number",           // 10
+		"true",             // 11
+		"false",            // 12
+		"null",             // 13
+		"comment",          // 14
+		"document",         // 15
+		"_value",           // 16
+		"object",           // 17
+		"pair",             // 18
+		"array",            // 19
+		"string",           // 20
+		"_string_content",  // 21
 		"document_repeat1", // 22
-		"object_repeat1", // 23
-		"array_repeat1", // 24
+		"object_repeat1",   // 23
+		"array_repeat1",    // 24
 	}
 
-	fieldMapSlices := []ts.FieldMapSlice{
+	fieldMapSlices := []core.FieldMapSlice{
 		{Index: 0, Length: 0},
 		{Index: 0, Length: 2},
 	}
 
-	fieldMapEntries := []ts.FieldMapEntry{
+	fieldMapEntries := []core.FieldMapEntry{
 		{FieldID: 1, ChildIndex: 0},
 		{FieldID: 2, ChildIndex: 2},
 	}
@@ -349,19 +352,19 @@ func JsonLanguage() *ts.Language {
 		"value",
 	}
 
-	supertypeSymbols := []ts.Symbol{16, }
+	supertypeSymbols := []core.Symbol{16}
 
-	publicSymbolMap := []ts.Symbol{
-		0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 
-		10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 
-		20, 21, 22, 23, 24, 
+	publicSymbolMap := []core.Symbol{
+		0, 1, 2, 3, 4, 5, 6, 7, 8, 9,
+		10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+		20, 21, 22, 23, 24,
 	}
 
 	nonTerminalAliasMap := []uint16{
-		0, 
+		0,
 	}
 
-	return &ts.Language{
+	return &language.Language{
 		Version:                14,
 		SymbolCount:            25,
 		AliasCount:             0,
@@ -380,7 +383,7 @@ func JsonLanguage() *ts.Language {
 		LexModes:               lexModes,
 		LexFn:                  tsLex,
 		SymbolNames:            symbolNames,
-		SymbolMetadata:          symbolMetadata,
+		SymbolMetadata:         symbolMetadata,
 		FieldMapSlices:         fieldMapSlices,
 		FieldMapEntries:        fieldMapEntries,
 		FieldNames:             fieldNames,
@@ -391,7 +394,7 @@ func JsonLanguage() *ts.Language {
 	}
 }
 
-func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
+func tsLex(lexer *lex.Lexer, state core.StateID) bool {
 	result := false
 	lookahead := lexer.Lookahead
 	eof := lexer.EOF()
@@ -1279,4 +1282,3 @@ func tsLex(lexer *ts.Lexer, state ts.StateID) bool {
 		}
 	}
 }
-

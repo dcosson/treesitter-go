@@ -17,7 +17,11 @@ func GenerateGo(g *Grammar, packageName string) string {
 	fmt.Fprintf(&b, "// Symbols: %d, States: %d (%d large, %d small)\n",
 		g.SymbolCount, g.StateCount, g.LargeStateCount, g.StateCount-g.LargeStateCount)
 	fmt.Fprintf(&b, "package %s\n\n", packageName)
-	fmt.Fprintf(&b, "import ts \"github.com/treesitter-go/treesitter\"\n\n")
+	fmt.Fprintf(&b, "import (\n")
+	fmt.Fprintf(&b, "\tcore \"github.com/treesitter-go/treesitter/internal/core\"\n")
+	fmt.Fprintf(&b, "\tlanguage \"github.com/treesitter-go/treesitter/language\"\n")
+	fmt.Fprintf(&b, "\tlex \"github.com/treesitter-go/treesitter/lexer\"\n")
+	fmt.Fprintf(&b, ")\n\n")
 
 	// Symbol constants.
 	writeSymbolConstants(&b, g)
@@ -30,7 +34,7 @@ func GenerateGo(g *Grammar, packageName string) string {
 	// Language function.
 	funcName := exportedName(g.Name) + "Language"
 	fmt.Fprintf(&b, "// %s returns the compiled %s grammar as a Language.\n", funcName, g.Name)
-	fmt.Fprintf(&b, "func %s() *ts.Language {\n", funcName)
+	fmt.Fprintf(&b, "func %s() *language.Language {\n", funcName)
 
 	// Parse actions.
 	writeParseActions(&b, g)
@@ -78,7 +82,7 @@ func GenerateGo(g *Grammar, packageName string) string {
 	writeNonTerminalAliasMap(&b, g)
 
 	// Build the Language struct.
-	fmt.Fprintf(&b, "\treturn &ts.Language{\n")
+	fmt.Fprintf(&b, "\treturn &language.Language{\n")
 	fmt.Fprintf(&b, "\t\tVersion:                14,\n")
 	fmt.Fprintf(&b, "\t\tSymbolCount:            %d,\n", g.SymbolCount)
 	fmt.Fprintf(&b, "\t\tAliasCount:             %d,\n", g.AliasCount)
@@ -98,7 +102,7 @@ func GenerateGo(g *Grammar, packageName string) string {
 	fmt.Fprintf(&b, "\t\tLexFn:                  tsLex,\n")
 	if len(g.KeywordLexStates) > 0 {
 		fmt.Fprintf(&b, "\t\tKeywordLexFn:           tsLexKeywords,\n")
-		fmt.Fprintf(&b, "\t\tKeywordCaptureToken:    ts.Symbol(%d),\n", g.KeywordCaptureToken)
+		fmt.Fprintf(&b, "\t\tKeywordCaptureToken:    core.Symbol(%d),\n", g.KeywordCaptureToken)
 	}
 	fmt.Fprintf(&b, "\t\tSymbolNames:            symbolNames,\n")
 	fmt.Fprintf(&b, "\t\tSymbolMetadata:          symbolMetadata,\n")
@@ -166,14 +170,14 @@ func writeFieldConstants(b *strings.Builder, g *Grammar) {
 			continue
 		}
 		constName := "Field" + exportedName(name)
-		fmt.Fprintf(b, "\t%s ts.FieldID = %d\n", constName, i)
+		fmt.Fprintf(b, "\t%s core.FieldID = %d\n", constName, i)
 	}
 	fmt.Fprintf(b, ")\n\n")
 }
 
 // writeParseActions writes the parse actions array.
 func writeParseActions(b *strings.Builder, g *Grammar) {
-	fmt.Fprintf(b, "\tparseActions := []ts.ParseActionEntry{\n")
+	fmt.Fprintf(b, "\tparseActions := []core.ParseActionEntry{\n")
 	for i, a := range g.ParseActions {
 		if a.IsHeader {
 			reusable := "false"
@@ -181,19 +185,19 @@ func writeParseActions(b *strings.Builder, g *Grammar) {
 				reusable = "true"
 			}
 			fmt.Fprintf(b, "\t\t// [%d]\n", i)
-			fmt.Fprintf(b, "\t\t{Type: ts.ParseActionTypeHeader, Count: %d, Reusable: %s},\n", a.Count, reusable)
+			fmt.Fprintf(b, "\t\t{Type: core.ParseActionTypeHeader, Count: %d, Reusable: %s},\n", a.Count, reusable)
 		} else {
 			switch a.ActionType {
 			case "shift":
 				if a.ShiftExtra {
-					fmt.Fprintf(b, "\t\t{Type: ts.ParseActionTypeShift, ShiftExtra: true},\n")
+					fmt.Fprintf(b, "\t\t{Type: core.ParseActionTypeShift, ShiftExtra: true},\n")
 				} else if a.ShiftRepetition {
-					fmt.Fprintf(b, "\t\t{Type: ts.ParseActionTypeShift, ShiftState: %d, ShiftRepetition: true},\n", a.ShiftState)
+					fmt.Fprintf(b, "\t\t{Type: core.ParseActionTypeShift, ShiftState: %d, ShiftRepetition: true},\n", a.ShiftState)
 				} else {
-					fmt.Fprintf(b, "\t\t{Type: ts.ParseActionTypeShift, ShiftState: %d},\n", a.ShiftState)
+					fmt.Fprintf(b, "\t\t{Type: core.ParseActionTypeShift, ShiftState: %d},\n", a.ShiftState)
 				}
 			case "reduce":
-				s := fmt.Sprintf("\t\t{Type: ts.ParseActionTypeReduce, ReduceSymbol: %d, ReduceChildCount: %d", a.ReduceSymbol, a.ReduceChildCount)
+				s := fmt.Sprintf("\t\t{Type: core.ParseActionTypeReduce, ReduceSymbol: %d, ReduceChildCount: %d", a.ReduceSymbol, a.ReduceChildCount)
 				if a.ReduceDynPrec != 0 {
 					s += fmt.Sprintf(", ReduceDynPrec: %d", a.ReduceDynPrec)
 				}
@@ -203,9 +207,9 @@ func writeParseActions(b *strings.Builder, g *Grammar) {
 				s += "},\n"
 				fmt.Fprint(b, s)
 			case "accept":
-				fmt.Fprintf(b, "\t\t{Type: ts.ParseActionTypeAccept},\n")
+				fmt.Fprintf(b, "\t\t{Type: core.ParseActionTypeAccept},\n")
 			case "recover":
-				fmt.Fprintf(b, "\t\t{Type: ts.ParseActionTypeRecover},\n")
+				fmt.Fprintf(b, "\t\t{Type: core.ParseActionTypeRecover},\n")
 			}
 		}
 	}
@@ -254,11 +258,11 @@ func writeSmallParseTableMap(b *strings.Builder, g *Grammar) {
 
 // writeLexModes writes the lex modes array.
 func writeLexModes(b *strings.Builder, g *Grammar) {
-	fmt.Fprintf(b, "\tlexModes := []ts.LexMode{\n")
+	fmt.Fprintf(b, "\tlexModes := []core.LexMode{\n")
 	for i, lm := range g.LexModes {
 		if lm.LexState == 65535 {
 			// Sentinel: no lookahead after non-terminal extra.
-			fmt.Fprintf(b, "\t\t{LexState: ts.LexStateNoLookahead}, // state %d (no lookahead)\n", i)
+			fmt.Fprintf(b, "\t\t{LexState: core.LexStateNoLookahead}, // state %d (no lookahead)\n", i)
 			continue
 		}
 		parts := fmt.Sprintf("LexState: %d", lm.LexState)
@@ -275,7 +279,7 @@ func writeLexModes(b *strings.Builder, g *Grammar) {
 
 // writePrimaryStateIDs writes the primary state IDs array.
 func writePrimaryStateIDs(b *strings.Builder, g *Grammar) {
-	fmt.Fprintf(b, "\tprimaryStateIDs := []ts.StateID{")
+	fmt.Fprintf(b, "\tprimaryStateIDs := []core.StateID{")
 	for i, id := range g.PrimaryStateIDs {
 		if i%10 == 0 {
 			fmt.Fprintf(b, "\n\t\t")
@@ -289,10 +293,10 @@ func writePrimaryStateIDs(b *strings.Builder, g *Grammar) {
 func writeAliasSequences(b *strings.Builder, g *Grammar) {
 	size := g.ProductionIDCount * g.MaxAliasSequenceLength
 	if size == 0 {
-		fmt.Fprintf(b, "\taliasSequences := make([]ts.Symbol, 0)\n\n")
+		fmt.Fprintf(b, "\taliasSequences := make([]core.Symbol, 0)\n\n")
 		return
 	}
-	fmt.Fprintf(b, "\taliasSequences := make([]ts.Symbol, %d)\n", size)
+	fmt.Fprintf(b, "\taliasSequences := make([]core.Symbol, %d)\n", size)
 	// Write non-zero entries.
 	hasNonZero := false
 	for i, v := range g.AliasSequences {
@@ -309,7 +313,7 @@ func writeAliasSequences(b *strings.Builder, g *Grammar) {
 
 // writeSymbolMetadata writes the symbol metadata array.
 func writeSymbolMetadata(b *strings.Builder, g *Grammar) {
-	fmt.Fprintf(b, "\tsymbolMetadata := []ts.SymbolMetadata{\n")
+	fmt.Fprintf(b, "\tsymbolMetadata := []core.SymbolMetadata{\n")
 	for i, m := range g.SymbolMetadata {
 		name := ""
 		if i < len(g.SymbolNames) {
@@ -339,13 +343,13 @@ func writeFieldMaps(b *strings.Builder, g *Grammar) {
 		return
 	}
 
-	fmt.Fprintf(b, "\tfieldMapSlices := []ts.FieldMapSlice{\n")
+	fmt.Fprintf(b, "\tfieldMapSlices := []core.FieldMapSlice{\n")
 	for _, s := range g.FieldMapSlices {
 		fmt.Fprintf(b, "\t\t{Index: %d, Length: %d},\n", s.Index, s.Length)
 	}
 	fmt.Fprintf(b, "\t}\n\n")
 
-	fmt.Fprintf(b, "\tfieldMapEntries := []ts.FieldMapEntry{\n")
+	fmt.Fprintf(b, "\tfieldMapEntries := []core.FieldMapEntry{\n")
 	for _, e := range g.FieldMapEntries {
 		if e.Inherited {
 			fmt.Fprintf(b, "\t\t{FieldID: %d, ChildIndex: %d, Inherited: true},\n", e.FieldID, e.ChildIndex)
@@ -374,7 +378,7 @@ func writeSuperTypes(b *strings.Builder, g *Grammar) {
 	if len(supertypes) == 0 {
 		return
 	}
-	fmt.Fprintf(b, "\tsupertypeSymbols := []ts.Symbol{")
+	fmt.Fprintf(b, "\tsupertypeSymbols := []core.Symbol{")
 	for _, s := range supertypes {
 		fmt.Fprintf(b, "%d, ", s)
 	}
@@ -399,7 +403,7 @@ func writeExternalScannerData(b *strings.Builder, g *Grammar) {
 	}
 
 	if len(g.ExternalSymbolMap) > 0 {
-		fmt.Fprintf(b, "\texternalSymbolMap := []ts.Symbol{")
+		fmt.Fprintf(b, "\texternalSymbolMap := []core.Symbol{")
 		for _, s := range g.ExternalSymbolMap {
 			fmt.Fprintf(b, "%d, ", s)
 		}
@@ -431,7 +435,7 @@ func writePublicSymbolMap(b *strings.Builder, g *Grammar) {
 	if len(g.PublicSymbolMap) == 0 {
 		return
 	}
-	fmt.Fprintf(b, "\tpublicSymbolMap := []ts.Symbol{")
+	fmt.Fprintf(b, "\tpublicSymbolMap := []core.Symbol{")
 	for i, v := range g.PublicSymbolMap {
 		if i%10 == 0 {
 			fmt.Fprintf(b, "\n\t\t")
@@ -468,7 +472,7 @@ func writeLexFunction(b *strings.Builder, g *Grammar, isKeyword bool) {
 		states = g.LexStates
 	}
 
-	fmt.Fprintf(b, "func %s(lexer *ts.Lexer, state ts.StateID) bool {\n", funcName)
+	fmt.Fprintf(b, "func %s(lexer *lex.Lexer, state core.StateID) bool {\n", funcName)
 	fmt.Fprintf(b, "\tresult := false\n")
 	fmt.Fprintf(b, "\tlookahead := lexer.Lookahead\n")
 	fmt.Fprintf(b, "\teof := lexer.EOF()\n")
@@ -669,7 +673,7 @@ func writeSymbolConstants(b *strings.Builder, g *Grammar) {
 	fmt.Fprintf(b, "// Grammar symbol IDs.\n")
 	fmt.Fprintf(b, "const (\n")
 	for i, constName := range names {
-		fmt.Fprintf(b, "\t%s ts.Symbol = %d\n", constName, i)
+		fmt.Fprintf(b, "\t%s core.Symbol = %d\n", constName, i)
 	}
 	fmt.Fprintf(b, ")\n\n")
 }
@@ -751,51 +755,51 @@ func isPunctuation(name string) bool {
 // punctuationName maps a punctuation symbol to a readable constant name.
 func punctuationName(name string) string {
 	mapping := map[string]string{
-		"{":  "LBrace",
-		"}":  "RBrace",
-		"[":  "LBrack",
-		"]":  "RBrack",
-		"(":  "LParen",
-		")":  "RParen",
-		",":  "Comma",
-		":":  "Colon",
-		";":  "Semi",
-		".":  "Dot",
-		"\"": "DQuote",
-		"'":  "SQuote",
-		"`":  "Backtick",
-		"=":  "Eq",
-		"!":  "Bang",
-		"<":  "Lt",
-		">":  "Gt",
-		"+":  "Plus",
-		"-":  "Minus",
-		"*":  "Star",
-		"/":  "Slash",
-		"%":  "Percent",
-		"&":  "Amp",
-		"|":  "Pipe",
-		"^":  "Caret",
-		"~":  "Tilde",
-		"?":  "Question",
-		"@":  "At",
-		"#":  "Hash",
-		"$":  "Dollar",
-		"\\": "Backslash",
-		"==": "EqEq",
-		"!=": "BangEq",
-		"<=": "LtEq",
-		">=": "GtEq",
-		"&&": "AmpAmp",
-		"||": "PipePipe",
-		"<<": "LtLt",
-		">>": "GtGt",
-		"++": "PlusPlus",
-		"--": "MinusMinus",
-		"->": "Arrow",
-		"=>": "FatArrow",
-		"::": "ColonColon",
-		"..": "DotDot",
+		"{":   "LBrace",
+		"}":   "RBrace",
+		"[":   "LBrack",
+		"]":   "RBrack",
+		"(":   "LParen",
+		")":   "RParen",
+		",":   "Comma",
+		":":   "Colon",
+		";":   "Semi",
+		".":   "Dot",
+		"\"":  "DQuote",
+		"'":   "SQuote",
+		"`":   "Backtick",
+		"=":   "Eq",
+		"!":   "Bang",
+		"<":   "Lt",
+		">":   "Gt",
+		"+":   "Plus",
+		"-":   "Minus",
+		"*":   "Star",
+		"/":   "Slash",
+		"%":   "Percent",
+		"&":   "Amp",
+		"|":   "Pipe",
+		"^":   "Caret",
+		"~":   "Tilde",
+		"?":   "Question",
+		"@":   "At",
+		"#":   "Hash",
+		"$":   "Dollar",
+		"\\":  "Backslash",
+		"==":  "EqEq",
+		"!=":  "BangEq",
+		"<=":  "LtEq",
+		">=":  "GtEq",
+		"&&":  "AmpAmp",
+		"||":  "PipePipe",
+		"<<":  "LtLt",
+		">>":  "GtGt",
+		"++":  "PlusPlus",
+		"--":  "MinusMinus",
+		"->":  "Arrow",
+		"=>":  "FatArrow",
+		"::":  "ColonColon",
+		"..":  "DotDot",
 		"...": "Ellipsis",
 	}
 	if n, ok := mapping[name]; ok {

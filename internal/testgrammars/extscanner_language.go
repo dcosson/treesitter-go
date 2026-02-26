@@ -3,10 +3,10 @@
 // extscanner_language.go defines a minimal test grammar that uses an external
 // scanner. The grammar recognizes a simple "heredoc" language:
 //
-//   program -> statement*
-//   statement -> identifier '=' value
-//   value -> number | heredoc
-//   heredoc -> '<<' heredoc_body   (the body is scanned externally)
+//	program -> statement*
+//	statement -> identifier '=' value
+//	value -> number | heredoc
+//	heredoc -> '<<' heredoc_body   (the body is scanned externally)
 //
 // The external scanner handles:
 //   - HEREDOC_BODY: reads until a closing marker line ("END" on its own line)
@@ -19,18 +19,22 @@
 //   - Symbol mapping (external token index -> grammar symbol)
 package testgrammars
 
-import ts "github.com/treesitter-go/treesitter"
+import (
+	core "github.com/treesitter-go/treesitter/internal/core"
+	language "github.com/treesitter-go/treesitter/language"
+	lex "github.com/treesitter-go/treesitter/lexer"
+)
 
 // Simplified external scanner test grammar symbol IDs.
 // These match the symbols used in buildExtScannerLanguage().
 const (
-	ExtSymEnd          ts.Symbol = 0  // end of input
-	ExtSymNumber       ts.Symbol = 1  // number (terminal, named)
-	ExtSymHeredocMarker ts.Symbol = 2 // "<<" (terminal, anonymous)
-	ExtSymHeredocBody  ts.Symbol = 3  // heredoc_body (external token, named)
-	ExtSymProgram      ts.Symbol = 4  // program (non-terminal, named)
-	ExtSymValue        ts.Symbol = 5  // _value (non-terminal, hidden)
-	ExtSymHeredoc      ts.Symbol = 6  // heredoc (non-terminal, named)
+	ExtSymEnd           core.Symbol = 0 // end of input
+	ExtSymNumber        core.Symbol = 1 // number (terminal, named)
+	ExtSymHeredocMarker core.Symbol = 2 // "<<" (terminal, anonymous)
+	ExtSymHeredocBody   core.Symbol = 3 // heredoc_body (external token, named)
+	ExtSymProgram       core.Symbol = 4 // program (non-terminal, named)
+	ExtSymValue         core.Symbol = 5 // _value (non-terminal, hidden)
+	ExtSymHeredoc       core.Symbol = 6 // heredoc (non-terminal, named)
 )
 
 // External scanner token indices (not grammar symbols — these are the
@@ -43,22 +47,24 @@ const (
 // The parse tables are hand-built for this minimal grammar.
 //
 // Parse states:
-//   0: error/recovery
-//   1: start state — expect identifier or end
-//   2: after identifier — expect '='
-//   3: after '=' — expect value (number or '<<')
-//   4: after number — reduce statement
-//   5: after '<<' — expect heredoc_body (external)
-//   6: after heredoc_body — reduce heredoc
-//   7: after value — reduce statement
-//   8: accept state
+//
+//	0: error/recovery
+//	1: start state — expect identifier or end
+//	2: after identifier — expect '='
+//	3: after '=' — expect value (number or '<<')
+//	4: after number — reduce statement
+//	5: after '<<' — expect heredoc_body (external)
+//	6: after heredoc_body — reduce heredoc
+//	7: after value — reduce statement
+//	8: accept state
 //
 // The grammar is:
-//   program -> statement* (repeat via _aux_repeat)
-//   statement -> identifier '=' value '\n'
-//   value -> number | heredoc
-//   heredoc -> '<<' heredoc_body
-func ExtScannerLanguage() *ts.Language {
+//
+//	program -> statement* (repeat via _aux_repeat)
+//	statement -> identifier '=' value '\n'
+//	value -> number | heredoc
+//	heredoc -> '<<' heredoc_body
+func ExtScannerLanguage() *language.Language {
 	return buildExtScannerLanguage()
 }
 
@@ -66,44 +72,47 @@ func ExtScannerLanguage() *ts.Language {
 // with a very simple grammar.
 //
 // Grammar:
-//   program -> value
-//   value -> number | heredoc_marker heredoc_body
+//
+//	program -> value
+//	value -> number | heredoc_marker heredoc_body
 //
 // Symbols (6 total):
-//   0: end
-//   1: number (terminal, named)
-//   2: heredoc_marker "<<" (terminal, anonymous)
-//   3: heredoc_body (external terminal, named)
-//   4: program (non-terminal, named, visible) — the root
-//   5: _value (non-terminal, hidden)
-//   6: heredoc (non-terminal, named, visible)
+//
+//	0: end
+//	1: number (terminal, named)
+//	2: heredoc_marker "<<" (terminal, anonymous)
+//	3: heredoc_body (external terminal, named)
+//	4: program (non-terminal, named, visible) — the root
+//	5: _value (non-terminal, hidden)
+//	6: heredoc (non-terminal, named, visible)
 //
 // Token count: 4 (end, number, heredoc_marker, heredoc_body)
 // External tokens: 1 (heredoc_body at ext index 0)
 //
 // Parse states (all large for simplicity):
-//   0: error
-//   1: start — shift number to 2, shift << to 4, goto _value to 3, goto heredoc to 3
-//   2: after number — reduce _value -> number
-//   3: after value — reduce program -> value (accept via reduce+goto)
-//   4: after << — shift heredoc_body to 5
-//   5: after heredoc_body — reduce heredoc -> << heredoc_body
+//
+//	0: error
+//	1: start — shift number to 2, shift << to 4, goto _value to 3, goto heredoc to 3
+//	2: after number — reduce _value -> number
+//	3: after value — reduce program -> value (accept via reduce+goto)
+//	4: after << — shift heredoc_body to 5
+//	5: after heredoc_body — reduce heredoc -> << heredoc_body
 //
 // Using a simple top-level: state 1 has accept on end after pushing program.
-func buildExtScannerLanguage() *ts.Language {
+func buildExtScannerLanguage() *language.Language {
 	const (
-		sEnd           ts.Symbol = 0
-		sNumber        ts.Symbol = 1
-		sHeredocMarker ts.Symbol = 2
-		sHeredocBody   ts.Symbol = 3
-		sProgram       ts.Symbol = 4
-		sValue         ts.Symbol = 5
-		sHeredoc       ts.Symbol = 6
-		symbolCount    uint32    = 7
-		tokenCount     uint32    = 4
+		sEnd           core.Symbol = 0
+		sNumber        core.Symbol = 1
+		sHeredocMarker core.Symbol = 2
+		sHeredocBody   core.Symbol = 3
+		sProgram       core.Symbol = 4
+		sValue         core.Symbol = 5
+		sHeredoc       core.Symbol = 6
+		symbolCount    uint32      = 7
+		tokenCount     uint32      = 4
 	)
 
-	symbolMetadata := []ts.SymbolMetadata{
+	symbolMetadata := []core.SymbolMetadata{
 		/* 0 end            */ {Visible: false, Named: false},
 		/* 1 number         */ {Visible: true, Named: true},
 		/* 2 <<             */ {Visible: true, Named: false},
@@ -119,40 +128,40 @@ func buildExtScannerLanguage() *ts.Language {
 	}
 
 	// Parse actions flat array.
-	parseActions := []ts.ParseActionEntry{
-		/* 0  */ {Type: ts.ParseActionTypeHeader, Count: 0}, // null action
+	parseActions := []core.ParseActionEntry{
+		/* 0  */ {Type: core.ParseActionTypeHeader, Count: 0}, // null action
 
 		// 1: SHIFT to state 2 (after number)
-		/* 1  */ {Type: ts.ParseActionTypeHeader, Count: 1},
-		/* 2  */ {Type: ts.ParseActionTypeShift, ShiftState: 2},
+		/* 1  */ {Type: core.ParseActionTypeHeader, Count: 1},
+		/* 2  */ {Type: core.ParseActionTypeShift, ShiftState: 2},
 
 		// 3: SHIFT to state 4 (after <<)
-		/* 3  */ {Type: ts.ParseActionTypeHeader, Count: 1},
-		/* 4  */ {Type: ts.ParseActionTypeShift, ShiftState: 4},
+		/* 3  */ {Type: core.ParseActionTypeHeader, Count: 1},
+		/* 4  */ {Type: core.ParseActionTypeShift, ShiftState: 4},
 
 		// 5: REDUCE _value -> number (1 child, prod 2)
-		/* 5  */ {Type: ts.ParseActionTypeHeader, Count: 1},
-		/* 6  */ {Type: ts.ParseActionTypeReduce, ReduceSymbol: sValue, ReduceChildCount: 1, ReduceProdID: 2},
+		/* 5  */ {Type: core.ParseActionTypeHeader, Count: 1},
+		/* 6  */ {Type: core.ParseActionTypeReduce, ReduceSymbol: sValue, ReduceChildCount: 1, ReduceProdID: 2},
 
 		// 7: REDUCE program -> _value (1 child, prod 1) — this produces the root
-		/* 7  */ {Type: ts.ParseActionTypeHeader, Count: 1},
-		/* 8  */ {Type: ts.ParseActionTypeReduce, ReduceSymbol: sProgram, ReduceChildCount: 1, ReduceProdID: 1},
+		/* 7  */ {Type: core.ParseActionTypeHeader, Count: 1},
+		/* 8  */ {Type: core.ParseActionTypeReduce, ReduceSymbol: sProgram, ReduceChildCount: 1, ReduceProdID: 1},
 
 		// 9: SHIFT heredoc_body to state 5
-		/* 9  */ {Type: ts.ParseActionTypeHeader, Count: 1},
-		/* 10 */ {Type: ts.ParseActionTypeShift, ShiftState: 5},
+		/* 9  */ {Type: core.ParseActionTypeHeader, Count: 1},
+		/* 10 */ {Type: core.ParseActionTypeShift, ShiftState: 5},
 
 		// 11: REDUCE heredoc -> << heredoc_body (2 children, prod 3)
-		/* 11 */ {Type: ts.ParseActionTypeHeader, Count: 1},
-		/* 12 */ {Type: ts.ParseActionTypeReduce, ReduceSymbol: sHeredoc, ReduceChildCount: 2, ReduceProdID: 3},
+		/* 11 */ {Type: core.ParseActionTypeHeader, Count: 1},
+		/* 12 */ {Type: core.ParseActionTypeReduce, ReduceSymbol: sHeredoc, ReduceChildCount: 2, ReduceProdID: 3},
 
 		// 13: REDUCE _value -> heredoc (1 child, prod 2)
-		/* 13 */ {Type: ts.ParseActionTypeHeader, Count: 1},
-		/* 14 */ {Type: ts.ParseActionTypeReduce, ReduceSymbol: sValue, ReduceChildCount: 1, ReduceProdID: 2},
+		/* 13 */ {Type: core.ParseActionTypeHeader, Count: 1},
+		/* 14 */ {Type: core.ParseActionTypeReduce, ReduceSymbol: sValue, ReduceChildCount: 1, ReduceProdID: 2},
 
 		// 15: ACCEPT
-		/* 15 */ {Type: ts.ParseActionTypeHeader, Count: 1},
-		/* 16 */ {Type: ts.ParseActionTypeAccept},
+		/* 15 */ {Type: core.ParseActionTypeHeader, Count: 1},
+		/* 16 */ {Type: core.ParseActionTypeAccept},
 	}
 
 	// State count: 7 (0-6), all large.
@@ -162,29 +171,29 @@ func buildExtScannerLanguage() *ts.Language {
 	// Large parse table: [state * symbolCount + symbol] -> action index.
 	// Non-terminals (>= tokenCount) store raw state IDs as goto targets.
 	parseTable := make([]uint16, stateCount*symbolCount)
-	set := func(state uint32, symbol ts.Symbol, actionIdx uint16) {
+	set := func(state uint32, symbol core.Symbol, actionIdx uint16) {
 		parseTable[state*symbolCount+uint32(symbol)] = actionIdx
 	}
 
 	// State 1: start — expect number or <<
-	set(1, sNumber, 1)         // shift to state 2
-	set(1, sHeredocMarker, 3)  // shift to state 4
+	set(1, sNumber, 1)        // shift to state 2
+	set(1, sHeredocMarker, 3) // shift to state 4
 	// Non-terminal gotos (raw state IDs):
-	set(1, sValue, 3)          // _value -> goto state 3
-	set(1, sHeredoc, 0)        // heredoc doesn't go anywhere directly here
+	set(1, sValue, 3)   // _value -> goto state 3
+	set(1, sHeredoc, 0) // heredoc doesn't go anywhere directly here
 
 	// State 2: after number — reduce _value -> number
-	set(2, sEnd, 5)            // reduce _value -> number
+	set(2, sEnd, 5) // reduce _value -> number
 
 	// State 3: after _value — can accept or reduce program
 	// On end: reduce program -> _value, then from state 1 goto program
-	set(3, sEnd, 7)            // reduce program -> _value
+	set(3, sEnd, 7) // reduce program -> _value
 
 	// State 4: after << — expect heredoc_body (external token)
-	set(4, sHeredocBody, 9)    // shift to state 5
+	set(4, sHeredocBody, 9) // shift to state 5
 
 	// State 5: after heredoc_body — reduce heredoc -> << heredoc_body
-	set(5, sEnd, 11)           // reduce heredoc
+	set(5, sEnd, 11) // reduce heredoc
 
 	// State 6: after heredoc reduce — reduce _value -> heredoc
 	// Actually, after reducing heredoc we go back to state 1 and
@@ -213,47 +222,47 @@ func buildExtScannerLanguage() *ts.Language {
 	stateCount = 8
 	largeStateCount = stateCount
 	parseTable = make([]uint16, stateCount*symbolCount)
-	set = func(state uint32, symbol ts.Symbol, actionIdx uint16) {
+	set = func(state uint32, symbol core.Symbol, actionIdx uint16) {
 		parseTable[state*symbolCount+uint32(symbol)] = actionIdx
 	}
 
 	// State 1: start
-	set(1, sNumber, 1)         // shift to state 2
-	set(1, sHeredocMarker, 3)  // shift to state 4
-	set(1, sValue, 3)          // _value goto -> state 3 (raw)
-	set(1, sHeredoc, 6)        // heredoc goto -> state 6 (raw)
-	set(1, sProgram, 7)        // program goto -> state 7 (raw)
+	set(1, sNumber, 1)        // shift to state 2
+	set(1, sHeredocMarker, 3) // shift to state 4
+	set(1, sValue, 3)         // _value goto -> state 3 (raw)
+	set(1, sHeredoc, 6)       // heredoc goto -> state 6 (raw)
+	set(1, sProgram, 7)       // program goto -> state 7 (raw)
 
 	// State 2: after number — reduce to _value
-	set(2, sEnd, 5)            // reduce _value -> number (pop 1, back to state 1, goto sValue=3)
+	set(2, sEnd, 5) // reduce _value -> number (pop 1, back to state 1, goto sValue=3)
 
 	// State 3: after _value — reduce to program
-	set(3, sEnd, 7)            // reduce program -> _value (pop 1, back to state 1, goto sProgram=7)
+	set(3, sEnd, 7) // reduce program -> _value (pop 1, back to state 1, goto sProgram=7)
 
 	// State 4: after << — expect heredoc_body
-	set(4, sHeredocBody, 9)    // shift to state 5
+	set(4, sHeredocBody, 9) // shift to state 5
 
 	// State 5: after heredoc_body — reduce to heredoc
-	set(5, sEnd, 11)           // reduce heredoc -> << heredoc_body (pop 2, back to 1, goto sHeredoc=6)
+	set(5, sEnd, 11) // reduce heredoc -> << heredoc_body (pop 2, back to 1, goto sHeredoc=6)
 
 	// State 6: after heredoc — reduce to _value
-	set(6, sEnd, 13)           // reduce _value -> heredoc (pop 1, back to state 1, goto sValue=3)
+	set(6, sEnd, 13) // reduce _value -> heredoc (pop 1, back to state 1, goto sValue=3)
 
 	// State 7: accept state
-	set(7, sEnd, 15)           // accept
+	set(7, sEnd, 15) // accept
 
 	// Lex modes: all states use lex state 0, only state 4 uses external lex state 1.
-	lexModes := make([]ts.LexMode, stateCount)
+	lexModes := make([]core.LexMode, stateCount)
 	for i := range lexModes {
-		lexModes[i] = ts.LexMode{LexState: 0, ExternalLexState: 0}
+		lexModes[i] = core.LexMode{LexState: 0, ExternalLexState: 0}
 	}
 	// State 4 (after <<) enables external scanner.
-	lexModes[4] = ts.LexMode{LexState: 0, ExternalLexState: 1}
+	lexModes[4] = core.LexMode{LexState: 0, ExternalLexState: 1}
 
 	// Primary state IDs: identity mapping.
-	primaryStateIDs := make([]ts.StateID, stateCount)
+	primaryStateIDs := make([]core.StateID, stateCount)
 	for i := range primaryStateIDs {
-		primaryStateIDs[i] = ts.StateID(i)
+		primaryStateIDs[i] = core.StateID(i)
 	}
 
 	// External scanner states: [externalLexState * externalTokenCount + tokenIdx] -> bool
@@ -265,27 +274,27 @@ func buildExtScannerLanguage() *ts.Language {
 	}
 
 	// External symbol map: maps external token index -> grammar symbol.
-	externalSymbolMap := []ts.Symbol{
+	externalSymbolMap := []core.Symbol{
 		sHeredocBody, // ext token 0 -> sHeredocBody (symbol 3)
 	}
 
-	return &ts.Language{
-		Version:            15,
-		SymbolCount:        symbolCount,
-		TokenCount:         tokenCount,
-		ExternalTokenCount: 1,
-		StateCount:         stateCount,
-		LargeStateCount:    largeStateCount,
-		ProductionIDCount:  4,
-		FieldCount:         0,
-		ParseTable:         parseTable,
-		SmallParseTable:    nil,
-		SmallParseTableMap: nil,
-		ParseActions:       parseActions,
-		LexModes:           lexModes,
-		PrimaryStateIDs:    primaryStateIDs,
-		SymbolNames:        symbolNames,
-		SymbolMetadata:     symbolMetadata,
+	return &language.Language{
+		Version:               15,
+		SymbolCount:           symbolCount,
+		TokenCount:            tokenCount,
+		ExternalTokenCount:    1,
+		StateCount:            stateCount,
+		LargeStateCount:       largeStateCount,
+		ProductionIDCount:     4,
+		FieldCount:            0,
+		ParseTable:            parseTable,
+		SmallParseTable:       nil,
+		SmallParseTableMap:    nil,
+		ParseActions:          parseActions,
+		LexModes:              lexModes,
+		PrimaryStateIDs:       primaryStateIDs,
+		SymbolNames:           symbolNames,
+		SymbolMetadata:        symbolMetadata,
 		ExternalScannerStates: externalScannerStates,
 		ExternalSymbolMap:     externalSymbolMap,
 		// LexFn, KeywordLexFn, NewExternalScanner set by caller.
@@ -303,13 +312,13 @@ type HeredocScanner struct {
 }
 
 // NewHeredocScanner creates a new HeredocScanner (ExternalScannerFactory).
-func NewHeredocScanner() ts.ExternalScanner {
+func NewHeredocScanner() language.ExternalScanner {
 	return &HeredocScanner{}
 }
 
 // Scan attempts to recognize a heredoc body token.
 // It reads everything until "END" appears at the start of a line.
-func (s *HeredocScanner) Scan(lexer *ts.Lexer, validSymbols []bool) bool {
+func (s *HeredocScanner) Scan(lexer *lex.Lexer, validSymbols []bool) bool {
 	if len(validSymbols) == 0 || !validSymbols[ExtTokenHeredocBody] {
 		return false
 	}
@@ -371,7 +380,7 @@ func (s *HeredocScanner) Scan(lexer *ts.Lexer, validSymbols []bool) bool {
 		lexer.MarkEnd()
 	}
 
-	lexer.AcceptToken(ts.Symbol(ExtTokenHeredocBody))
+	lexer.AcceptToken(core.Symbol(ExtTokenHeredocBody))
 	s.markerSeen = true
 	return true
 }
@@ -399,7 +408,7 @@ func (s *HeredocScanner) Deserialize(data []byte) {
 
 // ExtScannerLexFn is the main lex function for the external scanner test grammar.
 // It handles: whitespace skipping, number literals, "<<" heredoc markers.
-func ExtScannerLexFn(lexer *ts.Lexer, state ts.StateID) bool {
+func ExtScannerLexFn(lexer *lex.Lexer, state core.StateID) bool {
 	// Skip whitespace (but not newlines — those might be significant).
 	for !lexer.EOF() && (lexer.Lookahead == ' ' || lexer.Lookahead == '\t') {
 		lexer.Skip()
@@ -417,7 +426,7 @@ func ExtScannerLexFn(lexer *ts.Lexer, state ts.StateID) bool {
 			lexer.Advance(false)
 		}
 		lexer.MarkEnd()
-		lexer.AcceptToken(ts.Symbol(1)) // sNumber
+		lexer.AcceptToken(core.Symbol(1)) // sNumber
 		return true
 	}
 
@@ -427,7 +436,7 @@ func ExtScannerLexFn(lexer *ts.Lexer, state ts.StateID) bool {
 		if !lexer.EOF() && lexer.Lookahead == '<' {
 			lexer.Advance(false)
 			lexer.MarkEnd()
-			lexer.AcceptToken(ts.Symbol(2)) // sHeredocMarker
+			lexer.AcceptToken(core.Symbol(2)) // sHeredocMarker
 			return true
 		}
 		return false
@@ -444,7 +453,7 @@ func ExtScannerLexFn(lexer *ts.Lexer, state ts.StateID) bool {
 
 // ExtScannerLanguageWithLex returns the external scanner test language
 // with lex function and external scanner factory configured.
-func ExtScannerLanguageWithLex() *ts.Language {
+func ExtScannerLanguageWithLex() *language.Language {
 	lang := ExtScannerLanguage()
 	lang.LexFn = ExtScannerLexFn
 	lang.NewExternalScanner = NewHeredocScanner
