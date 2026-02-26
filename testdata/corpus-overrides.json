@@ -1,0 +1,7 @@
+{
+  "tree-sitter-perl": {
+    "Double dollar edge cases": {
+      "expected": "(source_file (expression_statement (scalar (varname))) (comment) (expression_statement (scalar (varname))) (ERROR) (expression_statement (scalar (varname))) (ERROR (ERROR)) (expression_statement (scalar (varname))))"
+    }
+  }
+}

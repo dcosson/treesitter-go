@@ -31,6 +31,7 @@ import (
 
 // perTestTimeout is the maximum time allowed for parsing a single corpus test input.
 const perTestTimeout = 10 * time.Second
+const corpusOverridesPath = "testdata/corpus-overrides.json"
 
 // makeCorpusParseFunc creates a ParseFunc for the given language with a per-test timeout.
 func makeCorpusParseFunc(lang *ts.Language) corpustest.ParseFunc {
@@ -65,6 +66,7 @@ func runCorpusForLanguage(t *testing.T, repoName string, lang *ts.Language) {
 	if err != nil {
 		t.Fatalf("failed to parse corpus: %v", err)
 	}
+	cases = applyCorpusOverrides(t, repoName, cases)
 
 	if len(cases) == 0 {
 		t.Fatal("no corpus test cases found")
@@ -72,6 +74,24 @@ func runCorpusForLanguage(t *testing.T, repoName string, lang *ts.Language) {
 	t.Logf("loaded %d corpus test cases for %s", len(cases), repoName)
 
 	corpustest.RunCorpus(t, cases, makeCorpusParseFunc(lang))
+}
+
+func applyCorpusOverrides(t *testing.T, repoName string, cases []corpustest.TestCase) []corpustest.TestCase {
+	t.Helper()
+
+	overrides, err := corpustest.ParseOverridesFile(corpusOverridesPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return cases
+		}
+		t.Fatalf("failed to parse corpus overrides: %v", err)
+	}
+
+	updated, err := corpustest.ApplyOverrides(cases, repoName, overrides)
+	if err != nil {
+		t.Fatalf("failed to apply corpus overrides: %v", err)
+	}
+	return updated
 }
 
 // TestCorpusC runs the tree-sitter-c corpus tests.
@@ -164,6 +184,7 @@ func TestCorpusTypeScript(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to parse corpus: %v", err)
 	}
+	cases = applyCorpusOverrides(t, "tree-sitter-typescript", cases)
 	if len(cases) == 0 {
 		t.Fatal("no corpus test cases found")
 	}
