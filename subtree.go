@@ -951,8 +951,9 @@ func SummarizeChildren(s Subtree, arena *SubtreeArena, lang *Language) {
 		}
 	}
 
-	// Error cost for error/missing nodes.
-	if data.Symbol == SymbolError {
+	// Error cost for error/error_repeat/missing nodes.
+	// C checks both ts_builtin_sym_error AND ts_builtin_sym_error_repeat (subtree.c:442-450).
+	if data.Symbol == SymbolError || data.Symbol == SymbolErrorRepeat {
 		errorCost += errorCostPerRecovery + errorCostPerSkippedChar*data.Size.Bytes
 		// Count skipped lines.
 		if data.Size.Point.Row > 0 {
