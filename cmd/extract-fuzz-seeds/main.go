@@ -41,7 +41,7 @@ var grammars = []struct {
 }
 
 func main() {
-	grammarsDir := "testdata/grammars"
+	grammarsDir := "build/grammars"
 	if dir := os.Getenv("TREESITTER_GRAMMAR_DIR"); dir != "" {
 		grammarsDir = dir
 	}

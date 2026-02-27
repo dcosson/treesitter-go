@@ -116,7 +116,7 @@ This script is self-contained and idempotent. It:
    - Emit the JSONL line to stderr
 3. **Builds** the patched CLI: `cargo build --release`
 4. **Runs** the patched CLI against each corpus test input for each language:
-   - For each `testdata/grammars/tree-sitter-{lang}/test/corpus/*.txt`, parse
+   - For each `build/grammars/tree-sitter-{lang}/test/corpus/*.txt`, parse
      the corpus file format to extract individual test inputs
    - Write each input to a temp file with the correct extension
    - Run `patched-tree-sitter parse --lib-path <dylib> --lang-name <lang> <file>`

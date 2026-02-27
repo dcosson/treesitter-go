@@ -67,7 +67,7 @@ type scannerLangConfig struct {
 	name       string
 	repoName   string // e.g. "tree-sitter-python"
 	newScanner ts.ExternalScannerFactory
-	corpusDirs []string // relative to testdata/grammars/<repoName>/
+	corpusDirs []string // relative to build/grammars/<repoName>/
 }
 
 func scannerLanguages() []scannerLangConfig {

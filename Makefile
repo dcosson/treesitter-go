@@ -3,7 +3,7 @@ TREE_SITTER_CLI := $(shell which tree-sitter 2>/dev/null)
 .PHONY: build test test-coverage bench-self bench-compare bench-grammars fetch-test-grammars fetch-realworld test-corpus test-corpus-json test-regression test-realworld-diff deps diff-test generate-scanner-traces test-scanner-traces fuzz
 
 build:
-	go build -o bin/ ./cmd/...
+	go build -o build/bin/ ./cmd/...
 
 test:
 	go test -race -skip 'TestCorpus|Differential|WithCLI' ./...
@@ -15,7 +15,7 @@ test-coverage:
 	@echo "Coverage report: testdata/coverage.html"
 
 fetch-test-grammars:
-	go run ./cmd/fetch-grammars -config testdata/grammars.json -output testdata/grammars/
+	go run ./cmd/fetch-grammars -config testdata/grammars.json -output build/grammars/
 
 test-corpus:
 	go test ./... -run TestCorpus -v -count=1 -timeout 10m
@@ -53,7 +53,7 @@ deps:
 	@echo "Run 'make bench-grammars' to build grammar dylibs for CLI benchmarks."
 
 BENCH_DYLIB_DIR := build/benchmark-dylibs
-GRAMMAR_DIR := testdata/grammars
+GRAMMAR_DIR := build/grammars
 
 bench-grammars:
 ifdef TREE_SITTER_CLI

@@ -12,7 +12,7 @@
 # Prerequisites:
 #   - Rust/cargo installed (for building tree-sitter CLI)
 #   - C compiler (cc) for building grammar shared libraries
-#   - testdata/grammars/ populated via `make fetch-test-grammars`
+#   - build/grammars/ populated via `make fetch-test-grammars`
 #
 # Usage:
 #   ./scripts/generate-scanner-traces.sh [--lang python] [--ts-version v0.25.3]
@@ -21,7 +21,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
-GRAMMARS_DIR="$PROJECT_DIR/testdata/grammars"
+GRAMMARS_DIR="$PROJECT_DIR/build/grammars"
 TRACES_DIR="$PROJECT_DIR/testdata/scanner-traces"
 PATCH_FILE="$SCRIPT_DIR/scanner-trace.patch"
 

@@ -447,7 +447,7 @@ make test-scanner-traces
 
 **1. Register the grammar**
 
-Add to `testdata/grammars.json`:
+Add to `build/grammars.json`:
 ```json
 {"name": "newlang", "repo": "tree-sitter/tree-sitter-newlang", "version": "v1.0.0"}
 ```
@@ -460,7 +460,7 @@ make fetch-test-grammars
 **3. Generate Go parse tables**
 ```bash
 tsgo-generate \
-  -parser testdata/grammars/tree-sitter-newlang/src/parser.c \
+  -parser build/grammars/tree-sitter-newlang/src/parser.c \
   -package newlanggrammar \
   -output internal/testgrammars/newlang/language.go
 ```
@@ -517,7 +517,7 @@ make test && make test-corpus && make test-regression
 
 ### Checklist for New Language
 
-- [ ] Entry in `testdata/grammars.json` with pinned version
+- [ ] Entry in `build/grammars.json` with pinned version
 - [ ] Generated `internal/testgrammars/<lang>/language.go`
 - [ ] External scanner ported (if applicable) with unit tests
 - [ ] `TestCorpus<Lang>` in `corpus_languages_test.go`

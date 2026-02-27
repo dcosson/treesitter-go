@@ -2,10 +2,10 @@
 
 ## Building
 
-Always use `make build` to build the project. This compiles all CLI tools into the `bin/` directory. Do not run `go build ./...` directly — it only checks compilation and does not produce binaries.
+Always use `make build` to build the project. This compiles all CLI tools into the `build/bin/` directory. Do not run `go build ./...` directly — it only checks compilation and does not produce binaries.
 
 ```bash
-make build    # Builds all cmd/ binaries into bin/
+make build    # Builds all cmd/ binaries into build/bin/
 ```
 
 ## Testing

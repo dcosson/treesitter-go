@@ -7,7 +7,7 @@
 //
 // Usage:
 //
-//	go run ./cmd/extract-corpus-inputs --lang bash --output-dir /tmp/inputs/bash --ext sh testdata/grammars/tree-sitter-bash/test/corpus
+//	go run ./cmd/extract-corpus-inputs --lang bash --output-dir /tmp/inputs/bash --ext sh build/grammars/tree-sitter-bash/test/corpus
 //
 // Each test input is written as {index:04d}_{sanitized_name}.{ext}
 package main

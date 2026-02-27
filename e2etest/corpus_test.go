@@ -14,12 +14,12 @@ import (
 )
 
 // corpusGrammarsDir is the base directory for fetched grammar repos.
-// Set by TestMain or defaults to testdata/grammars/ relative to the repo root.
+// Set by TestMain or defaults to build/grammars/ relative to the repo root.
 func corpusGrammarsDir() string {
 	if dir := os.Getenv("TREESITTER_GRAMMAR_DIR"); dir != "" {
 		return dir
 	}
-	return "../testdata/grammars"
+	return "../build/grammars"
 }
 
 // TestCorpusJSON runs the tree-sitter-json corpus tests against the Go parser.

@@ -2,10 +2,10 @@
 
 ## Building
 
-Always use `make build` to compile the project. This builds all CLI tools into the `bin/` directory.
+Always use `make build` to compile the project. This builds all CLI tools into the `build/bin/` directory.
 
 ```bash
-make build    # Builds all cmd/ binaries into bin/
+make build    # Builds all cmd/ binaries into build/bin/
 ```
 
 Do **not** run `go build ./...` directly — it only checks compilation and does not produce output binaries.
@@ -68,6 +68,6 @@ make fetch-realworld       # Needed for realworld diff tests
 - **`language/`** and **`lexer/`** — public packages for Language/ExternalScanner and Lexer/Input types.
 - **`scanners/`** — hand-ported external scanner implementations per language.
 - **`e2etest/`** — end-to-end and integration tests that exercise the full stack.
-- **`cmd/`** — CLI tools (built into `bin/` via `make build`).
+- **`cmd/`** — CLI tools (built into `build/bin/` via `make build`).
 
 See `README.md` for the full architecture diagram and package descriptions.

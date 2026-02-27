@@ -105,8 +105,8 @@ flowchart LR
     end
 
     subgraph Fetch ["make fetch-test-grammars"]
-        PC -->|git clone| LOCAL_PC[testdata/grammars/\ntree-sitter-lang/\nsrc/parser.c]
-        SC -->|git clone| LOCAL_SC[testdata/grammars/\ntree-sitter-lang/\nsrc/scanner.c]
+        PC -->|git clone| LOCAL_PC[build/grammars/\ntree-sitter-lang/\nsrc/parser.c]
+        SC -->|git clone| LOCAL_SC[build/grammars/\ntree-sitter-lang/\nsrc/scanner.c]
     end
 
     subgraph Generate ["Go code generation"]
@@ -123,7 +123,7 @@ flowchart LR
 The key steps:
 
 1. **Upstream** — each `tree-sitter-{lang}` repo defines a `grammar.js` and optionally a hand-written `scanner.c`. Running `tree-sitter generate` produces `src/parser.c` (large auto-generated parse tables) and compiles the scanner.
-2. **Fetch** — `make fetch-test-grammars` clones the upstream repos (with pre-generated `parser.c`) into `testdata/grammars/`.
+2. **Fetch** — `make fetch-test-grammars` clones the upstream repos (with pre-generated `parser.c`) into `build/grammars/`.
 3. **Transpile** — `cmd/tsgo-generate` reads `parser.c` and emits an equivalent Go file with the same parse tables as Go data structures. External scanners must be manually ported to Go since they contain arbitrary C logic.
 4. **Runtime** — the pure-Go parser engine (`parser.go`) consumes the generated `language.go` tables and calls into Go scanner implementations via the `ExternalScanner` interface.
 

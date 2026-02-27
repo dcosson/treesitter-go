@@ -238,7 +238,7 @@ testdata/
 
 ```makefile
 fetch-test-grammars:
-    go run ./cmd/fetch-grammars -config testdata/grammars.json -output testdata/grammars/
+    go run ./cmd/fetch-grammars -config build/grammars.json -output build/grammars/
 
 test-corpus:
     go test ./... -run TestCorpus -v -count=1
@@ -1219,7 +1219,7 @@ attack surface.
 
 func FuzzParseBytes(f *testing.F) {
     // Seed with real source files and corpus test inputs.
-    seedFromDir(f, "testdata/grammars/tree-sitter-json/test/corpus/")
+    seedFromDir(f, "build/grammars/tree-sitter-json/test/corpus/")
     seedFromDir(f, "testdata/corpora/json/")
 
     lang := tg.JSONLanguage()
@@ -1250,7 +1250,7 @@ infrastructure. If it panics on malformed input, test failures could be masked.
 
 ```go
 func FuzzParseCorpusFile(f *testing.F) {
-    seedFromDir(f, "testdata/grammars/tree-sitter-json/test/corpus/")
+    seedFromDir(f, "build/grammars/tree-sitter-json/test/corpus/")
     f.Fuzz(func(t *testing.T, data []byte) {
         // Must not panic.
         _, _ = corpustest.ParseCorpusFile(data)
