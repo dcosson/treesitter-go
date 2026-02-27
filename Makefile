@@ -10,7 +10,7 @@ build:
 test:
 	go test -race -skip 'TestCorpus|TestDifferential' ./...
 
-coverage:
+test-coverage:
 	-go test -skip 'TestCorpus|TestDifferential' -coverprofile=testdata/coverage.out -coverpkg=$(COVERAGE_PKGS) ./...
 	go tool cover -html=testdata/coverage.out -o testdata/coverage.html
 	@go tool cover -func=testdata/coverage.out | tail -1
