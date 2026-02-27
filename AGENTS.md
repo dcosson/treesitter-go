@@ -23,7 +23,8 @@ Always use the Makefile test targets rather than running `go test` directly, unl
 | Regression tests only | `make test-regression` |
 | Realworld differential (needs C CLI) | `make test-realworld-diff` |
 | Differential tests (needs C CLI) | `make diff-test` |
-| Benchmarks | `make bench` |
+| Benchmarks (Go only) | `make bench-self` |
+| Benchmarks (Go vs C, needs CLI) | `make bench-compare` |
 | Fuzz testing | `make fuzz` |
 
 See the **Testing** section in `README.md` for full details on each test type, what it covers, where the code lives, and what setup is required.

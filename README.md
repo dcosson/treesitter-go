@@ -164,7 +164,7 @@ The following grammars are included for testing and can be used as references fo
 
 ### Test Types
 
-`make test` runs `go test -skip 'TestCorpus|TestDifferential' ./...` — it includes all unit tests across every package plus e2etest tests not matching those skip patterns. This is the main development command; it runs everything that doesn't require fetched grammar repos or the C CLI.
+`make test` runs `go test -skip 'TestCorpus|Differential|WithCLI' ./...` — it includes all unit tests across every package plus e2etest tests not matching those skip patterns. This is the main development command; it runs everything that doesn't require fetched grammar repos or the C CLI. Tests that require external dependencies are in separate targets and **fail** (not skip) if dependencies are missing.
 
 #### Included in `make test`
 
@@ -184,7 +184,8 @@ The following grammars are included for testing and can be used as references fo
 | **Corpus tests** | `make test-corpus` | `e2etest/corpus_*.go` | `make fetch-test-grammars` | Tree-sitter's official test suites — 1619 cases across 15 languages. Each case has input + expected S-expression. |
 | **Differential tests** | `make diff-test` | `internal/difftest/` | `make deps` | Small set of per-grammar sample inputs compared Go vs C tree-sitter CLI output. |
 | **Realworld diff tests** | `make test-realworld-diff` | `e2etest/realworld_diff_test.go` | `make deps` + `make fetch-realworld` | Real-world OSS files (kubernetes, flask, rails, etc.) compared Go vs C CLI. |
-| **Benchmarks** | `make bench` | `e2etest/benchmark_test.go` | Optional: `make deps` for C comparison | Parse throughput (bytes/sec) for all 15 languages at multiple sizes. |
+| **Benchmarks (Go only)** | `make bench-self` | `e2etest/benchmark_test.go` | None | Parse throughput (bytes/sec) for all 15 languages at multiple sizes. |
+| **Benchmarks (Go vs C)** | `make bench-compare` | `e2etest/benchmark_test.go` | `make deps` + `make bench-grammars` | Same as above, plus C reference parser for comparison. |
 | **Fuzz tests** | `make fuzz` | `e2etest/fuzz_test.go` | None | Runs all fuzz targets for 30s each (parse + scanner roundtrip). Finds crashes/panics. Single-language: `go test -fuzz=FuzzParseGo -fuzztime=60s ./e2etest/` |
 
 ### Setup

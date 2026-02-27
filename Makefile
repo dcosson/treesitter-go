@@ -1,15 +1,15 @@
 TREE_SITTER_CLI := $(shell which tree-sitter 2>/dev/null)
 
-.PHONY: build test test-coverage bench bench-grammars fetch-test-grammars fetch-realworld test-corpus test-corpus-json test-regression test-realworld-diff deps diff-test generate-scanner-traces test-scanner-traces fuzz
+.PHONY: build test test-coverage bench-self bench-compare bench-grammars fetch-test-grammars fetch-realworld test-corpus test-corpus-json test-regression test-realworld-diff deps diff-test generate-scanner-traces test-scanner-traces fuzz
 
 build:
 	go build -o bin/ ./cmd/...
 
 test:
-	go test -race -skip 'TestCorpus|TestDifferential' ./...
+	go test -race -skip 'TestCorpus|Differential|WithCLI' ./...
 
 test-coverage:
-	-go test -skip 'TestCorpus|TestDifferential' -coverprofile=testdata/coverage.out $$(go list ./... | grep -v testgrammars)
+	-go test -skip 'TestCorpus|Differential|WithCLI' -coverprofile=testdata/coverage.out $$(go list ./... | grep -v testgrammars)
 	go tool cover -html=testdata/coverage.out -o testdata/coverage.html
 	@go tool cover -func=testdata/coverage.out | tail -1
 	@echo "Coverage report: testdata/coverage.html"
@@ -93,11 +93,14 @@ fuzz:
 	done
 	@echo "All fuzz targets passed."
 
-bench:
+bench-self:
+	go test ./e2etest/ -run=NOMATCH -bench=. -benchmem -count=5 -timeout 10m | tee testdata/bench-results.txt
+
+bench-compare:
 ifdef TREE_SITTER_CLI
 	go test ./e2etest/ -run=NOMATCH -bench=. -benchmem -count=5 -timeout 10m \
 		-ts-cli=$(TREE_SITTER_CLI) | tee testdata/bench-results.txt
 else
-	go test ./e2etest/ -run=NOMATCH -bench=. -benchmem -count=5 -timeout 10m | tee testdata/bench-results.txt
-	@echo "Note: tree-sitter CLI not found, Go-vs-C comparison skipped."
+	@echo "tree-sitter CLI not found. Run 'make deps' to install."
+	@exit 1
 endif

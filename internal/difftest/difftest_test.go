@@ -26,27 +26,27 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-// requireCLI skips the test if the tree-sitter CLI is not available.
+// requireCLI fails the test if the tree-sitter CLI is not available.
 func requireCLI(t *testing.T) {
 	t.Helper()
 	if TreeSitterCLI == "" {
-		t.Skip("tree-sitter CLI not configured — pass -ts-cli or set TS_CLI_PATH")
+		t.Fatal("tree-sitter CLI not configured — pass -ts-cli or set TS_CLI_PATH")
 	}
 	if _, err := os.Stat(TreeSitterCLI); err != nil {
 		if _, err2 := exec.LookPath(TreeSitterCLI); err2 != nil {
-			t.Skipf("tree-sitter CLI not found at %q: %v", TreeSitterCLI, err)
+			t.Fatalf("tree-sitter CLI not found at %q: %v", TreeSitterCLI, err)
 		}
 	}
 }
 
-// requireCLIScope skips the test if the CLI doesn't support the given scope.
+// requireCLIScope fails the test if the CLI doesn't support the given scope.
 func requireCLIScope(t *testing.T, scope string) {
 	t.Helper()
 	requireCLI(t)
 	// Try parsing a minimal input to see if the scope is supported.
 	_, err := ParseBytesWithCLI([]byte(" "), scope)
 	if err != nil && strings.Contains(err.Error(), "Unknown scope") {
-		t.Skipf("tree-sitter CLI does not support scope %q (grammar not installed)", scope)
+		t.Fatalf("tree-sitter CLI does not support scope %q (grammar not installed)", scope)
 	}
 }
 
@@ -243,6 +243,7 @@ func TestParseBytesWithCLI_JSON(t *testing.T) {
 
 	input := []byte(`{"name": "test", "value": 42}`)
 	sexp, err := ParseBytesWithCLI(input, "source.json")
+
 	if err != nil {
 		t.Fatalf("ParseBytesWithCLI: %v", err)
 	}
