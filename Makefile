@@ -1,7 +1,10 @@
 TREE_SITTER_CLI := $(shell which tree-sitter 2>/dev/null)
 
-.PHONY: build test coverage bench bench-grammars fetch-test-grammars fetch-realworld test-corpus test-corpus-json test-regression test-realworld-diff deps diff-test generate-scanner-traces test-scanner-traces fuzz
+.PHONY: build test test-coverage bench bench-grammars fetch-test-grammars fetch-realworld test-corpus test-corpus-json test-regression test-realworld-diff deps diff-test generate-scanner-traces test-scanner-traces fuzz
 
+# Packages to measure coverage for (hand-written runtime code only;
+# excludes generated testgrammars, test-only packages, and scanners
+# which get self-coverage from their own unit tests)
 COVERAGE_PKGS := ./internal/parser,./internal/stack,./internal/subtree,./internal/lexer,./internal/tree,./internal/core,./internal/query,./language/,./lexer/
 
 build:
