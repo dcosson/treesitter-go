@@ -7,7 +7,7 @@
   {"name": "rust",       "repo": "tree-sitter/tree-sitter-rust",       "version": "v0.24.0", "ext": ".rs",   "scanner": true},
   {"name": "c",          "repo": "tree-sitter/tree-sitter-c",          "version": "v0.24.1", "ext": ".c"},
   {"name": "cpp",        "repo": "tree-sitter/tree-sitter-cpp",        "version": "v0.23.4", "ext": ".cpp",  "scanner": true},
-  {"name": "typescript",  "repo": "tree-sitter/tree-sitter-typescript", "version": "v0.23.2", "ext": ".ts",   "scanner": true},
+  {"name": "typescript",  "repo": "tree-sitter/tree-sitter-typescript", "version": "v0.23.2", "ext": ".ts",   "scanner": true, "subpath": "typescript"},
   {"name": "ruby",       "repo": "tree-sitter/tree-sitter-ruby",       "version": "v0.23.1", "ext": ".rb",   "scanner": true},
   {"name": "java",       "repo": "tree-sitter/tree-sitter-java",       "version": "v0.23.5", "ext": ".java"},
   {"name": "html",       "repo": "tree-sitter/tree-sitter-html",       "version": "v0.23.2", "ext": ".html", "scanner": true},
