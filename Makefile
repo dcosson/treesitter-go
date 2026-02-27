@@ -18,7 +18,7 @@ fetch-test-grammars:
 	go run ./cmd/fetch-grammars -config grammars.json -output build/grammars/
 
 test-corpus:
-	go test ./... -run TestCorpus -v -count=1 -timeout 10m
+	go test ./e2etest/ -run TestCorpus -v -count=1 -timeout 10m
 
 test-corpus-json:
 	go test ./... -run TestCorpus/json -v
