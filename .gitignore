@@ -12,7 +12,7 @@ bin/
 
 # Test artifacts
 /tmp/
-bench-results.txt
+testdata/bench-results.txt
 
 # Build artifacts
 build/

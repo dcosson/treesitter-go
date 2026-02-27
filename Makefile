@@ -90,8 +90,8 @@ fuzz:
 bench:
 ifdef TREE_SITTER_CLI
 	go test ./e2etest/ -run=NOMATCH -bench=. -benchmem -count=5 -timeout 10m \
-		-ts-cli=$(TREE_SITTER_CLI) | tee bench-results.txt
+		-ts-cli=$(TREE_SITTER_CLI) | tee testdata/bench-results.txt
 else
-	go test ./e2etest/ -run=NOMATCH -bench=. -benchmem -count=5 -timeout 10m | tee bench-results.txt
+	go test ./e2etest/ -run=NOMATCH -bench=. -benchmem -count=5 -timeout 10m | tee testdata/bench-results.txt
 	@echo "Note: tree-sitter CLI not found, Go-vs-C comparison skipped."
 endif
