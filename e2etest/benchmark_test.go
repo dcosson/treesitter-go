@@ -2,6 +2,7 @@ package e2etest_test
 
 import (
 	"context"
+	"encoding/json"
 	"flag"
 	"fmt"
 	iparser "github.com/treesitter-go/treesitter/parser"
@@ -231,6 +232,53 @@ func minimalInput(lang string) []byte {
 	}
 }
 
+// realworldManifest mirrors the structure of testdata/realworld-manifest.json.
+type realworldManifest struct {
+	Projects []struct {
+		Language string   `json:"language"`
+		Project  string   `json:"project"`
+		Files    []string `json:"files"`
+	} `json:"projects"`
+}
+
+const realworldManifestPath = "../testdata/realworld-manifest.json"
+
+// realworldDir is declared in realworld_diff_test.go
+
+// loadRealworldInput reads and concatenates all real-world source files for a language.
+// Returns nil if the realworld data has not been fetched.
+func loadRealworldInput(lang string) ([]byte, error) {
+	data, err := os.ReadFile(realworldManifestPath)
+	if err != nil {
+		return nil, fmt.Errorf("cannot read realworld manifest: %v — run 'make fetch-realworld'", err)
+	}
+	var manifest realworldManifest
+	if err := json.Unmarshal(data, &manifest); err != nil {
+		return nil, fmt.Errorf("cannot parse realworld manifest: %v", err)
+	}
+
+	var combined []byte
+	for _, proj := range manifest.Projects {
+		if proj.Language != lang {
+			continue
+		}
+		for _, filePath := range proj.Files {
+			localName := filepath.Base(filePath)
+			localPath := filepath.Join(realworldDir, proj.Language, proj.Project, localName)
+			content, err := os.ReadFile(localPath)
+			if err != nil {
+				return nil, fmt.Errorf("missing realworld file %s: %v — run 'make fetch-realworld'", localPath, err)
+			}
+			combined = append(combined, content...)
+			combined = append(combined, '\n')
+		}
+	}
+	if len(combined) == 0 {
+		return nil, fmt.Errorf("no realworld files found for language %q in manifest", lang)
+	}
+	return combined, nil
+}
+
 // --- In-Process Parse Benchmark (Go only, for profiling/optimization) ---
 
 func BenchmarkParse(b *testing.B) {
@@ -265,6 +313,29 @@ func BenchmarkParse(b *testing.B) {
 				}
 			})
 		}
+
+		// Real-world source files benchmark.
+		rwInput, err := loadRealworldInput(lang.name)
+		if err != nil {
+			b.Fatalf("realworld input for %s: %v", lang.name, err)
+		}
+		l := lang.language()
+		b.Run(fmt.Sprintf("go/%s/realworld", lang.name), func(b *testing.B) {
+			parser := iparser.NewParser()
+			parser.SetLanguage(l)
+
+			tree := parser.ParseString(context.Background(), rwInput)
+			if tree == nil {
+				b.Skipf("%s parse returned nil for realworld input", lang.name)
+			}
+
+			b.SetBytes(int64(len(rwInput)))
+			b.ReportAllocs()
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				parser.ParseString(context.Background(), rwInput)
+			}
+		})
 	}
 }
 
@@ -338,6 +409,39 @@ func BenchmarkCompare(b *testing.B) {
 				}
 			})
 		}
+
+		// Real-world source files comparison.
+		rwInput, err := loadRealworldInput(lang.name)
+		if err != nil {
+			b.Fatalf("realworld input for %s: %v", lang.name, err)
+		}
+		ext := lang.ext
+		langName := lang.name
+		libName := lang.libName
+		goRW := append([]byte(nil), rwInput...)
+		refRW := append([]byte(nil), rwInput...)
+
+		b.Run(fmt.Sprintf("go/%s/realworld", langName), func(b *testing.B) {
+			if err := goParseBytes(goRW, ext, langName); err != nil {
+				b.Fatalf("tsgo-parse cannot parse %s realworld: %v", langName, err)
+			}
+			b.SetBytes(int64(len(goRW)))
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				goParseBytes(goRW, ext, langName)
+			}
+		})
+
+		b.Run(fmt.Sprintf("ref/%s/realworld", langName), func(b *testing.B) {
+			if err := refParseBytes(refRW, ext, libName); err != nil {
+				b.Fatalf("tree-sitter cannot parse %s realworld: %v", langName, err)
+			}
+			b.SetBytes(int64(len(refRW)))
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				refParseBytes(refRW, ext, libName)
+			}
+		})
 	}
 }
 
