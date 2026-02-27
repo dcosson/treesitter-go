@@ -17,14 +17,14 @@ ifneq ($(GRAMMAR),)
   _RUN_REALWORLD := TestDifferentialRealworld/$(GRAMMAR)
   _RUN_SCANNER_TRACES := TestScannerTraces/$(GRAMMAR)
   _BENCH_FILTER := BenchmarkParse/go/$(GRAMMAR)
-  _BENCH_FILTER_CLI := BenchmarkParse/.*/$(GRAMMAR)
+  _BENCH_FILTER_COMPARE := BenchmarkCompare/.*/$(GRAMMAR)
 else
   _RUN_CORPUS := TestCorpus
   _RUN_REGRESSION := TestRegression
   _RUN_REALWORLD := TestDifferentialRealworld
   _RUN_SCANNER_TRACES := TestScannerTraces
   _BENCH_FILTER := .
-  _BENCH_FILTER_CLI := .
+  _BENCH_FILTER_COMPARE := .
 endif
 
 .PHONY: build test test-coverage bench-self bench-compare bench-grammars fetch-test-grammars fetch-realworld test-corpus test-regression test-realworld-diff deps diff-test generate-scanner-traces test-scanner-traces fuzz
@@ -124,9 +124,9 @@ fuzz:
 bench-self:
 	go test ./e2etest/ -run=NOMATCH -bench='$(_BENCH_FILTER)' -benchmem -count=5 -timeout 10m | tee testdata/bench-results.txt
 
-bench-compare:
+bench-compare: build
 ifdef TREE_SITTER_CLI
-	go test ./e2etest/ -run=NOMATCH -bench='$(_BENCH_FILTER_CLI)' -benchmem -count=5 -timeout 10m \
+	go test ./e2etest/ -run=NOMATCH -bench='$(_BENCH_FILTER_COMPARE)' -benchmem -count=5 -timeout 10m \
 		-ts-cli=$(TREE_SITTER_CLI) | tee testdata/bench-results.txt
 else
 	@echo "tree-sitter CLI not found. Run 'make deps' to install."

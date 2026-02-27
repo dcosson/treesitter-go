@@ -49,9 +49,13 @@ import (
 // Set via -ts-cli flag or TS_CLI_PATH environment variable.
 var tsCLI = flag.String("ts-cli", os.Getenv("TS_CLI_PATH"), "path to tree-sitter CLI binary")
 
-// benchDylibDir is the directory containing prebuilt grammar dylibs for CLI benchmarks.
+// benchDylibDir is the directory containing prebuilt grammar dylibs for reference (C) benchmarks.
 // Build with: make bench-grammars
 const benchDylibDir = "../build/benchmark-dylibs"
+
+// tsgoParseCmd is the path to the Go parse CLI binary for subprocess benchmarks.
+// Build with: make build
+const tsgoParseCmd = "../build/bin/tsgo-parse"
 
 // benchLang describes a language available for benchmarking.
 type benchLang struct {
@@ -127,10 +131,10 @@ func benchLanguages() []benchLang {
 	}
 }
 
-// checkCLI checks whether the tree-sitter CLI and prebuilt dylibs are available.
+// checkRefCLI checks whether the reference (C) tree-sitter CLI and prebuilt dylibs are available.
 // Returns (true, "") if ready, (false, "") if -ts-cli was not set, or
 // (false, reason) if -ts-cli was set but something is missing.
-func checkCLI() (ok bool, problem string) {
+func checkRefCLI() (ok bool, problem string) {
 	if *tsCLI == "" {
 		return false, ""
 	}
@@ -150,9 +154,17 @@ func checkCLI() (ok bool, problem string) {
 	return false, fmt.Sprintf("no .dylib files in %s — run 'make bench-grammars'", benchDylibDir)
 }
 
-// cliParseBytes parses input bytes using the tree-sitter CLI with a prebuilt grammar dylib.
-// Uses --lib-path to point at the precompiled dylib and --lang-name to select the language.
-func cliParseBytes(input []byte, ext, libName string) error {
+// checkGoCLI checks whether the tsgo-parse binary is available.
+func checkGoCLI() (ok bool, problem string) {
+	_, err := os.Stat(tsgoParseCmd)
+	if err != nil {
+		return false, fmt.Sprintf("tsgo-parse not found at %s — run 'make build'", tsgoParseCmd)
+	}
+	return true, ""
+}
+
+// refParseBytes parses input bytes using the reference (C) tree-sitter CLI with a prebuilt grammar dylib.
+func refParseBytes(input []byte, ext, libName string) error {
 	tmpFile, err := os.CreateTemp("", "bench-*"+ext)
 	if err != nil {
 		return err
@@ -176,14 +188,48 @@ func cliParseBytes(input []byte, ext, libName string) error {
 	return nil
 }
 
-// --- Unified Parse Benchmark (Go + optional CLI comparison) ---
+// goParseBytes parses input bytes using the Go tsgo-parse CLI as a subprocess.
+func goParseBytes(input []byte, ext, langName string) error {
+	tmpFile, err := os.CreateTemp("", "bench-*"+ext)
+	if err != nil {
+		return err
+	}
+	defer os.Remove(tmpFile.Name())
+	if _, err := tmpFile.Write(input); err != nil {
+		tmpFile.Close()
+		return err
+	}
+	tmpFile.Close()
+
+	cmd := exec.Command(tsgoParseCmd, "-lang", langName, tmpFile.Name())
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return fmt.Errorf("tsgo-parse failed: %v\noutput: %s", err, output)
+	}
+	return nil
+}
+
+// minimalInput returns a tiny valid input for a language, used to measure subprocess overhead.
+func minimalInput(lang string) []byte {
+	switch lang {
+	case "json":
+		return []byte("{}")
+	case "go":
+		return []byte("package x\n")
+	case "java":
+		return []byte("class X {}\n")
+	case "html":
+		return []byte("<x></x>\n")
+	case "css":
+		return []byte("x{}\n")
+	default:
+		return []byte("x\n")
+	}
+}
+
+// --- In-Process Parse Benchmark (Go only, for profiling/optimization) ---
 
 func BenchmarkParse(b *testing.B) {
-	cliOK, cliProblem := checkCLI()
-	if !cliOK && cliProblem != "" {
-		b.Fatalf("CLI benchmarks requested but unavailable: %s", cliProblem)
-	}
-
 	sizes := []struct {
 		name  string
 		bytes int
@@ -198,12 +244,10 @@ func BenchmarkParse(b *testing.B) {
 			input := lang.generate(size.bytes)
 			l := lang.language()
 
-			// Go benchmark.
 			b.Run(fmt.Sprintf("go/%s/%s", lang.name, size.name), func(b *testing.B) {
 				parser := iparser.NewParser()
 				parser.SetLanguage(l)
 
-				// Warm up and verify parse succeeds.
 				tree := parser.ParseString(context.Background(), input)
 				if tree == nil {
 					b.Skipf("%s parse returned nil for %s input", lang.name, size.name)
@@ -216,25 +260,79 @@ func BenchmarkParse(b *testing.B) {
 					parser.ParseString(context.Background(), input)
 				}
 			})
+		}
+	}
+}
 
-			// CLI comparison benchmark (only when CLI is available).
-			if cliOK {
-				ext := lang.ext
-				libName := lang.libName
-				inputCopy := append([]byte(nil), input...)
-				b.Run(fmt.Sprintf("cli/%s/%s", lang.name, size.name), func(b *testing.B) {
-					// Verify CLI can parse this language with the prebuilt dylib.
-					if err := cliParseBytes(inputCopy[:min(len(inputCopy), 100)], ext, libName); err != nil {
-						b.Fatalf("CLI cannot parse %s: %v", lang.name, err)
-					}
+// --- Subprocess Comparison Benchmark (Go vs reference C implementation) ---
+//
+// Both implementations are invoked as subprocesses for a fair comparison.
+// Includes an "overhead" measurement with minimal input so that subprocess
+// startup cost can be subtracted from the real parse times.
+//
+// Run via: make bench-compare GRAMMAR=json
 
-					b.SetBytes(int64(len(inputCopy)))
-					b.ResetTimer()
-					for i := 0; i < b.N; i++ {
-						cliParseBytes(inputCopy, ext, libName)
-					}
-				})
+func BenchmarkCompare(b *testing.B) {
+	goOK, goProblem := checkGoCLI()
+	if !goOK {
+		b.Fatalf("Go CLI unavailable: %s", goProblem)
+	}
+	refOK, refProblem := checkRefCLI()
+	if !refOK {
+		if refProblem != "" {
+			b.Fatalf("Reference CLI unavailable: %s", refProblem)
+		}
+		b.Fatal("Reference CLI not configured — pass -ts-cli flag")
+	}
+
+	sizes := []struct {
+		name  string
+		bytes int
+	}{
+		{"overhead", 0},
+		{"1KB", 1024},
+		{"10KB", 10 * 1024},
+		{"100KB", 100 * 1024},
+	}
+
+	for _, lang := range benchLanguages() {
+		for _, size := range sizes {
+			var input []byte
+			if size.bytes == 0 {
+				input = minimalInput(lang.name)
+			} else {
+				input = lang.generate(size.bytes)
 			}
+
+			ext := lang.ext
+			langName := lang.name
+			libName := lang.libName
+			goInput := append([]byte(nil), input...)
+			refInput := append([]byte(nil), input...)
+
+			// Go subprocess benchmark.
+			b.Run(fmt.Sprintf("go/%s/%s", langName, size.name), func(b *testing.B) {
+				if err := goParseBytes(goInput, ext, langName); err != nil {
+					b.Fatalf("tsgo-parse cannot parse %s: %v", langName, err)
+				}
+				b.SetBytes(int64(len(goInput)))
+				b.ResetTimer()
+				for i := 0; i < b.N; i++ {
+					goParseBytes(goInput, ext, langName)
+				}
+			})
+
+			// Reference (C) subprocess benchmark.
+			b.Run(fmt.Sprintf("ref/%s/%s", langName, size.name), func(b *testing.B) {
+				if err := refParseBytes(refInput, ext, libName); err != nil {
+					b.Fatalf("tree-sitter cannot parse %s: %v", langName, err)
+				}
+				b.SetBytes(int64(len(refInput)))
+				b.ResetTimer()
+				for i := 0; i < b.N; i++ {
+					refParseBytes(refInput, ext, libName)
+				}
+			})
 		}
 	}
 }
