@@ -51,7 +51,7 @@ var tsCLI = flag.String("ts-cli", os.Getenv("TS_CLI_PATH"), "path to tree-sitter
 
 // benchDylibDir is the directory containing prebuilt grammar dylibs for CLI benchmarks.
 // Build with: make bench-grammars
-const benchDylibDir = "build/benchmark-dylibs"
+const benchDylibDir = "../build/benchmark-dylibs"
 
 // benchLang describes a language available for benchmarking.
 type benchLang struct {
@@ -127,26 +127,27 @@ func benchLanguages() []benchLang {
 	}
 }
 
-// hasCLI returns true if the tree-sitter CLI is configured and available,
-// and at least one prebuilt grammar dylib exists in benchDylibDir.
-func hasCLI() bool {
+// checkCLI checks whether the tree-sitter CLI and prebuilt dylibs are available.
+// Returns (true, "") if ready, (false, "") if -ts-cli was not set, or
+// (false, reason) if -ts-cli was set but something is missing.
+func checkCLI() (ok bool, problem string) {
 	if *tsCLI == "" {
-		return false
+		return false, ""
 	}
 	_, err := exec.LookPath(*tsCLI)
 	if err != nil {
-		return false
+		return false, fmt.Sprintf("tree-sitter CLI not found at %q: %v", *tsCLI, err)
 	}
 	entries, err := os.ReadDir(benchDylibDir)
 	if err != nil {
-		return false
+		return false, fmt.Sprintf("cannot read dylib dir %s: %v — run 'make bench-grammars'", benchDylibDir, err)
 	}
 	for _, e := range entries {
 		if filepath.Ext(e.Name()) == ".dylib" {
-			return true
+			return true, ""
 		}
 	}
-	return false
+	return false, fmt.Sprintf("no .dylib files in %s — run 'make bench-grammars'", benchDylibDir)
 }
 
 // cliParseBytes parses input bytes using the tree-sitter CLI with a prebuilt grammar dylib.
@@ -178,6 +179,11 @@ func cliParseBytes(input []byte, ext, libName string) error {
 // --- Unified Parse Benchmark (Go + optional CLI comparison) ---
 
 func BenchmarkParse(b *testing.B) {
+	cliOK, cliProblem := checkCLI()
+	if !cliOK && cliProblem != "" {
+		b.Fatalf("CLI benchmarks requested but unavailable: %s", cliProblem)
+	}
+
 	sizes := []struct {
 		name  string
 		bytes int
@@ -212,14 +218,14 @@ func BenchmarkParse(b *testing.B) {
 			})
 
 			// CLI comparison benchmark (only when CLI is available).
-			if hasCLI() {
+			if cliOK {
 				ext := lang.ext
 				libName := lang.libName
 				inputCopy := append([]byte(nil), input...)
 				b.Run(fmt.Sprintf("cli/%s/%s", lang.name, size.name), func(b *testing.B) {
 					// Verify CLI can parse this language with the prebuilt dylib.
 					if err := cliParseBytes(inputCopy[:min(len(inputCopy), 100)], ext, libName); err != nil {
-						b.Skipf("CLI cannot parse %s: %v", lang.name, err)
+						b.Fatalf("CLI cannot parse %s: %v", lang.name, err)
 					}
 
 					b.SetBytes(int64(len(inputCopy)))
