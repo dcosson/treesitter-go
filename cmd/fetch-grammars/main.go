@@ -4,7 +4,7 @@
 //
 // Usage:
 //
-//	go run ./cmd/fetch-grammars [-config testdata/grammars.json] [-output build/grammars/]
+//	go run ./cmd/fetch-grammars [-config grammars.json] [-output build/grammars/]
 package main
 
 import (
@@ -25,7 +25,7 @@ type grammar struct {
 }
 
 func main() {
-	configPath := flag.String("config", "testdata/grammars.json", "path to grammars config file")
+	configPath := flag.String("config", "grammars.json", "path to grammars config file")
 	outputDir := flag.String("output", "build/grammars", "output directory for cloned grammars")
 	flag.Parse()
 

@@ -388,12 +388,13 @@ test suite fixtures). We rename:
 ### Test Data Layout
 
 ```
-testdata/
+grammars.json                  # Grammar version pins (supported languages)
+build/
   grammars/                    # Fetched grammar repos (make fetch-test-grammars)
     tree-sitter-<lang>/
       test/corpus/*.txt        # Grammar test fixtures (input + expected S-expression)
       src/parser.c             # C parse tables (used by tsgo-generate)
-  grammars.json                # Grammar version pins
+testdata/
   realworld/                   # Fetched real-world source files (make fetch-realworld)
     <lang>/<project>/<files>
   realworld-manifest.json      # Real-world file version pins
@@ -447,7 +448,7 @@ make test-scanner-traces
 
 **1. Register the grammar**
 
-Add to `build/grammars.json`:
+Add to `grammars.json`:
 ```json
 {"name": "newlang", "repo": "tree-sitter/tree-sitter-newlang", "version": "v1.0.0"}
 ```
@@ -517,7 +518,7 @@ make test && make test-corpus && make test-regression
 
 ### Checklist for New Language
 
-- [ ] Entry in `build/grammars.json` with pinned version
+- [ ] Entry in `grammars.json` with pinned version
 - [ ] Generated `internal/testgrammars/<lang>/language.go`
 - [ ] External scanner ported (if applicable) with unit tests
 - [ ] `TestCorpus<Lang>` in `corpus_languages_test.go`

@@ -207,9 +207,8 @@ func TestCorpus(t *testing.T, lang *ts.Language, cases []TestCase) {
 Create a test driver that clones grammar repos and runs their corpus tests:
 
 ```
-testdata/
-├── grammars.json          # List of grammars to test (name, repo, version)
-├── fetch_grammars.sh      # Script to clone/update grammar repos
+grammars.json              # List of grammars to test (name, repo, version)
+build/
 └── grammars/
     ├── tree-sitter-json/
     │   └── test/corpus/
@@ -238,7 +237,7 @@ testdata/
 
 ```makefile
 fetch-test-grammars:
-    go run ./cmd/fetch-grammars -config build/grammars.json -output build/grammars/
+    go run ./cmd/fetch-grammars -config grammars.json -output build/grammars/
 
 test-corpus:
     go test ./... -run TestCorpus -v -count=1

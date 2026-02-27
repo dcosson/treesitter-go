@@ -15,7 +15,7 @@ test-coverage:
 	@echo "Coverage report: testdata/coverage.html"
 
 fetch-test-grammars:
-	go run ./cmd/fetch-grammars -config testdata/grammars.json -output build/grammars/
+	go run ./cmd/fetch-grammars -config grammars.json -output build/grammars/
 
 test-corpus:
 	go test ./... -run TestCorpus -v -count=1 -timeout 10m
