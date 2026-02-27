@@ -46,6 +46,9 @@ var Scope = map[string]string{
 	".sh":   "source.bash",
 	".lua":  "source.luau",
 	".pl":   "source.perl",
+	".pm":   "source.perl",
+	".h":    "source.c",
+	".cc":   "source.cpp",
 }
 
 // grammarManifestEntry matches the fields we need from grammars.json.
@@ -105,6 +108,22 @@ func loadGrammarPathMap() map[string]string {
 				grammarDir = filepath.Join(grammarDir, e.Subpath)
 			}
 			grammarPathMap[e.Ext] = grammarDir
+		}
+
+		// Map alternate extensions to the same grammar directory.
+		// grammars.json only stores a single ext per grammar, but some
+		// languages use multiple file extensions.
+		altExts := map[string]string{
+			".h":  ".c",   // C headers (also used by C++, but C is the common case)
+			".cc": ".cpp", // C++ alternate extension
+			".pm": ".pl",  // Perl modules
+		}
+		for alt, primary := range altExts {
+			if _, exists := grammarPathMap[alt]; !exists {
+				if gp, ok := grammarPathMap[primary]; ok {
+					grammarPathMap[alt] = gp
+				}
+			}
 		}
 	})
 	return grammarPathMap
@@ -180,11 +199,34 @@ func ParseBytesWithCLI(input []byte, scope string) (string, error) {
 }
 
 // NormalizeCLIOutput normalizes the tree-sitter CLI output for comparison
-// with the Go parser. Strips point ranges and field annotations, collapses
-// whitespace, and trims.
+// with the Go parser. Strips point ranges, field annotations, trailing
+// filename paths (appended by the CLI), collapses whitespace, and trims.
 func NormalizeCLIOutput(s string) string {
 	normalized, _ := corpustest.NormalizeSExpression(s)
-	return corpustest.StripFields(normalized)
+	stripped := corpustest.StripFields(normalized)
+	// The tree-sitter CLI appends the filename after the S-expression.
+	// After normalization this looks like "...) /path/to/file.ext".
+	// Find the position where the root S-expression closes and truncate.
+	stripped = stripTrailingAfterSExpr(stripped)
+	return stripped
+}
+
+// stripTrailingAfterSExpr removes any text after the root S-expression's
+// final closing paren. The tree-sitter CLI appends the filename path.
+func stripTrailingAfterSExpr(s string) string {
+	depth := 0
+	for i, ch := range s {
+		switch ch {
+		case '(':
+			depth++
+		case ')':
+			depth--
+			if depth == 0 {
+				return s[:i+1]
+			}
+		}
+	}
+	return s
 }
 
 // CompareResult holds the result of comparing two parse trees.

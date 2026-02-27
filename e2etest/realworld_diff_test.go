@@ -33,6 +33,18 @@ import (
 	rubygrammar "github.com/treesitter-go/treesitter/internal/testgrammars/ruby"
 	rustgrammar "github.com/treesitter-go/treesitter/internal/testgrammars/rustgrammar"
 	tsgrammar "github.com/treesitter-go/treesitter/internal/testgrammars/typescript"
+
+	bashscanner "github.com/treesitter-go/treesitter/scanners/bash"
+	cppscanner "github.com/treesitter-go/treesitter/scanners/cpp"
+	cssscanner "github.com/treesitter-go/treesitter/scanners/css"
+	htmlscanner "github.com/treesitter-go/treesitter/scanners/html"
+	jsscanner "github.com/treesitter-go/treesitter/scanners/javascript"
+	luascanner "github.com/treesitter-go/treesitter/scanners/lua"
+	perlscanner "github.com/treesitter-go/treesitter/scanners/perl"
+	pyscanner "github.com/treesitter-go/treesitter/scanners/python"
+	rubyscanner "github.com/treesitter-go/treesitter/scanners/ruby"
+	rustscanner "github.com/treesitter-go/treesitter/scanners/rust"
+	tsscanner "github.com/treesitter-go/treesitter/scanners/typescript"
 )
 
 // realworldDir is the base directory for downloaded realworld files.
@@ -47,56 +59,114 @@ type realworldLanguage struct {
 	projects   []string // subdirectory names under testdata/realworld/<name>/
 }
 
+// realworldLang creates a language with its external scanner wired up.
+func realworldLang(name string) *ts.Language {
+	switch name {
+	case "go":
+		return golanggrammar.GoLanguage()
+	case "python":
+		l := pythongrammar.PythonLanguage()
+		l.NewExternalScanner = pyscanner.New
+		return l
+	case "javascript":
+		l := jsgrammar.JavascriptLanguage()
+		l.NewExternalScanner = jsscanner.New
+		return l
+	case "typescript":
+		l := tsgrammar.TypescriptLanguage()
+		l.NewExternalScanner = tsscanner.New
+		return l
+	case "c":
+		return cgrammar.CLanguage()
+	case "cpp":
+		l := cppgrammar.CppLanguage()
+		l.NewExternalScanner = cppscanner.New
+		return l
+	case "rust":
+		l := rustgrammar.RustLanguage()
+		l.NewExternalScanner = rustscanner.New
+		return l
+	case "java":
+		return javagrammar.JavaLanguage()
+	case "ruby":
+		l := rubygrammar.RubyLanguage()
+		l.NewExternalScanner = rubyscanner.New
+		return l
+	case "bash":
+		l := bashgrammar.BashLanguage()
+		l.NewExternalScanner = bashscanner.New
+		return l
+	case "css":
+		l := cssgrammar.CssLanguage()
+		l.NewExternalScanner = cssscanner.New
+		return l
+	case "html":
+		l := htmlgrammar.HtmlLanguage()
+		l.NewExternalScanner = htmlscanner.New
+		return l
+	case "lua":
+		l := luagrammar.LuaLanguage()
+		l.NewExternalScanner = luascanner.New
+		return l
+	case "perl":
+		l := perlgrammar.PerlLanguage()
+		l.NewExternalScanner = perlscanner.New
+		return l
+	default:
+		return nil
+	}
+}
+
 // allRealworldLanguages returns the full set of languages with their realworld projects.
 func allRealworldLanguages() []realworldLanguage {
 	return []realworldLanguage{
 		{
-			name: "go", lang: golanggrammar.GoLanguage(),
+			name: "go", lang: realworldLang("go"),
 			scope: "source.go", extensions: []string{".go"},
 			projects: []string{"kubernetes", "go-stdlib"},
 		},
 		{
-			name: "python", lang: pythongrammar.PythonLanguage(),
+			name: "python", lang: realworldLang("python"),
 			scope: "source.python", extensions: []string{".py"},
 			projects: []string{"flask", "requests"},
 		},
 		{
-			name: "javascript", lang: jsgrammar.JavascriptLanguage(),
+			name: "javascript", lang: realworldLang("javascript"),
 			scope: "source.js", extensions: []string{".js"},
 			projects: []string{"express", "lodash"},
 		},
 		{
-			name: "typescript", lang: tsgrammar.TypescriptLanguage(),
+			name: "typescript", lang: realworldLang("typescript"),
 			scope: "source.ts", extensions: []string{".ts"},
 			projects: []string{"typescript-compiler"},
 		},
 		{
-			name: "rust", lang: rustgrammar.RustLanguage(),
+			name: "rust", lang: realworldLang("rust"),
 			scope: "source.rust", extensions: []string{".rs"},
 			projects: []string{"ripgrep", "serde"},
 		},
 		{
-			name: "c", lang: cgrammar.CLanguage(),
+			name: "c", lang: realworldLang("c"),
 			scope: "source.c", extensions: []string{".c", ".h"},
 			projects: []string{"redis", "curl"},
 		},
 		{
-			name: "cpp", lang: cppgrammar.CppLanguage(),
+			name: "cpp", lang: realworldLang("cpp"),
 			scope: "source.cpp", extensions: []string{".cpp", ".cc", ".h"},
 			projects: []string{"protobuf"},
 		},
 		{
-			name: "java", lang: javagrammar.JavaLanguage(),
+			name: "java", lang: realworldLang("java"),
 			scope: "source.java", extensions: []string{".java"},
 			projects: []string{"guava"},
 		},
 		{
-			name: "ruby", lang: rubygrammar.RubyLanguage(),
+			name: "ruby", lang: realworldLang("ruby"),
 			scope: "source.ruby", extensions: []string{".rb"},
 			projects: []string{"rails"},
 		},
 		{
-			name: "bash", lang: bashgrammar.BashLanguage(),
+			name: "bash", lang: realworldLang("bash"),
 			scope: "source.bash", extensions: []string{".sh"},
 			projects: []string{"nvm"},
 		},
@@ -106,22 +176,22 @@ func allRealworldLanguages() []realworldLanguage {
 			projects: []string{"schemastore"},
 		},
 		{
-			name: "css", lang: cssgrammar.CssLanguage(),
+			name: "css", lang: realworldLang("css"),
 			scope: "source.css", extensions: []string{".css"},
 			projects: []string{"normalize.css"},
 		},
 		{
-			name: "html", lang: htmlgrammar.HtmlLanguage(),
+			name: "html", lang: realworldLang("html"),
 			scope: "text.html.basic", extensions: []string{".html"},
 			projects: []string{"html5-boilerplate"},
 		},
 		{
-			name: "lua", lang: luagrammar.LuaLanguage(),
+			name: "lua", lang: realworldLang("lua"),
 			scope: "source.lua", extensions: []string{".lua"},
 			projects: []string{"neovim"},
 		},
 		{
-			name: "perl", lang: perlgrammar.PerlLanguage(),
+			name: "perl", lang: realworldLang("perl"),
 			scope: "source.perl", extensions: []string{".pm", ".pl"},
 			projects: []string{"perl5"},
 		},
