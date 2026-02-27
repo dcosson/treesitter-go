@@ -58,7 +58,7 @@ GRAMMAR_DIR := build/grammars
 bench-grammars:
 ifdef TREE_SITTER_CLI
 	@mkdir -p $(BENCH_DYLIB_DIR)
-	@grep '"name"' grammars.json | sed 's/.*"name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | while read lang; do \
+	@jq -r '.[].name' grammars.json | while read lang; do \
 		grammar_dir="$(GRAMMAR_DIR)/tree-sitter-$$lang"; \
 		if [ ! -d "$$grammar_dir/src" ]; then \
 			echo "ERROR: grammar directory not found: $$grammar_dir/src — run 'make fetch-test-grammars'" >&2; \

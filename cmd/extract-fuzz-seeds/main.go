@@ -11,6 +11,7 @@ package main
 
 import (
 	"crypto/sha256"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -19,48 +20,47 @@ import (
 	"github.com/treesitter-go/treesitter/internal/corpustest"
 )
 
-var grammars = []struct {
-	repoName string
-	lang     string
-}{
-	{"tree-sitter-json", "json"},
-	{"tree-sitter-go", "go"},
-	{"tree-sitter-python", "python"},
-	{"tree-sitter-javascript", "javascript"},
-	{"tree-sitter-typescript", "typescript"},
-	{"tree-sitter-bash", "bash"},
-	{"tree-sitter-ruby", "ruby"},
-	{"tree-sitter-rust", "rust"},
-	{"tree-sitter-c", "c"},
-	{"tree-sitter-cpp", "cpp"},
-	{"tree-sitter-css", "css"},
-	{"tree-sitter-html", "html"},
-	{"tree-sitter-java", "java"},
-	{"tree-sitter-perl", "perl"},
-	{"tree-sitter-lua", "lua"},
+type grammarEntry struct {
+	Name string `json:"name"`
 }
 
 func main() {
+	manifestPath := "grammars.json"
+	if p := os.Getenv("TREESITTER_MANIFEST"); p != "" {
+		manifestPath = p
+	}
 	grammarsDir := "build/grammars"
 	if dir := os.Getenv("TREESITTER_GRAMMAR_DIR"); dir != "" {
 		grammarsDir = dir
 	}
 
+	data, err := os.ReadFile(manifestPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error reading manifest %s: %v\n", manifestPath, err)
+		os.Exit(1)
+	}
+	var grammars []grammarEntry
+	if err := json.Unmarshal(data, &grammars); err != nil {
+		fmt.Fprintf(os.Stderr, "error parsing manifest: %v\n", err)
+		os.Exit(1)
+	}
+
 	totalSeeds := 0
 	for _, g := range grammars {
-		corpusDir := filepath.Join(grammarsDir, g.repoName, "test", "corpus")
+		repoName := "tree-sitter-" + g.Name
+		corpusDir := filepath.Join(grammarsDir, repoName, "test", "corpus")
 		if _, err := os.Stat(corpusDir); os.IsNotExist(err) {
-			fmt.Fprintf(os.Stderr, "skipping %s: corpus not found at %s\n", g.lang, corpusDir)
+			fmt.Fprintf(os.Stderr, "skipping %s: corpus not found at %s\n", g.Name, corpusDir)
 			continue
 		}
 
 		cases, err := corpustest.ParseCorpusDir(corpusDir)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "error parsing %s corpus: %v\n", g.lang, err)
+			fmt.Fprintf(os.Stderr, "error parsing %s corpus: %v\n", g.Name, err)
 			continue
 		}
 
-		seedDir := filepath.Join("testdata", "fuzz", "corpus", g.lang)
+		seedDir := filepath.Join("testdata", "fuzz", "corpus", g.Name)
 		if err := os.MkdirAll(seedDir, 0o755); err != nil {
 			fmt.Fprintf(os.Stderr, "error creating %s: %v\n", seedDir, err)
 			continue
@@ -85,7 +85,7 @@ func main() {
 			}
 			count++
 		}
-		fmt.Printf("%s: %d seeds extracted to %s\n", g.lang, count, seedDir)
+		fmt.Printf("%s: %d seeds extracted to %s\n", g.Name, count, seedDir)
 		totalSeeds += count
 	}
 	fmt.Printf("\ntotal: %d seeds extracted\n", totalSeeds)

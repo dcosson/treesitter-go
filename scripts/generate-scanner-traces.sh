@@ -28,20 +28,16 @@ PATCH_FILE="$SCRIPT_DIR/scanner-trace.patch"
 # Tree-sitter version to clone — must be v0.26.0+ for --lib-path support.
 TS_VERSION="v0.26.5"
 
-# Languages with external scanners
-SCANNER_LANGUAGES=(
-  bash
-  cpp
-  css
-  html
-  javascript
-  lua
-  perl
-  python
-  ruby
-  rust
-  typescript
-)
+# Read scanner languages from manifest (entries with "scanner": true)
+MANIFEST="$PROJECT_DIR/grammars.json"
+if [ ! -f "$MANIFEST" ]; then
+  echo "Error: $MANIFEST not found." >&2
+  exit 1
+fi
+SCANNER_LANGUAGES=()
+while IFS= read -r name; do
+  SCANNER_LANGUAGES+=("$name")
+done < <(jq -r '.[] | select(.scanner == true) | .name' "$MANIFEST")
 
 # Parse arguments
 FILTER_LANG=""
@@ -75,6 +71,11 @@ case "$(uname -s)" in
 esac
 
 # Verify prerequisites
+if ! command -v jq >/dev/null 2>&1; then
+  echo "Error: jq not found. Install jq: https://jqlang.github.io/jq/" >&2
+  exit 1
+fi
+
 if ! command -v cargo >/dev/null 2>&1; then
   echo "Error: cargo not found. Install Rust: https://rustup.rs" >&2
   exit 1
@@ -138,22 +139,11 @@ cd "$PROJECT_DIR"
 go build -o "$EXTRACTOR" ./cmd/extract-corpus-inputs
 echo "  Built $EXTRACTOR"
 
-# Helper: get file extension for a language (for tree-sitter to auto-detect)
+# Helper: get file extension for a language from the manifest (strips leading dot).
 lang_extension() {
-  case "$1" in
-    bash)       echo "sh" ;;
-    cpp)        echo "cpp" ;;
-    css)        echo "css" ;;
-    html)       echo "html" ;;
-    javascript) echo "js" ;;
-    lua)        echo "lua" ;;
-    perl)       echo "pl" ;;
-    python)     echo "py" ;;
-    ruby)       echo "rb" ;;
-    rust)       echo "rs" ;;
-    typescript) echo "ts" ;;
-    *)          echo "txt" ;;
-  esac
+  local ext
+  ext=$(jq -r --arg name "$1" '.[] | select(.name == $name) | .ext // ".txt"' "$MANIFEST" | sed 's/^\.//')
+  echo "$ext"
 }
 
 # Process each language
