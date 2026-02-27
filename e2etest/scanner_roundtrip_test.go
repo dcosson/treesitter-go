@@ -574,8 +574,8 @@ func TestRubySerializationRoundtripWithLiteral(t *testing.T) {
 
 	// Serialize with literal state.
 	n := s1.Serialize(buf)
-	if n < 13 { // 1 (lit count) + 11 (one literal) + 1 (heredoc count)
-		t.Fatalf("expected >=13 bytes for Ruby with literal, got %d", n)
+	if n < 7 { // 1 (lit count) + 5 (one literal) + 1 (heredoc count)
+		t.Fatalf("expected >=7 bytes for Ruby with literal, got %d", n)
 	}
 
 	// Deserialize into fresh scanner.

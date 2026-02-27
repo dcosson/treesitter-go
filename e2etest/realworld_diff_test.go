@@ -36,7 +36,7 @@ import (
 )
 
 // realworldDir is the base directory for downloaded realworld files.
-const realworldDir = "testdata/realworld"
+const realworldDir = "../testdata/realworld"
 
 // realworldLanguage describes a language's grammar, extensions, and realworld subdirectories.
 type realworldLanguage struct {

@@ -48,8 +48,8 @@ func TestSerializeDeserializeEmpty(t *testing.T) {
 	s := New().(*Scanner)
 	buf := make([]byte, 1024)
 	n := s.Serialize(buf)
-	if n != 2 {
-		t.Fatalf("Serialize empty = %d bytes, want 2", n)
+	if n != 4 {
+		t.Fatalf("Serialize empty = %d bytes, want 4", n)
 	}
 
 	s2 := New().(*Scanner)

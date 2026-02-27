@@ -864,7 +864,7 @@ func TestGenerateBenchFixtures(t *testing.T) {
 		t.Skip("set GENERATE_BENCH_FIXTURES=1 to generate fixture files")
 	}
 
-	dir := filepath.Join("testdata", "bench")
+	dir := filepath.Join("..", "testdata", "bench")
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		t.Fatal(err)
 	}

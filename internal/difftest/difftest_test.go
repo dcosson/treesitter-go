@@ -239,7 +239,7 @@ func TestRunRegressionTests_MissingDir(t *testing.T) {
 // --- CLI integration tests (require tree-sitter CLI) ---
 
 func TestParseBytesWithCLI_JSON(t *testing.T) {
-	requireCLI(t)
+	requireCLIScope(t, "source.json")
 
 	input := []byte(`{"name": "test", "value": 42}`)
 	sexp, err := ParseBytesWithCLI(input, "source.json")
@@ -260,7 +260,7 @@ func TestParseBytesWithCLI_JSON(t *testing.T) {
 }
 
 func TestParseWithCLI_ErrorInput(t *testing.T) {
-	requireCLI(t)
+	requireCLIScope(t, "source.json")
 
 	tmpFile, err := os.CreateTemp("", "difftest-error-*.json")
 	if err != nil {

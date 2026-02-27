@@ -44,7 +44,7 @@ import (
 const regressionParseTimeout = 10 * time.Second
 
 // regressionDir is the base directory for regression test data.
-const regressionDir = "testdata/regressions"
+const regressionDir = "../testdata/regressions"
 
 // makeRegressionParseFunc creates a ParseFunc with timeout for regression tests.
 func makeRegressionParseFunc(lang *ts.Language) corpustest.ParseFunc {

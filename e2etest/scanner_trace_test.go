@@ -213,8 +213,8 @@ func sanitizeTestName(name string) string {
 }
 
 func TestScannerTraces(t *testing.T) {
-	tracesDir := filepath.Join("testdata", "scanner-traces")
-	grammarsDir := filepath.Join("testdata", "grammars")
+	tracesDir := filepath.Join("..", "testdata", "scanner-traces")
+	grammarsDir := filepath.Join("..", "testdata", "grammars")
 
 	if _, err := os.Stat(tracesDir); os.IsNotExist(err) {
 		t.Skip("no scanner-traces directory — run 'make generate-scanner-traces' first")

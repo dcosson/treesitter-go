@@ -282,7 +282,7 @@ func seedFromRealworld(f *testing.F, repoName string) {
 	if langDir == "" {
 		return
 	}
-	realworldDir := filepath.Join("testdata", "realworld", langDir)
+	realworldDir := filepath.Join("..", "testdata", "realworld", langDir)
 	if _, err := os.Stat(realworldDir); os.IsNotExist(err) {
 		return
 	}

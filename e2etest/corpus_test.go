@@ -19,7 +19,7 @@ func corpusGrammarsDir() string {
 	if dir := os.Getenv("TREESITTER_GRAMMAR_DIR"); dir != "" {
 		return dir
 	}
-	return "testdata/grammars"
+	return "../testdata/grammars"
 }
 
 // TestCorpusJSON runs the tree-sitter-json corpus tests against the Go parser.
@@ -113,7 +113,7 @@ func TestDifferentialJSONSamples(t *testing.T) {
 
 // TestRegressionJSON runs regression tests from testdata/regressions/json/.
 func TestRegressionJSON(t *testing.T) {
-	regressionDir := "testdata/regressions/json"
+	regressionDir := "../testdata/regressions/json"
 	lang := tg.JsonLanguage()
 	lang.LexFn = jsonLexFn
 	difftest.RunRegressionTests(t, regressionDir, jsonParseFunc(lang))
@@ -121,7 +121,7 @@ func TestRegressionJSON(t *testing.T) {
 
 // TestDifferentialJSONRealworld runs differential testing on real-world JSON files.
 func TestDifferentialJSONRealworld(t *testing.T) {
-	realworldDir := "testdata/realworld/json"
+	realworldDir := "../testdata/realworld/json"
 	if _, err := os.Stat(realworldDir); os.IsNotExist(err) {
 		t.Skip("JSON realworld data not found")
 	}
