@@ -207,6 +207,7 @@ Tested against the official tree-sitter corpus tests for all 15 languages:
 | 2026-02-18 | 1615 | 19 | 1634 | 98.8% | DynPrec guard on advance swap |
 | 2026-02-24 | 1617 | 17 | 1634 | 99.0% | Error symbol metadata, Strategy 1 split, scanner fixes |
 | 2026-02-24 | 1621 | 13 | 1634 | 99.2% | Ruby % strings, keyword matching, TSX grammar |
+| 2026-02-26 | 1619 | 0 | 1619 | **100%** | All tests pass. Error cost parity, MISSING rendering, version pruning fixes |
 
 See `docs/corpus-progress.csv` for detailed per-commit history.
 
