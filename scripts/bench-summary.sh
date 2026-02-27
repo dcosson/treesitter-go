@@ -19,10 +19,12 @@ awk '
 	sub(/-[0-9]+$/, "", size)
 
 	ns = $3 + 0
+	bop = $7 + 0
 
 	key = impl SUBSEP lang SUBSEP size
 	sum[key] += ns
 	cnt[key]++
+	mem[key] += bop
 
 	if (!(lang in seen_lang)) {
 		seen_lang[lang] = 1
@@ -45,10 +47,10 @@ END {
 	}
 
 	printf "\n"
-	printf "%-14s %-10s %12s %12s %12s %12s %10s\n", \
-		"Language", "Size", "Go (total)", "Ref (total)", "Go (parse)", "Ref (parse)", "Go vs Ref"
-	printf "%-14s %-10s %12s %12s %12s %12s %10s\n", \
-		"--------", "----", "----------", "-----------", "----------", "-----------", "---------"
+	printf "%-14s %-10s %12s %12s %12s %12s %10s %10s %10s\n", \
+		"Language", "Size", "Go (total)", "Ref (total)", "Go (parse)", "Ref (parse)", "Go vs Ref", "Go mem", "Ref mem"
+	printf "%-14s %-10s %12s %12s %12s %12s %10s %10s %10s\n", \
+		"--------", "----", "----------", "-----------", "----------", "-----------", "---------", "------", "-------"
 
 	for (li = 1; li <= nlang; li++) {
 		lang = lang_order[li]
@@ -68,10 +70,13 @@ END {
 
 			go_avg = (cnt[go_key] > 0) ? sum[go_key] / cnt[go_key] : 0
 			ref_avg = (cnt[ref_key] > 0) ? sum[ref_key] / cnt[ref_key] : 0
+			go_mem = (cnt[go_key] > 0) ? mem[go_key] / cnt[go_key] : 0
+			ref_mem = (cnt[ref_key] > 0) ? mem[ref_key] / cnt[ref_key] : 0
 
 			if (size == "overhead") {
-				printf "%-14s %-10s %12s %12s %12s %12s %10s\n", \
-					lang, size, fmt_ns(go_avg), fmt_ns(ref_avg), "-", "-", "-"
+				printf "%-14s %-10s %12s %12s %12s %12s %10s %10s %10s\n", \
+					lang, size, fmt_ns(go_avg), fmt_ns(ref_avg), "-", "-", "-", \
+					fmt_bytes(go_mem), fmt_bytes(ref_mem)
 			} else {
 				go_parse = go_avg - go_overhead
 				ref_parse = ref_avg - ref_overhead
@@ -85,9 +90,10 @@ END {
 					ratio_str = "-"
 				}
 
-				printf "%-14s %-10s %12s %12s %12s %12s %10s\n", \
+				printf "%-14s %-10s %12s %12s %12s %12s %10s %10s %10s\n", \
 					lang, size, fmt_ns(go_avg), fmt_ns(ref_avg), \
-					fmt_ns(go_parse), fmt_ns(ref_parse), ratio_str
+					fmt_ns(go_parse), fmt_ns(ref_parse), ratio_str, \
+					fmt_bytes(go_mem), fmt_bytes(ref_mem)
 			}
 		}
 	}
@@ -102,5 +108,11 @@ function fmt_ns(ns) {
 	if (ns >= 1e6) return sprintf("%.1fms", ns / 1e6)
 	if (ns >= 1e3) return sprintf("%.1fus", ns / 1e3)
 	return sprintf("%.0fns", ns)
+}
+
+function fmt_bytes(b) {
+	if (b >= 1048576) return sprintf("%.1fMB", b / 1048576)
+	if (b >= 1024) return sprintf("%.1fKB", b / 1024)
+	return sprintf("%.0fB", b)
 }
 ' "$file"
