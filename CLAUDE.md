@@ -23,7 +23,16 @@ Tests in this project are slow — some require compiling all 15 language gramma
 | Differential tests (needs C CLI) | `make diff-test` |
 | Benchmarks (Go only) | `make bench-self` |
 | Benchmarks (Go vs C, needs CLI) | `make bench-compare` |
+| Scanner trace tests | `make test-scanner-traces` |
 | Fuzz testing | `make fuzz` |
+
+All multi-language targets support a `GRAMMAR=<name>` filter to run for a single language only. The value must match a name in `grammars.json`. Examples:
+
+```bash
+make test-corpus GRAMMAR=go
+make test-regression GRAMMAR=python
+make bench-self GRAMMAR=json
+```
 
 See the **Testing** section in `README.md` for full details on each test type, what it covers, where the code lives, and what setup is required.
 

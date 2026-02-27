@@ -25,7 +25,19 @@ Always use the Makefile test targets rather than running `go test` directly, unl
 | Differential tests (needs C CLI) | `make diff-test` |
 | Benchmarks (Go only) | `make bench-self` |
 | Benchmarks (Go vs C, needs CLI) | `make bench-compare` |
+| Scanner trace tests | `make test-scanner-traces` |
 | Fuzz testing | `make fuzz` |
+
+### Single-language filtering
+
+All multi-language targets accept `GRAMMAR=<name>` to run for one language only. The value is validated against `grammars.json`:
+
+```bash
+make test-corpus GRAMMAR=go
+make test-regression GRAMMAR=python
+make bench-self GRAMMAR=json
+make test-scanner-traces GRAMMAR=bash
+```
 
 See the **Testing** section in `README.md` for full details on each test type, what it covers, where the code lives, and what setup is required.
 

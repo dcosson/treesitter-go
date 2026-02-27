@@ -215,6 +215,17 @@ make test && make test-corpus && make test-regression
 | **Benchmarks (Go vs C)** | `make bench-compare` | `e2etest/benchmark_test.go` | `make deps` + `make bench-grammars` | Same as above, plus C reference parser for comparison. |
 | **Fuzz tests** | `make fuzz` | `e2etest/fuzz_test.go` | None | Runs all fuzz targets for 30s each (parse + scanner roundtrip). Finds crashes/panics. Single-language: `go test -fuzz=FuzzParseGo -fuzztime=60s ./e2etest/` |
 
+### Single-language filtering
+
+All multi-language targets accept a `GRAMMAR=<name>` argument to run for one language only. The value is validated against `grammars.json`:
+
+```bash
+make test-corpus GRAMMAR=go
+make test-regression GRAMMAR=python
+make bench-self GRAMMAR=json
+make test-scanner-traces GRAMMAR=bash
+```
+
 ### Setup
 
 ```bash

@@ -1,6 +1,33 @@
 TREE_SITTER_CLI := $(shell which tree-sitter 2>/dev/null)
 
-.PHONY: build test test-coverage bench-self bench-compare bench-grammars fetch-test-grammars fetch-realworld test-corpus test-corpus-json test-regression test-realworld-diff deps diff-test generate-scanner-traces test-scanner-traces fuzz
+# Optional language filter. Pass GRAMMAR=<name> to run only one language.
+# The value must match a name in grammars.json (e.g. GRAMMAR=go, GRAMMAR=json).
+GRAMMAR ?=
+
+# Validate GRAMMAR against the manifest if set.
+ifneq ($(GRAMMAR),)
+  VALID_GRAMMARS := $(shell jq -r '.[].name' grammars.json)
+  ifeq ($(filter $(GRAMMAR),$(VALID_GRAMMARS)),)
+    $(error GRAMMAR=$(GRAMMAR) is not in grammars.json. Valid: $(VALID_GRAMMARS))
+  endif
+  # For top-level test functions (TestCorpusGo, TestRegressionJSON, etc.)
+  # use case-insensitive match since function names are capitalized.
+  _RUN_CORPUS := TestCorpus(?i)$(GRAMMAR)$$
+  _RUN_REGRESSION := TestRegression(?i)$(GRAMMAR)$$
+  _RUN_REALWORLD := TestDifferentialRealworld/$(GRAMMAR)
+  _RUN_SCANNER_TRACES := TestScannerTraces/$(GRAMMAR)
+  _BENCH_FILTER := BenchmarkParse/go/$(GRAMMAR)
+  _BENCH_FILTER_CLI := BenchmarkParse/.*/$(GRAMMAR)
+else
+  _RUN_CORPUS := TestCorpus
+  _RUN_REGRESSION := TestRegression
+  _RUN_REALWORLD := TestDifferentialRealworld
+  _RUN_SCANNER_TRACES := TestScannerTraces
+  _BENCH_FILTER := .
+  _BENCH_FILTER_CLI := .
+endif
+
+.PHONY: build test test-coverage bench-self bench-compare bench-grammars fetch-test-grammars fetch-realworld test-corpus test-regression test-realworld-diff deps diff-test generate-scanner-traces test-scanner-traces fuzz
 
 build:
 	go build -o build/bin/ ./cmd/...
@@ -18,20 +45,17 @@ fetch-test-grammars:
 	go run ./cmd/fetch-grammars -config grammars.json -output build/grammars/
 
 test-corpus:
-	go test ./e2etest/ -run TestCorpus -v -count=1 -timeout 10m
-
-test-corpus-json:
-	go test ./... -run TestCorpus/json -v
+	go test ./e2etest/ -run '$(_RUN_CORPUS)' -v -count=1 -timeout 10m
 
 test-regression:
-	go test -v -race -run 'TestRegression' -count=1 -timeout 5m ./e2etest/
+	go test -v -race -run '$(_RUN_REGRESSION)' -count=1 -timeout 5m ./e2etest/
 
 fetch-realworld:
 	go run ./cmd/fetch-realworld -manifest testdata/realworld-manifest.json -output testdata/realworld/
 
 test-realworld-diff:
 ifdef TREE_SITTER_CLI
-	go test -v -race -run 'TestDifferentialRealworld' -count=1 -timeout 30m ./e2etest/
+	go test -v -race -run '$(_RUN_REALWORLD)' -count=1 -timeout 30m ./e2etest/
 else
 	@echo "tree-sitter CLI not found. Run 'make deps' to install."
 	@exit 1
@@ -85,7 +109,7 @@ generate-scanner-traces:
 	scripts/generate-scanner-traces.sh
 
 test-scanner-traces:
-	go test -v -race -run 'TestScannerTraces' -count=1 -timeout 10m ./e2etest/
+	go test -v -race -run '$(_RUN_SCANNER_TRACES)' -count=1 -timeout 10m ./e2etest/
 
 FUZZ_TIME ?= 30s
 
@@ -98,11 +122,11 @@ fuzz:
 	@echo "All fuzz targets passed."
 
 bench-self:
-	go test ./e2etest/ -run=NOMATCH -bench=. -benchmem -count=5 -timeout 10m | tee testdata/bench-results.txt
+	go test ./e2etest/ -run=NOMATCH -bench='$(_BENCH_FILTER)' -benchmem -count=5 -timeout 10m | tee testdata/bench-results.txt
 
 bench-compare:
 ifdef TREE_SITTER_CLI
-	go test ./e2etest/ -run=NOMATCH -bench=. -benchmem -count=5 -timeout 10m \
+	go test ./e2etest/ -run=NOMATCH -bench='$(_BENCH_FILTER_CLI)' -benchmem -count=5 -timeout 10m \
 		-ts-cli=$(TREE_SITTER_CLI) | tee testdata/bench-results.txt
 else
 	@echo "tree-sitter CLI not found. Run 'make deps' to install."
