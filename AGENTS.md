@@ -71,3 +71,28 @@ make fetch-realworld       # Needed for realworld diff tests
 - **`cmd/`** — CLI tools (built into `build/bin/` via `make build`).
 
 See `README.md` for the full architecture diagram and package descriptions.
+
+## Supported languages
+
+**`grammars.json`** in the project root is the source of truth for all supported languages. The Makefile, shell scripts, and CLI tools read from this manifest — do not maintain separate hardcoded language lists.
+
+## Adding a new grammar
+
+Follow the detailed steps in the README's **"Adding a Grammar"** section. Summary:
+
+1. **Manifest**: Add entry to `grammars.json` (`name`, `repo`, `version`, `ext`, `scanner`)
+2. **Fetch**: `make fetch-test-grammars`
+3. **Generate**: `build/bin/tsgo-generate -parser build/grammars/tree-sitter-<lang>/src/parser.c -package <lang>grammar -output internal/testgrammars/<lang>/language.go`
+4. **Scanner**: If `scanner.c` exists, port to Go in `scanners/<lang>/scanner.go` with unit tests
+5. **Test wiring**: Add to all test suites:
+   - `e2etest/corpus_languages_test.go` — `TestCorpus<Lang>` function
+   - `e2etest/benchmark_test.go` — entry in `benchLanguages()`
+   - `e2etest/manifest_coverage_test.go` — entry in `corpusLanguages` map
+   - `e2etest/regression_test.go` — `TestRegression<Lang>`
+   - `e2etest/fuzz_test.go` — `FuzzParse<Lang>`
+   - `e2etest/grammar_batchN_test.go` — integration tests for key constructs
+   - `e2etest/scanner_trace_test.go` — entry in `scannerLanguages()` (if scanner)
+   - `testdata/realworld-manifest.json` — 2+ real-world projects
+6. **Scanner traces**: `make generate-scanner-traces` (if scanner)
+7. **README**: Update any language count references
+8. **Verify**: `make test && make test-corpus` — manifest coverage tests will catch missing wiring

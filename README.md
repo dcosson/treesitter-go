@@ -127,38 +127,65 @@ The key steps:
 3. **Transpile** — `cmd/tsgo-generate` reads `parser.c` and emits an equivalent Go file with the same parse tables as Go data structures. External scanners must be manually ported to Go since they contain arbitrary C logic.
 4. **Runtime** — the pure-Go parser engine (`parser.go`) consumes the generated `language.go` tables and calls into Go scanner implementations via the `ExternalScanner` interface.
 
-## Adding a Grammar
-
-To add a new grammar:
-
-1. Obtain the tree-sitter grammar's `parser.c` (usually from the grammar's repo under `src/parser.c`)
-2. Run `tsgo-generate -parser src/parser.c -package langgrammar -output language.go`
-3. If the grammar has an external scanner (`scanner.c`), port it to Go implementing the `ExternalScanner` interface
-4. Add corpus tests from the upstream grammar's `test/corpus/` directory
-
-Pre-built grammars for 15 languages are available in `internal/testgrammars/`.
-
 ## Supported Languages
 
-The following grammars are included for testing and can be used as references for adding new grammars:
+The source of truth for supported languages is **`grammars.json`** in the project root. It lists each grammar's name, upstream repo, pinned version, file extension, and whether it has an external scanner.
 
-| Language | Grammar Source | External Scanner |
-|----------|---------------|-----------------|
-| Go | tree-sitter-go | No |
-| C | tree-sitter-c | No |
-| C++ | tree-sitter-cpp | Yes |
-| Python | tree-sitter-python | Yes |
-| JavaScript | tree-sitter-javascript | Yes |
-| TypeScript | tree-sitter-typescript | Yes |
-| Rust | tree-sitter-rust | Yes |
-| Ruby | tree-sitter-ruby | Yes |
-| Java | tree-sitter-java | No |
-| Perl | tree-sitter-perl | Yes |
-| Bash | tree-sitter-bash | Yes |
-| HTML | tree-sitter-html | Yes |
-| CSS | tree-sitter-css | Yes |
-| Lua | tree-sitter-lua | Yes |
-| JSON | tree-sitter-json | No |
+Generated parse tables live in `internal/testgrammars/<lang>/` and hand-ported external scanners in `scanners/<lang>/`.
+
+## Adding a Grammar
+
+### Steps
+
+**1. Register in the manifest**
+
+Add an entry to `grammars.json`:
+```json
+{"name": "newlang", "repo": "tree-sitter/tree-sitter-newlang", "version": "v1.0.0", "ext": ".nl", "scanner": true}
+```
+
+**2. Fetch the grammar repo**
+```bash
+make fetch-test-grammars
+```
+
+**3. Generate Go parse tables**
+```bash
+make build
+build/bin/tsgo-generate \
+  -parser build/grammars/tree-sitter-newlang/src/parser.c \
+  -package newlanggrammar \
+  -output internal/testgrammars/newlang/language.go
+```
+
+**4. Port external scanner** (if `src/scanner.c` exists)
+
+Create `scanners/newlang/scanner.go` implementing the `ExternalScanner` interface, plus unit tests at `scanners/newlang/scanner_test.go`. See existing scanners for reference.
+
+**5. Wire into test suites**
+
+| File | What to add |
+|------|-------------|
+| `e2etest/corpus_languages_test.go` | `TestCorpusNewLang` function calling `runCorpusForLanguage` |
+| `e2etest/benchmark_test.go` | Entry in `benchLanguages()` with input generator |
+| `e2etest/regression_test.go` | `TestRegressionNewLang`, create `testdata/regressions/newlang/` |
+| `e2etest/fuzz_test.go` | `FuzzParseNewLang` target |
+| `e2etest/grammar_batchN_test.go` | Hand-written integration tests for key constructs |
+| `e2etest/scanner_trace_test.go` | Entry in `scannerLanguages()` (if external scanner) |
+| `e2etest/manifest_coverage_test.go` | Entry in `corpusLanguages` map |
+| `testdata/realworld-manifest.json` | 2+ real-world projects with representative files |
+
+**6. Generate scanner traces** (if external scanner)
+```bash
+make generate-scanner-traces
+```
+
+**7. Verify**
+```bash
+make test && make test-corpus && make test-regression
+```
+
+`TestManifestCorpusCoverage` and `TestManifestBenchCoverage` will fail if any of the wiring steps above are missed.
 
 ## Testing
 

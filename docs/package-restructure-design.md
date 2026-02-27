@@ -450,7 +450,7 @@ make test-scanner-traces
 
 Add to `grammars.json`:
 ```json
-{"name": "newlang", "repo": "tree-sitter/tree-sitter-newlang", "version": "v1.0.0"}
+{"name": "newlang", "repo": "tree-sitter/tree-sitter-newlang", "version": "v1.0.0", "ext": ".nl", "scanner": true}
 ```
 
 **2. Fetch**

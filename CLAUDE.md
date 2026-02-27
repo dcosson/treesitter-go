@@ -51,3 +51,19 @@ make fetch-realworld       # Needed for realworld diff tests
 ## Code organization
 
 The root package (`treesitter.go`) is a pure facade — type aliases and constructor wrappers only, zero logic. All implementation lives in internal packages. See `README.md` Architecture section for the full package layout.
+
+## Supported languages
+
+**`grammars.json`** in the project root is the source of truth for all supported languages. It defines each grammar's name, upstream repo, pinned version, file extension, and whether it has an external scanner. The Makefile, shell scripts, and CLI tools all read from this manifest.
+
+## Adding a new grammar
+
+Follow the steps in the README's "Adding a Grammar" section. Key points:
+
+1. Add entry to `grammars.json` with all fields (`name`, `repo`, `version`, `ext`, and `scanner` if applicable)
+2. `make fetch-test-grammars` to clone the repo into `build/grammars/`
+3. Run `tsgo-generate` to produce `internal/testgrammars/<lang>/language.go`
+4. Port the external scanner to Go in `scanners/<lang>/` if one exists
+5. Wire into all test suites — corpus, benchmarks, regression, fuzz, grammar batch, scanner traces, manifest coverage map
+6. Update the README if the supported languages table or count references change
+7. Run `make test && make test-corpus` to verify — `TestManifestCorpusCoverage` and `TestManifestBenchCoverage` will catch missing wiring
