@@ -128,6 +128,7 @@ bench-compare: build
 ifdef TREE_SITTER_CLI
 	go test ./e2etest/ -run=NOMATCH -bench='$(_BENCH_FILTER_COMPARE)' -benchmem -count=5 -timeout 10m \
 		-ts-cli=$(TREE_SITTER_CLI) | tee testdata/bench-results.txt
+	@scripts/bench-summary.sh testdata/bench-results.txt
 else
 	@echo "tree-sitter CLI not found. Run 'make deps' to install."
 	@exit 1
