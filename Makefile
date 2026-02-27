@@ -1,12 +1,20 @@
 TREE_SITTER_CLI := $(shell which tree-sitter 2>/dev/null)
 
-.PHONY: build test bench bench-grammars fetch-test-grammars fetch-realworld test-corpus test-corpus-json test-regression test-realworld-diff deps diff-test generate-scanner-traces test-scanner-traces fuzz
+.PHONY: build test coverage bench bench-grammars fetch-test-grammars fetch-realworld test-corpus test-corpus-json test-regression test-realworld-diff deps diff-test generate-scanner-traces test-scanner-traces fuzz
+
+COVERAGE_PKGS := ./internal/parser,./internal/stack,./internal/subtree,./internal/lexer,./internal/tree,./internal/core,./internal/query,./language/,./lexer/
 
 build:
 	go build -o bin/ ./cmd/...
 
 test:
 	go test -v -race -skip 'TestCorpus|TestDifferential' ./...
+
+coverage:
+	-go test -skip 'TestCorpus|TestDifferential' -coverprofile=testdata/coverage.out -coverpkg=$(COVERAGE_PKGS) ./...
+	go tool cover -html=testdata/coverage.out -o testdata/coverage.html
+	@go tool cover -func=testdata/coverage.out | tail -1
+	@echo "Coverage report: testdata/coverage.html"
 
 fetch-test-grammars:
 	go run ./cmd/fetch-grammars -config testdata/grammars.json -output testdata/grammars/

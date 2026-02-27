@@ -13,6 +13,8 @@ bin/
 # Test artifacts
 /tmp/
 testdata/bench-results.txt
+testdata/coverage.out
+testdata/coverage.html
 
 # Build artifacts
 build/
