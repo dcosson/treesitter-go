@@ -18,6 +18,7 @@ ifneq ($(GRAMMAR),)
   _RUN_SCANNER_TRACES := TestScannerTraces/$(GRAMMAR)
   _BENCH_FILTER := BenchmarkParse/go/$(GRAMMAR)/
   _BENCH_FILTER_COMPARE := BenchmarkCompare/.*/$(GRAMMAR)/
+  _FUZZ_FILTER := FuzzParse(?i)$(GRAMMAR)$$
 else
   _RUN_CORPUS := TestCorpus
   _RUN_REGRESSION := TestRegression
@@ -25,9 +26,10 @@ else
   _RUN_SCANNER_TRACES := TestScannerTraces
   _BENCH_FILTER := .
   _BENCH_FILTER_COMPARE := .
+  _FUZZ_FILTER :=
 endif
 
-.PHONY: build test test-coverage bench-self bench-compare bench-grammars fetch-test-grammars fetch-realworld test-corpus test-regression test-realworld-diff deps diff-test generate-scanner-traces test-scanner-traces fuzz
+.PHONY: build test test-coverage fetch-test-grammars test-corpus test-regression fetch-realworld test-realworld-diff deps diff-test bench-grammars bench-self bench-compare generate-scanner-traces test-scanner-traces fuzz
 
 build:
 	go build -o build/bin/ ./cmd/...
@@ -114,11 +116,19 @@ test-scanner-traces:
 FUZZ_TIME ?= 30s
 
 fuzz:
+ifneq ($(_FUZZ_FILTER),)
+	@echo "Running fuzz targets matching $(GRAMMAR) ($(FUZZ_TIME) each)..."
+	@grep -o 'func Fuzz[A-Za-z]*' e2etest/fuzz_test.go | sed 's/^func //' | grep -iE 'FuzzParse$(GRAMMAR)$$' | while read target; do \
+		echo "--- $$target ($(FUZZ_TIME)) ---"; \
+		go test -fuzz=$$target -fuzztime=$(FUZZ_TIME) -timeout=0 ./e2etest/ || exit 1; \
+	done
+else
 	@echo "Running all fuzz targets ($(FUZZ_TIME) each)..."
 	@grep -o 'func Fuzz[A-Za-z]*' e2etest/fuzz_test.go | sed 's/^func //' | while read target; do \
 		echo "--- $$target ($(FUZZ_TIME)) ---"; \
 		go test -fuzz=$$target -fuzztime=$(FUZZ_TIME) -timeout=0 ./e2etest/ || exit 1; \
 	done
+endif
 	@echo "All fuzz targets passed."
 
 bench-self:

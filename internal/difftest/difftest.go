@@ -6,11 +6,13 @@ package difftest
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 
 	"github.com/treesitter-go/treesitter/internal/corpustest"
@@ -21,7 +23,13 @@ import (
 // Defaults to "tree-sitter" (auto-discovered via PATH).
 var TreeSitterCLI = "tree-sitter"
 
+// GrammarBaseDir is the directory containing fetched grammar repos (tree-sitter-<lang>/).
+// The tree-sitter CLI uses -p (--grammar-path) to compile and load grammars from here.
+// Defaults to "build/grammars" relative to the repo root.
+var GrammarBaseDir = "build/grammars"
+
 // Scope maps file extensions to tree-sitter --scope arguments.
+// Kept for backward compatibility; grammar path resolution is preferred.
 var Scope = map[string]string{
 	".json": "source.json",
 	".js":   "source.js",
@@ -36,15 +44,90 @@ var Scope = map[string]string{
 	".css":  "source.css",
 	".html": "text.html.basic",
 	".sh":   "source.bash",
+	".lua":  "source.luau",
+	".pl":   "source.perl",
+}
+
+// grammarManifestEntry matches the fields we need from grammars.json.
+type grammarManifestEntry struct {
+	Name    string `json:"name"`
+	Ext     string `json:"ext"`
+	Subpath string `json:"subpath,omitempty"`
+}
+
+var (
+	grammarPathMap     map[string]string // ext → grammar source dir
+	grammarPathMapOnce sync.Once
+)
+
+// loadGrammarPathMap reads grammars.json and builds ext → grammar source dir mapping.
+// Paths are resolved relative to grammars.json location so tests work from any directory.
+func loadGrammarPathMap() map[string]string {
+	grammarPathMapOnce.Do(func() {
+		grammarPathMap = make(map[string]string)
+
+		// Try grammars.json in repo root (may be running from e2etest/ or internal/difftest/).
+		candidates := []string{
+			"grammars.json",
+			"../grammars.json",
+			"../../grammars.json",
+		}
+		var data []byte
+		var repoRoot string
+		for _, c := range candidates {
+			var err error
+			data, err = os.ReadFile(c)
+			if err == nil {
+				repoRoot = filepath.Dir(c)
+				if repoRoot == "." {
+					repoRoot = ""
+				}
+				break
+			}
+		}
+		if data == nil {
+			return
+		}
+
+		var entries []grammarManifestEntry
+		if err := json.Unmarshal(data, &entries); err != nil {
+			return
+		}
+
+		baseDir := GrammarBaseDir
+		if repoRoot != "" {
+			baseDir = filepath.Join(repoRoot, baseDir)
+		}
+
+		for _, e := range entries {
+			grammarDir := filepath.Join(baseDir, "tree-sitter-"+e.Name)
+			if e.Subpath != "" {
+				grammarDir = filepath.Join(grammarDir, e.Subpath)
+			}
+			grammarPathMap[e.Ext] = grammarDir
+		}
+	})
+	return grammarPathMap
+}
+
+// grammarPathForExt returns the grammar source directory for a file extension,
+// or empty string if not found.
+func grammarPathForExt(ext string) string {
+	m := loadGrammarPathMap()
+	return m[ext]
 }
 
 // ParseWithCLI parses a source file using the tree-sitter CLI and returns
-// the S-expression output. The scope argument specifies the language
-// (e.g., "source.json"). If scope is empty, tree-sitter infers from the
-// file extension.
+// the S-expression output. It uses -p (--grammar-path) to point the CLI at
+// the grammar source directory for compilation. Falls back to --scope if
+// no grammar path is available.
 func ParseWithCLI(filePath, scope string) (string, error) {
 	args := []string{"parse"}
-	if scope != "" {
+
+	ext := filepath.Ext(filePath)
+	if gp := grammarPathForExt(ext); gp != "" {
+		args = append(args, "-p", gp)
+	} else if scope != "" {
 		args = append(args, "--scope", scope)
 	}
 	args = append(args, filePath)
