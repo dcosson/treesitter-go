@@ -58,11 +58,14 @@ GRAMMAR_DIR := build/grammars
 bench-grammars:
 ifdef TREE_SITTER_CLI
 	@mkdir -p $(BENCH_DYLIB_DIR)
-	@find $(GRAMMAR_DIR) -name grammar.json -path '*/src/grammar.json' | while read gj; do \
-		grammar_dir=$$(dirname $$(dirname "$$gj")); \
-		lang=$$(basename "$$grammar_dir" | sed 's/^tree-sitter-//'); \
+	@grep '"name"' grammars.json | sed 's/.*"name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/' | while read lang; do \
+		grammar_dir="$(GRAMMAR_DIR)/tree-sitter-$$lang"; \
+		if [ ! -d "$$grammar_dir/src" ]; then \
+			echo "ERROR: grammar directory not found: $$grammar_dir/src — run 'make fetch-test-grammars'" >&2; \
+			exit 1; \
+		fi; \
 		echo "Building $$lang dylib from $$grammar_dir"; \
-		$(TREE_SITTER_CLI) build "$$grammar_dir" -o $(BENCH_DYLIB_DIR)/$$lang.dylib; \
+		$(TREE_SITTER_CLI) build "$$grammar_dir" -o $(BENCH_DYLIB_DIR)/$$lang.dylib || exit 1; \
 	done
 else
 	@echo "tree-sitter CLI not found. Run 'make deps' to install."
