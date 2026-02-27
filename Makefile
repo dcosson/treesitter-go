@@ -2,11 +2,6 @@ TREE_SITTER_CLI := $(shell which tree-sitter 2>/dev/null)
 
 .PHONY: build test test-coverage bench bench-grammars fetch-test-grammars fetch-realworld test-corpus test-corpus-json test-regression test-realworld-diff deps diff-test generate-scanner-traces test-scanner-traces fuzz
 
-# Packages to measure coverage for (hand-written runtime code only;
-# excludes generated testgrammars, test-only packages, and scanners
-# which get self-coverage from their own unit tests)
-COVERAGE_PKGS := ./internal/parser,./internal/stack,./internal/subtree,./internal/lexer,./internal/tree,./internal/core,./internal/query,./language/,./lexer/
-
 build:
 	go build -o bin/ ./cmd/...
 
@@ -14,7 +9,7 @@ test:
 	go test -race -skip 'TestCorpus|TestDifferential' ./...
 
 test-coverage:
-	-go test -skip 'TestCorpus|TestDifferential' -coverprofile=testdata/coverage.out -coverpkg=$(COVERAGE_PKGS) ./...
+	-go test -skip 'TestCorpus|TestDifferential' -coverprofile=testdata/coverage.out $$(go list ./... | grep -v testgrammars)
 	go tool cover -html=testdata/coverage.out -o testdata/coverage.html
 	@go tool cover -func=testdata/coverage.out | tail -1
 	@echo "Coverage report: testdata/coverage.html"
