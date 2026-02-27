@@ -164,17 +164,28 @@ The following grammars are included for testing and can be used as references fo
 
 ### Test Types
 
-| Test | Command | Code Location | Requires CLI? | Notes |
-|------|---------|---------------|:---:|-------|
-| **Unit tests** | `make test` | `internal/*/`, `scanners/*/`, `language/` | No | Skips corpus and differential tests. Tests core runtime behavior with small focused inputs. |
-| **Corpus tests** | `make test-corpus` | `e2etest/corpus_*.go` | No | Tree-sitter's official test suites (1634 cases across 15 languages). Fixtures in `testdata/grammars/*/test/corpus/`. |
-| **Regression tests** | `make test-regression` | `e2etest/regression_test.go` | No | Curated inputs in `testdata/regression/<lang>/`. Guards against regressions in specific edge cases. |
-| **Differential tests** | `make diff-test` | `internal/difftest/` | **Yes** | Small set of per-grammar sample inputs compared against C tree-sitter CLI output. |
-| **Realworld diff tests** | `make test-realworld-diff` | `e2etest/realworld_diff_test.go` | **Yes** | Real-world OSS files fetched via `make fetch-realworld`, compared against C CLI output. |
-| **Benchmarks** | `make bench` | `e2etest/benchmark_test.go` | Optional | Parse throughput (bytes/sec) for all 15 languages. If CLI available, also benchmarks C parser. |
-| **Grammar batch tests** | `make test` (included) | `e2etest/grammar_batch*_test.go` | No | Hand-written integration tests for specific language constructs across all 15 languages. |
-| **Scanner traces** | `make test-scanner-traces` | `e2etest/scanner_trace_test.go` | No | External scanner parity — replays recorded C scanner calls against Go scanners. |
-| **Fuzz tests** | `make fuzz` | `e2etest/fuzz_test.go` | No | Runs all fuzz targets (parse + scanner roundtrip). Finds crashes/panics. |
+`make test` runs `go test -skip 'TestCorpus|TestDifferential' ./...` — it includes all unit tests across every package plus e2etest tests not matching those skip patterns. This is the main development command; it runs everything that doesn't require fetched grammar repos or the C CLI.
+
+#### Included in `make test`
+
+| Test | Standalone Command | Code Location | Setup Required | Notes |
+|------|-------------------|---------------|----------------|-------|
+| **Unit tests** | — | `internal/*/`, `scanners/*/`, `language/` | None | Parser, lexer, stack, subtree, corpustest framework, scanner unit tests. |
+| **API tests** | `go test -run TestApi ./e2etest/` | `e2etest/api_test.go` | None | Public API: Node, Tree, TreeCursor navigation and field access. |
+| **Error recovery tests** | `go test -run TestErrorRecovery ./e2etest/` | `e2etest/error_recovery_test.go` | None | Malformed input handling — no panics, ERROR nodes produced. |
+| **Grammar batch tests** | `go test -run TestGrammarBatch ./e2etest/` | `e2etest/grammar_batch*_test.go` | None | Hand-written integration tests for specific language constructs across all 15 languages. |
+| **Regression tests** | `make test-regression` | `e2etest/regression_test.go` | None | Curated inputs that previously caused bugs (hangs, panics, wrong output). Fixtures in `testdata/regression/<lang>/`. |
+| **Scanner traces** | `make test-scanner-traces` | `e2etest/scanner_trace_test.go` | None | External scanner parity — replays recorded C scanner calls against Go scanners. Traces in `testdata/scanner-traces/`. |
+
+#### Require separate setup (not in `make test`)
+
+| Test | Command | Code Location | Setup Required | Notes |
+|------|---------|---------------|----------------|-------|
+| **Corpus tests** | `make test-corpus` | `e2etest/corpus_*.go` | `make fetch-test-grammars` | Tree-sitter's official test suites — 1619 cases across 15 languages. Each case has input + expected S-expression. |
+| **Differential tests** | `make diff-test` | `internal/difftest/` | `make deps` | Small set of per-grammar sample inputs compared Go vs C tree-sitter CLI output. |
+| **Realworld diff tests** | `make test-realworld-diff` | `e2etest/realworld_diff_test.go` | `make deps` + `make fetch-realworld` | Real-world OSS files (kubernetes, flask, rails, etc.) compared Go vs C CLI. |
+| **Benchmarks** | `make bench` | `e2etest/benchmark_test.go` | Optional: `make deps` for C comparison | Parse throughput (bytes/sec) for all 15 languages at multiple sizes. |
+| **Fuzz tests** | `make fuzz` | `e2etest/fuzz_test.go` | None | Runs all fuzz targets for 30s each (parse + scanner roundtrip). Finds crashes/panics. Single-language: `go test -fuzz=FuzzParseGo -fuzztime=60s ./e2etest/` |
 
 ### Setup
 
