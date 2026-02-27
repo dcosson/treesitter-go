@@ -1,0 +1,33 @@
+{
+  "id": "tree-sitter-go-ql0",
+  "title": "Investigate realworld diff divergences",
+  "description": "Investigate and fix the 12 remaining realworld differential test divergences across C (6), C++ (3), Perl (2), and Go (1). These are genuine parse divergences between the Go and C tree-sitter implementations, not test infrastructure issues.",
+  "status": "open",
+  "priority": 2,
+  "type": "epic",
+  "dependents": [
+    {
+      "id": "tree-sitter-go-ql0.1",
+      "type": "parent-child"
+    },
+    {
+      "id": "tree-sitter-go-ql0.2",
+      "type": "parent-child"
+    },
+    {
+      "id": "tree-sitter-go-ql0.3",
+      "type": "parent-child"
+    },
+    {
+      "id": "tree-sitter-go-ql0.4",
+      "type": "parent-child"
+    }
+  ],
+  "created_by": "Danny Cosson",
+  "owner": "dcosson@gmail.com",
+  "labels": [
+    "project=tree-sitter-go"
+  ],
+  "created_at": "2026-02-27T14:57:10.34796-08:00",
+  "updated_at": "2026-02-27T14:57:10.34796-08:00"
+}

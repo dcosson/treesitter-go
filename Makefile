@@ -47,7 +47,7 @@ fetch-test-grammars:
 	go run ./cmd/fetch-grammars -config grammars.json -output build/grammars/
 
 test-corpus:
-	go test ./e2etest/ -run '$(_RUN_CORPUS)' -v -count=1 -timeout 10m
+	go test ./e2etest/ -run '$(_RUN_CORPUS)' -v -count=1 -timeout 20s 
 
 test-regression:
 	go test -v -race -run '$(_RUN_REGRESSION)' -count=1 -timeout 5m ./e2etest/

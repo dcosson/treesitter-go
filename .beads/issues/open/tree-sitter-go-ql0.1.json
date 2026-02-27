@@ -1,0 +1,28 @@
+{
+  "id": "tree-sitter-go-ql0.1",
+  "title": "Fix C++ .h grammar mismatch in realworld diff tests",
+  "description": "C++ project .h files (descriptor.h) are parsed with C grammar by the CLI because .h maps to tree-sitter-c. The Go side uses C++ grammar. This is a test infra issue: RunDifferentialDir needs to pass grammar context to ParseWithCLI instead of inferring from extension. Also consider if C redis server.h and curl curl.h have the same issue (unlikely - those are actual C headers).",
+  "status": "open",
+  "priority": 2,
+  "type": "task",
+  "parent": "tree-sitter-go-ql0",
+  "dependencies": [
+    {
+      "id": "tree-sitter-go-ql0",
+      "type": "parent-child"
+    }
+  ],
+  "dependents": [
+    {
+      "id": "tree-sitter-go-ql0.2",
+      "type": "blocks"
+    }
+  ],
+  "created_by": "Danny Cosson",
+  "owner": "dcosson@gmail.com",
+  "labels": [
+    "project=tree-sitter-go"
+  ],
+  "created_at": "2026-02-27T14:57:17.102388-08:00",
+  "updated_at": "2026-02-27T14:57:17.102388-08:00"
+}

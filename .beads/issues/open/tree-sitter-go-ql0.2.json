@@ -1,0 +1,26 @@
+{
+  "id": "tree-sitter-go-ql0.2",
+  "title": "Investigate C/C++ MISSING semicolon divergences",
+  "description": "Multiple C and C++ files show divergences where Go inserts (MISSING \";\") but C doesn't, or vice versa. Files: networking.c, server.c, server.h (C/redis), descriptor.cc (C++/protobuf). Need to identify the specific code patterns triggering this and whether it's an error recovery difference or a parsing logic bug. Also investigate transfer.c and url.c which have other error recovery differences.",
+  "status": "open",
+  "priority": 2,
+  "type": "task",
+  "parent": "tree-sitter-go-ql0",
+  "dependencies": [
+    {
+      "id": "tree-sitter-go-ql0",
+      "type": "parent-child"
+    },
+    {
+      "id": "tree-sitter-go-ql0.1",
+      "type": "blocks"
+    }
+  ],
+  "created_by": "Danny Cosson",
+  "owner": "dcosson@gmail.com",
+  "labels": [
+    "project=tree-sitter-go"
+  ],
+  "created_at": "2026-02-27T14:57:20.503878-08:00",
+  "updated_at": "2026-02-27T14:57:20.503878-08:00"
+}
