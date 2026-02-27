@@ -16,8 +16,8 @@ ifneq ($(GRAMMAR),)
   _RUN_REGRESSION := TestRegression(?i)$(GRAMMAR)$$
   _RUN_REALWORLD := TestDifferentialRealworld/$(GRAMMAR)
   _RUN_SCANNER_TRACES := TestScannerTraces/$(GRAMMAR)
-  _BENCH_FILTER := BenchmarkParse/go/$(GRAMMAR)
-  _BENCH_FILTER_COMPARE := BenchmarkCompare/.*/$(GRAMMAR)
+  _BENCH_FILTER := BenchmarkParse/go/$(GRAMMAR)/
+  _BENCH_FILTER_COMPARE := BenchmarkCompare/.*/$(GRAMMAR)/
 else
   _RUN_CORPUS := TestCorpus
   _RUN_REGRESSION := TestRegression
