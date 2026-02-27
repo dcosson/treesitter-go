@@ -169,16 +169,18 @@ func refParseBytes(input []byte, ext, libName string) error {
 	if err != nil {
 		return err
 	}
-	defer os.Remove(tmpFile.Name())
+	tmpPath := tmpFile.Name()
 	if _, err := tmpFile.Write(input); err != nil {
 		tmpFile.Close()
+		os.Remove(tmpPath)
 		return err
 	}
 	tmpFile.Close()
 
 	libPath := filepath.Join(benchDylibDir, libName+".dylib")
-	cmd := exec.Command(*tsCLI, "parse", "--lib-path", libPath, "--lang-name", libName, tmpFile.Name())
+	cmd := exec.Command(*tsCLI, "parse", "--lib-path", libPath, "--lang-name", libName, tmpPath)
 	output, err := cmd.CombinedOutput()
+	os.Remove(tmpPath)
 	if err != nil {
 		if exitErr, ok := err.(*exec.ExitError); ok && exitErr.ExitCode() == 1 {
 			return nil // Parse tree has errors but CLI still produced valid output.
@@ -194,15 +196,17 @@ func goParseBytes(input []byte, ext, langName string) error {
 	if err != nil {
 		return err
 	}
-	defer os.Remove(tmpFile.Name())
+	tmpPath := tmpFile.Name()
 	if _, err := tmpFile.Write(input); err != nil {
 		tmpFile.Close()
+		os.Remove(tmpPath)
 		return err
 	}
 	tmpFile.Close()
 
-	cmd := exec.Command(tsgoParseCmd, "-lang", langName, tmpFile.Name())
+	cmd := exec.Command(tsgoParseCmd, "-lang", langName, tmpPath)
 	output, err := cmd.CombinedOutput()
+	os.Remove(tmpPath)
 	if err != nil {
 		return fmt.Errorf("tsgo-parse failed: %v\noutput: %s", err, output)
 	}
