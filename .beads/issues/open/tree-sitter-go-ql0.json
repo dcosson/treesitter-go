@@ -1,7 +1,7 @@
 {
   "id": "tree-sitter-go-ql0",
   "title": "Investigate realworld diff divergences",
-  "description": "Investigate and fix remaining realworld differential test divergences. Started with 12 failures, now 11 (networking.c fixed as MISSING normalization false positive).\n\nRoot cause identified: Go main loop advances one version at a time and terminates before MISSING token versions can accept. See ql0.5 for the fix.\n\nCompleted:\n- doReduce alignment with C (isFragile, fragile/parse_state, single-pass) — committed\n- betterVersionExists fixes (4 mismatches) — committed\n- MISSING node normalization in difftest.go — committed, fixed networking.c\n- diff-test → test-diff rename — committed\n\nIn progress:\n- ql0.5: Main loop restructure (root cause, P1)\n\nRemaining:\n- ql0.3: Perl divergences (likely fixed by ql0.5)\n- ql0.4: Go generics ambiguity (separate issue)",
+  "description": "## Epic: Investigate realworld diff divergences\n\nTrack progress on achieving parity between Go and C tree-sitter parser output on realworld source files.\n\n### Progress\n- Started at 12 file-level divergences across C (5), C++ (3), Perl (2), Go (1), Redis (1)\n- Now at 2 file-level divergences: curl.h, descriptor.h\n\n### Closed\n- ql0.1: Superseded by ql0.5\n- ql0.3: Perl divergences fixed by main loop restructure\n- ql0.5: Main loop restructure (advance all versions before condensing)\n\n### Open\n- ql0.2: 2 remaining C/C++ header divergences (context-dependent error recovery)\n- ql0.4: Go generics (kuberuntime_manager.go) — passes now, monitoring\n\n### Key Commits\n- dd0d2f6: doReduce/betterVersionExists alignment, MISSING normalization\n- 987e4ee: regression test for missing #endif\n- 3bf028d: main loop restructure\n- 4a6fb26: condenseStack unconditional (reviewer P1 fix)",
   "status": "open",
   "priority": 2,
   "type": "epic",
@@ -33,5 +33,5 @@
     "project=tree-sitter-go"
   ],
   "created_at": "2026-02-27T14:57:10.34796-08:00",
-  "updated_at": "2026-02-28T22:10:30.709913-08:00"
+  "updated_at": "2026-02-28T22:53:53.903411-08:00"
 }

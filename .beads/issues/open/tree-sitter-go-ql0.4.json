@@ -1,7 +1,7 @@
 {
   "id": "tree-sitter-go-ql0.4",
   "title": "Investigate Go generics ambiguity in kuberuntime_manager.go",
-  "description": "Go parser produces type_instantiation_expression where C produces index_expression (selector_expression ...) at position 82619 in kubernetes/kuberuntime_manager.go. This is a known Go generics ambiguity. Need to identify the exact code pattern and determine if this is a grammar version difference or a parser behavior difference.",
+  "description": "Go generics ambiguity in kuberuntime_manager.go - now passes after main loop fix. Monitor for regression.",
   "status": "open",
   "priority": 2,
   "type": "task",
@@ -18,5 +18,5 @@
     "project=tree-sitter-go"
   ],
   "created_at": "2026-02-27T14:57:25.008049-08:00",
-  "updated_at": "2026-02-27T14:57:25.008049-08:00"
+  "updated_at": "2026-02-28T22:44:02.736977-08:00"
 }
