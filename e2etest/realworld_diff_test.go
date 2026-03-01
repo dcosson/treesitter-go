@@ -28,6 +28,7 @@ import (
 	javagrammar "github.com/treesitter-go/treesitter/internal/testgrammars/java"
 	jsgrammar "github.com/treesitter-go/treesitter/internal/testgrammars/javascript"
 	luagrammar "github.com/treesitter-go/treesitter/internal/testgrammars/lua"
+	tg "github.com/treesitter-go/treesitter/internal/testgrammars"
 	perlgrammar "github.com/treesitter-go/treesitter/internal/testgrammars/perl"
 	pythongrammar "github.com/treesitter-go/treesitter/internal/testgrammars/python"
 	rubygrammar "github.com/treesitter-go/treesitter/internal/testgrammars/ruby"
@@ -108,6 +109,10 @@ func realworldLang(name string) *ts.Language {
 		l := luagrammar.LuaLanguage()
 		l.NewExternalScanner = luascanner.New
 		return l
+	case "json":
+		l := tg.JsonLanguage()
+		l.LexFn = jsonLexFn
+		return l
 	case "perl":
 		l := perlgrammar.PerlLanguage()
 		l.NewExternalScanner = perlscanner.New
@@ -171,7 +176,7 @@ func allRealworldLanguages() []realworldLanguage {
 			projects: []string{"nvm"},
 		},
 		{
-			name: "json", lang: nil, // Uses the JSON grammar from the root package.
+			name: "json", lang: realworldLang("json"),
 			scope: "source.json", extensions: []string{".json"},
 			projects: []string{"schemastore"},
 		},
