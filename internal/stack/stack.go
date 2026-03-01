@@ -406,15 +406,15 @@ func (s *Stack) Push(version StackVersion, state StateID, subtree Subtree, isPen
 	newNode.position = position
 	if oldNode != nil {
 		newNode.errorCost = oldNode.errorCost
-		newNode.nodeCount = oldNode.nodeCount + 1
+		newNode.nodeCount = oldNode.nodeCount
 		newNode.dynamicPrecedence = oldNode.dynamicPrecedence
-	} else {
-		newNode.nodeCount = 1
 	}
 
-	// Add error cost and dynamic precedence from the subtree.
+	// Add subtree contributions: error cost, node count, dynamic precedence.
+	// Matches C's stack_node_new (stack.c:167-172).
 	if !subtree.IsZero() {
 		newNode.errorCost += GetErrorCost(subtree, s.arena)
+		newNode.nodeCount += subtreeNodeCount(subtree, s.arena)
 		newNode.dynamicPrecedence += GetDynamicPrecedence(subtree, s.arena)
 	}
 
@@ -836,18 +836,21 @@ func (s *Stack) Merge(target, source StackVersion) bool {
 	targetHead := &s.heads[target]
 	sourceHead := &s.heads[source]
 
-	// If merging in error state, update the error marker.
-	// Matches C: if (head1->node->state == ERROR_STATE)
-	//   head1->node_count_at_last_error = head1->node->node_count;
-	if targetHead.node.state == 0 {
-		targetHead.nodeCountAtLastError = targetHead.node.nodeCount
-	}
-
 	// Add source's links to target using the three-case add logic.
+	// MUST happen BEFORE updating nodeCountAtLastError, because nodeAddLink
+	// may increase targetNode.nodeCount. Matches C's ts_stack_merge
+	// (stack.c:721-726) where links are added first, then error marker updated.
 	targetNode := targetHead.node
 	sourceNode := sourceHead.node
 	for i := uint16(0); i < sourceNode.linkCount; i++ {
 		s.nodeAddLink(targetNode, sourceNode.links[i])
+	}
+
+	// If merging in error state, update the error marker AFTER adding links.
+	// Matches C: if (head1->node->state == ERROR_STATE)
+	//   head1->node_count_at_last_error = head1->node->node_count;
+	if targetHead.node.state == 0 {
+		targetHead.nodeCountAtLastError = targetHead.node.nodeCount
 	}
 
 	// Remove the source version (matches C's ts_stack_merge behavior).
