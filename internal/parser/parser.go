@@ -260,37 +260,72 @@ func (p *Parser) Parse(ctx context.Context, input Input, oldTree *Tree) *Tree {
 	// State 1 is the start state for the grammar's top-level rule.
 	p.stack.AddVersion(1, LengthZero)
 
+	// Main parse loop — advance all versions before condensing.
+	// Faithful port of C tree-sitter's main loop (parser.c:2121-2176).
+	//
+	// The C loop advances every active version once per outer iteration,
+	// then condenses (merges/prunes/resumes paused versions). This ensures
+	// that all versions—including those created during error recovery (e.g.,
+	// a MISSING-token version)—get a chance to advance and potentially
+	// accept before the finishedTree cost check terminates parsing.
+	var position, lastPosition uint32
+	var versionCount int
 	for {
-		// Check for cancellation periodically.
-		p.operationCount++
-		if p.operationCount%p.cancellationCheckInterval == 0 {
-			select {
-			case <-ctx.Done():
-				return nil
-			default:
+		// Advance all versions, one step each. Matches C's inner for-loop
+		// (parser.c:2123-2153): iterate version 0..version_count, advancing
+		// each active version once.
+		advanced := false
+		for version := StackVersion(0); ; version++ {
+			versionCount = p.stack.VersionCount()
+			if int(version) >= versionCount {
+				break
+			}
+
+			for p.stack.IsActive(version) {
+				// Check for cancellation periodically.
+				p.operationCount++
+				if p.operationCount%p.cancellationCheckInterval == 0 {
+					select {
+					case <-ctx.Done():
+						return nil
+					default:
+					}
+				}
+
+				if !p.advanceVersion(version) {
+					// advanceVersion halted this version (e.g., scanner error).
+					break
+				}
+
+				advanced = true
+
+				// Position-based break: after advancing, check if this version
+				// has made progress. Break to advance the next version.
+				// Matches C: position > last_position || (version > 0 && position == last_position)
+				position = p.stack.Position(version).Bytes
+				if position > lastPosition || (version > 0 && position == lastPosition) {
+					lastPosition = position
+					break
+				}
 			}
 		}
 
-		// Find an active version to advance.
-		version := p.findActiveVersion()
-		if version < 0 {
+		if !advanced {
 			break
 		}
 
-		// Advance this version.
-		if !p.advanceVersion(StackVersion(version)) {
-			// If advance failed and no versions remain, we're done.
-			if p.stack.ActiveVersionCount() == 0 {
-				break
-			}
-		}
-
 		// Condense: merge/prune versions, resume paused versions.
+		// Only called after ALL versions have been advanced once.
 		minErrorCost := p.condenseStack()
 
 		// If the finished tree is better than all remaining versions, stop.
 		if !p.finishedTree.IsZero() && GetErrorCost(p.finishedTree, p.arena) < minErrorCost {
 			p.stack.Clear()
+			break
+		}
+
+		// Check if any versions remain.
+		if versionCount == 0 {
 			break
 		}
 	}
@@ -2228,6 +2263,12 @@ func (p *Parser) condenseStack() uint32 {
 			if p.stack.IsPaused(v) {
 				if !hasUnpausedVersion && p.acceptCount < MaxVersionCount {
 					// Resume this version and handle error recovery.
+					// Update minErrorCost to reflect this version's cost.
+					// Matches C: min_error_cost = ts_stack_error_cost(self->stack, i)
+					// (parser.c:1843). This prevents the finishedTree cost check
+					// from terminating the parser before newly created versions
+					// (e.g., a MISSING-token version) can be advanced.
+					minErrorCost = p.stack.ErrorCost(v)
 					lookahead := p.stack.Resume(v)
 					p.handleError(v, lookahead)
 					if p.debug {

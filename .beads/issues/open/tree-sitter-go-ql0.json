@@ -1,7 +1,7 @@
 {
   "id": "tree-sitter-go-ql0",
   "title": "Investigate realworld diff divergences",
-  "description": "Investigate and fix the 12 remaining realworld differential test divergences across C (6), C++ (3), Perl (2), and Go (1). These are genuine parse divergences between the Go and C tree-sitter implementations, not test infrastructure issues.",
+  "description": "Investigate and fix remaining realworld differential test divergences. Started with 12 failures, now 11 (networking.c fixed as MISSING normalization false positive).\n\nRoot cause identified: Go main loop advances one version at a time and terminates before MISSING token versions can accept. See ql0.5 for the fix.\n\nCompleted:\n- doReduce alignment with C (isFragile, fragile/parse_state, single-pass) — committed\n- betterVersionExists fixes (4 mismatches) — committed\n- MISSING node normalization in difftest.go — committed, fixed networking.c\n- diff-test → test-diff rename — committed\n\nIn progress:\n- ql0.5: Main loop restructure (root cause, P1)\n\nRemaining:\n- ql0.3: Perl divergences (likely fixed by ql0.5)\n- ql0.4: Go generics ambiguity (separate issue)",
   "status": "open",
   "priority": 2,
   "type": "epic",
@@ -21,6 +21,10 @@
     {
       "id": "tree-sitter-go-ql0.4",
       "type": "parent-child"
+    },
+    {
+      "id": "tree-sitter-go-ql0.5",
+      "type": "parent-child"
     }
   ],
   "created_by": "Danny Cosson",
@@ -29,5 +33,5 @@
     "project=tree-sitter-go"
   ],
   "created_at": "2026-02-27T14:57:10.34796-08:00",
-  "updated_at": "2026-02-27T14:57:10.34796-08:00"
+  "updated_at": "2026-02-28T22:10:30.709913-08:00"
 }
