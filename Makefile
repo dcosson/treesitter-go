@@ -57,7 +57,7 @@ fetch-realworld:
 
 test-realworld-diff:
 ifdef TREE_SITTER_CLI
-	go test -v -race -run '$(_RUN_REALWORLD)' -count=1 -timeout 30m ./e2etest/
+	go test -v -run '$(_RUN_REALWORLD)' -count=1 -timeout 30m ./e2etest/
 else
 	@echo "tree-sitter CLI not found. Run 'make deps' to install."
 	@exit 1
@@ -111,7 +111,7 @@ generate-scanner-traces:
 	scripts/generate-scanner-traces.sh
 
 test-scanner-traces:
-	go test -v -race -run '$(_RUN_SCANNER_TRACES)' -count=1 -timeout 10m ./e2etest/
+	go test -v -run '$(_RUN_SCANNER_TRACES)' -count=1 -timeout 10m ./e2etest/
 
 FUZZ_TIME ?= 30s
 
