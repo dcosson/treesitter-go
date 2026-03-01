@@ -192,7 +192,7 @@ func allRealworldLanguages() []realworldLanguage {
 		},
 		{
 			name: "lua", lang: realworldLang("lua"),
-			scope: "source.lua", extensions: []string{".lua"},
+			scope: "source.luau", extensions: []string{".lua"},
 			projects: []string{"neovim"},
 		},
 		{
@@ -280,7 +280,7 @@ func TestDifferentialRealworld(t *testing.T) {
 						t.Skipf("realworld not downloaded: run 'make fetch-realworld' first")
 					}
 
-					difftest.RunDifferentialDir(t, projDir, cl.extensions, parseFunc)
+					difftest.RunDifferentialDir(t, projDir, cl.extensions, parseFunc, cl.scope)
 				})
 			}
 		})

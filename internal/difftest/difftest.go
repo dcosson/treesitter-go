@@ -144,9 +144,27 @@ func grammarPathForExt(ext string) string {
 func ParseWithCLI(filePath, scope string) (string, error) {
 	args := []string{"parse"}
 
-	ext := filepath.Ext(filePath)
-	if gp := grammarPathForExt(ext); gp != "" {
-		args = append(args, "-p", gp)
+	// Resolve grammar path. When scope is provided, prefer the grammar path
+	// that matches the scope's primary extension (e.g., scope "source.cpp"
+	// maps to ".cpp" → C++ grammar). This handles ambiguous extensions like
+	// .h which can be C or C++ depending on context.
+	var grammarPath string
+	if scope != "" {
+		for e, s := range Scope {
+			if s == scope {
+				grammarPath = grammarPathForExt(e)
+				if grammarPath != "" {
+					break
+				}
+			}
+		}
+	}
+	if grammarPath == "" {
+		ext := filepath.Ext(filePath)
+		grammarPath = grammarPathForExt(ext)
+	}
+	if grammarPath != "" {
+		args = append(args, "-p", grammarPath)
 	} else if scope != "" {
 		args = append(args, "--scope", scope)
 	}
@@ -327,7 +345,10 @@ func RunDifferentialCorpus(t *testing.T, cases []corpustest.TestCase, scope stri
 }
 
 // RunDifferentialFile parses a single file with both implementations and compares.
-func RunDifferentialFile(t *testing.T, filePath string, goParseFunc corpustest.ParseFunc) {
+// If scopeOverride is provided and non-empty, it is used for the C CLI instead
+// of the default extension-based scope. This is needed for ambiguous extensions
+// like .h which may be C or C++ depending on the project context.
+func RunDifferentialFile(t *testing.T, filePath string, goParseFunc corpustest.ParseFunc, scopeOverride ...string) {
 	t.Helper()
 
 	if _, err := exec.LookPath(TreeSitterCLI); err != nil {
@@ -339,8 +360,14 @@ func RunDifferentialFile(t *testing.T, filePath string, goParseFunc corpustest.P
 		t.Fatalf("reading %s: %v", filePath, err)
 	}
 
-	ext := filepath.Ext(filePath)
-	scope := Scope[ext]
+	scope := ""
+	if len(scopeOverride) > 0 {
+		scope = scopeOverride[0]
+	}
+	if scope == "" {
+		ext := filepath.Ext(filePath)
+		scope = Scope[ext]
+	}
 
 	result, err := Compare(input, scope, goParseFunc)
 	if err != nil {
@@ -357,12 +384,19 @@ func RunDifferentialFile(t *testing.T, filePath string, goParseFunc corpustest.P
 }
 
 // RunDifferentialDir runs differential testing on all files in a directory
-// matching the given extensions.
-func RunDifferentialDir(t *testing.T, dir string, extensions []string, goParseFunc corpustest.ParseFunc) {
+// matching the given extensions. If scopeOverride is non-empty, it is used
+// for all files regardless of their extension (needed for .h files in C++
+// projects, for example).
+func RunDifferentialDir(t *testing.T, dir string, extensions []string, goParseFunc corpustest.ParseFunc, scopeOverride ...string) {
 	t.Helper()
 
 	if _, err := exec.LookPath(TreeSitterCLI); err != nil {
 		t.Skipf("tree-sitter CLI not found in PATH: %v", err)
+	}
+
+	scope := ""
+	if len(scopeOverride) > 0 {
+		scope = scopeOverride[0]
 	}
 
 	extSet := make(map[string]bool)
@@ -383,7 +417,11 @@ func RunDifferentialDir(t *testing.T, dir string, extensions []string, goParseFu
 
 		relPath, _ := filepath.Rel(dir, path)
 		t.Run(relPath, func(t *testing.T) {
-			RunDifferentialFile(t, path, goParseFunc)
+			if scope != "" {
+				RunDifferentialFile(t, path, goParseFunc, scope)
+			} else {
+				RunDifferentialFile(t, path, goParseFunc)
+			}
 		})
 		return nil
 	})
