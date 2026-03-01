@@ -274,7 +274,6 @@ func (p *Parser) Parse(ctx context.Context, input Input, oldTree *Tree) *Tree {
 		// Advance all versions, one step each. Matches C's inner for-loop
 		// (parser.c:2123-2153): iterate version 0..version_count, advancing
 		// each active version once.
-		advanced := false
 		for version := StackVersion(0); ; version++ {
 			versionCount = p.stack.VersionCount()
 			if int(version) >= versionCount {
@@ -297,8 +296,6 @@ func (p *Parser) Parse(ctx context.Context, input Input, oldTree *Tree) *Tree {
 					break
 				}
 
-				advanced = true
-
 				// Position-based break: after advancing, check if this version
 				// has made progress. Break to advance the next version.
 				// Matches C: position > last_position || (version > 0 && position == last_position)
@@ -310,12 +307,11 @@ func (p *Parser) Parse(ctx context.Context, input Input, oldTree *Tree) *Tree {
 			}
 		}
 
-		if !advanced {
-			break
-		}
-
 		// Condense: merge/prune versions, resume paused versions.
-		// Only called after ALL versions have been advanced once.
+		// Always runs after each pass, even if no version advanced — condense
+		// is what resumes paused versions for error recovery.
+		// Matches C: condense runs unconditionally per outer iteration
+		// (parser.c:2155-2166).
 		minErrorCost := p.condenseStack()
 
 		// If the finished tree is better than all remaining versions, stop.
@@ -324,8 +320,8 @@ func (p *Parser) Parse(ctx context.Context, input Input, oldTree *Tree) *Tree {
 			break
 		}
 
-		// Check if any versions remain.
-		if versionCount == 0 {
+		// Terminate when no versions remain (matches C: while (version_count != 0)).
+		if p.stack.VersionCount() == 0 {
 			break
 		}
 	}
