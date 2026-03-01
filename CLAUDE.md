@@ -20,7 +20,7 @@ Tests in this project are slow — some require compiling all 15 language gramma
 | Corpus tests (all 15 languages) | `make test-corpus` |
 | Regression tests only | `make test-regression` |
 | Realworld differential (needs C CLI) | `make test-realworld-diff` |
-| Differential tests (needs C CLI) | `make diff-test` |
+| Differential tests (needs C CLI) | `make test-diff` |
 | Benchmarks (Go only) | `make bench-self` |
 | Benchmarks (Go vs C, needs CLI) | `make bench-compare` |
 | Scanner trace tests | `make test-scanner-traces` |

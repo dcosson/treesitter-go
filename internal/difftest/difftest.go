@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"testing"
@@ -198,12 +199,26 @@ func ParseBytesWithCLI(input []byte, scope string) (string, error) {
 	return ParseWithCLI(tmpFile.Name(), scope)
 }
 
+// missingNodeRe matches MISSING nodes in S-expressions, e.g.:
+//
+//	(MISSING ";") or (MISSING identifier)
+//
+// The C CLI's verbose format excludes MISSING nodes from the tree output
+// (reporting them only in the trailing summary line), while Go's String()
+// includes them inline. Stripping MISSING nodes from Go's output makes
+// the comparison fair — both parsers produce the same tree structure, they
+// just serialize MISSING markers differently.
+var missingNodeRe = regexp.MustCompile(`\s*\(MISSING "[^"]*"\)|\s*\(MISSING \w+\)`)
+
 // NormalizeCLIOutput normalizes the tree-sitter CLI output for comparison
-// with the Go parser. Strips point ranges, field annotations, trailing
-// filename paths (appended by the CLI), collapses whitespace, and trims.
+// with the Go parser. Strips point ranges, field annotations, MISSING nodes,
+// trailing filename paths (appended by the CLI), collapses whitespace, and trims.
 func NormalizeCLIOutput(s string) string {
 	normalized, _ := corpustest.NormalizeSExpression(s)
 	stripped := corpustest.StripFields(normalized)
+	// Strip MISSING nodes — the C CLI verbose format excludes them from the
+	// tree output, while Go's String() includes them inline.
+	stripped = missingNodeRe.ReplaceAllString(stripped, "")
 	// The tree-sitter CLI appends the filename after the S-expression.
 	// After normalization this looks like "...) /path/to/file.ext".
 	// Find the position where the root S-expression closes and truncate.

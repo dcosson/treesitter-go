@@ -460,7 +460,7 @@ avoids silent skips when the CLI isn't installed.
 ```makefile
 TREE_SITTER_CLI := $(shell which tree-sitter 2>/dev/null)
 
-diff-test:
+test-diff:
 ifdef TREE_SITTER_CLI
 	go test ./internal/difftest/... -ts-cli=$(TREE_SITTER_CLI) -v -timeout 15m
 else
@@ -1121,13 +1121,13 @@ jobs:
       - uses: actions/setup-go@v5
       - run: go test ./... -run TestCorpus -v -count=1 -timeout 10m
 
-  diff-test:
+  test-diff:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
       - run: make deps
-      - run: make diff-test
+      - run: make test-diff
 
   benchmarks:
     runs-on: ubuntu-latest
@@ -1161,7 +1161,7 @@ jobs:
 ```makefile
 TREE_SITTER_CLI := $(shell which tree-sitter 2>/dev/null)
 
-.PHONY: deps test test-corpus diff-test bench
+.PHONY: deps test test-corpus test-diff bench
 
 deps:
 	@if command -v brew >/dev/null 2>&1; then \
@@ -1181,7 +1181,7 @@ test:
 test-corpus:
 	go test ./... -run TestCorpus -v -count=1 -timeout 10m
 
-diff-test:
+test-diff:
 ifdef TREE_SITTER_CLI
 	go test ./internal/difftest/... -ts-cli=$(TREE_SITTER_CLI) -v -timeout 15m
 else

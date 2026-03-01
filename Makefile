@@ -29,7 +29,7 @@ else
   _FUZZ_FILTER :=
 endif
 
-.PHONY: build test test-coverage fetch-test-grammars test-corpus test-regression fetch-realworld test-realworld-diff deps diff-test bench-grammars bench-self bench-compare generate-scanner-traces test-scanner-traces fuzz
+.PHONY: build test test-coverage fetch-test-grammars test-corpus test-regression fetch-realworld test-realworld-diff deps test-diff bench-grammars bench-self bench-compare generate-scanner-traces test-scanner-traces fuzz
 
 build:
 	go build -o build/bin/ ./cmd/...
@@ -99,7 +99,7 @@ else
 	@exit 1
 endif
 
-diff-test:
+test-diff:
 ifdef TREE_SITTER_CLI
 	go test ./internal/difftest/... -ts-cli=$(TREE_SITTER_CLI) -v -timeout 15m
 else

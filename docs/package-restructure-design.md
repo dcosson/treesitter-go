@@ -344,7 +344,7 @@ These require fetched data or external tools:
 | Command | What it Tests | Setup Required |
 |---------|---------------|----------------|
 | `make test-corpus` | Grammar test suites — 1619 cases across 15 languages. Each case has input + expected S-expression from upstream grammar repos. | `make fetch-test-grammars` |
-| `make diff-test` | Small sample inputs compared Go vs C tree-sitter CLI output | `make deps` (installs C CLI) |
+| `make test-diff` | Small sample inputs compared Go vs C tree-sitter CLI output | `make deps` (installs C CLI) |
 | `make test-realworld-diff` | Real-world OSS source files (kubernetes, flask, rails, etc.) compared Go vs C CLI | `make deps` + `make fetch-realworld` |
 | `make bench` | Parse throughput (bytes/sec) at multiple sizes for all 15 languages. Optional C CLI comparison. | Optional: `make deps` for C comparison |
 | `make fuzz` | Run all fuzz targets for 30s each (parse + scanner roundtrip). Finds crashes/panics. | None |
@@ -364,7 +364,7 @@ make fetch-realworld       # Fetch real-world source files
 # 2. Run all tests
 make test                  # Unit + regression + scanner traces + grammar batch + ...
 make test-corpus           # Grammar corpus tests (1619 cases)
-make diff-test             # Go vs C differential
+make test-diff             # Go vs C differential
 make test-realworld-diff   # Real-world file differential
 make fuzz                  # Fuzz all targets (30s each, ~10 min total)
 make bench                 # Benchmarks (optional, not correctness)
@@ -421,7 +421,7 @@ make test-corpus-json
 go test -run "TestCorpusPerl/Double_dollar" -v -count=1 .
 
 # With C CLI (make deps first)
-make diff-test             # Small differential sample
+make test-diff             # Small differential sample
 make test-realworld-diff   # Real-world source files
 
 # Benchmarks

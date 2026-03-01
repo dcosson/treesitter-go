@@ -85,7 +85,7 @@ jobs:
             echo "⚠️ Corpus tests have known failures — this job is informational and does not block CI." >> "$GITHUB_STEP_SUMMARY"
           fi
 
-  diff-test:
+  test-diff:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -95,7 +95,7 @@ jobs:
       - name: Install tree-sitter CLI
         run: npm install -g tree-sitter-cli
       - name: Run differential tests
-        run: make diff-test
+        run: make test-diff
 
   benchmarks:
     runs-on: ubuntu-latest

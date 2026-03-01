@@ -115,6 +115,8 @@ const (
 	SubtreeFlagMissing                       = st.SubtreeFlagMissing
 	SubtreeFlagHasExternalTokens             = st.SubtreeFlagHasExternalTokens
 	SubtreeFlagDependsOnColumn               = st.SubtreeFlagDependsOnColumn
+	SubtreeFlagFragileLeft                   = st.SubtreeFlagFragileLeft
+	SubtreeFlagFragileRight                  = st.SubtreeFlagFragileRight
 )
 
 // Parser is the GLR parsing engine. It drives the Lexer and Language to
@@ -490,7 +492,8 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 				// PopCountSlices is non-destructive (like C's ts_stack_pop_count),
 				// so no Split is needed. Pass version directly, matching C's
 				// ts_parser__advance which calls ts_parser__reduce(version, ...).
-				rv := p.doReduce(version, action, nullLookahead)
+				isFragile := entry.ActionCount > 1
+				rv := p.doReduce(version, action, nullLookahead, isFragile)
 				didReduce = true
 				if rv >= 0 {
 					lastReductionVersion = rv
@@ -971,9 +974,9 @@ func (p *Parser) doShift(version StackVersion, action ParseActionEntry, token Su
 }
 
 // doReduce pops children from the stack and creates an internal node.
-// Returns the first new stack version created, or -1 if none (matching C's
-// ts_parser__reduce which returns initial_version_count or STACK_VERSION_NONE).
-func (p *Parser) doReduce(version StackVersion, action ParseActionEntry, endOfNonTerminalExtra bool) StackVersion {
+// Single-pass port of C's ts_parser__reduce (parser.c:931-1046).
+// Returns the first new stack version created, or -1 if none.
+func (p *Parser) doReduce(version StackVersion, action ParseActionEntry, endOfNonTerminalExtra bool, isFragile bool) StackVersion {
 	childCount := uint32(action.ReduceChildCount)
 	symbol := action.ReduceSymbol
 	productionID := action.ReduceProdID
@@ -987,37 +990,47 @@ func (p *Parser) doReduce(version StackVersion, action ParseActionEntry, endOfNo
 		return -1
 	}
 
-	// Group consecutive slices by slice version (matching C ts_parser__reduce).
 	removedVersionCount := 0
 	haltedVersionCount := p.stack.HaltedVersionCount()
-	type reduceGroup struct {
-		version        StackVersion
-		bestChildren   []Subtree
-		trailingExtras []Subtree
-	}
-	groups := make([]reduceGroup, 0, len(slices))
+
 	for i := 0; i < len(slices); i++ {
 		slice := slices[i]
-		children := append([]Subtree(nil), slice.Subtrees()...)
+		sliceVersion := slice.Version() - StackVersion(removedVersionCount)
+
+		// Overflow guard: too many versions. Remove this version and skip
+		// all slices sharing it. Matches C parser.c:959-970.
+		if int(sliceVersion) > MaxVersionCount+maxVersionOverflow+haltedVersionCount {
+			p.stack.RemoveVersion(sliceVersion)
+			removedVersionCount++
+			for i+1 < len(slices) {
+				if slices[i+1].Version() != slice.Version() {
+					break
+				}
+				i++
+			}
+			continue
+		}
 
 		// Remove trailing extras (e.g. comments) from children.
-		var extras []Subtree
+		// They get re-pushed after the parent node. Matches C parser.c:976-977.
+		children := append([]Subtree(nil), slice.Subtrees()...)
+		var trailingExtras []Subtree
 		for len(children) > 0 {
 			last := children[len(children)-1]
 			if !IsExtra(last, p.arena) {
 				break
 			}
-			extras = append(extras, last)
+			trailingExtras = append(trailingExtras, last)
 			children = children[:len(children)-1]
 		}
 
-		group := reduceGroup{
-			version:        slice.Version(),
-			bestChildren:   children,
-			trailingExtras: extras,
-		}
+		// Create the parent node from the children. Matches C parser.c:979-981.
+		parent := NewNodeSubtree(p.arena, symbol, children, productionID, p.language)
+		SummarizeChildren(parent, p.arena, p.language)
 
-		// Merge subsequent slices with the same version using selectChildren.
+		// If multiple slices share the same version (multiple GSS paths that
+		// converged to the same base), pick the best children using selectChildren.
+		// Matches C parser.c:987-1010.
 		for i+1 < len(slices) && slices[i+1].Version() == slice.Version() {
 			i++
 			nextChildren := append([]Subtree(nil), slices[i].Subtrees()...)
@@ -1030,40 +1043,36 @@ func (p *Parser) doReduce(version StackVersion, action ParseActionEntry, endOfNo
 				nextExtras = append(nextExtras, last)
 				nextChildren = nextChildren[:len(nextChildren)-1]
 			}
-			if p.selectChildren(symbol, productionID, dynPrec, group.bestChildren, nextChildren) {
-				group.bestChildren = nextChildren
-				group.trailingExtras = nextExtras
+			if p.selectChildren(symbol, productionID, dynPrec, children, nextChildren) {
+				children = nextChildren
+				trailingExtras = nextExtras
+				parent = NewNodeSubtree(p.arena, symbol, children, productionID, p.language)
+				SummarizeChildren(parent, p.arena, p.language)
 			}
-		}
-		groups = append(groups, group)
-	}
-
-	// Process each grouped slice.
-	for _, group := range groups {
-		// Create the internal node from the best children.
-		sliceVersion := group.version - StackVersion(removedVersionCount)
-		if int(sliceVersion) >= p.stack.VersionCount() {
-			continue
-		}
-
-		// Match C overflow guard in ts_parser__reduce.
-		if int(sliceVersion) > MaxVersionCount+maxVersionOverflow+haltedVersionCount {
-			p.stack.RemoveVersion(sliceVersion)
-			removedVersionCount++
-			continue
-		}
-
-		node := NewNodeSubtree(p.arena, symbol, group.bestChildren, productionID, p.language)
-		SummarizeChildren(node, p.arena, p.language)
-
-		// Apply dynamic precedence.
-		if dynPrec != 0 && !node.IsInline() {
-			data := p.arena.Get(node)
-			data.DynamicPrecedence += int32(dynPrec)
 		}
 
 		baseState := p.stack.State(sliceVersion)
 		gotoState := p.language.NextState(baseState, symbol)
+
+		// Mark as extra if this is the end of a non-terminal extra rule and
+		// the goto state equals the base state. Matches C parser.c:1014-1016.
+		if endOfNonTerminalExtra && gotoState == baseState {
+			parent = SetExtra(parent, p.arena)
+		}
+
+		// Set fragile flags and parse_state on parent. Matches C parser.c:1017-1024.
+		if !parent.IsInline() {
+			data := p.arena.Get(parent)
+			if isFragile || len(slices) > 1 || initialVersionCount > 1 {
+				data.SetFlag(SubtreeFlagFragileLeft, true)
+				data.SetFlag(SubtreeFlagFragileRight, true)
+				data.ParseState = math.MaxUint16 // TS_TREE_STATE_NONE
+			} else {
+				data.ParseState = baseState
+			}
+			data.DynamicPrecedence += int32(dynPrec)
+		}
+
 		if p.debug {
 			symName := ""
 			if p.language != nil && int(symbol) < len(p.language.SymbolNames) {
@@ -1072,25 +1081,25 @@ func (p *Parser) doReduce(version StackVersion, action ParseActionEntry, endOfNo
 			fmt.Printf("[reduce] v=%d base=%d sym=%d(%s) child=%d → goto=%d\n",
 				sliceVersion, baseState, symbol, symName, childCount, gotoState)
 		}
-		if endOfNonTerminalExtra && gotoState == baseState {
-			node = SetExtra(node, p.arena)
-		}
 
+		// Push the parent node onto the stack, then re-push trailing extras.
+		// Matches C parser.c:1028-1031.
 		position := p.stack.Position(sliceVersion)
-		nodePadding := GetPadding(node, p.arena)
-		nodeSize := GetSize(node, p.arena)
+		nodePadding := GetPadding(parent, p.arena)
+		nodeSize := GetSize(parent, p.arena)
 		newPosition := LengthAdd(LengthAdd(position, nodePadding), nodeSize)
-		p.stack.Push(sliceVersion, gotoState, node, false, newPosition)
+		p.stack.Push(sliceVersion, gotoState, parent, false, newPosition)
 
-		for i := len(group.trailingExtras) - 1; i >= 0; i-- {
-			extra := group.trailingExtras[i]
+		for j := len(trailingExtras) - 1; j >= 0; j-- {
+			extra := trailingExtras[j]
 			extraPadding := GetPadding(extra, p.arena)
 			extraSize := GetSize(extra, p.arena)
 			newPosition = LengthAdd(LengthAdd(newPosition, extraPadding), extraSize)
 			p.stack.Push(sliceVersion, gotoState, extra, false, newPosition)
 		}
 
-		// Inline merge after each reduce push, matching C behavior.
+		// Inline merge: try to merge this version into an earlier one.
+		// Matches C parser.c:1033-1039.
 		for j := StackVersion(0); j < sliceVersion; j++ {
 			if j == version {
 				continue
@@ -1102,7 +1111,7 @@ func (p *Parser) doReduce(version StackVersion, action ParseActionEntry, endOfNo
 		}
 	}
 
-	// Return the first new stack version that was created (matching C).
+	// Return the first new stack version that was created.
 	if StackVersion(p.stack.VersionCount()) > initialVersionCount {
 		return initialVersionCount
 	}
@@ -1549,7 +1558,7 @@ func (p *Parser) doReduceForPotential(version StackVersion, symbol Symbol, child
 		ReduceDynPrec:    dynPrec,
 		ReduceProdID:     prodID,
 	}
-	return p.doReduce(version, action, false)
+	return p.doReduce(version, action, false, true)
 }
 
 // recover attempts to continue parsing after an error. Called from handleError
@@ -1907,16 +1916,36 @@ func (p *Parser) recoverToState(version StackVersion, depth uint32, goalState St
 // recovery to avoid pursuing recovery paths that are already dominated.
 // Mirrors C tree-sitter's ts_parser__better_version_exists.
 func (p *Parser) betterVersionExists(version StackVersion, isInError bool, cost uint32) bool {
+	// If we already have a finished tree with lower cost, no point continuing.
+	// Matches C parser.c:310-312.
+	if !p.finishedTree.IsZero() && GetErrorCost(p.finishedTree, p.arena) <= cost {
+		return true
+	}
+
+	position := p.stack.Position(version)
+	proposed := errorStatus{
+		cost:              cost,
+		isInError:         isInError,
+		dynamicPrecedence: p.stack.DynamicPrecedence(version),
+		nodeCount:         p.stack.NodeCountSinceError(version),
+	}
+
 	for i := 0; i < p.stack.VersionCount(); i++ {
 		v := StackVersion(i)
-		if v == version || p.stack.IsHalted(v) || p.stack.IsPaused(v) {
+		// Skip self, inactive versions, and versions behind us.
+		// Matches C parser.c:322-325.
+		if v == version || !p.stack.IsActive(v) ||
+			p.stack.Position(v).Bytes < position.Bytes {
 			continue
 		}
 		otherStatus := p.versionStatus(v)
-		proposed := errorStatus{cost: cost, isInError: isInError}
-		switch p.compareVersions(otherStatus, proposed) {
-		case errorComparisonTakeLeft:
+		switch p.compareVersions(proposed, otherStatus) {
+		case errorComparisonTakeRight:
 			return true
+		case errorComparisonPreferRight:
+			if p.stack.CanMerge(v, version) {
+				return true
+			}
 		}
 	}
 	return false

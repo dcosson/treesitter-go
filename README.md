@@ -209,7 +209,7 @@ make test && make test-corpus && make test-regression
 | Test | Command | Code Location | Setup Required | Notes |
 |------|---------|---------------|----------------|-------|
 | **Corpus tests** | `make test-corpus` | `e2etest/corpus_*.go` | `make fetch-test-grammars` | Tree-sitter's official test suites — 1619 cases across 15 languages. Each case has input + expected S-expression. |
-| **Differential tests** | `make diff-test` | `internal/difftest/` | `make deps` | Small set of per-grammar sample inputs compared Go vs C tree-sitter CLI output. |
+| **Differential tests** | `make test-diff` | `internal/difftest/` | `make deps` | Small set of per-grammar sample inputs compared Go vs C tree-sitter CLI output. |
 | **Realworld diff tests** | `make test-realworld-diff` | `e2etest/realworld_diff_test.go` | `make deps` + `make fetch-realworld` | Real-world OSS files (kubernetes, flask, rails, etc.) compared Go vs C CLI. |
 | **Benchmarks (Go only)** | `make bench-self` | `e2etest/benchmark_test.go` | None | Parse throughput (bytes/sec) for all 15 languages at multiple sizes. |
 | **Benchmarks (Go vs C)** | `make bench-compare` | `e2etest/benchmark_test.go` | `make deps` + `make bench-grammars` | Same as above, plus C reference parser for comparison. |
