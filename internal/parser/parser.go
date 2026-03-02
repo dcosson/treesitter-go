@@ -1654,17 +1654,8 @@ func (p *Parser) recover(version StackVersion, lookahead Subtree) {
 			newCost := currentErrorCost +
 				entry.Depth*ErrorCostPerSkippedTree +
 				(position.Bytes-entry.Position.Bytes)*ErrorCostPerSkippedChar
-			rowCost := uint32(0)
 			if position.Point.Row > entry.Position.Point.Row {
-				rowCost = (position.Point.Row - entry.Position.Point.Row) * ErrorCostPerSkippedLine
-				newCost += rowCost
-			}
-			if p.debug {
-				fmt.Printf("[Go:recover]   entry state=%d depth=%d pos=%d newCost=%d (errCost=%d + depth*100=%d + bytes=%d + rows=%d)\n",
-					entry.State, depth, entry.Position.Bytes, newCost,
-					currentErrorCost, entry.Depth*ErrorCostPerSkippedTree,
-					(position.Bytes - entry.Position.Bytes),
-					rowCost)
+				newCost += (position.Point.Row - entry.Position.Point.Row) * ErrorCostPerSkippedLine
 			}
 			if p.betterVersionExists(version, false, newCost) {
 				if p.debug {
@@ -1959,10 +1950,6 @@ func (p *Parser) betterVersionExists(version StackVersion, isInError bool, cost 
 	// If we already have a finished tree with lower cost, no point continuing.
 	// Matches C parser.c:310-312.
 	if !p.finishedTree.IsZero() && GetErrorCost(p.finishedTree, p.arena) <= cost {
-		if p.debug {
-			fmt.Printf("[Go:betterExists] v=%d cost=%d → true (finishedTree cost=%d)\n",
-				version, cost, GetErrorCost(p.finishedTree, p.arena))
-		}
 		return true
 	}
 
@@ -1974,13 +1961,6 @@ func (p *Parser) betterVersionExists(version StackVersion, isInError bool, cost 
 		nodeCount:         p.stack.NodeCountSinceError(version),
 	}
 
-	if p.debug {
-		fmt.Printf("[Go:betterExists] v=%d pos=%d proposed(cost=%d nc=%d dp=%d err=%v) vcount=%d\n",
-			version, position.Bytes, proposed.cost, proposed.nodeCount,
-			proposed.dynamicPrecedence, proposed.isInError,
-			p.stack.VersionCount())
-	}
-
 	for i := 0; i < p.stack.VersionCount(); i++ {
 		v := StackVersion(i)
 		// Skip self, inactive versions, and versions behind us.
@@ -1990,27 +1970,14 @@ func (p *Parser) betterVersionExists(version StackVersion, isInError bool, cost 
 			continue
 		}
 		otherStatus := p.versionStatus(v)
-		if p.debug {
-			fmt.Printf("[Go:betterExists]   vs v=%d other(cost=%d nc=%d dp=%d err=%v)\n",
-				v, otherStatus.cost, otherStatus.nodeCount, otherStatus.dynamicPrecedence, otherStatus.isInError)
-		}
 		switch p.compareVersions(proposed, otherStatus) {
 		case errorComparisonTakeRight:
-			if p.debug {
-				fmt.Printf("[Go:betterExists] → true (TakeRight by v=%d)\n", v)
-			}
 			return true
 		case errorComparisonPreferRight:
 			if p.stack.CanMerge(v, version) {
-				if p.debug {
-					fmt.Printf("[Go:betterExists] → true (PreferRight+merge by v=%d)\n", v)
-				}
 				return true
 			}
 		}
-	}
-	if p.debug {
-		fmt.Printf("[Go:betterExists] → false\n")
 	}
 	return false
 }
@@ -2144,105 +2111,43 @@ func (p *Parser) versionStatus(version StackVersion) errorStatus {
 //  2. Cost with node_count amplification: (cost_diff) * (1 + node_count)
 //     This ensures slightly-worse versions die quickly as they accumulate nodes
 //  3. Dynamic precedence: breaks ties when costs are equal
-func errorComparisonName(c errorComparison) string {
-	switch c {
-	case errorComparisonTakeLeft:
-		return "TakeLeft"
-	case errorComparisonPreferLeft:
-		return "PreferLeft"
-	case errorComparisonTakeRight:
-		return "TakeRight"
-	case errorComparisonPreferRight:
-		return "PreferRight"
-	default:
-		return "None"
-	}
-}
-
 func (p *Parser) compareVersions(a, b errorStatus) errorComparison {
-	var result errorComparison
-	var reason string
-
 	// Rule 1: Non-error vs in-error — strong preference for non-error.
 	if !a.isInError && b.isInError {
 		if a.cost < b.cost {
-			result = errorComparisonTakeLeft
-		} else {
-			result = errorComparisonPreferLeft
+			return errorComparisonTakeLeft
 		}
-		reason = "non-err vs err"
-		if p.debug {
-			fmt.Printf("[Go:compare] a(cost=%d nc=%d dp=%d err=%v) vs b(cost=%d nc=%d dp=%d err=%v) → %s (%s)\n",
-				a.cost, a.nodeCount, a.dynamicPrecedence, a.isInError,
-				b.cost, b.nodeCount, b.dynamicPrecedence, b.isInError,
-				errorComparisonName(result), reason)
-		}
-		return result
+		return errorComparisonPreferLeft
 	}
 	if a.isInError && !b.isInError {
 		if b.cost < a.cost {
-			result = errorComparisonTakeRight
-		} else {
-			result = errorComparisonPreferRight
+			return errorComparisonTakeRight
 		}
-		reason = "err vs non-err"
-		if p.debug {
-			fmt.Printf("[Go:compare] a(cost=%d nc=%d dp=%d err=%v) vs b(cost=%d nc=%d dp=%d err=%v) → %s (%s)\n",
-				a.cost, a.nodeCount, a.dynamicPrecedence, a.isInError,
-				b.cost, b.nodeCount, b.dynamicPrecedence, b.isInError,
-				errorComparisonName(result), reason)
-		}
-		return result
+		return errorComparisonPreferRight
 	}
 
 	// Rule 2: Cost comparison with node_count amplification.
 	if a.cost < b.cost {
-		amplified := uint64(b.cost-a.cost) * uint64(1+a.nodeCount)
-		if amplified > uint64(MaxCostDifference) {
-			result = errorComparisonTakeLeft
-		} else {
-			result = errorComparisonPreferLeft
+		if uint64(b.cost-a.cost)*uint64(1+a.nodeCount) > uint64(MaxCostDifference) {
+			return errorComparisonTakeLeft
 		}
-		if p.debug {
-			fmt.Printf("[Go:compare] a(cost=%d nc=%d dp=%d err=%v) vs b(cost=%d nc=%d dp=%d err=%v) → %s (a<b amp=%d vs max=%d)\n",
-				a.cost, a.nodeCount, a.dynamicPrecedence, a.isInError,
-				b.cost, b.nodeCount, b.dynamicPrecedence, b.isInError,
-				errorComparisonName(result), amplified, MaxCostDifference)
-		}
-		return result
+		return errorComparisonPreferLeft
 	}
 	if b.cost < a.cost {
-		amplified := uint64(a.cost-b.cost) * uint64(1+b.nodeCount)
-		if amplified > uint64(MaxCostDifference) {
-			result = errorComparisonTakeRight
-		} else {
-			result = errorComparisonPreferRight
+		if uint64(a.cost-b.cost)*uint64(1+b.nodeCount) > uint64(MaxCostDifference) {
+			return errorComparisonTakeRight
 		}
-		if p.debug {
-			fmt.Printf("[Go:compare] a(cost=%d nc=%d dp=%d err=%v) vs b(cost=%d nc=%d dp=%d err=%v) → %s (b<a amp=%d vs max=%d)\n",
-				a.cost, a.nodeCount, a.dynamicPrecedence, a.isInError,
-				b.cost, b.nodeCount, b.dynamicPrecedence, b.isInError,
-				errorComparisonName(result), amplified, MaxCostDifference)
-		}
-		return result
+		return errorComparisonPreferRight
 	}
 
 	// Rule 3: Equal cost — break ties by dynamic precedence.
 	if a.dynamicPrecedence > b.dynamicPrecedence {
-		result = errorComparisonPreferLeft
-	} else if b.dynamicPrecedence > a.dynamicPrecedence {
-		result = errorComparisonPreferRight
-	} else {
-		result = errorComparisonNone
+		return errorComparisonPreferLeft
 	}
-
-	if p.debug {
-		fmt.Printf("[Go:compare] a(cost=%d nc=%d dp=%d err=%v) vs b(cost=%d nc=%d dp=%d err=%v) → %s (equal cost)\n",
-			a.cost, a.nodeCount, a.dynamicPrecedence, a.isInError,
-			b.cost, b.nodeCount, b.dynamicPrecedence, b.isInError,
-			errorComparisonName(result))
+	if b.dynamicPrecedence > a.dynamicPrecedence {
+		return errorComparisonPreferRight
 	}
-	return result
+	return errorComparisonNone
 }
 
 // condenseStack merges compatible versions, prunes inferior ones, and
@@ -2281,21 +2186,9 @@ func (p *Parser) condenseStack() uint32 {
 		for j := 0; j < i; j++ {
 			statusJ := p.versionStatus(StackVersion(j))
 
-			cmpResult := p.compareVersions(statusJ, statusI)
-			if p.debug && (statusI.isInError || statusJ.isInError) {
-				fmt.Printf("[condense] compare v%d(state=%d pos=%d err=%v cost=%d nc=%d dp=%d) vs v%d(state=%d pos=%d err=%v cost=%d nc=%d dp=%d) → %d\n",
-					j, p.stack.State(StackVersion(j)), p.stack.Position(StackVersion(j)).Bytes,
-					statusJ.isInError, statusJ.cost, statusJ.nodeCount, statusJ.dynamicPrecedence,
-					i, p.stack.State(StackVersion(i)), p.stack.Position(StackVersion(i)).Bytes,
-					statusI.isInError, statusI.cost, statusI.nodeCount, statusI.dynamicPrecedence,
-					cmpResult)
-			}
-			switch cmpResult {
+			switch p.compareVersions(statusJ, statusI) {
 			case errorComparisonTakeLeft:
 				// j is decisively better — kill i.
-				if p.debug {
-					fmt.Printf("[condense]   KILL v%d (takeLeft by v%d)\n", i, j)
-				}
 				p.stack.RemoveVersion(StackVersion(i))
 				i--
 				goto nextVersion
@@ -2303,9 +2196,6 @@ func (p *Parser) condenseStack() uint32 {
 			case errorComparisonPreferLeft, errorComparisonNone:
 				// j is better or equal — try merge (requires same state).
 				if p.stack.Merge(StackVersion(j), StackVersion(i)) {
-					if p.debug {
-						fmt.Printf("[condense]   MERGE v%d into v%d\n", i, j)
-					}
 					i--
 					goto nextVersion
 				}
@@ -2313,22 +2203,13 @@ func (p *Parser) condenseStack() uint32 {
 			case errorComparisonPreferRight:
 				// i is better — try merge, or swap positions.
 				if p.stack.Merge(StackVersion(j), StackVersion(i)) {
-					if p.debug {
-						fmt.Printf("[condense]   MERGE v%d into v%d (preferRight)\n", i, j)
-					}
 					i--
 					goto nextVersion
-				}
-				if p.debug {
-					fmt.Printf("[condense]   SWAP v%d ↔ v%d\n", i, j)
 				}
 				p.stack.SwapVersions(StackVersion(i), StackVersion(j))
 
 			case errorComparisonTakeRight:
 				// i is decisively better — kill j.
-				if p.debug {
-					fmt.Printf("[condense]   KILL v%d (takeRight by v%d)\n", j, i)
-				}
 				p.stack.RemoveVersion(StackVersion(j))
 				i--
 				j--
@@ -2361,10 +2242,6 @@ func (p *Parser) condenseStack() uint32 {
 					minErrorCost = p.stack.ErrorCost(v)
 					lookahead := p.stack.Resume(v)
 					p.handleError(v, lookahead)
-					if p.debug {
-						fmt.Printf("[condense] after-handleError v=%d total_versions=%d active_versions=%d\n",
-							v, p.stack.VersionCount(), p.stack.ActiveVersionCount())
-					}
 					hasUnpausedVersion = true
 				} else {
 					// Remove extra paused versions.

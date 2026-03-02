@@ -88,6 +88,21 @@ func TestNormalizeCLIOutput(t *testing.T) {
 			"(document (object (pair (string) (number))))",
 		},
 		{
+			"strip anonymous MISSING token",
+			`(expression_statement (assignment_expression (identifier) (MISSING "=") (number)))`,
+			"(expression_statement (assignment_expression (identifier) (number)))",
+		},
+		{
+			"convert named MISSING to plain node",
+			"(delete_expression (MISSING identifier))",
+			"(delete_expression (identifier))",
+		},
+		{
+			"mixed MISSING types in one tree",
+			`(translation_unit (delete_expression (MISSING identifier)) (expression_statement (MISSING ";") (call_expression (MISSING identifier) (argument_list))))`,
+			"(translation_unit (delete_expression (identifier)) (expression_statement (call_expression (identifier) (argument_list))))",
+		},
+		{
 			"empty",
 			"",
 			"",
