@@ -7,11 +7,11 @@ import (
 	"testing"
 
 	ts "github.com/treesitter-go/treesitter"
-	cgrammar "github.com/treesitter-go/treesitter/internal/testgrammars/cgrammar"
-	cppgrammar "github.com/treesitter-go/treesitter/internal/testgrammars/cppgrammar"
-	rustgrammar "github.com/treesitter-go/treesitter/internal/testgrammars/rustgrammar"
-	cppscanner "github.com/treesitter-go/treesitter/scanners/cpp"
-	rustscanner "github.com/treesitter-go/treesitter/scanners/rust"
+	cgrammar "github.com/treesitter-go/treesitter/internal/grammars/c"
+	cppgrammar "github.com/treesitter-go/treesitter/internal/grammars/cpp"
+	rustgrammar "github.com/treesitter-go/treesitter/internal/grammars/rust"
+	cppscanner "github.com/treesitter-go/treesitter/internal/scanners/cpp"
+	rustscanner "github.com/treesitter-go/treesitter/internal/scanners/rust"
 )
 
 func cLang() *ts.Language {

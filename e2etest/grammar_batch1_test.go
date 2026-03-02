@@ -7,9 +7,9 @@ import (
 	"testing"
 
 	ts "github.com/treesitter-go/treesitter"
-	golanggrammar "github.com/treesitter-go/treesitter/internal/testgrammars/golang"
-	pygrammar "github.com/treesitter-go/treesitter/internal/testgrammars/python"
-	pyscanner "github.com/treesitter-go/treesitter/scanners/python"
+	golanggrammar "github.com/treesitter-go/treesitter/internal/grammars/golang"
+	pygrammar "github.com/treesitter-go/treesitter/internal/grammars/python"
+	pyscanner "github.com/treesitter-go/treesitter/internal/scanners/python"
 )
 
 func goLang() *ts.Language {

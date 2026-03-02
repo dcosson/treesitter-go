@@ -7,10 +7,10 @@ import (
 	"testing"
 
 	ts "github.com/treesitter-go/treesitter"
-	luagrammar "github.com/treesitter-go/treesitter/internal/testgrammars/lua"
-	perlgrammar "github.com/treesitter-go/treesitter/internal/testgrammars/perl"
-	luascanner "github.com/treesitter-go/treesitter/scanners/lua"
-	perlscanner "github.com/treesitter-go/treesitter/scanners/perl"
+	luagrammar "github.com/treesitter-go/treesitter/internal/grammars/lua"
+	perlgrammar "github.com/treesitter-go/treesitter/internal/grammars/perl"
+	luascanner "github.com/treesitter-go/treesitter/internal/scanners/lua"
+	perlscanner "github.com/treesitter-go/treesitter/internal/scanners/perl"
 )
 
 func luaLang() *ts.Language {

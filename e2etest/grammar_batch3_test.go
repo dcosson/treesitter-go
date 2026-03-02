@@ -7,15 +7,15 @@ import (
 	"testing"
 
 	ts "github.com/treesitter-go/treesitter"
-	bashgrammar "github.com/treesitter-go/treesitter/internal/testgrammars/bash"
-	jsgrammar "github.com/treesitter-go/treesitter/internal/testgrammars/javascript"
-	rubygrammar "github.com/treesitter-go/treesitter/internal/testgrammars/ruby"
-	tsxgrammar "github.com/treesitter-go/treesitter/internal/testgrammars/tsxgrammar"
-	tsgrammar "github.com/treesitter-go/treesitter/internal/testgrammars/typescript"
-	bashscanner "github.com/treesitter-go/treesitter/scanners/bash"
-	jsscanner "github.com/treesitter-go/treesitter/scanners/javascript"
-	rubyscanner "github.com/treesitter-go/treesitter/scanners/ruby"
-	tsscanner "github.com/treesitter-go/treesitter/scanners/typescript"
+	bashgrammar "github.com/treesitter-go/treesitter/internal/grammars/bash"
+	jsgrammar "github.com/treesitter-go/treesitter/internal/grammars/javascript"
+	rubygrammar "github.com/treesitter-go/treesitter/internal/grammars/ruby"
+	tsxgrammar "github.com/treesitter-go/treesitter/internal/grammars/tsx"
+	tsgrammar "github.com/treesitter-go/treesitter/internal/grammars/typescript"
+	bashscanner "github.com/treesitter-go/treesitter/internal/scanners/bash"
+	jsscanner "github.com/treesitter-go/treesitter/internal/scanners/javascript"
+	rubyscanner "github.com/treesitter-go/treesitter/internal/scanners/ruby"
+	tsscanner "github.com/treesitter-go/treesitter/internal/scanners/typescript"
 )
 
 func newBashLang() *ts.Language {

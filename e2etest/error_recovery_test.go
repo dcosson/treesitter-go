@@ -10,10 +10,10 @@ import (
 	"time"
 
 	ts "github.com/treesitter-go/treesitter"
-	tg "github.com/treesitter-go/treesitter/internal/testgrammars"
-	golanggrammar "github.com/treesitter-go/treesitter/internal/testgrammars/golang"
-	jsgrammar "github.com/treesitter-go/treesitter/internal/testgrammars/javascript"
-	jsscanner "github.com/treesitter-go/treesitter/scanners/javascript"
+	jsongrammar "github.com/treesitter-go/treesitter/internal/grammars/json"
+	golanggrammar "github.com/treesitter-go/treesitter/internal/grammars/golang"
+	jsgrammar "github.com/treesitter-go/treesitter/internal/grammars/javascript"
+	jsscanner "github.com/treesitter-go/treesitter/internal/scanners/javascript"
 )
 
 // errorRecoveryLanguage pairs a language name with its constructor and strictness.
@@ -25,7 +25,7 @@ type errorRecoveryLanguage struct {
 
 var errorRecoveryLanguages = []errorRecoveryLanguage{
 	// JSON has known byte range issues in error recovery output — log but don't fail.
-	{"json", func() *ts.Language { return tg.JsonLanguage() }, false},
+	{"json", func() *ts.Language { return jsongrammar.JsonLanguage() }, false},
 	// Go and JavaScript have known parser limitations (nil trees, byte range issues,
 	// missing ERROR nodes on some malformed inputs). We verify no-panic and log issues.
 	{"go", func() *ts.Language { return golanggrammar.GoLanguage() }, false},

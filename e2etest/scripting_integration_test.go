@@ -8,11 +8,11 @@ import (
 	"time"
 
 	ts "github.com/treesitter-go/treesitter"
-	cssgrammar "github.com/treesitter-go/treesitter/internal/testgrammars/css"
-	htmlgrammar "github.com/treesitter-go/treesitter/internal/testgrammars/html"
-	javagrammar "github.com/treesitter-go/treesitter/internal/testgrammars/java"
-	cssscanner "github.com/treesitter-go/treesitter/scanners/css"
-	htmlscanner "github.com/treesitter-go/treesitter/scanners/html"
+	cssgrammar "github.com/treesitter-go/treesitter/internal/grammars/css"
+	htmlgrammar "github.com/treesitter-go/treesitter/internal/grammars/html"
+	javagrammar "github.com/treesitter-go/treesitter/internal/grammars/java"
+	cssscanner "github.com/treesitter-go/treesitter/internal/scanners/css"
+	htmlscanner "github.com/treesitter-go/treesitter/internal/scanners/html"
 )
 
 func cssLang() *ts.Language {

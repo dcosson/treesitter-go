@@ -9,17 +9,17 @@ import (
 
 	ts "github.com/treesitter-go/treesitter"
 
-	"github.com/treesitter-go/treesitter/scanners/bash"
-	"github.com/treesitter-go/treesitter/scanners/cpp"
-	"github.com/treesitter-go/treesitter/scanners/css"
-	"github.com/treesitter-go/treesitter/scanners/html"
-	"github.com/treesitter-go/treesitter/scanners/javascript"
-	"github.com/treesitter-go/treesitter/scanners/lua"
-	"github.com/treesitter-go/treesitter/scanners/perl"
-	"github.com/treesitter-go/treesitter/scanners/python"
-	"github.com/treesitter-go/treesitter/scanners/ruby"
-	"github.com/treesitter-go/treesitter/scanners/rust"
-	"github.com/treesitter-go/treesitter/scanners/typescript"
+	"github.com/treesitter-go/treesitter/internal/scanners/bash"
+	"github.com/treesitter-go/treesitter/internal/scanners/cpp"
+	"github.com/treesitter-go/treesitter/internal/scanners/css"
+	"github.com/treesitter-go/treesitter/internal/scanners/html"
+	"github.com/treesitter-go/treesitter/internal/scanners/javascript"
+	"github.com/treesitter-go/treesitter/internal/scanners/lua"
+	"github.com/treesitter-go/treesitter/internal/scanners/perl"
+	"github.com/treesitter-go/treesitter/internal/scanners/python"
+	"github.com/treesitter-go/treesitter/internal/scanners/ruby"
+	"github.com/treesitter-go/treesitter/internal/scanners/rust"
+	"github.com/treesitter-go/treesitter/internal/scanners/typescript"
 )
 
 const serializationBufSize = 1024

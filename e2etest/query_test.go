@@ -6,11 +6,11 @@ import (
 	"testing"
 
 	ts "github.com/treesitter-go/treesitter"
-	tg "github.com/treesitter-go/treesitter/internal/testgrammars"
+	jsongrammar "github.com/treesitter-go/treesitter/internal/grammars/json"
 )
 
 func queryTestLanguage() *ts.Language {
-	lang := tg.JsonLanguage()
+	lang := jsongrammar.JsonLanguage()
 	lang.LexFn = jsonLexFn
 	return lang
 }

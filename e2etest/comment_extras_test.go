@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	cgrammar "github.com/treesitter-go/treesitter/internal/testgrammars/cgrammar"
+	cgrammar "github.com/treesitter-go/treesitter/internal/grammars/c"
 )
 
 // TestCommentExtrasPlacement verifies that comments (extras) are placed at the

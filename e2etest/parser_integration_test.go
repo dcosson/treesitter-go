@@ -7,7 +7,8 @@ import (
 	"testing"
 
 	ts "github.com/treesitter-go/treesitter"
-	tg "github.com/treesitter-go/treesitter/internal/testgrammars"
+	jsongrammar "github.com/treesitter-go/treesitter/internal/grammars/json"
+	grammars "github.com/treesitter-go/treesitter/internal/grammars"
 )
 
 // jsonLexFn is a hand-written lex function for the JSON grammar.
@@ -33,44 +34,44 @@ func jsonLexFn(lexer *ts.Lexer, state ts.StateID) bool {
 	case ch == '{':
 		lexer.Advance(false)
 		lexer.MarkEnd()
-		lexer.AcceptToken(ts.Symbol(tg.SymLBrace))
+		lexer.AcceptToken(ts.Symbol(jsongrammar.SymLBrace))
 		return true
 	case ch == '}':
 		lexer.Advance(false)
 		lexer.MarkEnd()
-		lexer.AcceptToken(ts.Symbol(tg.SymRBrace))
+		lexer.AcceptToken(ts.Symbol(jsongrammar.SymRBrace))
 		return true
 	case ch == '[':
 		lexer.Advance(false)
 		lexer.MarkEnd()
-		lexer.AcceptToken(ts.Symbol(tg.SymLBrack))
+		lexer.AcceptToken(ts.Symbol(jsongrammar.SymLBrack))
 		return true
 	case ch == ']':
 		lexer.Advance(false)
 		lexer.MarkEnd()
-		lexer.AcceptToken(ts.Symbol(tg.SymRBrack))
+		lexer.AcceptToken(ts.Symbol(jsongrammar.SymRBrack))
 		return true
 	case ch == ',':
 		lexer.Advance(false)
 		lexer.MarkEnd()
-		lexer.AcceptToken(ts.Symbol(tg.SymComma))
+		lexer.AcceptToken(ts.Symbol(jsongrammar.SymComma))
 		return true
 	case ch == ':':
 		lexer.Advance(false)
 		lexer.MarkEnd()
-		lexer.AcceptToken(ts.Symbol(tg.SymColon))
+		lexer.AcceptToken(ts.Symbol(jsongrammar.SymColon))
 		return true
 	case ch == '"':
 		lexer.Advance(false)
 		lexer.MarkEnd()
-		lexer.AcceptToken(ts.Symbol(tg.SymDQuote))
+		lexer.AcceptToken(ts.Symbol(jsongrammar.SymDQuote))
 		return true
 	case ch == 't':
-		return jsonLexKW(lexer, "true", ts.Symbol(tg.SymTrue))
+		return jsonLexKW(lexer, "true", ts.Symbol(jsongrammar.SymTrue))
 	case ch == 'f':
-		return jsonLexKW(lexer, "false", ts.Symbol(tg.SymFalse))
+		return jsonLexKW(lexer, "false", ts.Symbol(jsongrammar.SymFalse))
 	case ch == 'n':
-		return jsonLexKW(lexer, "null", ts.Symbol(tg.SymNull))
+		return jsonLexKW(lexer, "null", ts.Symbol(jsongrammar.SymNull))
 	case ch == '-' || (ch >= '0' && ch <= '9'):
 		return jsonLexNum(lexer)
 	case ch == '/':
@@ -91,20 +92,20 @@ func jsonLexStringContent(lexer *ts.Lexer) bool {
 			lexer.Advance(false)
 		}
 		lexer.MarkEnd()
-		lexer.AcceptToken(ts.Symbol(tg.SymEscapeSequence))
+		lexer.AcceptToken(ts.Symbol(jsongrammar.SymEscapeSequence))
 		return true
 	}
 	if ch == '"' {
 		lexer.Advance(false)
 		lexer.MarkEnd()
-		lexer.AcceptToken(ts.Symbol(tg.SymDQuote))
+		lexer.AcceptToken(ts.Symbol(jsongrammar.SymDQuote))
 		return true
 	}
 	for !lexer.EOF() && lexer.Lookahead != '"' && lexer.Lookahead != '\\' {
 		lexer.Advance(false)
 	}
 	lexer.MarkEnd()
-	lexer.AcceptToken(ts.Symbol(tg.SymStringContent))
+	lexer.AcceptToken(ts.Symbol(jsongrammar.SymStringContent))
 	return true
 }
 
@@ -146,7 +147,7 @@ func jsonLexNum(lexer *ts.Lexer) bool {
 		}
 	}
 	lexer.MarkEnd()
-	lexer.AcceptToken(ts.Symbol(tg.SymNumber))
+	lexer.AcceptToken(ts.Symbol(jsongrammar.SymNumber))
 	return true
 }
 
@@ -163,7 +164,7 @@ func jsonLexCmt(lexer *ts.Lexer) bool {
 			lexer.Advance(false)
 		}
 		lexer.MarkEnd()
-		lexer.AcceptToken(ts.Symbol(tg.SymComment))
+		lexer.AcceptToken(ts.Symbol(jsongrammar.SymComment))
 		return true
 	}
 	if lexer.Lookahead == '*' {
@@ -174,7 +175,7 @@ func jsonLexCmt(lexer *ts.Lexer) bool {
 				if !lexer.EOF() && lexer.Lookahead == '/' {
 					lexer.Advance(false)
 					lexer.MarkEnd()
-					lexer.AcceptToken(ts.Symbol(tg.SymComment))
+					lexer.AcceptToken(ts.Symbol(jsongrammar.SymComment))
 					return true
 				}
 			} else {
@@ -182,14 +183,14 @@ func jsonLexCmt(lexer *ts.Lexer) bool {
 			}
 		}
 		lexer.MarkEnd()
-		lexer.AcceptToken(ts.Symbol(tg.SymComment))
+		lexer.AcceptToken(ts.Symbol(jsongrammar.SymComment))
 		return true
 	}
 	return false
 }
 
 func jsonLanguageWithLex() *ts.Language {
-	lang := tg.JsonLanguage()
+	lang := jsongrammar.JsonLanguage()
 	lang.LexFn = jsonLexFn
 	return lang
 }
@@ -574,7 +575,7 @@ func TestIntegrationParseFieldAccess(t *testing.T) {
 // --- External Scanner Integration Tests ---
 
 func extScannerLanguageWithLex() *ts.Language {
-	return tg.ExtScannerLanguageWithLex()
+	return grammars.ExtScannerLanguageWithLex()
 }
 
 func TestIntegrationExternalScannerNumber(t *testing.T) {

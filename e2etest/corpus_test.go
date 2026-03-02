@@ -10,7 +10,7 @@ import (
 	ts "github.com/treesitter-go/treesitter"
 	"github.com/treesitter-go/treesitter/internal/corpustest"
 	"github.com/treesitter-go/treesitter/internal/difftest"
-	tg "github.com/treesitter-go/treesitter/internal/testgrammars"
+	jsongrammar "github.com/treesitter-go/treesitter/internal/grammars/json"
 )
 
 // corpusGrammarsDir is the base directory for fetched grammar repos.
@@ -39,7 +39,7 @@ func TestCorpusJSON(t *testing.T) {
 	}
 	t.Logf("loaded %d corpus test cases", len(cases))
 
-	lang := tg.JsonLanguage()
+	lang := jsongrammar.JsonLanguage()
 	lang.LexFn = jsonLexFn
 
 	parseFunc := jsonParseFunc(lang)
@@ -58,7 +58,7 @@ func TestDifferentialJSON(t *testing.T) {
 		t.Fatalf("failed to parse corpus: %v", err)
 	}
 
-	lang := tg.JsonLanguage()
+	lang := jsongrammar.JsonLanguage()
 	lang.LexFn = jsonLexFn
 
 	difftest.RunDifferentialCorpus(t, cases, "source.json", jsonParseFunc(lang))
@@ -92,7 +92,7 @@ func TestDifferentialJSONSamples(t *testing.T) {
 		{"multiple_comments", "{\n  \"a\": 1,\n  // c1\n  /* c2 */\n  \"b\": 2\n}"},
 	}
 
-	lang := tg.JsonLanguage()
+	lang := jsongrammar.JsonLanguage()
 	lang.LexFn = jsonLexFn
 	parseFunc := jsonParseFunc(lang)
 
@@ -114,7 +114,7 @@ func TestDifferentialJSONSamples(t *testing.T) {
 // TestRegressionJSON runs regression tests from testdata/regressions/json/.
 func TestRegressionJSON(t *testing.T) {
 	regressionDir := "../testdata/regressions/json"
-	lang := tg.JsonLanguage()
+	lang := jsongrammar.JsonLanguage()
 	lang.LexFn = jsonLexFn
 	difftest.RunRegressionTests(t, regressionDir, jsonParseFunc(lang))
 }
@@ -126,7 +126,7 @@ func TestDifferentialJSONRealworld(t *testing.T) {
 		t.Skip("JSON realworld data not found")
 	}
 
-	lang := tg.JsonLanguage()
+	lang := jsongrammar.JsonLanguage()
 	lang.LexFn = jsonLexFn
 
 	difftest.RunDifferentialDir(t, realworldDir, []string{".json"}, jsonParseFunc(lang))

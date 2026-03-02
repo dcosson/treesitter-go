@@ -9,8 +9,8 @@ import (
 	"time"
 
 	ts "github.com/treesitter-go/treesitter"
-	tg "github.com/treesitter-go/treesitter/internal/testgrammars"
-	golanggrammar "github.com/treesitter-go/treesitter/internal/testgrammars/golang"
+	jsongrammar "github.com/treesitter-go/treesitter/internal/grammars/json"
+	golanggrammar "github.com/treesitter-go/treesitter/internal/grammars/golang"
 )
 
 // mustParseGo parses Go source and fails the test if the result is nil.
@@ -146,7 +146,7 @@ func TestNodeIsExtra(t *testing.T) {
 func TestNodeIsMissing(t *testing.T) {
 	// Use JSON grammar which has reliable error recovery for malformed input.
 	src := `{"a": }`
-	lang := tg.JsonLanguage()
+	lang := jsongrammar.JsonLanguage()
 	p := iparser.NewParser()
 	p.SetLanguage(lang)
 	tree := p.ParseString(context.Background(), []byte(src))

@@ -11,7 +11,7 @@ import (
 	"testing"
 
 	"github.com/treesitter-go/treesitter/internal/corpustest"
-	golanggrammar "github.com/treesitter-go/treesitter/internal/testgrammars/golang"
+	golanggrammar "github.com/treesitter-go/treesitter/internal/grammars/golang"
 )
 
 var tsCLIFlag = flag.String("ts-cli", "", "path to tree-sitter CLI binary")

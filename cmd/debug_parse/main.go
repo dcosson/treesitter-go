@@ -6,8 +6,8 @@ import (
 	iparser "github.com/treesitter-go/treesitter/parser"
 	"time"
 
-	perlgrammar "github.com/treesitter-go/treesitter/internal/testgrammars/perl"
-	perlscanner "github.com/treesitter-go/treesitter/scanners/perl"
+	perlgrammar "github.com/treesitter-go/treesitter/internal/grammars/perl"
+	perlscanner "github.com/treesitter-go/treesitter/internal/scanners/perl"
 )
 
 func main() {

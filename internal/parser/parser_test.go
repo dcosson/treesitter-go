@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// JSON symbol IDs (copied from internal/testgrammars to avoid import cycle).
+// JSON symbol IDs (copied from internal/grammars to avoid import cycle).
 const (
 	symEnd              Symbol = 0
 	symLBrace           Symbol = 1
@@ -217,7 +217,7 @@ func jsonLexCmt(lexer *Lexer) bool {
 }
 
 // testJSONLanguage returns the JSON language with lex function for parser tests.
-// This builds the language inline to avoid import cycles with internal/testgrammars.
+// This builds the language inline to avoid import cycles with internal/grammars.
 func testJSONLanguage() *Language {
 	lang := buildTestJSONLanguage()
 	lang.LexFn = jsonLexFn

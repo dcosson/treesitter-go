@@ -12,32 +12,32 @@ import (
 	ts "github.com/treesitter-go/treesitter"
 	"github.com/treesitter-go/treesitter/internal/corpustest"
 	"github.com/treesitter-go/treesitter/internal/difftest"
-	tg "github.com/treesitter-go/treesitter/internal/testgrammars"
-	bashgrammar "github.com/treesitter-go/treesitter/internal/testgrammars/bash"
-	cgrammar "github.com/treesitter-go/treesitter/internal/testgrammars/cgrammar"
-	cppgrammar "github.com/treesitter-go/treesitter/internal/testgrammars/cppgrammar"
-	cssgrammar "github.com/treesitter-go/treesitter/internal/testgrammars/css"
-	golanggrammar "github.com/treesitter-go/treesitter/internal/testgrammars/golang"
-	htmlgrammar "github.com/treesitter-go/treesitter/internal/testgrammars/html"
-	javagrammar "github.com/treesitter-go/treesitter/internal/testgrammars/java"
-	jsgrammar "github.com/treesitter-go/treesitter/internal/testgrammars/javascript"
-	luagrammar "github.com/treesitter-go/treesitter/internal/testgrammars/lua"
-	perlgrammar "github.com/treesitter-go/treesitter/internal/testgrammars/perl"
-	pygrammar "github.com/treesitter-go/treesitter/internal/testgrammars/python"
-	rubygrammar "github.com/treesitter-go/treesitter/internal/testgrammars/ruby"
-	rustgrammar "github.com/treesitter-go/treesitter/internal/testgrammars/rustgrammar"
-	tsgrammar "github.com/treesitter-go/treesitter/internal/testgrammars/typescript"
-	bashscanner "github.com/treesitter-go/treesitter/scanners/bash"
-	cppscanner "github.com/treesitter-go/treesitter/scanners/cpp"
-	cssscanner "github.com/treesitter-go/treesitter/scanners/css"
-	htmlscanner "github.com/treesitter-go/treesitter/scanners/html"
-	jsscanner "github.com/treesitter-go/treesitter/scanners/javascript"
-	luascanner "github.com/treesitter-go/treesitter/scanners/lua"
-	perlscanner "github.com/treesitter-go/treesitter/scanners/perl"
-	pyscanner "github.com/treesitter-go/treesitter/scanners/python"
-	rubyscanner "github.com/treesitter-go/treesitter/scanners/ruby"
-	rustscanner "github.com/treesitter-go/treesitter/scanners/rust"
-	tsscanner "github.com/treesitter-go/treesitter/scanners/typescript"
+	jsongrammar "github.com/treesitter-go/treesitter/internal/grammars/json"
+	bashgrammar "github.com/treesitter-go/treesitter/internal/grammars/bash"
+	cgrammar "github.com/treesitter-go/treesitter/internal/grammars/c"
+	cppgrammar "github.com/treesitter-go/treesitter/internal/grammars/cpp"
+	cssgrammar "github.com/treesitter-go/treesitter/internal/grammars/css"
+	golanggrammar "github.com/treesitter-go/treesitter/internal/grammars/golang"
+	htmlgrammar "github.com/treesitter-go/treesitter/internal/grammars/html"
+	javagrammar "github.com/treesitter-go/treesitter/internal/grammars/java"
+	jsgrammar "github.com/treesitter-go/treesitter/internal/grammars/javascript"
+	luagrammar "github.com/treesitter-go/treesitter/internal/grammars/lua"
+	perlgrammar "github.com/treesitter-go/treesitter/internal/grammars/perl"
+	pygrammar "github.com/treesitter-go/treesitter/internal/grammars/python"
+	rubygrammar "github.com/treesitter-go/treesitter/internal/grammars/ruby"
+	rustgrammar "github.com/treesitter-go/treesitter/internal/grammars/rust"
+	tsgrammar "github.com/treesitter-go/treesitter/internal/grammars/typescript"
+	bashscanner "github.com/treesitter-go/treesitter/internal/scanners/bash"
+	cppscanner "github.com/treesitter-go/treesitter/internal/scanners/cpp"
+	cssscanner "github.com/treesitter-go/treesitter/internal/scanners/css"
+	htmlscanner "github.com/treesitter-go/treesitter/internal/scanners/html"
+	jsscanner "github.com/treesitter-go/treesitter/internal/scanners/javascript"
+	luascanner "github.com/treesitter-go/treesitter/internal/scanners/lua"
+	perlscanner "github.com/treesitter-go/treesitter/internal/scanners/perl"
+	pyscanner "github.com/treesitter-go/treesitter/internal/scanners/python"
+	rubyscanner "github.com/treesitter-go/treesitter/internal/scanners/ruby"
+	rustscanner "github.com/treesitter-go/treesitter/internal/scanners/rust"
+	tsscanner "github.com/treesitter-go/treesitter/internal/scanners/typescript"
 )
 
 // regressionParseTimeout is the max time for a single regression test parse.
@@ -163,7 +163,7 @@ func TestRegressionAll(t *testing.T) {
 		lang *ts.Language
 	}
 
-	jsonLang := tg.JsonLanguage()
+	jsonLang := jsongrammar.JsonLanguage()
 	jsonLang.LexFn = jsonLexFn
 
 	pyLang := pygrammar.PythonLanguage()
