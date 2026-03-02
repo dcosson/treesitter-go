@@ -2,15 +2,15 @@ package e2etest_test
 
 import (
 	"context"
-	iparser "github.com/treesitter-go/treesitter/parser"
+	iparser "github.com/dcosson/treesitter-go/parser"
 	"strings"
 	"testing"
 
-	ts "github.com/treesitter-go/treesitter"
-	luagrammar "github.com/treesitter-go/treesitter/internal/grammars/lua"
-	perlgrammar "github.com/treesitter-go/treesitter/internal/grammars/perl"
-	luascanner "github.com/treesitter-go/treesitter/internal/scanners/lua"
-	perlscanner "github.com/treesitter-go/treesitter/internal/scanners/perl"
+	ts "github.com/dcosson/treesitter-go"
+	luagrammar "github.com/dcosson/treesitter-go/internal/grammars/lua"
+	perlgrammar "github.com/dcosson/treesitter-go/internal/grammars/perl"
+	luascanner "github.com/dcosson/treesitter-go/internal/scanners/lua"
+	perlscanner "github.com/dcosson/treesitter-go/internal/scanners/perl"
 )
 
 func luaLang() *ts.Language {

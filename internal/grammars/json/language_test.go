@@ -3,7 +3,7 @@ package json
 import (
 	"testing"
 
-	ts "github.com/treesitter-go/treesitter"
+	ts "github.com/dcosson/treesitter-go"
 )
 
 func TestJSONLanguageConstants(t *testing.T) {

@@ -6,9 +6,9 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/treesitter-go/treesitter/internal/core"
-	itree "github.com/treesitter-go/treesitter/internal/tree"
-	"github.com/treesitter-go/treesitter/language"
+	"github.com/dcosson/treesitter-go/internal/core"
+	itree "github.com/dcosson/treesitter-go/internal/tree"
+	"github.com/dcosson/treesitter-go/language"
 )
 
 // Local type aliases.

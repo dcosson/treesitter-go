@@ -3,7 +3,7 @@ package treesitter_test
 import (
 	"testing"
 
-	ts "github.com/treesitter-go/treesitter"
+	ts "github.com/dcosson/treesitter-go"
 )
 
 // Sanity tests verifying the public facade re-exports work correctly.

@@ -56,9 +56,9 @@ func TestGenerateGoCompiles(t *testing.T) {
 
 go 1.24.4
 
-require github.com/treesitter-go/treesitter v0.0.0
+require github.com/dcosson/treesitter-go v0.0.0
 
-replace github.com/treesitter-go/treesitter => ` + findRepoRoot(t) + "\n"
+replace github.com/dcosson/treesitter-go => ` + findRepoRoot(t) + "\n"
 	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte(goMod), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -286,9 +286,9 @@ func TestGenerateGoGrammarCompiles(t *testing.T) {
 
 go 1.24.4
 
-require github.com/treesitter-go/treesitter v0.0.0
+require github.com/dcosson/treesitter-go v0.0.0
 
-replace github.com/treesitter-go/treesitter => ` + findRepoRoot(t) + "\n"
+replace github.com/dcosson/treesitter-go => ` + findRepoRoot(t) + "\n"
 	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte(goMod), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -358,9 +358,9 @@ func TestGenerateJSGrammarCompiles(t *testing.T) {
 
 go 1.24.4
 
-require github.com/treesitter-go/treesitter v0.0.0
+require github.com/dcosson/treesitter-go v0.0.0
 
-replace github.com/treesitter-go/treesitter => ` + findRepoRoot(t) + "\n"
+replace github.com/dcosson/treesitter-go => ` + findRepoRoot(t) + "\n"
 	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte(goMod), 0o644); err != nil {
 		t.Fatal(err)
 	}

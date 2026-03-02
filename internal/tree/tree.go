@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/treesitter-go/treesitter/internal/core"
-	st "github.com/treesitter-go/treesitter/internal/subtree"
-	"github.com/treesitter-go/treesitter/language"
+	"github.com/dcosson/treesitter-go/internal/core"
+	st "github.com/dcosson/treesitter-go/internal/subtree"
+	"github.com/dcosson/treesitter-go/language"
 )
 
 // Local type aliases for core and subtree types.

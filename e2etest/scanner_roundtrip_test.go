@@ -7,19 +7,19 @@ package e2etest_test
 import (
 	"testing"
 
-	ts "github.com/treesitter-go/treesitter"
+	ts "github.com/dcosson/treesitter-go"
 
-	"github.com/treesitter-go/treesitter/internal/scanners/bash"
-	"github.com/treesitter-go/treesitter/internal/scanners/cpp"
-	"github.com/treesitter-go/treesitter/internal/scanners/css"
-	"github.com/treesitter-go/treesitter/internal/scanners/html"
-	"github.com/treesitter-go/treesitter/internal/scanners/javascript"
-	"github.com/treesitter-go/treesitter/internal/scanners/lua"
-	"github.com/treesitter-go/treesitter/internal/scanners/perl"
-	"github.com/treesitter-go/treesitter/internal/scanners/python"
-	"github.com/treesitter-go/treesitter/internal/scanners/ruby"
-	"github.com/treesitter-go/treesitter/internal/scanners/rust"
-	"github.com/treesitter-go/treesitter/internal/scanners/typescript"
+	"github.com/dcosson/treesitter-go/internal/scanners/bash"
+	"github.com/dcosson/treesitter-go/internal/scanners/cpp"
+	"github.com/dcosson/treesitter-go/internal/scanners/css"
+	"github.com/dcosson/treesitter-go/internal/scanners/html"
+	"github.com/dcosson/treesitter-go/internal/scanners/javascript"
+	"github.com/dcosson/treesitter-go/internal/scanners/lua"
+	"github.com/dcosson/treesitter-go/internal/scanners/perl"
+	"github.com/dcosson/treesitter-go/internal/scanners/python"
+	"github.com/dcosson/treesitter-go/internal/scanners/ruby"
+	"github.com/dcosson/treesitter-go/internal/scanners/rust"
+	"github.com/dcosson/treesitter-go/internal/scanners/typescript"
 )
 
 const serializationBufSize = 1024

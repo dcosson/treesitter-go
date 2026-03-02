@@ -2,17 +2,17 @@ package e2etest_test
 
 import (
 	"context"
-	iparser "github.com/treesitter-go/treesitter/parser"
+	iparser "github.com/dcosson/treesitter-go/parser"
 	"strings"
 	"testing"
 	"time"
 
-	ts "github.com/treesitter-go/treesitter"
-	cssgrammar "github.com/treesitter-go/treesitter/internal/grammars/css"
-	htmlgrammar "github.com/treesitter-go/treesitter/internal/grammars/html"
-	javagrammar "github.com/treesitter-go/treesitter/internal/grammars/java"
-	cssscanner "github.com/treesitter-go/treesitter/internal/scanners/css"
-	htmlscanner "github.com/treesitter-go/treesitter/internal/scanners/html"
+	ts "github.com/dcosson/treesitter-go"
+	cssgrammar "github.com/dcosson/treesitter-go/internal/grammars/css"
+	htmlgrammar "github.com/dcosson/treesitter-go/internal/grammars/html"
+	javagrammar "github.com/dcosson/treesitter-go/internal/grammars/java"
+	cssscanner "github.com/dcosson/treesitter-go/internal/scanners/css"
+	htmlscanner "github.com/dcosson/treesitter-go/internal/scanners/html"
 )
 
 func cssLang() *ts.Language {

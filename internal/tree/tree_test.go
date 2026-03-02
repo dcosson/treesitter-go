@@ -3,8 +3,8 @@ package tree
 import (
 	"testing"
 
-	"github.com/treesitter-go/treesitter/internal/core"
-	st "github.com/treesitter-go/treesitter/internal/subtree"
+	"github.com/dcosson/treesitter-go/internal/core"
+	st "github.com/dcosson/treesitter-go/internal/subtree"
 )
 
 // makeSubtreeTestLanguage creates a minimal Language for testing.

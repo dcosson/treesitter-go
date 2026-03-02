@@ -13,7 +13,7 @@ A pure-Go implementation of the [tree-sitter](https://tree-sitter.github.io/tree
 ## Installation
 
 ```bash
-go get github.com/treesitter-go/treesitter
+go get github.com/dcosson/treesitter-go
 ```
 
 ## Usage
@@ -27,8 +27,8 @@ import (
     "context"
     "fmt"
 
-    ts "github.com/treesitter-go/treesitter"
-    "github.com/treesitter-go/treesitter/languages/golang"
+    ts "github.com/dcosson/treesitter-go"
+    "github.com/dcosson/treesitter-go/languages/golang"
 )
 
 func main() {
@@ -169,9 +169,9 @@ Create `languages/newlang/language.go` that wires the grammar and scanner togeth
 package newlang
 
 import (
-    ts "github.com/treesitter-go/treesitter"
-    grammar "github.com/treesitter-go/treesitter/internal/grammars/newlang"
-    scanner "github.com/treesitter-go/treesitter/internal/scanners/newlang"
+    ts "github.com/dcosson/treesitter-go"
+    grammar "github.com/dcosson/treesitter-go/internal/grammars/newlang"
+    scanner "github.com/dcosson/treesitter-go/internal/scanners/newlang"
 )
 
 func Language() *ts.Language {

@@ -56,10 +56,10 @@ validate robustness and are prioritized by user demand.
 
 ### Go Module Path
 
-The runtime package uses module path `github.com/treesitter-go/treesitter`.
-Grammar packages use `github.com/treesitter-go/tree-sitter-<language>` (e.g.,
-`github.com/treesitter-go/tree-sitter-go`). The code generator output imports
-the runtime as `import ts "github.com/treesitter-go/treesitter"`.
+The runtime package uses module path `github.com/dcosson/treesitter-go`.
+Grammar packages live under `languages/<lang>/` within the module (e.g.,
+`github.com/dcosson/treesitter-go/languages/golang`). The code generator output imports
+the runtime as `import ts "github.com/dcosson/treesitter-go"`.
 
 ### Target API
 
@@ -1282,8 +1282,7 @@ could cause noticeable pauses.
 
 How should compiled grammar packages be distributed?
 
-**Option A**: Each grammar is its own Go module (e.g.,
-`github.com/treesitter-go/tree-sitter-go`). Users `go get` the grammars they need.
+**Option A**: Each grammar is its own Go module. Users `go get` the grammars they need.
 
 **Option B**: A monorepo with all grammars (e.g.,
 `github.com/treesitter-go/grammars/go`). Single import path, versioned together.

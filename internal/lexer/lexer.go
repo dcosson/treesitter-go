@@ -3,7 +3,7 @@ package lexer
 import (
 	"unicode/utf8"
 
-	"github.com/treesitter-go/treesitter/internal/core"
+	"github.com/dcosson/treesitter-go/internal/core"
 )
 
 type Symbol = core.Symbol

@@ -4,12 +4,12 @@
 package treesitter
 
 import (
-	"github.com/treesitter-go/treesitter/internal/core"
-	iq "github.com/treesitter-go/treesitter/internal/query"
-	st "github.com/treesitter-go/treesitter/internal/subtree"
-	itree "github.com/treesitter-go/treesitter/internal/tree"
-	"github.com/treesitter-go/treesitter/language"
-	plex "github.com/treesitter-go/treesitter/lexer"
+	"github.com/dcosson/treesitter-go/internal/core"
+	iq "github.com/dcosson/treesitter-go/internal/query"
+	st "github.com/dcosson/treesitter-go/internal/subtree"
+	itree "github.com/dcosson/treesitter-go/internal/tree"
+	"github.com/dcosson/treesitter-go/language"
+	plex "github.com/dcosson/treesitter-go/lexer"
 )
 
 // ---------------------------------------------------------------------------

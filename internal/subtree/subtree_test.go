@@ -4,7 +4,7 @@ import (
 	"testing"
 	"unsafe"
 
-	"github.com/treesitter-go/treesitter/internal/core"
+	"github.com/dcosson/treesitter-go/internal/core"
 )
 
 func TestSubtreeInlineCreation(t *testing.T) {

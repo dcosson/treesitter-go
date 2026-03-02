@@ -47,7 +47,7 @@ See the **Testing** section in `README.md` for full details on each test type, w
   go test -run TestSubtreeLeaf -v ./internal/subtree/
   ```
 - **Scope test runs** to just the tests you need. Output results into temporary files so you can parse them instead of re-running tests.
-- **Coordinate full test runs** with the scheduler or reviewer agents, who should use the Makefile commands to ensure clean runs before closing out work.
+- **Before closing out work**, run the relevant `make` target to verify — don't rely on individual `go test` runs alone.
 
 ### Test data setup
 

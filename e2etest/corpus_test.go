@@ -2,15 +2,15 @@ package e2etest_test
 
 import (
 	"context"
-	iparser "github.com/treesitter-go/treesitter/parser"
+	iparser "github.com/dcosson/treesitter-go/parser"
 	"os"
 	"path/filepath"
 	"testing"
 
-	ts "github.com/treesitter-go/treesitter"
-	"github.com/treesitter-go/treesitter/internal/corpustest"
-	"github.com/treesitter-go/treesitter/internal/difftest"
-	jsongrammar "github.com/treesitter-go/treesitter/internal/grammars/json"
+	ts "github.com/dcosson/treesitter-go"
+	"github.com/dcosson/treesitter-go/internal/corpustest"
+	"github.com/dcosson/treesitter-go/internal/difftest"
+	jsongrammar "github.com/dcosson/treesitter-go/internal/grammars/json"
 )
 
 // corpusGrammarsDir is the base directory for fetched grammar repos.

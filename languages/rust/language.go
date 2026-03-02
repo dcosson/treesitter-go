@@ -1,9 +1,9 @@
 package rust
 
 import (
-	ts "github.com/treesitter-go/treesitter"
-	grammar "github.com/treesitter-go/treesitter/internal/grammars/rust"
-	scanner "github.com/treesitter-go/treesitter/internal/scanners/rust"
+	ts "github.com/dcosson/treesitter-go"
+	grammar "github.com/dcosson/treesitter-go/internal/grammars/rust"
+	scanner "github.com/dcosson/treesitter-go/internal/scanners/rust"
 )
 
 func Language() *ts.Language {

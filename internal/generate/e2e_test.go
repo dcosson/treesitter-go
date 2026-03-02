@@ -34,9 +34,9 @@ func TestE2EGenerateAndLoadJSON(t *testing.T) {
 
 go 1.24.4
 
-require github.com/treesitter-go/treesitter v0.0.0
+require github.com/dcosson/treesitter-go v0.0.0
 
-replace github.com/treesitter-go/treesitter => ` + repoRoot + "\n"
+replace github.com/dcosson/treesitter-go => ` + repoRoot + "\n"
 	if err := os.WriteFile(filepath.Join(tmpDir, "go.mod"), []byte(goMod), 0o644); err != nil {
 		t.Fatal(err)
 	}
@@ -52,7 +52,7 @@ replace github.com/treesitter-go/treesitter => ` + repoRoot + "\n"
 import (
 	"testing"
 
-	ts "github.com/treesitter-go/treesitter"
+	ts "github.com/dcosson/treesitter-go"
 )
 
 func TestLanguageBasics(t *testing.T) {

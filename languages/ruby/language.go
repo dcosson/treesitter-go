@@ -1,9 +1,9 @@
 package ruby
 
 import (
-	ts "github.com/treesitter-go/treesitter"
-	grammar "github.com/treesitter-go/treesitter/internal/grammars/ruby"
-	scanner "github.com/treesitter-go/treesitter/internal/scanners/ruby"
+	ts "github.com/dcosson/treesitter-go"
+	grammar "github.com/dcosson/treesitter-go/internal/grammars/ruby"
+	scanner "github.com/dcosson/treesitter-go/internal/scanners/ruby"
 )
 
 func Language() *ts.Language {

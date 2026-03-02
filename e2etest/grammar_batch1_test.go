@@ -2,14 +2,14 @@ package e2etest_test
 
 import (
 	"context"
-	iparser "github.com/treesitter-go/treesitter/parser"
+	iparser "github.com/dcosson/treesitter-go/parser"
 	"strings"
 	"testing"
 
-	ts "github.com/treesitter-go/treesitter"
-	golanggrammar "github.com/treesitter-go/treesitter/internal/grammars/golang"
-	pygrammar "github.com/treesitter-go/treesitter/internal/grammars/python"
-	pyscanner "github.com/treesitter-go/treesitter/internal/scanners/python"
+	ts "github.com/dcosson/treesitter-go"
+	golanggrammar "github.com/dcosson/treesitter-go/internal/grammars/golang"
+	pygrammar "github.com/dcosson/treesitter-go/internal/grammars/python"
+	pyscanner "github.com/dcosson/treesitter-go/internal/scanners/python"
 )
 
 func goLang() *ts.Language {

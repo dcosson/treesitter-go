@@ -1,6 +1,6 @@
 package parser
 
-import st "github.com/treesitter-go/treesitter/internal/subtree"
+import st "github.com/dcosson/treesitter-go/internal/subtree"
 
 func editSubtree(s Subtree, edit *InputEdit, arena *SubtreeArena) Subtree {
 	return st.EditSubtree(s, edit, arena)

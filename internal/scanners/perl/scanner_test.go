@@ -3,7 +3,7 @@ package perl
 import (
 	"testing"
 
-	ts "github.com/treesitter-go/treesitter"
+	ts "github.com/dcosson/treesitter-go"
 )
 
 // newLexerForString creates a test lexer from a string.

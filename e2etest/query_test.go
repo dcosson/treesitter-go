@@ -2,11 +2,11 @@ package e2etest_test
 
 import (
 	"context"
-	iparser "github.com/treesitter-go/treesitter/parser"
+	iparser "github.com/dcosson/treesitter-go/parser"
 	"testing"
 
-	ts "github.com/treesitter-go/treesitter"
-	jsongrammar "github.com/treesitter-go/treesitter/internal/grammars/json"
+	ts "github.com/dcosson/treesitter-go"
+	jsongrammar "github.com/dcosson/treesitter-go/internal/grammars/json"
 )
 
 func queryTestLanguage() *ts.Language {

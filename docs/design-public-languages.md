@@ -24,9 +24,9 @@ internal/scanners/<lang>/...      # INTERNAL: scanner implementations
 package python
 
 import (
-    grammar "github.com/treesitter-go/treesitter/internal/grammars/python"
-    scanner "github.com/treesitter-go/treesitter/internal/scanners/python"
-    ts "github.com/treesitter-go/treesitter"
+    grammar "github.com/dcosson/treesitter-go/internal/grammars/python"
+    scanner "github.com/dcosson/treesitter-go/internal/scanners/python"
+    ts "github.com/dcosson/treesitter-go"
 )
 
 // Language returns a fully configured Python language ready for parsing.
@@ -41,8 +41,8 @@ func Language() *ts.Language {
 
 ```go
 import (
-    "github.com/treesitter-go/treesitter/languages/python"
-    ts "github.com/treesitter-go/treesitter"
+    "github.com/dcosson/treesitter-go/languages/python"
+    ts "github.com/dcosson/treesitter-go"
 )
 
 lang := python.Language()

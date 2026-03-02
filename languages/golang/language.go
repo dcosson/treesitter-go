@@ -1,8 +1,8 @@
 package golang
 
 import (
-	ts "github.com/treesitter-go/treesitter"
-	grammar "github.com/treesitter-go/treesitter/internal/grammars/golang"
+	ts "github.com/dcosson/treesitter-go"
+	grammar "github.com/dcosson/treesitter-go/internal/grammars/golang"
 )
 
 func Language() *ts.Language {

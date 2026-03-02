@@ -2,16 +2,16 @@ package e2etest_test
 
 import (
 	"context"
-	iparser "github.com/treesitter-go/treesitter/parser"
+	iparser "github.com/dcosson/treesitter-go/parser"
 	"strings"
 	"testing"
 
-	ts "github.com/treesitter-go/treesitter"
-	cgrammar "github.com/treesitter-go/treesitter/internal/grammars/c"
-	cppgrammar "github.com/treesitter-go/treesitter/internal/grammars/cpp"
-	rustgrammar "github.com/treesitter-go/treesitter/internal/grammars/rust"
-	cppscanner "github.com/treesitter-go/treesitter/internal/scanners/cpp"
-	rustscanner "github.com/treesitter-go/treesitter/internal/scanners/rust"
+	ts "github.com/dcosson/treesitter-go"
+	cgrammar "github.com/dcosson/treesitter-go/internal/grammars/c"
+	cppgrammar "github.com/dcosson/treesitter-go/internal/grammars/cpp"
+	rustgrammar "github.com/dcosson/treesitter-go/internal/grammars/rust"
+	cppscanner "github.com/dcosson/treesitter-go/internal/scanners/cpp"
+	rustscanner "github.com/dcosson/treesitter-go/internal/scanners/rust"
 )
 
 func cLang() *ts.Language {

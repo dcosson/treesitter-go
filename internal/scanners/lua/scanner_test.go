@@ -3,7 +3,7 @@ package lua
 import (
 	"testing"
 
-	ts "github.com/treesitter-go/treesitter"
+	ts "github.com/dcosson/treesitter-go"
 )
 
 // makeLexer creates a Lexer positioned at the start of input.

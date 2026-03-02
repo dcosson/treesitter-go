@@ -1,8 +1,8 @@
 package language
 
 import (
-	"github.com/treesitter-go/treesitter/internal/core"
-	lex "github.com/treesitter-go/treesitter/lexer"
+	"github.com/dcosson/treesitter-go/internal/core"
+	lex "github.com/dcosson/treesitter-go/lexer"
 )
 
 type StateID = core.StateID

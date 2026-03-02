@@ -21,7 +21,7 @@ package javascript
 import (
 	"unicode"
 
-	ts "github.com/treesitter-go/treesitter"
+	ts "github.com/dcosson/treesitter-go"
 )
 
 // Token types matching the externals array in grammar.js.

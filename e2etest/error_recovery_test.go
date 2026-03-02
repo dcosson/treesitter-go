@@ -3,17 +3,17 @@ package e2etest_test
 import (
 	"context"
 	"fmt"
-	iparser "github.com/treesitter-go/treesitter/parser"
+	iparser "github.com/dcosson/treesitter-go/parser"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
-	ts "github.com/treesitter-go/treesitter"
-	golanggrammar "github.com/treesitter-go/treesitter/internal/grammars/golang"
-	jsgrammar "github.com/treesitter-go/treesitter/internal/grammars/javascript"
-	jsongrammar "github.com/treesitter-go/treesitter/internal/grammars/json"
-	jsscanner "github.com/treesitter-go/treesitter/internal/scanners/javascript"
+	ts "github.com/dcosson/treesitter-go"
+	golanggrammar "github.com/dcosson/treesitter-go/internal/grammars/golang"
+	jsgrammar "github.com/dcosson/treesitter-go/internal/grammars/javascript"
+	jsongrammar "github.com/dcosson/treesitter-go/internal/grammars/json"
+	jsscanner "github.com/dcosson/treesitter-go/internal/scanners/javascript"
 )
 
 // errorRecoveryLanguage pairs a language name with its constructor and strictness.

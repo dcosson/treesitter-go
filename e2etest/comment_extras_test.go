@@ -2,12 +2,12 @@ package e2etest_test
 
 import (
 	"context"
-	iparser "github.com/treesitter-go/treesitter/parser"
+	iparser "github.com/dcosson/treesitter-go/parser"
 	"strings"
 	"testing"
 	"time"
 
-	cgrammar "github.com/treesitter-go/treesitter/internal/grammars/c"
+	cgrammar "github.com/dcosson/treesitter-go/internal/grammars/c"
 )
 
 // TestCommentExtrasPlacement verifies that comments (extras) are placed at the

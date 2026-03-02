@@ -3,11 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
-	iparser "github.com/treesitter-go/treesitter/parser"
+	iparser "github.com/dcosson/treesitter-go/parser"
 	"time"
 
-	perlgrammar "github.com/treesitter-go/treesitter/internal/grammars/perl"
-	perlscanner "github.com/treesitter-go/treesitter/internal/scanners/perl"
+	perlgrammar "github.com/dcosson/treesitter-go/internal/grammars/perl"
+	perlscanner "github.com/dcosson/treesitter-go/internal/scanners/perl"
 )
 
 func main() {

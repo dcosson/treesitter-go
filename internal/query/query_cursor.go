@@ -1,8 +1,8 @@
 package query
 
 import (
-	st "github.com/treesitter-go/treesitter/internal/subtree"
-	itree "github.com/treesitter-go/treesitter/internal/tree"
+	st "github.com/dcosson/treesitter-go/internal/subtree"
+	itree "github.com/dcosson/treesitter-go/internal/tree"
 )
 
 // Local type aliases for tree types.

@@ -17,7 +17,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/treesitter-go/treesitter/internal/corpustest"
+	"github.com/dcosson/treesitter-go/internal/corpustest"
 )
 
 type grammarEntry struct {

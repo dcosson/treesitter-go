@@ -3,7 +3,7 @@ package cpp
 import (
 	"testing"
 
-	ts "github.com/treesitter-go/treesitter"
+	ts "github.com/dcosson/treesitter-go"
 )
 
 func newLexerForString(s string) *ts.Lexer {

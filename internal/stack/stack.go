@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/treesitter-go/treesitter/internal/core"
-	st "github.com/treesitter-go/treesitter/internal/subtree"
+	"github.com/dcosson/treesitter-go/internal/core"
+	st "github.com/dcosson/treesitter-go/internal/subtree"
 )
 
 type StateID = core.StateID

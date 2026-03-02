@@ -3,8 +3,8 @@ package subtree
 import (
 	"math"
 
-	"github.com/treesitter-go/treesitter/internal/core"
-	"github.com/treesitter-go/treesitter/language"
+	"github.com/dcosson/treesitter-go/internal/core"
+	"github.com/dcosson/treesitter-go/language"
 )
 
 // Local type aliases for frequently-used core types, keeping the code

@@ -19,7 +19,7 @@ import (
 	"path/filepath"
 	"regexp"
 
-	"github.com/treesitter-go/treesitter/internal/corpustest"
+	"github.com/dcosson/treesitter-go/internal/corpustest"
 )
 
 var sanitizeRe = regexp.MustCompile(`[^a-zA-Z0-9_-]`)

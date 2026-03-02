@@ -1,9 +1,9 @@
 package cpp
 
 import (
-	ts "github.com/treesitter-go/treesitter"
-	grammar "github.com/treesitter-go/treesitter/internal/grammars/cpp"
-	scanner "github.com/treesitter-go/treesitter/internal/scanners/cpp"
+	ts "github.com/dcosson/treesitter-go"
+	grammar "github.com/dcosson/treesitter-go/internal/grammars/cpp"
+	scanner "github.com/dcosson/treesitter-go/internal/scanners/cpp"
 )
 
 func Language() *ts.Language {

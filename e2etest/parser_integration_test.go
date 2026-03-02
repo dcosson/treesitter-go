@@ -2,13 +2,13 @@ package e2etest_test
 
 import (
 	"context"
-	iparser "github.com/treesitter-go/treesitter/parser"
+	iparser "github.com/dcosson/treesitter-go/parser"
 	"strings"
 	"testing"
 
-	ts "github.com/treesitter-go/treesitter"
-	grammars "github.com/treesitter-go/treesitter/internal/grammars"
-	jsongrammar "github.com/treesitter-go/treesitter/internal/grammars/json"
+	ts "github.com/dcosson/treesitter-go"
+	grammars "github.com/dcosson/treesitter-go/internal/grammars"
+	jsongrammar "github.com/dcosson/treesitter-go/internal/grammars/json"
 )
 
 // jsonLexFn is a hand-written lex function for the JSON grammar.

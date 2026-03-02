@@ -143,12 +143,12 @@ The single file contains ONLY type aliases, constructor wrappers, and constants:
 package treesitter
 
 import (
-    "github.com/treesitter-go/treesitter/internal/core"
-    "github.com/treesitter-go/treesitter/internal/parser"
-    "github.com/treesitter-go/treesitter/internal/query"
-    "github.com/treesitter-go/treesitter/internal/tree"
-    "github.com/treesitter-go/treesitter/language"
-    "github.com/treesitter-go/treesitter/lexer"
+    "github.com/dcosson/treesitter-go/internal/core"
+    "github.com/dcosson/treesitter-go/internal/parser"
+    "github.com/dcosson/treesitter-go/internal/query"
+    "github.com/dcosson/treesitter-go/internal/tree"
+    "github.com/dcosson/treesitter-go/language"
+    "github.com/dcosson/treesitter-go/lexer"
 )
 
 // --- Language & Lexer ---
@@ -472,7 +472,7 @@ Create `scanners/newlang/scanner.go` implementing `ExternalScanner`:
 ```go
 package newlangscanner
 
-import ts "github.com/treesitter-go/treesitter"
+import ts "github.com/dcosson/treesitter-go"
 
 type Scanner struct { /* state */ }
 

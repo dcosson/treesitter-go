@@ -17,7 +17,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/treesitter-go/treesitter/internal/generate"
+	"github.com/dcosson/treesitter-go/internal/generate"
 )
 
 func main() {

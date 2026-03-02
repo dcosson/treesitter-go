@@ -1,9 +1,9 @@
 package bash
 
 import (
-	ts "github.com/treesitter-go/treesitter"
-	grammar "github.com/treesitter-go/treesitter/internal/grammars/bash"
-	scanner "github.com/treesitter-go/treesitter/internal/scanners/bash"
+	ts "github.com/dcosson/treesitter-go"
+	grammar "github.com/dcosson/treesitter-go/internal/grammars/bash"
+	scanner "github.com/dcosson/treesitter-go/internal/scanners/bash"
 )
 
 func Language() *ts.Language {

@@ -1,7 +1,7 @@
 package stack
 
 import (
-	ts "github.com/treesitter-go/treesitter"
+	ts "github.com/dcosson/treesitter-go"
 	"testing"
 )
 

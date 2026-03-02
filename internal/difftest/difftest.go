@@ -16,7 +16,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/treesitter-go/treesitter/internal/corpustest"
+	"github.com/dcosson/treesitter-go/internal/corpustest"
 )
 
 // TreeSitterCLI is the path to the tree-sitter CLI binary.

@@ -1,9 +1,9 @@
 package javascript
 
 import (
-	ts "github.com/treesitter-go/treesitter"
-	grammar "github.com/treesitter-go/treesitter/internal/grammars/javascript"
-	scanner "github.com/treesitter-go/treesitter/internal/scanners/javascript"
+	ts "github.com/dcosson/treesitter-go"
+	grammar "github.com/dcosson/treesitter-go/internal/grammars/javascript"
+	scanner "github.com/dcosson/treesitter-go/internal/scanners/javascript"
 )
 
 func Language() *ts.Language {

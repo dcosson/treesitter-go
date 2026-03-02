@@ -3,7 +3,7 @@ package bash
 import (
 	"testing"
 
-	ts "github.com/treesitter-go/treesitter"
+	ts "github.com/dcosson/treesitter-go"
 )
 
 // newLexerForString creates a lexer initialized with the given string input.

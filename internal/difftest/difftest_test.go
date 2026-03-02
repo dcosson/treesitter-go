@@ -3,15 +3,15 @@ package difftest
 import (
 	"context"
 	"flag"
-	iparser "github.com/treesitter-go/treesitter/parser"
+	iparser "github.com/dcosson/treesitter-go/parser"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
 
-	"github.com/treesitter-go/treesitter/internal/corpustest"
-	golanggrammar "github.com/treesitter-go/treesitter/internal/grammars/golang"
+	"github.com/dcosson/treesitter-go/internal/corpustest"
+	golanggrammar "github.com/dcosson/treesitter-go/internal/grammars/golang"
 )
 
 var tsCLIFlag = flag.String("ts-cli", "", "path to tree-sitter CLI binary")

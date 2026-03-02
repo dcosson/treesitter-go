@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/treesitter-go/treesitter/internal/core"
-	istack "github.com/treesitter-go/treesitter/internal/stack"
-	st "github.com/treesitter-go/treesitter/internal/subtree"
-	itree "github.com/treesitter-go/treesitter/internal/tree"
-	"github.com/treesitter-go/treesitter/language"
-	plexer "github.com/treesitter-go/treesitter/lexer"
+	"github.com/dcosson/treesitter-go/internal/core"
+	istack "github.com/dcosson/treesitter-go/internal/stack"
+	st "github.com/dcosson/treesitter-go/internal/subtree"
+	itree "github.com/dcosson/treesitter-go/internal/tree"
+	"github.com/dcosson/treesitter-go/language"
+	plexer "github.com/dcosson/treesitter-go/lexer"
 )
 
 type Language = language.Language

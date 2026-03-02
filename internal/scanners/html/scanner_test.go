@@ -3,7 +3,7 @@ package html
 import (
 	"testing"
 
-	ts "github.com/treesitter-go/treesitter"
+	ts "github.com/dcosson/treesitter-go"
 )
 
 // newLexer creates a Lexer initialized with the given string input.

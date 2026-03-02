@@ -3,7 +3,7 @@ package javascript
 import (
 	"testing"
 
-	ts "github.com/treesitter-go/treesitter"
+	ts "github.com/dcosson/treesitter-go"
 )
 
 // helper creates a lexer from a string and starts it.

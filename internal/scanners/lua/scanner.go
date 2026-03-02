@@ -21,7 +21,7 @@ package lua
 import (
 	"unicode"
 
-	ts "github.com/treesitter-go/treesitter"
+	ts "github.com/dcosson/treesitter-go"
 )
 
 // External token type indices (must match grammar.js externals array order).

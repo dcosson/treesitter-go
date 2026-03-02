@@ -1,9 +1,9 @@
 package css
 
 import (
-	ts "github.com/treesitter-go/treesitter"
-	grammar "github.com/treesitter-go/treesitter/internal/grammars/css"
-	scanner "github.com/treesitter-go/treesitter/internal/scanners/css"
+	ts "github.com/dcosson/treesitter-go"
+	grammar "github.com/dcosson/treesitter-go/internal/grammars/css"
+	scanner "github.com/dcosson/treesitter-go/internal/scanners/css"
 )
 
 func Language() *ts.Language {

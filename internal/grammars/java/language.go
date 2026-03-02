@@ -5,9 +5,9 @@
 package java
 
 import (
-	core "github.com/treesitter-go/treesitter/internal/core"
-	language "github.com/treesitter-go/treesitter/language"
-	lex "github.com/treesitter-go/treesitter/lexer"
+	core "github.com/dcosson/treesitter-go/internal/core"
+	language "github.com/dcosson/treesitter-go/language"
+	lex "github.com/dcosson/treesitter-go/lexer"
 )
 
 // Grammar symbol IDs.

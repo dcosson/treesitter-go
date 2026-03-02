@@ -3,9 +3,9 @@ package parser
 import (
 	"context"
 
-	ts "github.com/treesitter-go/treesitter"
-	iparser "github.com/treesitter-go/treesitter/internal/parser"
-	plexer "github.com/treesitter-go/treesitter/lexer"
+	ts "github.com/dcosson/treesitter-go"
+	iparser "github.com/dcosson/treesitter-go/internal/parser"
+	plexer "github.com/dcosson/treesitter-go/lexer"
 )
 
 // Parser is the public facade over the internal parser implementation.

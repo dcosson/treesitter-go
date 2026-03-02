@@ -2,20 +2,20 @@ package e2etest_test
 
 import (
 	"context"
-	iparser "github.com/treesitter-go/treesitter/parser"
+	iparser "github.com/dcosson/treesitter-go/parser"
 	"strings"
 	"testing"
 
-	ts "github.com/treesitter-go/treesitter"
-	bashgrammar "github.com/treesitter-go/treesitter/internal/grammars/bash"
-	jsgrammar "github.com/treesitter-go/treesitter/internal/grammars/javascript"
-	rubygrammar "github.com/treesitter-go/treesitter/internal/grammars/ruby"
-	tsxgrammar "github.com/treesitter-go/treesitter/internal/grammars/tsx"
-	tsgrammar "github.com/treesitter-go/treesitter/internal/grammars/typescript"
-	bashscanner "github.com/treesitter-go/treesitter/internal/scanners/bash"
-	jsscanner "github.com/treesitter-go/treesitter/internal/scanners/javascript"
-	rubyscanner "github.com/treesitter-go/treesitter/internal/scanners/ruby"
-	tsscanner "github.com/treesitter-go/treesitter/internal/scanners/typescript"
+	ts "github.com/dcosson/treesitter-go"
+	bashgrammar "github.com/dcosson/treesitter-go/internal/grammars/bash"
+	jsgrammar "github.com/dcosson/treesitter-go/internal/grammars/javascript"
+	rubygrammar "github.com/dcosson/treesitter-go/internal/grammars/ruby"
+	tsxgrammar "github.com/dcosson/treesitter-go/internal/grammars/tsx"
+	tsgrammar "github.com/dcosson/treesitter-go/internal/grammars/typescript"
+	bashscanner "github.com/dcosson/treesitter-go/internal/scanners/bash"
+	jsscanner "github.com/dcosson/treesitter-go/internal/scanners/javascript"
+	rubyscanner "github.com/dcosson/treesitter-go/internal/scanners/ruby"
+	tsscanner "github.com/dcosson/treesitter-go/internal/scanners/typescript"
 )
 
 func newBashLang() *ts.Language {

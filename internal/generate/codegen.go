@@ -18,9 +18,9 @@ func GenerateGo(g *Grammar, packageName string) string {
 		g.SymbolCount, g.StateCount, g.LargeStateCount, g.StateCount-g.LargeStateCount)
 	fmt.Fprintf(&b, "package %s\n\n", packageName)
 	fmt.Fprintf(&b, "import (\n")
-	fmt.Fprintf(&b, "\tcore \"github.com/treesitter-go/treesitter/internal/core\"\n")
-	fmt.Fprintf(&b, "\tlanguage \"github.com/treesitter-go/treesitter/language\"\n")
-	fmt.Fprintf(&b, "\tlex \"github.com/treesitter-go/treesitter/lexer\"\n")
+	fmt.Fprintf(&b, "\tcore \"github.com/dcosson/treesitter-go/internal/core\"\n")
+	fmt.Fprintf(&b, "\tlanguage \"github.com/dcosson/treesitter-go/language\"\n")
+	fmt.Fprintf(&b, "\tlex \"github.com/dcosson/treesitter-go/lexer\"\n")
 	fmt.Fprintf(&b, ")\n\n")
 
 	// Symbol constants.
