@@ -217,26 +217,27 @@ func ParseBytesWithCLI(input []byte, scope string) (string, error) {
 	return ParseWithCLI(tmpFile.Name(), scope)
 }
 
-// missingNodeRe matches MISSING nodes in S-expressions, e.g.:
-//
-//	(MISSING ";") or (MISSING identifier)
-//
-// The C CLI's verbose format excludes MISSING nodes from the tree output
-// (reporting them only in the trailing summary line), while Go's String()
-// includes them inline. Stripping MISSING nodes from Go's output makes
-// the comparison fair — both parsers produce the same tree structure, they
-// just serialize MISSING markers differently.
-var missingNodeRe = regexp.MustCompile(`\s*\(MISSING "[^"]*"\)|\s*\(MISSING \w+\)`)
+// missingAnonRe matches anonymous MISSING tokens like (MISSING ";") or (MISSING "::").
+// The C CLI never renders these in the tree body, so we strip them from Go output.
+var missingAnonRe = regexp.MustCompile(`\s*\(MISSING "[^"]*"\)`)
+
+// missingNamedRe matches named MISSING nodes like (MISSING identifier).
+// The C CLI renders these as regular zero-width named nodes (e.g., (identifier [X,Y] - [X,Y])),
+// which after position stripping become (identifier). We convert Go's format to match.
+var missingNamedRe = regexp.MustCompile(`\(MISSING (\w+)\)`)
 
 // NormalizeCLIOutput normalizes the tree-sitter CLI output for comparison
-// with the Go parser. Strips point ranges, field annotations, MISSING nodes,
-// trailing filename paths (appended by the CLI), collapses whitespace, and trims.
+// with the Go parser. Strips point ranges, field annotations, normalizes
+// MISSING nodes, strips trailing filename paths (appended by the CLI),
+// collapses whitespace, and trims.
 func NormalizeCLIOutput(s string) string {
 	normalized, _ := corpustest.NormalizeSExpression(s)
 	stripped := corpustest.StripFields(normalized)
-	// Strip MISSING nodes — the C CLI verbose format excludes them from the
-	// tree output, while Go's String() includes them inline.
-	stripped = missingNodeRe.ReplaceAllString(stripped, "")
+	// Strip anonymous MISSING tokens — C CLI never renders these.
+	stripped = missingAnonRe.ReplaceAllString(stripped, "")
+	// Convert named MISSING nodes to plain nodes — C CLI renders these
+	// as zero-width named nodes, not with MISSING prefix.
+	stripped = missingNamedRe.ReplaceAllString(stripped, "($1)")
 	// The tree-sitter CLI appends the filename after the S-expression.
 	// After normalization this looks like "...) /path/to/file.ext".
 	// Find the position where the root S-expression closes and truncate.
