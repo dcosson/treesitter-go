@@ -108,6 +108,95 @@ END {
 	printf "Go/Ref mem: >1x means Go uses more memory, <1x means Go uses less.\n"
 	printf "Parse times = total - overhead (subprocess startup cost removed).\n"
 	printf "\n"
+
+	# Per-language summary table: average Go vs Ref CPU and memory multipliers.
+	# Computed from summed parse times and memory across all sizes per language.
+	printf "%-14s %10s %10s\n", "Language", "Go vs Ref", "Go/Ref mem"
+	printf "%-14s %10s %10s\n", "--------", "---------", "----------"
+
+	total_go_parse = 0
+	total_ref_parse = 0
+	total_go_mem = 0
+	total_ref_mem = 0
+	lang_count = 0
+
+	for (li = 1; li <= nlang; li++) {
+		lang = lang_order[li]
+
+		go_oh_key = "go" SUBSEP lang SUBSEP "overhead"
+		ref_oh_key = "ref" SUBSEP lang SUBSEP "overhead"
+		go_overhead = (cnt[go_oh_key] > 0) ? sum[go_oh_key] / cnt[go_oh_key] : 0
+		ref_overhead = (cnt[ref_oh_key] > 0) ? sum[ref_oh_key] / cnt[ref_oh_key] : 0
+
+		lang_go_parse = 0
+		lang_ref_parse = 0
+		lang_go_mem = 0
+		lang_ref_mem = 0
+		lang_sizes = 0
+
+		for (si = 1; si <= nsize; si++) {
+			size = size_order[si]
+			if (size == "overhead") continue
+
+			go_key = "go" SUBSEP lang SUBSEP size
+			ref_key = "ref" SUBSEP lang SUBSEP size
+
+			if (cnt[go_key] == 0 || cnt[ref_key] == 0) continue
+
+			go_avg = sum[go_key] / cnt[go_key]
+			ref_avg = sum[ref_key] / cnt[ref_key]
+			go_m = mem[go_key] / cnt[go_key]
+			ref_m = mem[ref_key] / cnt[ref_key]
+
+			go_p = go_avg - go_overhead
+			ref_p = ref_avg - ref_overhead
+			if (go_p < 0) go_p = 0
+			if (ref_p < 0) ref_p = 0
+
+			lang_go_parse += go_p
+			lang_ref_parse += ref_p
+			lang_go_mem += go_m
+			lang_ref_mem += ref_m
+			lang_sizes++
+		}
+
+		if (lang_sizes > 0 && lang_go_parse > 0 && lang_ref_parse > 0) {
+			cpu_ratio = lang_ref_parse / lang_go_parse
+			cpu_str = sprintf("%.2fx", cpu_ratio)
+		} else {
+			cpu_str = "-"
+		}
+		if (lang_sizes > 0 && lang_go_mem > 0 && lang_ref_mem > 0) {
+			mem_r = lang_go_mem / lang_ref_mem
+			mem_str = sprintf("%.2fx", mem_r)
+		} else {
+			mem_str = "-"
+		}
+
+		printf "%-14s %10s %10s\n", lang, cpu_str, mem_str
+
+		total_go_parse += lang_go_parse
+		total_ref_parse += lang_ref_parse
+		total_go_mem += lang_go_mem
+		total_ref_mem += lang_ref_mem
+		if (lang_sizes > 0) lang_count++
+	}
+
+	printf "%-14s %10s %10s\n", "--------", "---------", "----------"
+	if (total_go_parse > 0 && total_ref_parse > 0) {
+		total_cpu = total_ref_parse / total_go_parse
+		total_cpu_str = sprintf("%.2fx", total_cpu)
+	} else {
+		total_cpu_str = "-"
+	}
+	if (total_go_mem > 0 && total_ref_mem > 0) {
+		total_mem = total_go_mem / total_ref_mem
+		total_mem_str = sprintf("%.2fx", total_mem)
+	} else {
+		total_mem_str = "-"
+	}
+	printf "%-14s %10s %10s\n", "TOTAL", total_cpu_str, total_mem_str
+	printf "\n"
 }
 
 function fmt_ns(ns) {
