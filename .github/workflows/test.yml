@@ -10,115 +10,99 @@ permissions:
   contents: read
 
 jobs:
-  unit-tests:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: ubuntu-latest
-          - os: ubuntu-24.04-arm
-          - os: macos-latest
-          - os: windows-latest
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version-file: go.mod
-      - run: go build ./...
-      - name: Run unit tests (excludes corpus/differential tests)
-        run: go test -race -count=1 -timeout 10m -skip 'TestCorpus|TestDifferential' ./...
-
-  corpus-tests:
+  test:
+    name: Unit & Integration Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
-      - run: make fetch-test-grammars
-      - name: Run corpus tests
-        id: corpus
-        continue-on-error: true
-        run: |
-          go test ./... -run TestCorpus -v -count=1 -timeout 10m 2>&1 | tee corpus-output.txt
-          echo "exit_code=${PIPESTATUS[0]}" >> "$GITHUB_OUTPUT"
-        timeout-minutes: 15
-      - name: Corpus test summary
-        if: always()
-        run: |
-          echo "## Corpus Test Results" >> "$GITHUB_STEP_SUMMARY"
-          echo "" >> "$GITHUB_STEP_SUMMARY"
+      - run: make build
+      - name: Run tests
+        run: make test
 
-          # Count per-language results
-          total_pass=0
-          total_fail=0
-          total_skip=0
-
-          echo "| Language | Pass | Fail | Skip | Status |" >> "$GITHUB_STEP_SUMMARY"
-          echo "|----------|------|------|------|--------|" >> "$GITHUB_STEP_SUMMARY"
-
-          for lang in JSON C Cpp Rust Bash Ruby Perl CSS HTML Java Go Python JavaScript TypeScript Lua; do
-            pass=$(grep -c "^    --- PASS: TestCorpus${lang}/" corpus-output.txt 2>/dev/null || echo 0)
-            fail=$(grep -c "^    --- FAIL: TestCorpus${lang}/" corpus-output.txt 2>/dev/null || echo 0)
-            skip=$(grep -c "^    --- SKIP: TestCorpus${lang}/" corpus-output.txt 2>/dev/null || echo 0)
-            total_pass=$((total_pass + pass))
-            total_fail=$((total_fail + fail))
-            total_skip=$((total_skip + skip))
-            if [ "$fail" -gt 0 ]; then
-              status="⚠️"
-            elif [ "$pass" -gt 0 ]; then
-              status="✅"
-            else
-              status="⏭️"
-            fi
-            if [ "$((pass + fail + skip))" -gt 0 ]; then
-              echo "| ${lang} | ${pass} | ${fail} | ${skip} | ${status} |" >> "$GITHUB_STEP_SUMMARY"
-            fi
-          done
-
-          echo "" >> "$GITHUB_STEP_SUMMARY"
-          echo "**Total: ${total_pass} passed, ${total_fail} failed, ${total_skip} skipped**" >> "$GITHUB_STEP_SUMMARY"
-
-          if [ "$total_fail" -gt 0 ]; then
-            echo "" >> "$GITHUB_STEP_SUMMARY"
-            echo "⚠️ Corpus tests have known failures — this job is informational and does not block CI." >> "$GITHUB_STEP_SUMMARY"
-          fi
-
-  test-diff:
+  corpus:
+    name: Corpus Tests (15 languages)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+
+      - name: Cache fetched grammars
+        uses: actions/cache@v4
+        with:
+          path: build/grammars
+          key: grammars-${{ hashFiles('grammars.json') }}
+
+      - name: Fetch test grammars
+        run: make fetch-test-grammars
+
+      - name: Corpus tests
+        run: make test-corpus
+
+      - name: Regression tests
+        run: make test-regression
+
+      - name: Scanner trace tests
+        run: make test-scanner-traces
+
+  diff:
+    name: Differential Tests (C CLI comparison)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Cache fetched grammars
+        uses: actions/cache@v4
+        with:
+          path: build/grammars
+          key: grammars-${{ hashFiles('grammars.json') }}
+
       - name: Install tree-sitter CLI
         run: npm install -g tree-sitter-cli
+
+      - name: Fetch test grammars
+        run: make fetch-test-grammars
+
       - name: Run differential tests
         run: make test-diff
 
-  benchmarks:
+  realworld:
+    name: Realworld Diff Tests (15 languages)
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    permissions:
-      contents: write
-      pull-requests: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+
+      - name: Cache fetched grammars
+        uses: actions/cache@v4
+        with:
+          path: build/grammars
+          key: grammars-${{ hashFiles('grammars.json') }}
+
+      - name: Cache realworld files
+        uses: actions/cache@v4
+        with:
+          path: testdata/realworld
+          key: realworld-${{ hashFiles('testdata/realworld-manifest.json') }}
+
       - name: Install tree-sitter CLI
         run: npm install -g tree-sitter-cli
-      - name: Run benchmarks
-        run: make bench
-      - name: Store benchmark result
-        uses: benchmark-action/github-action-benchmark@v1
-        with:
-          tool: go
-          output-file-path: bench-results.txt
-          auto-push: false
-          comment-on-alert: true
-          alert-threshold: '150%'
-          summary-always: true
-          fail-on-alert: false
+
+      - name: Fetch test grammars
+        run: make fetch-test-grammars
+
+      - name: Fetch realworld files
+        run: make fetch-realworld
+
+      - name: Run realworld differential tests
+        run: make test-realworld-diff
+        timeout-minutes: 30

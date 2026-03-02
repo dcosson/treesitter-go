@@ -38,7 +38,7 @@ test:
 	go test -race -skip 'TestCorpus|Differential|WithCLI' ./...
 
 test-coverage:
-	-go test -skip 'TestCorpus|Differential|WithCLI' -coverprofile=testdata/coverage.out $$(go list ./... | grep -v testgrammars)
+	-go test -skip 'TestCorpus|Differential|WithCLI' -coverprofile=testdata/coverage.out $$(go list ./... | grep -v internal/grammars)
 	go tool cover -html=testdata/coverage.out -o testdata/coverage.html
 	@go tool cover -func=testdata/coverage.out | tail -1
 	@echo "Coverage report: testdata/coverage.html"
