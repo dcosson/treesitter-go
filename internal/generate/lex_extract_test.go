@@ -97,10 +97,10 @@ func TestParseSetContainsCompound(t *testing.T) {
 			wantExclusions: []rune{'\n', '\r'},
 		},
 		{
-			name:        "set_contains OR'd with char plus exclusions",
-			line:        `if ((set_contains(sym_substitution_regexp_modifiers_character_set_1, 9, lookahead) || lookahead == 'n') && lookahead != 'e' && lookahead != 'r') ADVANCE(300);`,
-			wantSet:     "sym_substitution_regexp_modifiers_character_set_1",
-			wantOrChars: []rune{'n'},
+			name:           "set_contains OR'd with char plus exclusions",
+			line:           `if ((set_contains(sym_substitution_regexp_modifiers_character_set_1, 9, lookahead) || lookahead == 'n') && lookahead != 'e' && lookahead != 'r') ADVANCE(300);`,
+			wantSet:        "sym_substitution_regexp_modifiers_character_set_1",
+			wantOrChars:    []rune{'n'},
 			wantExclusions: []rune{'e', 'r'},
 		},
 		{
@@ -111,9 +111,9 @@ func TestParseSetContainsCompound(t *testing.T) {
 			wantExclRanges: []RuneRange{{Low: '\t', High: '\r'}},
 		},
 		{
-			name:    "set_contains with compound exclude ranges",
-			line:    `if ((set_contains(sym__identifier_character_set_1, 668, lookahead)) && (lookahead < 'A' || 'Z' < lookahead) && lookahead != '_' && (lookahead < 'a' || 'z' < lookahead)) ADVANCE(273);`,
-			wantSet: "sym__identifier_character_set_1",
+			name:           "set_contains with compound exclude ranges",
+			line:           `if ((set_contains(sym__identifier_character_set_1, 668, lookahead)) && (lookahead < 'A' || 'Z' < lookahead) && lookahead != '_' && (lookahead < 'a' || 'z' < lookahead)) ADVANCE(273);`,
+			wantSet:        "sym__identifier_character_set_1",
 			wantExclusions: []rune{'_'},
 			wantExclRanges: []RuneRange{{Low: 'A', High: 'Z'}, {Low: 'a', High: 'z'}},
 		},
