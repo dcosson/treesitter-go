@@ -28,13 +28,13 @@ import (
     "fmt"
 
     ts "github.com/treesitter-go/treesitter"
-    "github.com/treesitter-go/treesitter/internal/testgrammars/gogrammar"
+    "github.com/treesitter-go/treesitter/languages/golang"
 )
 
 func main() {
     // Create a parser and set the language
     parser := ts.NewParser()
-    parser.SetLanguage(gogrammar.GoLanguage())
+    parser.SetLanguage(golang.Language())
 
     // Parse source code
     source := []byte(`package main
@@ -110,8 +110,8 @@ flowchart LR
     end
 
     subgraph Generate ["Go code generation"]
-        LOCAL_PC -->|tsgo-generate| LGO[internal/testgrammars/\nlang/language.go]
-        LOCAL_SC -->|hand-port to Go| SGO[scanners/lang/\nscanner.go]
+        LOCAL_PC -->|tsgo-generate| LGO[internal/grammars/\nlang/language.go]
+        LOCAL_SC -->|hand-port to Go| SGO[internal/scanners/lang/\nscanner.go]
     end
 
     subgraph Runtime ["Pure-Go runtime"]
@@ -131,7 +131,7 @@ The key steps:
 
 The source of truth for supported languages is **`grammars.json`** in the project root. It lists each grammar's name, upstream repo, pinned version, file extension, and whether it has an external scanner.
 
-Generated parse tables live in `internal/testgrammars/<lang>/` and hand-ported external scanners in `scanners/<lang>/`.
+Generated parse tables live in `internal/grammars/<lang>/`, hand-ported external scanners in `internal/scanners/<lang>/`, and public language packages in `languages/<lang>/`.
 
 ## Adding a Grammar
 
@@ -154,15 +154,34 @@ make fetch-test-grammars
 make build
 build/bin/tsgo-generate \
   -parser build/grammars/tree-sitter-newlang/src/parser.c \
-  -package newlanggrammar \
-  -output internal/testgrammars/newlang/language.go
+  -package newlang \
+  -output internal/grammars/newlang/language.go
 ```
 
 **4. Port external scanner** (if `src/scanner.c` exists)
 
-Create `scanners/newlang/scanner.go` implementing the `ExternalScanner` interface, plus unit tests at `scanners/newlang/scanner_test.go`. See existing scanners for reference.
+Create `internal/scanners/newlang/scanner.go` implementing the `ExternalScanner` interface, plus unit tests at `internal/scanners/newlang/scanner_test.go`. See existing scanners for reference.
 
-**5. Wire into test suites**
+**5. Create public language package**
+
+Create `languages/newlang/language.go` that wires the grammar and scanner together:
+```go
+package newlang
+
+import (
+    ts "github.com/treesitter-go/treesitter"
+    grammar "github.com/treesitter-go/treesitter/internal/grammars/newlang"
+    scanner "github.com/treesitter-go/treesitter/internal/scanners/newlang"
+)
+
+func Language() *ts.Language {
+    l := grammar.NewlangLanguage()
+    l.NewExternalScanner = scanner.New
+    return l
+}
+```
+
+**6. Wire into test suites**
 
 | File | What to add |
 |------|-------------|
@@ -175,12 +194,12 @@ Create `scanners/newlang/scanner.go` implementing the `ExternalScanner` interfac
 | `e2etest/manifest_coverage_test.go` | Entry in `corpusLanguages` map |
 | `testdata/realworld-manifest.json` | 2+ real-world projects with representative files |
 
-**6. Generate scanner traces** (if external scanner)
+**7. Generate scanner traces** (if external scanner)
 ```bash
 make generate-scanner-traces
 ```
 
-**7. Verify**
+**8. Verify**
 ```bash
 make test && make test-corpus && make test-regression
 ```
@@ -197,7 +216,7 @@ make test && make test-corpus && make test-regression
 
 | Test | Standalone Command | Code Location | Setup Required | Notes |
 |------|-------------------|---------------|----------------|-------|
-| **Unit tests** | — | `internal/*/`, `scanners/*/`, `language/` | None | Parser, lexer, stack, subtree, corpustest framework, scanner unit tests. |
+| **Unit tests** | — | `internal/*/`, `language/` | None | Parser, lexer, stack, subtree, corpustest framework, scanner unit tests. |
 | **API tests** | `go test -run TestApi ./e2etest/` | `e2etest/api_test.go` | None | Public API: Node, Tree, TreeCursor navigation and field access. |
 | **Error recovery tests** | `go test -run TestErrorRecovery ./e2etest/` | `e2etest/error_recovery_test.go` | None | Malformed input handling — no panics, ERROR nodes produced. |
 | **Grammar batch tests** | `go test -run TestGrammarBatch ./e2etest/` | `e2etest/grammar_batch*_test.go` | None | Hand-written integration tests for specific language constructs across all 15 languages. |
@@ -285,8 +304,9 @@ The implementation faithfully ports the C tree-sitter runtime to Go, organized i
 
 ### Language support
 
-- **`internal/testgrammars/<lang>/`** — Generated parse tables for 15 languages
-- **`scanners/<lang>/`** — Hand-ported external scanner implementations
+- **`languages/<lang>/`** — Public language packages, each with a `Language()` function that wires grammar + scanner
+- **`internal/grammars/<lang>/`** — Generated parse tables for 15 languages
+- **`internal/scanners/<lang>/`** — Hand-ported external scanner implementations
 
 ### Import graph
 
