@@ -170,8 +170,10 @@ func main() {
 	}
 }
 
+var httpClient = &http.Client{Timeout: 60 * time.Second}
+
 func downloadFile(url string) ([]byte, error) {
-	resp, err := http.Get(url)
+	resp, err := httpClient.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("HTTP request: %w", err)
 	}

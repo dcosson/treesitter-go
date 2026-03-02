@@ -2,6 +2,9 @@
 build/
 *.exe
 
+# Task tracking (local only)
+.beads/
+
 # IDE
 .idea/
 .vscode/

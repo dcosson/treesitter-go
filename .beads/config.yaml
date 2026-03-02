@@ -1,9 +1,0 @@
-actor: ${USER}
-beads_variant: beads-lite
-create.require-description: "false"
-defaults.priority: "2"
-defaults.type: task
-hierarchy.max_depth: "3"
-issue_prefix: tree-sitter-go
-graph.auto_close_parent: "true"
-graph.cascade_parent_blocking: "true"
