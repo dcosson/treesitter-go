@@ -69,7 +69,7 @@ go test -run TestPythonIndent -v ./internal/scanners/python/
 Some tests require fetched data:
 
 ```bash
-make fetch-test-grammars   # Needed for corpus tests
+make fetch-grammars   # Needed for corpus tests
 make deps                  # Installs tree-sitter CLI (needed for diff tests)
 make fetch-realworld       # Needed for realworld diff tests
 ```
@@ -96,7 +96,7 @@ See `README.md` for the full architecture diagram and package descriptions.
 Follow the detailed steps in the README's **"Adding a Grammar"** section. Summary:
 
 1. **Manifest**: Add entry to `grammars.json` (`name`, `repo`, `version`, `ext`, `scanner`)
-2. **Fetch**: `make fetch-test-grammars`
+2. **Fetch**: `make fetch-grammars`
 3. **Generate**: `build/bin/tsgo-generate -parser build/grammars/tree-sitter-<lang>/src/parser.c -package <lang> -output internal/grammars/<lang>/language.go`
 4. **Scanner**: If `scanner.c` exists, port to Go in `internal/scanners/<lang>/scanner.go` with unit tests
 5. **Public shim**: Create `languages/<lang>/language.go` that wires grammar + scanner

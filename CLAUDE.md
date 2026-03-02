@@ -54,7 +54,7 @@ See the **Testing** section in `README.md` for full details on each test type, w
 Some tests require fetched data. Run these once before testing:
 
 ```bash
-make fetch-test-grammars   # Needed for corpus tests
+make fetch-grammars   # Needed for corpus tests
 make deps                  # Installs tree-sitter CLI (needed for diff tests)
 make fetch-realworld       # Needed for realworld diff tests
 ```
@@ -72,7 +72,7 @@ The root package (`treesitter.go`) is a pure facade — type aliases and constru
 Follow the steps in the README's "Adding a Grammar" section. Key points:
 
 1. Add entry to `grammars.json` with all fields (`name`, `repo`, `version`, `ext`, and `scanner` if applicable)
-2. `make fetch-test-grammars` to clone the repo into `build/grammars/`
+2. `make fetch-grammars` to clone the repo into `build/grammars/`
 3. Run `tsgo-generate` to produce `internal/grammars/<lang>/language.go`
 4. Port the external scanner to Go in `internal/scanners/<lang>/` if one exists
 5. Create public shim in `languages/<lang>/language.go` that wires grammar + scanner

@@ -497,10 +497,10 @@ func TestParseCorpusDir_Nonexistent(t *testing.T) {
 
 func TestParseCorpusDir_FetchedJSONGrammar(t *testing.T) {
 	// Integration test: parse the real tree-sitter-json corpus if it has been fetched.
-	// Run `make fetch-test-grammars` first to populate build/grammars/.
+	// Run `make fetch-grammars` first to populate build/grammars/.
 	corpusDir := filepath.Join("..", "..", "build", "grammars", "tree-sitter-json", "test", "corpus")
 	if _, err := os.Stat(corpusDir); os.IsNotExist(err) {
-		t.Skip("tree-sitter-json corpus not fetched; run `make fetch-test-grammars` first")
+		t.Skip("tree-sitter-json corpus not fetched; run `make fetch-grammars` first")
 	}
 
 	cases, err := ParseCorpusDir(corpusDir)

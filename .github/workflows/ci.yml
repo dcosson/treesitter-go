@@ -49,8 +49,8 @@ jobs:
           path: build/grammars
           key: grammars-${{ hashFiles('grammars.json') }}
 
-      - name: Fetch test grammars
-        run: make fetch-test-grammars
+      - name: Fetch grammars
+        run: make fetch-grammars
 
       - name: Corpus tests
         run: make test-corpus
@@ -79,8 +79,8 @@ jobs:
       - name: Install tree-sitter CLI
         run: npm install -g tree-sitter-cli
 
-      - name: Fetch test grammars
-        run: make fetch-test-grammars
+      - name: Fetch grammars
+        run: make fetch-grammars
 
       - name: Run differential tests
         run: make test-diff
@@ -109,8 +109,8 @@ jobs:
       - name: Install tree-sitter CLI
         run: npm install -g tree-sitter-cli
 
-      - name: Fetch test grammars
-        run: make fetch-test-grammars
+      - name: Fetch grammars
+        run: make fetch-grammars
 
       - name: Fetch realworld files
         run: make fetch-realworld

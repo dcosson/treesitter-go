@@ -343,7 +343,7 @@ These require fetched data or external tools:
 
 | Command | What it Tests | Setup Required |
 |---------|---------------|----------------|
-| `make test-corpus` | Grammar test suites — 1619 cases across 15 languages. Each case has input + expected S-expression from upstream grammar repos. | `make fetch-test-grammars` |
+| `make test-corpus` | Grammar test suites — 1619 cases across 15 languages. Each case has input + expected S-expression from upstream grammar repos. | `make fetch-grammars` |
 | `make test-diff` | Small sample inputs compared Go vs C tree-sitter CLI output | `make deps` (installs C CLI) |
 | `make test-realworld-diff` | Real-world OSS source files (kubernetes, flask, rails, etc.) compared Go vs C CLI | `make deps` + `make fetch-realworld` |
 | `make bench` | Parse throughput (bytes/sec) at multiple sizes for all 15 languages. Optional C CLI comparison. | Optional: `make deps` for C comparison |
@@ -358,7 +358,7 @@ To run every test:
 ```bash
 # 1. Setup (one-time)
 make deps                  # Install C CLI
-make fetch-test-grammars   # Fetch grammar repos
+make fetch-grammars   # Fetch grammar repos
 make fetch-realworld       # Fetch real-world source files
 
 # 2. Run all tests
@@ -390,7 +390,7 @@ test suite fixtures). We rename:
 ```
 grammars.json                  # Grammar version pins (supported languages)
 build/
-  grammars/                    # Fetched grammar repos (make fetch-test-grammars)
+  grammars/                    # Fetched grammar repos (make fetch-grammars)
     tree-sitter-<lang>/
       test/corpus/*.txt        # Grammar test fixtures (input + expected S-expression)
       src/parser.c             # C parse tables (used by tsgo-generate)
@@ -455,7 +455,7 @@ Add to `grammars.json`:
 
 **2. Fetch**
 ```bash
-make fetch-test-grammars
+make fetch-grammars
 ```
 
 **3. Generate Go parse tables**

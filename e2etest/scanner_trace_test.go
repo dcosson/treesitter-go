@@ -172,7 +172,7 @@ func TestScannerTraces(t *testing.T) {
 				t.Fatalf("failed to load corpus inputs: %v", err)
 			}
 			if len(corpusInputs) == 0 {
-				t.Skipf("no corpus inputs for %s — run 'make fetch-test-grammars'", cfg.name)
+				t.Skipf("no corpus inputs for %s — run 'make fetch-grammars'", cfg.name)
 			}
 
 			// Open and scan the trace file

@@ -104,7 +104,7 @@ flowchart LR
         GJS -->|tree-sitter generate| SC[src/scanner.c]
     end
 
-    subgraph Fetch ["make fetch-test-grammars"]
+    subgraph Fetch ["make fetch-grammars"]
         PC -->|git clone| LOCAL_PC[build/grammars/\ntree-sitter-lang/\nsrc/parser.c]
         SC -->|git clone| LOCAL_SC[build/grammars/\ntree-sitter-lang/\nsrc/scanner.c]
     end
@@ -123,7 +123,7 @@ flowchart LR
 The key steps:
 
 1. **Upstream** — each `tree-sitter-{lang}` repo defines a `grammar.js` and optionally a hand-written `scanner.c`. Running `tree-sitter generate` produces `src/parser.c` (large auto-generated parse tables) and compiles the scanner.
-2. **Fetch** — `make fetch-test-grammars` clones the upstream repos (with pre-generated `parser.c`) into `build/grammars/`.
+2. **Fetch** — `make fetch-grammars` clones the upstream repos (with pre-generated `parser.c`) into `build/grammars/`.
 3. **Transpile** — `cmd/tsgo-generate` reads `parser.c` and emits an equivalent Go file with the same parse tables as Go data structures. External scanners must be manually ported to Go since they contain arbitrary C logic.
 4. **Runtime** — the pure-Go parser engine (`parser.go`) consumes the generated `language.go` tables and calls into Go scanner implementations via the `ExternalScanner` interface.
 
@@ -146,7 +146,7 @@ Add an entry to `grammars.json`:
 
 **2. Fetch the grammar repo**
 ```bash
-make fetch-test-grammars
+make fetch-grammars
 ```
 
 **3. Generate Go parse tables**
@@ -227,7 +227,7 @@ make test && make test-corpus && make test-regression
 
 | Test | Command | Code Location | Setup Required | Notes |
 |------|---------|---------------|----------------|-------|
-| **Corpus tests** | `make test-corpus` | `e2etest/corpus_*.go` | `make fetch-test-grammars` | Tree-sitter's official test suites — 1619 cases across 15 languages. Each case has input + expected S-expression. |
+| **Corpus tests** | `make test-corpus` | `e2etest/corpus_*.go` | `make fetch-grammars` | Tree-sitter's official test suites — 1619 cases across 15 languages. Each case has input + expected S-expression. |
 | **Differential tests** | `make test-diff` | `internal/difftest/` | `make deps` | Small set of per-grammar sample inputs compared Go vs C tree-sitter CLI output. |
 | **Realworld diff tests** | `make test-realworld-diff` | `e2etest/realworld_diff_test.go` | `make deps` + `make fetch-realworld` | Real-world OSS files (kubernetes, flask, rails, etc.) compared Go vs C CLI. |
 | **Benchmarks (Go only)** | `make bench-self` | `e2etest/benchmark_test.go` | None | Parse throughput (bytes/sec) for all 15 languages at multiple sizes. |
@@ -250,7 +250,7 @@ make fuzz GRAMMAR=go
 
 ```bash
 # Fetch grammar repos (needed for corpus tests, regression tests)
-make fetch-test-grammars
+make fetch-grammars
 
 # Install tree-sitter CLI (needed for diff tests, realworld diff tests, CLI benchmarks)
 make deps

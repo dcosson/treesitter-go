@@ -236,7 +236,7 @@ build/
 **Makefile targets:**
 
 ```makefile
-fetch-test-grammars:
+fetch-grammars:
     go run ./cmd/fetch-grammars -config grammars.json -output build/grammars/
 
 test-corpus:
@@ -1198,7 +1198,7 @@ else
 	@echo "Note: tree-sitter CLI not found, Go-vs-C comparison skipped."
 endif
 
-fetch-test-grammars:
+fetch-grammars:
 	go run ./cmd/fetch-grammars
 ```
 

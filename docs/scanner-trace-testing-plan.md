@@ -173,7 +173,7 @@ Only the 11 languages with external scanners get trace files. Languages without
 scanners (JSON, Go, C, Java) have no external scanner calls to trace.
 
 These files are committed to the repo. They only need to be regenerated when:
-- Upstream grammar versions are bumped (`make fetch-test-grammars`)
+- Upstream grammar versions are bumped (`make fetch-grammars`)
 - The tree-sitter runtime version changes (affecting scanner call patterns)
 - New corpus tests are added upstream
 
@@ -266,7 +266,7 @@ To validate the trace infrastructure itself:
 When upstream grammars are updated:
 
 ```bash
-make fetch-test-grammars    # Pull new grammar versions
+make fetch-grammars    # Pull new grammar versions
 make bench-grammars         # Rebuild dylibs
 make generate-scanner-traces  # Regenerate golden traces
 go test -run TestScannerTraces  # Verify Go scanners still match
@@ -306,7 +306,7 @@ Update the README's Testing section to include the scanner trace tests:
   needs to be re-run when upstream grammar versions change. The committed
   trace files in `testdata/scanner-traces/` are sufficient for normal
   development — `go test -run TestScannerTraces` works without any extra setup
-  beyond `make fetch-test-grammars`.
+  beyond `make fetch-grammars`.
 
 ## Open questions
 
@@ -317,7 +317,7 @@ Update the README's Testing section to include the scanner trace tests:
      trace files but makes them self-contained)
    - Have the test load the original corpus files and index by byte offset
      (requires corpus files to be present, which they already are via
-     `make fetch-test-grammars`)
+     `make fetch-grammars`)
    - **Recommended:** Load corpus files at test time. They're already required
      for corpus tests, so this adds no new dependency.
 

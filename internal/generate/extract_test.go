@@ -24,7 +24,7 @@ func testParserC(t *testing.T) string {
 		}
 	}
 
-	t.Skip("parser.c not found; run 'make fetch-test-grammars' or clone tree-sitter-json to /tmp")
+	t.Skip("parser.c not found; run 'make fetch-grammars' or clone tree-sitter-json to /tmp")
 	return ""
 }
 

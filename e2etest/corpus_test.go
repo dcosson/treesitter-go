@@ -26,7 +26,7 @@ func corpusGrammarsDir() string {
 func TestCorpusJSON(t *testing.T) {
 	corpusDir := filepath.Join(corpusGrammarsDir(), "tree-sitter-json", "test", "corpus")
 	if _, err := os.Stat(corpusDir); os.IsNotExist(err) {
-		t.Skipf("JSON corpus not found at %s — run 'make fetch-test-grammars' first", corpusDir)
+		t.Skipf("JSON corpus not found at %s — run 'make fetch-grammars' first", corpusDir)
 	}
 
 	cases, err := corpustest.ParseCorpusDir(corpusDir)
@@ -50,7 +50,7 @@ func TestCorpusJSON(t *testing.T) {
 func TestDifferentialJSON(t *testing.T) {
 	corpusDir := filepath.Join(corpusGrammarsDir(), "tree-sitter-json", "test", "corpus")
 	if _, err := os.Stat(corpusDir); os.IsNotExist(err) {
-		t.Skipf("JSON corpus not found at %s — run 'make fetch-test-grammars' first", corpusDir)
+		t.Skipf("JSON corpus not found at %s — run 'make fetch-grammars' first", corpusDir)
 	}
 
 	cases, err := corpustest.ParseCorpusDir(corpusDir)

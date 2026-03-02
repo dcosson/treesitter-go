@@ -12,7 +12,7 @@
 # Prerequisites:
 #   - Rust/cargo installed (for building tree-sitter CLI)
 #   - C compiler (cc) for building grammar shared libraries
-#   - build/grammars/ populated via `make fetch-test-grammars`
+#   - build/grammars/ populated via `make fetch-grammars`
 #
 # Usage:
 #   ./scripts/generate-scanner-traces.sh [--lang python] [--ts-version v0.25.3]
@@ -87,7 +87,7 @@ if ! command -v cc >/dev/null 2>&1; then
 fi
 
 if [ ! -d "$GRAMMARS_DIR" ]; then
-  echo "Error: $GRAMMARS_DIR not found. Run 'make fetch-test-grammars' first." >&2
+  echo "Error: $GRAMMARS_DIR not found. Run 'make fetch-grammars' first." >&2
   exit 1
 fi
 

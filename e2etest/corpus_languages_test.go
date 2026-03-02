@@ -59,7 +59,7 @@ func runCorpusForLanguage(t *testing.T, repoName string, lang *ts.Language) {
 	t.Helper()
 	corpusDir := filepath.Join(corpusGrammarsDir(), repoName, "test", "corpus")
 	if _, err := os.Stat(corpusDir); os.IsNotExist(err) {
-		t.Skipf("%s corpus not found at %s — run 'make fetch-test-grammars' first", repoName, corpusDir)
+		t.Skipf("%s corpus not found at %s — run 'make fetch-grammars' first", repoName, corpusDir)
 	}
 
 	cases, err := corpustest.ParseCorpusDir(corpusDir)
@@ -177,7 +177,7 @@ func TestCorpusTypeScript(t *testing.T) {
 	t.Helper()
 	corpusDir := filepath.Join(corpusGrammarsDir(), "tree-sitter-typescript", "test", "corpus")
 	if _, err := os.Stat(corpusDir); os.IsNotExist(err) {
-		t.Skipf("tree-sitter-typescript corpus not found at %s — run 'make fetch-test-grammars' first", corpusDir)
+		t.Skipf("tree-sitter-typescript corpus not found at %s — run 'make fetch-grammars' first", corpusDir)
 	}
 
 	cases, err := corpustest.ParseCorpusDir(corpusDir)
