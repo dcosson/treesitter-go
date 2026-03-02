@@ -2,6 +2,11 @@
 
 A pure-Go implementation of the [tree-sitter](https://tree-sitter.github.io/tree-sitter/) parsing runtime. This library provides incremental, error-recovering, GLR parsing without any C dependencies or cgo.
 
+| | |
+|---|---|
+| **Version** | 0.1.0 |
+| **Upstream tree-sitter** | [v0.26.6](https://github.com/tree-sitter/tree-sitter/releases/tag/v0.26.6) |
+
 ## Features
 
 - **Pure Go** — no cgo, no C compiler needed, cross-compiles cleanly

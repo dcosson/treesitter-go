@@ -91,6 +91,53 @@ See `README.md` for the full architecture diagram and package descriptions.
 
 **`grammars.json`** in the project root is the source of truth for all supported languages. The Makefile, shell scripts, and CLI tools read from this manifest — do not maintain separate hardcoded language lists.
 
+## Versioning & Releases
+
+This project uses its own semver version, independent of upstream tree-sitter. Key files:
+
+- **`VERSION`** — single line with the current version (e.g. `0.1.0`)
+- **`CHANGELOG.md`** — all changes per release, [Keep a Changelog](https://keepachangelog.com/) format
+- **README version table** — shows current version and which upstream tree-sitter version the runtime is based on
+
+### Release process
+
+Follow these steps exactly. Stop and fix if any step fails.
+
+1. **Ensure clean main branch**
+   ```bash
+   git checkout main
+   git pull origin main
+   git status  # must be clean
+   ```
+
+2. **Determine new version** — read `VERSION`, decide patch/minor/major bump
+
+3. **Update `VERSION`** — write the new version number (no `v` prefix)
+
+4. **Update README version table** — update version number and upstream version if changed
+
+5. **Update `CHANGELOG.md`**
+   - Generate change list: `git log $(git describe --tags --abbrev=0)..HEAD --oneline`
+   - Move `[Unreleased]` items into new section: `## [X.Y.Z] - YYYY-MM-DD`
+   - Categorize under: Added, Changed, Fixed, Removed, Upstream
+
+6. **Commit**: `git add VERSION README.md CHANGELOG.md && git commit -m "release: vX.Y.Z"`
+
+7. **Run tests**: `make test && make test-corpus`
+
+8. **Tag and push**:
+   ```bash
+   git tag vX.Y.Z
+   git push origin main
+   git push origin vX.Y.Z
+   ```
+
+### Rules
+
+- Tags **must** have `v` prefix (e.g. `v0.2.0`) — required by Go module system
+- Never force-push tags — make a new patch version instead
+- If tests fail after commit but before tag, fix first, then tag the fixed commit
+
 ## Adding a new grammar
 
 Follow the detailed steps in the README's **"Adding a Grammar"** section. Summary:
