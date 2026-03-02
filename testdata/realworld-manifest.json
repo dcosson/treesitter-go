@@ -1,5 +1,5 @@
 {
-  "description": "Version-pinned real-world source files for differential testing. The fetch-corpora tool downloads these files from GitHub and records resolved commit SHAs.",
+  "description": "Version-pinned real-world source files for differential testing. The fetch-realworld tool downloads these files from GitHub and records resolved commit SHAs.",
   "projects": [
     {
       "language": "go",
@@ -11,7 +11,10 @@
         "pkg/api/v1/pod/util.go",
         "staging/src/k8s.io/apimachinery/pkg/util/sets/set.go",
         "staging/src/k8s.io/client-go/tools/cache/store.go",
-        "pkg/kubelet/kuberuntime/kuberuntime_manager.go"
+        "pkg/kubelet/kuberuntime/kuberuntime_manager.go",
+        "staging/src/k8s.io/kubectl/pkg/cmd/apply/apply.go",
+        "staging/src/k8s.io/apimachinery/pkg/runtime/converter.go",
+        "pkg/scheduler/framework/runtime/framework.go"
       ]
     },
     {
@@ -25,7 +28,39 @@
         "src/net/http/server.go",
         "src/encoding/json/decode.go",
         "src/os/file.go",
-        "src/sync/mutex.go"
+        "src/sync/mutex.go",
+        "src/go/parser/parser.go",
+        "src/runtime/chan.go",
+        "src/crypto/tls/tls.go"
+      ]
+    },
+    {
+      "language": "go",
+      "extensions": [".go"],
+      "project": "prometheus",
+      "repo": "prometheus/prometheus",
+      "ref": "v2.51.0",
+      "files": [
+        "promql/engine.go",
+        "tsdb/head.go",
+        "model/labels/labels.go",
+        "web/api/v1/api.go",
+        "cmd/prometheus/main.go"
+      ]
+    },
+    {
+      "language": "go",
+      "extensions": [".go"],
+      "project": "gin",
+      "repo": "gin-gonic/gin",
+      "ref": "v1.9.1",
+      "files": [
+        "gin.go",
+        "context.go",
+        "routergroup.go",
+        "tree.go",
+        "logger.go",
+        "recovery.go"
       ]
     },
     {
@@ -57,6 +92,34 @@
       ]
     },
     {
+      "language": "python",
+      "extensions": [".py"],
+      "project": "django",
+      "repo": "django/django",
+      "ref": "5.0.2",
+      "files": [
+        "django/db/models/query.py",
+        "django/http/request.py",
+        "django/template/base.py",
+        "django/forms/fields.py",
+        "django/views/generic/list.py"
+      ]
+    },
+    {
+      "language": "python",
+      "extensions": [".py"],
+      "project": "cpython",
+      "repo": "python/cpython",
+      "ref": "v3.12.2",
+      "files": [
+        "Lib/ast.py",
+        "Lib/argparse.py",
+        "Lib/typing.py",
+        "Lib/dataclasses.py",
+        "Lib/pathlib.py"
+      ]
+    },
+    {
       "language": "javascript",
       "extensions": [".js"],
       "project": "express",
@@ -81,6 +144,38 @@
       ]
     },
     {
+      "language": "javascript",
+      "extensions": [".js"],
+      "project": "node",
+      "repo": "nodejs/node",
+      "ref": "v21.7.0",
+      "files": [
+        "lib/fs.js",
+        "lib/http.js",
+        "lib/path.js",
+        "lib/stream.js",
+        "lib/url.js",
+        "lib/events.js",
+        "lib/net.js",
+        "lib/buffer.js",
+        "lib/crypto.js",
+        "lib/dns.js",
+        "lib/zlib.js"
+      ]
+    },
+    {
+      "language": "javascript",
+      "extensions": [".js"],
+      "project": "webpack",
+      "repo": "webpack/webpack",
+      "ref": "v5.90.3",
+      "files": [
+        "lib/Compiler.js",
+        "lib/Compilation.js",
+        "lib/NormalModule.js"
+      ]
+    },
+    {
       "language": "typescript",
       "extensions": [".ts"],
       "project": "typescript-compiler",
@@ -91,6 +186,37 @@
         "src/compiler/parser.ts",
         "src/compiler/scanner.ts",
         "src/compiler/utilities.ts"
+      ]
+    },
+    {
+      "language": "typescript",
+      "extensions": [".ts"],
+      "project": "vscode",
+      "repo": "microsoft/vscode",
+      "ref": "1.87.0",
+      "files": [
+        "src/vs/base/common/arrays.ts",
+        "src/vs/base/common/strings.ts",
+        "src/vs/base/common/uri.ts",
+        "src/vs/base/common/event.ts",
+        "src/vs/base/common/lifecycle.ts",
+        "src/vs/base/common/async.ts",
+        "src/vs/base/common/errors.ts",
+        "src/vs/editor/common/model/textModel.ts",
+        "src/vs/platform/log/common/log.ts"
+      ]
+    },
+    {
+      "language": "typescript",
+      "extensions": [".ts"],
+      "project": "angular",
+      "repo": "angular/angular",
+      "ref": "17.2.3",
+      "files": [
+        "packages/core/src/di/injector.ts",
+        "packages/common/src/pipes/date_pipe.ts",
+        "packages/forms/src/validators.ts",
+        "packages/router/src/router.ts"
       ]
     },
     {
@@ -113,7 +239,38 @@
       "ref": "v1.0.197",
       "files": [
         "serde/src/ser/mod.rs",
-        "serde_derive/src/internals/attr.rs"
+        "serde_derive/src/internals/attr.rs",
+        "serde/src/de/value.rs",
+        "serde/src/ser/impossible.rs",
+        "serde_derive/src/de.rs"
+      ]
+    },
+    {
+      "language": "rust",
+      "extensions": [".rs"],
+      "project": "tokio",
+      "repo": "tokio-rs/tokio",
+      "ref": "tokio-1.36.0",
+      "files": [
+        "tokio/src/net/tcp/stream.rs",
+        "tokio/src/sync/mutex.rs",
+        "tokio/src/time/sleep.rs",
+        "tokio/src/runtime/handle.rs",
+        "tokio/src/sync/mpsc/chan.rs",
+        "tokio/src/net/tcp/listener.rs"
+      ]
+    },
+    {
+      "language": "rust",
+      "extensions": [".rs"],
+      "project": "rust-stdlib",
+      "repo": "rust-lang/rust",
+      "ref": "1.76.0",
+      "files": [
+        "library/core/src/option.rs",
+        "library/core/src/result.rs",
+        "library/alloc/src/string.rs",
+        "library/std/src/path.rs"
       ]
     },
     {
@@ -144,6 +301,34 @@
       ]
     },
     {
+      "language": "c",
+      "extensions": [".c", ".h"],
+      "project": "linux",
+      "repo": "torvalds/linux",
+      "ref": "v6.7",
+      "files": [
+        "kernel/sched/core.c",
+        "mm/page_alloc.c",
+        "fs/read_write.c",
+        "net/socket.c",
+        "kernel/fork.c",
+        "init/main.c"
+      ]
+    },
+    {
+      "language": "c",
+      "extensions": [".c", ".h"],
+      "project": "git",
+      "repo": "git/git",
+      "ref": "v2.43.0",
+      "files": [
+        "diff.c",
+        "revision.c",
+        "builtin/commit.c",
+        "builtin/log.c"
+      ]
+    },
+    {
       "language": "cpp",
       "extensions": [".cpp", ".h", ".cc"],
       "project": "protobuf",
@@ -153,6 +338,49 @@
         "src/google/protobuf/descriptor.cc",
         "src/google/protobuf/message.cc",
         "src/google/protobuf/descriptor.h"
+      ]
+    },
+    {
+      "language": "cpp",
+      "extensions": [".cpp", ".h", ".cc"],
+      "project": "llvm",
+      "repo": "llvm/llvm-project",
+      "ref": "llvmorg-18.1.0",
+      "files": [
+        "llvm/lib/IR/Instructions.cpp",
+        "llvm/lib/Transforms/Scalar/LICM.cpp",
+        "clang/lib/Sema/SemaExpr.cpp",
+        "clang/lib/Parse/ParseDecl.cpp",
+        "clang/lib/AST/Decl.cpp",
+        "llvm/lib/IR/Verifier.cpp",
+        "clang/lib/Lex/Lexer.cpp",
+        "llvm/lib/Target/X86/X86ISelLowering.cpp",
+        "clang/lib/CodeGen/CGExpr.cpp"
+      ]
+    },
+    {
+      "language": "cpp",
+      "extensions": [".cpp", ".h", ".cc"],
+      "project": "grpc",
+      "repo": "grpc/grpc",
+      "ref": "v1.62.0",
+      "files": [
+        "src/core/lib/channel/channel_stack.cc",
+        "src/cpp/server/server_cc.cc",
+        "src/core/lib/surface/call.cc",
+        "src/core/lib/transport/transport.cc"
+      ]
+    },
+    {
+      "language": "cpp",
+      "extensions": [".cpp", ".h", ".cc"],
+      "project": "googletest",
+      "repo": "google/googletest",
+      "ref": "v1.14.0",
+      "files": [
+        "googletest/src/gtest.cc",
+        "googletest/src/gtest-death-test.cc",
+        "googlemock/src/gmock.cc"
       ]
     },
     {
@@ -169,6 +397,48 @@
       ]
     },
     {
+      "language": "java",
+      "extensions": [".java"],
+      "project": "spring-framework",
+      "repo": "spring-projects/spring-framework",
+      "ref": "v6.1.4",
+      "files": [
+        "spring-core/src/main/java/org/springframework/util/StringUtils.java",
+        "spring-beans/src/main/java/org/springframework/beans/factory/support/DefaultListableBeanFactory.java",
+        "spring-context/src/main/java/org/springframework/context/support/AbstractApplicationContext.java",
+        "spring-web/src/main/java/org/springframework/web/client/RestTemplate.java",
+        "spring-webmvc/src/main/java/org/springframework/web/servlet/DispatcherServlet.java",
+        "spring-aop/src/main/java/org/springframework/aop/framework/ProxyFactory.java"
+      ]
+    },
+    {
+      "language": "java",
+      "extensions": [".java"],
+      "project": "kafka",
+      "repo": "apache/kafka",
+      "ref": "3.7.0",
+      "files": [
+        "clients/src/main/java/org/apache/kafka/clients/consumer/KafkaConsumer.java",
+        "clients/src/main/java/org/apache/kafka/clients/producer/KafkaProducer.java",
+        "clients/src/main/java/org/apache/kafka/common/utils/Utils.java",
+        "streams/src/main/java/org/apache/kafka/streams/KafkaStreams.java"
+      ]
+    },
+    {
+      "language": "java",
+      "extensions": [".java"],
+      "project": "elasticsearch",
+      "repo": "elastic/elasticsearch",
+      "ref": "v8.12.2",
+      "files": [
+        "server/src/main/java/org/elasticsearch/index/IndexService.java",
+        "server/src/main/java/org/elasticsearch/action/search/SearchRequest.java",
+        "server/src/main/java/org/elasticsearch/cluster/ClusterState.java",
+        "server/src/main/java/org/elasticsearch/node/Node.java",
+        "server/src/main/java/org/elasticsearch/common/settings/Settings.java"
+      ]
+    },
+    {
       "language": "ruby",
       "extensions": [".rb"],
       "project": "rails",
@@ -179,6 +449,49 @@
         "activesupport/lib/active_support/core_ext/hash/keys.rb",
         "actionpack/lib/action_controller/metal.rb",
         "activesupport/lib/active_support/inflector/methods.rb"
+      ]
+    },
+    {
+      "language": "ruby",
+      "extensions": [".rb"],
+      "project": "ruby-stdlib",
+      "repo": "ruby/ruby",
+      "ref": "v3_3_0",
+      "files": [
+        "lib/set.rb",
+        "lib/optparse.rb",
+        "lib/csv.rb",
+        "lib/uri/generic.rb",
+        "lib/net/http.rb",
+        "lib/fileutils.rb"
+      ]
+    },
+    {
+      "language": "ruby",
+      "extensions": [".rb"],
+      "project": "jekyll",
+      "repo": "jekyll/jekyll",
+      "ref": "v4.3.3",
+      "files": [
+        "lib/jekyll/site.rb",
+        "lib/jekyll/document.rb",
+        "lib/jekyll/renderer.rb",
+        "lib/jekyll/configuration.rb"
+      ]
+    },
+    {
+      "language": "ruby",
+      "extensions": [".rb"],
+      "project": "liquid",
+      "repo": "Shopify/liquid",
+      "ref": "v5.5.0",
+      "files": [
+        "lib/liquid/template.rb",
+        "lib/liquid/context.rb",
+        "lib/liquid/block_body.rb",
+        "lib/liquid/lexer.rb",
+        "lib/liquid/parser.rb",
+        "lib/liquid/expression.rb"
       ]
     },
     {
@@ -193,6 +506,44 @@
       ]
     },
     {
+      "language": "bash",
+      "extensions": [".sh"],
+      "project": "kubernetes-scripts",
+      "repo": "kubernetes/kubernetes",
+      "ref": "v1.30.0",
+      "files": [
+        "hack/lib/init.sh",
+        "hack/lib/util.sh",
+        "hack/lib/logging.sh",
+        "hack/make-rules/build.sh",
+        "hack/lib/golang.sh",
+        "hack/update-codegen.sh"
+      ]
+    },
+    {
+      "language": "bash",
+      "extensions": [".sh"],
+      "project": "linux-scripts",
+      "repo": "torvalds/linux",
+      "ref": "v6.7",
+      "files": [
+        "scripts/link-vmlinux.sh",
+        "scripts/decode_stacktrace.sh",
+        "scripts/tags.sh"
+      ]
+    },
+    {
+      "language": "bash",
+      "extensions": [".sh"],
+      "project": "git-tests",
+      "repo": "git/git",
+      "ref": "v2.43.0",
+      "files": [
+        "t/test-lib.sh",
+        "t/test-lib-functions.sh"
+      ]
+    },
+    {
       "language": "json",
       "extensions": [".json"],
       "project": "schemastore",
@@ -200,7 +551,21 @@
       "ref": "ffaf182e7747ea0e03bcf356321ea5f936196e9a",
       "files": [
         "src/schemas/json/package.json",
-        "src/schemas/json/tsconfig.json"
+        "src/schemas/json/tsconfig.json",
+        "src/schemas/json/eslintrc.json",
+        "src/schemas/json/prettierrc.json",
+        "src/schemas/json/github-workflow.json",
+        "src/schemas/json/github-action.json",
+        "src/schemas/json/dependabot-2.0.json",
+        "src/schemas/json/babelrc.json",
+        "src/schemas/json/drone.json",
+        "src/schemas/json/bower.json",
+        "src/schemas/json/jekyll.json",
+        "src/schemas/json/lerna.json",
+        "src/schemas/json/renovate.json",
+        "src/schemas/json/sarif-2.1.0.json",
+        "src/schemas/json/codecov.json",
+        "src/schemas/json/circleciconfig.json"
       ]
     },
     {
@@ -211,6 +576,29 @@
       "ref": "8.0.1",
       "files": [
         "normalize.css"
+      ]
+    },
+    {
+      "language": "css",
+      "extensions": [".css"],
+      "project": "bootstrap",
+      "repo": "twbs/bootstrap",
+      "ref": "v5.3.3",
+      "files": [
+        "dist/css/bootstrap.css",
+        "dist/css/bootstrap-grid.css",
+        "dist/css/bootstrap-utilities.css",
+        "dist/css/bootstrap-reboot.css"
+      ]
+    },
+    {
+      "language": "css",
+      "extensions": [".css"],
+      "project": "animate.css",
+      "repo": "animate-css/animate.css",
+      "ref": "v4.1.1",
+      "files": [
+        "animate.css"
       ]
     },
     {
@@ -233,7 +621,42 @@
       "files": [
         "runtime/lua/vim/lsp.lua",
         "runtime/lua/vim/treesitter.lua",
-        "runtime/lua/vim/shared.lua"
+        "runtime/lua/vim/shared.lua",
+        "runtime/lua/vim/filetype.lua",
+        "runtime/lua/vim/lsp/handlers.lua",
+        "runtime/lua/vim/diagnostic.lua",
+        "runtime/lua/vim/keymap.lua",
+        "runtime/lua/vim/highlight.lua",
+        "runtime/lua/vim/health.lua",
+        "runtime/lua/vim/F.lua",
+        "runtime/lua/vim/_editor.lua"
+      ]
+    },
+    {
+      "language": "lua",
+      "extensions": [".lua"],
+      "project": "kong",
+      "repo": "Kong/kong",
+      "ref": "3.6.0",
+      "files": [
+        "kong/init.lua",
+        "kong/router/atc.lua",
+        "kong/pdk/request.lua",
+        "kong/pdk/response.lua",
+        "kong/plugins/rate-limiting/handler.lua"
+      ]
+    },
+    {
+      "language": "lua",
+      "extensions": [".lua"],
+      "project": "awesome-wm",
+      "repo": "awesomeWM/awesome",
+      "ref": "v4.3",
+      "files": [
+        "lib/awful/key.lua",
+        "lib/awful/screen.lua",
+        "lib/awful/tag.lua",
+        "lib/awful/rules.lua"
       ]
     },
     {
@@ -245,7 +668,33 @@
       "files": [
         "lib/File/Copy.pm",
         "dist/Carp/lib/Carp.pm",
-        "cpan/File-Path/lib/File/Path.pm"
+        "cpan/File-Path/lib/File/Path.pm",
+        "ext/File-Find/lib/File/Find.pm",
+        "cpan/Getopt-Long/lib/Getopt/Long.pm",
+        "dist/Exporter/lib/Exporter.pm",
+        "lib/overload.pm",
+        "lib/File/Basename.pm",
+        "lib/Benchmark.pm",
+        "cpan/Scalar-List-Utils/lib/Scalar/Util.pm",
+        "cpan/HTTP-Tiny/lib/HTTP/Tiny.pm",
+        "cpan/JSON-PP/lib/JSON/PP.pm",
+        "cpan/Pod-Simple/lib/Pod/Simple.pm",
+        "cpan/Test-Simple/lib/Test/More.pm",
+        "cpan/Encode/Encode.pm"
+      ]
+    },
+    {
+      "language": "perl",
+      "extensions": [".pl", ".pm"],
+      "project": "mojolicious",
+      "repo": "mojolicious/mojo",
+      "ref": "v9.35",
+      "files": [
+        "lib/Mojolicious.pm",
+        "lib/Mojo/Base.pm",
+        "lib/Mojo/UserAgent.pm",
+        "lib/Mojolicious/Controller.pm",
+        "lib/Mojolicious/Routes.pm"
       ]
     }
   ]
