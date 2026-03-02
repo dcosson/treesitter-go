@@ -47,10 +47,10 @@ END {
 	}
 
 	printf "\n"
-	printf "%-14s %-10s %12s %12s %12s %12s %10s %10s %10s\n", \
-		"Language", "Size", "Go (total)", "Ref (total)", "Go (parse)", "Ref (parse)", "Go vs Ref", "Go mem", "Ref mem"
-	printf "%-14s %-10s %12s %12s %12s %12s %10s %10s %10s\n", \
-		"--------", "----", "----------", "-----------", "----------", "-----------", "---------", "------", "-------"
+	printf "%-14s %-10s %12s %12s %12s %12s %10s %10s %10s %10s\n", \
+		"Language", "Size", "Go (total)", "Ref (total)", "Go (parse)", "Ref (parse)", "Go vs Ref", "Go mem", "Ref mem", "Go/Ref mem"
+	printf "%-14s %-10s %12s %12s %12s %12s %10s %10s %10s %10s\n", \
+		"--------", "----", "----------", "-----------", "----------", "-----------", "---------", "------", "-------", "----------"
 
 	for (li = 1; li <= nlang; li++) {
 		lang = lang_order[li]
@@ -74,31 +74,38 @@ END {
 			ref_mem = (cnt[ref_key] > 0) ? mem[ref_key] / cnt[ref_key] : 0
 
 			if (size == "overhead") {
-				printf "%-14s %-10s %12s %12s %12s %12s %10s %10s %10s\n", \
-					lang, size, fmt_ns(go_avg), fmt_ns(ref_avg), "-", "-", "-", \
-					fmt_bytes(go_mem), fmt_bytes(ref_mem)
-			} else {
-				go_parse = go_avg - go_overhead
-				ref_parse = ref_avg - ref_overhead
-				if (go_parse < 0) go_parse = 0
-				if (ref_parse < 0) ref_parse = 0
-
-				if (go_parse > 0 && ref_parse > 0) {
-					ratio = ref_parse / go_parse
-					ratio_str = sprintf("%.2fx", ratio)
+					printf "%-14s %-10s %12s %12s %12s %12s %10s %10s %10s %10s\n", \
+						lang, size, fmt_ns(go_avg), fmt_ns(ref_avg), "-", "-", "-", \
+						fmt_bytes(go_mem), fmt_bytes(ref_mem), "-"
 				} else {
-					ratio_str = "-"
-				}
+					go_parse = go_avg - go_overhead
+					ref_parse = ref_avg - ref_overhead
+					if (go_parse < 0) go_parse = 0
+					if (ref_parse < 0) ref_parse = 0
 
-				printf "%-14s %-10s %12s %12s %12s %12s %10s %10s %10s\n", \
-					lang, size, fmt_ns(go_avg), fmt_ns(ref_avg), \
-					fmt_ns(go_parse), fmt_ns(ref_parse), ratio_str, \
-					fmt_bytes(go_mem), fmt_bytes(ref_mem)
+					if (go_parse > 0 && ref_parse > 0) {
+						ratio = ref_parse / go_parse
+						ratio_str = sprintf("%.2fx", ratio)
+					} else {
+						ratio_str = "-"
+					}
+					if (go_mem > 0 && ref_mem > 0) {
+						mem_ratio = go_mem / ref_mem
+						mem_ratio_str = sprintf("%.2fx", mem_ratio)
+					} else {
+						mem_ratio_str = "-"
+					}
+
+					printf "%-14s %-10s %12s %12s %12s %12s %10s %10s %10s %10s\n", \
+						lang, size, fmt_ns(go_avg), fmt_ns(ref_avg), \
+						fmt_ns(go_parse), fmt_ns(ref_parse), ratio_str, \
+						fmt_bytes(go_mem), fmt_bytes(ref_mem), mem_ratio_str
+				}
 			}
 		}
-	}
 	printf "\n"
 	printf "Go vs Ref: >1x means Go is faster, <1x means Go is slower.\n"
+	printf "Go/Ref mem: >1x means Go uses more memory, <1x means Go uses less.\n"
 	printf "Parse times = total - overhead (subprocess startup cost removed).\n"
 	printf "\n"
 }

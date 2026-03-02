@@ -120,13 +120,13 @@ ifneq ($(_FUZZ_FILTER),)
 	@echo "Running fuzz targets matching $(GRAMMAR) ($(FUZZ_TIME) each)..."
 	@grep -o 'func Fuzz[A-Za-z]*' e2etest/fuzz_test.go | sed 's/^func //' | grep -iE 'FuzzParse$(GRAMMAR)$$' | while read target; do \
 		echo "--- $$target ($(FUZZ_TIME)) ---"; \
-		go test -fuzz=$$target -fuzztime=$(FUZZ_TIME) -timeout=0 ./e2etest/ || exit 1; \
+		go test -run=^$$ -fuzz=$$target -fuzztime=$(FUZZ_TIME) -timeout=0 ./e2etest/ || exit 1; \
 	done
 else
 	@echo "Running all fuzz targets ($(FUZZ_TIME) each)..."
 	@grep -o 'func Fuzz[A-Za-z]*' e2etest/fuzz_test.go | sed 's/^func //' | while read target; do \
 		echo "--- $$target ($(FUZZ_TIME)) ---"; \
-		go test -fuzz=$$target -fuzztime=$(FUZZ_TIME) -timeout=0 ./e2etest/ || exit 1; \
+		go test -run=^$$ -fuzz=$$target -fuzztime=$(FUZZ_TIME) -timeout=0 ./e2etest/ || exit 1; \
 	done
 endif
 	@echo "All fuzz targets passed."

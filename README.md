@@ -213,7 +213,7 @@ make test && make test-corpus && make test-regression
 | **Realworld diff tests** | `make test-realworld-diff` | `e2etest/realworld_diff_test.go` | `make deps` + `make fetch-realworld` | Real-world OSS files (kubernetes, flask, rails, etc.) compared Go vs C CLI. |
 | **Benchmarks (Go only)** | `make bench-self` | `e2etest/benchmark_test.go` | None | Parse throughput (bytes/sec) for all 15 languages at multiple sizes. |
 | **Benchmarks (Go vs C)** | `make bench-compare` | `e2etest/benchmark_test.go` | `make deps` + `make bench-grammars` | Same as above, plus C reference parser for comparison. |
-| **Fuzz tests** | `make fuzz` | `e2etest/fuzz_test.go` | None | Runs all fuzz targets for 30s each (parse + scanner roundtrip). Finds crashes/panics. Single-language: `go test -fuzz=FuzzParseGo -fuzztime=60s ./e2etest/` |
+| **Fuzz tests** | `make fuzz` | `e2etest/fuzz_test.go` | None | Runs all fuzz targets for 30s each (parse + scanner roundtrip). Finds crashes/panics. Single-language: `make fuzz GRAMMAR=go` |
 
 ### Single-language filtering
 
@@ -224,6 +224,7 @@ make test-corpus GRAMMAR=go
 make test-regression GRAMMAR=python
 make bench-self GRAMMAR=json
 make test-scanner-traces GRAMMAR=bash
+make fuzz GRAMMAR=go
 ```
 
 ### Setup
