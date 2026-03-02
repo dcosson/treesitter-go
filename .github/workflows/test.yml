@@ -10,6 +10,18 @@ permissions:
   contents: read
 
 jobs:
+  lint:
+    name: Lint & Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Install staticcheck
+        run: go install honnef.co/go/tools/cmd/staticcheck@latest
+      - run: make check-nofix
+
   test:
     name: Unit & Integration Tests
     runs-on: ubuntu-latest

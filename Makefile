@@ -29,7 +29,7 @@ else
   _FUZZ_FILTER :=
 endif
 
-.PHONY: build test test-coverage fetch-test-grammars test-corpus test-regression fetch-realworld test-realworld-diff deps test-diff bench-grammars bench-self bench-compare generate-scanner-traces test-scanner-traces fuzz
+.PHONY: build test test-coverage fetch-test-grammars test-corpus test-regression fetch-realworld test-realworld-diff deps test-diff bench-grammars bench-self bench-compare generate-scanner-traces test-scanner-traces fuzz check check-nofix
 
 build:
 	go build -o build/bin/ ./cmd/...
@@ -75,6 +75,7 @@ deps:
 		exit 1; \
 	fi
 	go install golang.org/x/perf/cmd/benchstat@latest
+	go install honnef.co/go/tools/cmd/staticcheck@latest
 	@echo ""
 	@echo "Run 'make bench-grammars' to build grammar dylibs for CLI benchmarks."
 
@@ -143,3 +144,13 @@ else
 	@echo "tree-sitter CLI not found. Run 'make deps' to install."
 	@exit 1
 endif
+
+check:
+	gofmt -w .
+	go vet ./...
+	staticcheck ./...
+
+check-nofix:
+	@test -z "$$(gofmt -l .)" || (echo "gofmt: the following files need formatting:" && gofmt -l . && exit 1)
+	go vet ./...
+	staticcheck ./...
