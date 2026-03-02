@@ -29,7 +29,7 @@ else
   _FUZZ_FILTER :=
 endif
 
-.PHONY: build test test-coverage fetch-test-grammars test-corpus test-regression fetch-realworld test-realworld-diff deps test-diff bench-grammars bench-self bench-compare generate-scanner-traces test-scanner-traces fuzz check check-nofix
+.PHONY: build test test-coverage fetch-test-grammars test-corpus test-regression fetch-realworld test-realworld-diff deps test-diff bench-grammars bench-self bench-compare generate-scanner-traces test-scanner-traces fuzz check check-nofix loc
 
 GOFMT_FILES := $(shell find . -type f -name '*.go' -not -path './testdata/*' -not -path './build/*')
 STATICCHECK_CMD := go run honnef.co/go/tools/cmd/staticcheck@latest ./...
@@ -156,3 +156,6 @@ check-nofix:
 	@test -z "$$(gofmt -l $(GOFMT_FILES))" || (echo "gofmt: the following files need formatting:" && gofmt -l $(GOFMT_FILES) && exit 1)
 	go vet ./...
 	$(STATICCHECK_CMD)
+
+loc:
+	scc --no-gen --exclude-dir build,testdata,internal/grammars,reference .
