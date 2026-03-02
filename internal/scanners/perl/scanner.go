@@ -137,7 +137,7 @@ const (
 
 // Scanner implements ts.ExternalScanner for Perl.
 type Scanner struct {
-	quotes             []tspQuote
+	quotes              []tspQuote
 	heredocInterpolates bool
 	heredocIndents      bool
 	heredocState        int

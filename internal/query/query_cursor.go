@@ -13,23 +13,23 @@ type (
 
 // Re-import functions from subtree and tree packages.
 var (
-	NewTreeCursor  = itree.NewTreeCursor
-	IsVisible      = st.IsVisible
+	NewTreeCursor   = itree.NewTreeCursor
+	IsVisible       = st.IsVisible
 	GetProductionID = st.GetProductionID
 )
 
 // queryState tracks an in-progress pattern match in the QueryCursor.
 type queryState struct {
-	id                         uint32
-	captureListID              uint32
-	startDepth                 uint16
-	stepIndex                  uint16
-	patternIndex               uint16
-	consumedCaptureCount       uint16
-	seekingImmediateMatch      bool
-	hasInProgressAlternatives  bool
-	dead                       bool
-	needsParent                bool
+	id                        uint32
+	captureListID             uint32
+	startDepth                uint16
+	stepIndex                 uint16
+	patternIndex              uint16
+	consumedCaptureCount      uint16
+	seekingImmediateMatch     bool
+	hasInProgressAlternatives bool
+	dead                      bool
+	needsParent               bool
 }
 
 // captureListPool manages reusable capture lists for query states.
@@ -96,19 +96,19 @@ func (pool *captureListPool) clone(srcID uint32) (uint32, bool) {
 
 // QueryCursor executes a compiled query against a parse tree.
 type QueryCursor struct {
-	query           *Query
-	cursor          TreeCursor
-	states          []queryState
-	finishedStates  []queryState
-	capturePool     captureListPool
-	depth           uint32
-	startByte       uint32
-	endByte         uint32
-	nextStateID     uint32
-	ascending       bool
-	halted          bool
-	didExceedLimit  bool
-	maxStartDepth   uint32
+	query          *Query
+	cursor         TreeCursor
+	states         []queryState
+	finishedStates []queryState
+	capturePool    captureListPool
+	depth          uint32
+	startByte      uint32
+	endByte        uint32
+	nextStateID    uint32
+	ascending      bool
+	halted         bool
+	didExceedLimit bool
+	maxStartDepth  uint32
 }
 
 const (

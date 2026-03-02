@@ -21,9 +21,9 @@ import (
 
 // External token type indices (must match grammar.js externals array order).
 const (
-	DescendantOp              = iota // 0
+	DescendantOp             = iota // 0
 	PseudoClassSelectorColon        // 1
-	ErrorRecovery                    // 2
+	ErrorRecovery                   // 2
 )
 
 // Scanner implements ts.ExternalScanner for CSS.

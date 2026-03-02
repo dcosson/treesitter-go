@@ -124,9 +124,9 @@ type ActionEntry struct {
 
 // LexModeEntry corresponds to a TSLexMode.
 type LexModeEntry struct {
-	LexState           uint16
-	ExternalLexState   uint16
-	ReservedWordSetID  uint16
+	LexState          uint16
+	ExternalLexState  uint16
+	ReservedWordSetID uint16
 }
 
 // FieldSlice identifies a range in the field entries array.

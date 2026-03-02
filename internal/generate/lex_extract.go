@@ -457,7 +457,7 @@ func detectDefault(state *LexState) {
 	}
 }
 
-// parseCChar parses a C character literal like 'x', '\'', '\\', '\n'.
+// parseCChar parses a C character literal like 'x', '\”, '\\', '\n'.
 func parseCChar(s string) rune {
 	// Strip only the outermost single quotes (not all of them like strings.Trim).
 	if len(s) >= 2 && s[0] == '\'' && s[len(s)-1] == '\'' {
@@ -538,7 +538,7 @@ func parseSetContains(line string) *LexTransition {
 }
 
 // splitCSV splits a comma-separated string, respecting nested parens and
-// C character literals. Properly handles escaped chars like '\'' and '\\'.
+// C character literals. Properly handles escaped chars like '\” and '\\'.
 func splitCSV(s string) []string {
 	var parts []string
 	var current strings.Builder

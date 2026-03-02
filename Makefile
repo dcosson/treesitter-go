@@ -31,6 +31,9 @@ endif
 
 .PHONY: build test test-coverage fetch-test-grammars test-corpus test-regression fetch-realworld test-realworld-diff deps test-diff bench-grammars bench-self bench-compare generate-scanner-traces test-scanner-traces fuzz check check-nofix
 
+GOFMT_FILES := $(shell find . -type f -name '*.go' -not -path './testdata/*' -not -path './build/*')
+STATICCHECK := $(shell go env GOPATH)/bin/staticcheck
+
 build:
 	go build -o build/bin/ ./cmd/...
 
@@ -146,11 +149,11 @@ else
 endif
 
 check:
-	gofmt -w .
+	gofmt -w $(GOFMT_FILES)
 	go vet ./...
-	staticcheck ./...
+	$(STATICCHECK) ./...
 
 check-nofix:
-	@test -z "$$(gofmt -l .)" || (echo "gofmt: the following files need formatting:" && gofmt -l . && exit 1)
+	@test -z "$$(gofmt -l $(GOFMT_FILES))" || (echo "gofmt: the following files need formatting:" && gofmt -l $(GOFMT_FILES) && exit 1)
 	go vet ./...
-	staticcheck ./...
+	$(STATICCHECK) ./...

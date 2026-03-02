@@ -1230,8 +1230,8 @@ func (s *Stack) RecordSummary(version StackVersion, maxDepth uint32) {
 	var entries []StackSummaryEntry
 
 	type iter struct {
-		node          *StackNode
-		subtreeCount  uint32
+		node         *StackNode
+		subtreeCount uint32
 	}
 
 	iterators := make([]iter, 0, MaxIteratorCount)

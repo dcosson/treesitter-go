@@ -119,14 +119,14 @@ func extractName(g *Grammar, src string) error {
 // extractConstants extracts #define constants.
 func extractConstants(g *Grammar, src string) error {
 	defs := map[string]*int{
-		"SYMBOL_COUNT":             &g.SymbolCount,
-		"ALIAS_COUNT":             &g.AliasCount,
-		"TOKEN_COUNT":             &g.TokenCount,
-		"EXTERNAL_TOKEN_COUNT":    &g.ExternalTokenCount,
-		"STATE_COUNT":             &g.StateCount,
-		"LARGE_STATE_COUNT":       &g.LargeStateCount,
-		"PRODUCTION_ID_COUNT":     &g.ProductionIDCount,
-		"FIELD_COUNT":             &g.FieldCount,
+		"SYMBOL_COUNT":              &g.SymbolCount,
+		"ALIAS_COUNT":               &g.AliasCount,
+		"TOKEN_COUNT":               &g.TokenCount,
+		"EXTERNAL_TOKEN_COUNT":      &g.ExternalTokenCount,
+		"STATE_COUNT":               &g.StateCount,
+		"LARGE_STATE_COUNT":         &g.LargeStateCount,
+		"PRODUCTION_ID_COUNT":       &g.ProductionIDCount,
+		"FIELD_COUNT":               &g.FieldCount,
 		"MAX_ALIAS_SEQUENCE_LENGTH": &g.MaxAliasSequenceLength,
 	}
 

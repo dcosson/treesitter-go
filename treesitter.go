@@ -89,9 +89,9 @@ type SubtreeID = st.SubtreeID
 var SubtreeZero = st.SubtreeZero
 
 var (
-	NewSubtreeArena = st.NewSubtreeArena
-	NewLeafSubtree  = st.NewLeafSubtree
-	NewNodeSubtree  = st.NewNodeSubtree
+	NewSubtreeArena  = st.NewSubtreeArena
+	NewLeafSubtree   = st.NewLeafSubtree
+	NewNodeSubtree   = st.NewNodeSubtree
 	NewInlineSubtree = st.NewInlineSubtree
 	SubtreeCanInline = st.SubtreeCanInline
 )

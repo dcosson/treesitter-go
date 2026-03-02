@@ -7,8 +7,8 @@ import (
 	"testing"
 
 	ts "github.com/treesitter-go/treesitter"
-	jsongrammar "github.com/treesitter-go/treesitter/internal/grammars/json"
 	grammars "github.com/treesitter-go/treesitter/internal/grammars"
+	jsongrammar "github.com/treesitter-go/treesitter/internal/grammars/json"
 )
 
 // jsonLexFn is a hand-written lex function for the JSON grammar.

@@ -46,7 +46,7 @@ func TestManifestCorpusCoverage(t *testing.T) {
 		"rust":       "tree-sitter-rust",
 		"c":          "tree-sitter-c",
 		"cpp":        "tree-sitter-cpp",
-		"typescript":  "tree-sitter-typescript",
+		"typescript": "tree-sitter-typescript",
 		"ruby":       "tree-sitter-ruby",
 		"java":       "tree-sitter-java",
 		"html":       "tree-sitter-html",

@@ -9,15 +9,15 @@ import (
 
 // External token type indices (must match grammar.js externals array order).
 const (
-	StartTagName              = iota // 0
-	ScriptStartTagName               // 1
-	StyleStartTagName                 // 2
-	EndTagName                        // 3
-	ErroneousEndTagName               // 4
-	SelfClosingTagDelimiter           // 5
-	ImplicitEndTag                    // 6
-	RawText                           // 7
-	Comment                           // 8
+	StartTagName            = iota // 0
+	ScriptStartTagName             // 1
+	StyleStartTagName              // 2
+	EndTagName                     // 3
+	ErroneousEndTagName            // 4
+	SelfClosingTagDelimiter        // 5
+	ImplicitEndTag                 // 6
+	RawText                        // 7
+	Comment                        // 8
 )
 
 // Scanner implements ts.ExternalScanner for HTML.

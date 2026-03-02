@@ -11,7 +11,6 @@ import (
 
 	ts "github.com/treesitter-go/treesitter"
 	"github.com/treesitter-go/treesitter/internal/corpustest"
-	jsongrammar "github.com/treesitter-go/treesitter/internal/grammars/json"
 	bashgrammar "github.com/treesitter-go/treesitter/internal/grammars/bash"
 	cgrammar "github.com/treesitter-go/treesitter/internal/grammars/c"
 	cppgrammar "github.com/treesitter-go/treesitter/internal/grammars/cpp"
@@ -20,6 +19,7 @@ import (
 	htmlgrammar "github.com/treesitter-go/treesitter/internal/grammars/html"
 	javagrammar "github.com/treesitter-go/treesitter/internal/grammars/java"
 	jsgrammar "github.com/treesitter-go/treesitter/internal/grammars/javascript"
+	jsongrammar "github.com/treesitter-go/treesitter/internal/grammars/json"
 	luagrammar "github.com/treesitter-go/treesitter/internal/grammars/lua"
 	perlgrammar "github.com/treesitter-go/treesitter/internal/grammars/perl"
 	pygrammar "github.com/treesitter-go/treesitter/internal/grammars/python"

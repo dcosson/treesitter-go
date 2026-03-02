@@ -9,8 +9,8 @@ import (
 	"time"
 
 	ts "github.com/treesitter-go/treesitter"
-	jsongrammar "github.com/treesitter-go/treesitter/internal/grammars/json"
 	golanggrammar "github.com/treesitter-go/treesitter/internal/grammars/golang"
+	jsongrammar "github.com/treesitter-go/treesitter/internal/grammars/json"
 )
 
 // mustParseGo parses Go source and fails the test if the result is nil.

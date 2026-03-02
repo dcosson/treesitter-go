@@ -73,10 +73,10 @@ type heredoc struct {
 
 // Scanner implements ts.ExternalScanner for Bash.
 type Scanner struct {
-	lastGlobParenDepth   uint8
-	extWasInDoubleQuote  bool
-	extSawOutsideQuote   bool
-	heredocs             []heredoc
+	lastGlobParenDepth  uint8
+	extWasInDoubleQuote bool
+	extSawOutsideQuote  bool
+	heredocs            []heredoc
 }
 
 // New creates a new Bash external scanner (ts.ExternalScannerFactory).
@@ -821,14 +821,14 @@ regexLabel:
 			lexer.MarkEnd()
 
 			type regexState struct {
-				done                          bool
-				advancedOnce                  bool
-				foundNonAlnumDollarUnderDash  bool
-				lastWasEscape                 bool
-				inSingleQuote                 bool
-				parenDepth                    uint32
-				bracketDepth                  uint32
-				braceDepth                    uint32
+				done                         bool
+				advancedOnce                 bool
+				foundNonAlnumDollarUnderDash bool
+				lastWasEscape                bool
+				inSingleQuote                bool
+				parenDepth                   uint32
+				bracketDepth                 uint32
+				braceDepth                   uint32
 			}
 			st := regexState{}
 
@@ -1075,11 +1075,11 @@ extglobPattern:
 			}
 
 			type extglobState struct {
-				done          bool
+				done           bool
 				sawNonAlphaDot bool
-				parenDepth    uint32
-				bracketDepth  uint32
-				braceDepth    uint32
+				parenDepth     uint32
+				bracketDepth   uint32
+				braceDepth     uint32
 			}
 			est := extglobState{
 				sawNonAlphaDot: wasNonAlpha,

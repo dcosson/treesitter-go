@@ -436,9 +436,9 @@ func TestLexerIncludedRangesMultiple(t *testing.T) {
 	l := NewLexer()
 	l.SetInput(NewStringInput([]byte("aaXXbbXXcc")))
 	l.SetIncludedRanges([]Range{
-		{StartByte: 0, EndByte: 2, StartPoint: Point{0, 0}, EndPoint: Point{0, 2}},
-		{StartByte: 4, EndByte: 6, StartPoint: Point{0, 4}, EndPoint: Point{0, 6}},
-		{StartByte: 8, EndByte: 10, StartPoint: Point{0, 8}, EndPoint: Point{0, 10}},
+		{StartByte: 0, EndByte: 2, StartPoint: Point{Row: 0, Column: 0}, EndPoint: Point{Row: 0, Column: 2}},
+		{StartByte: 4, EndByte: 6, StartPoint: Point{Row: 0, Column: 4}, EndPoint: Point{Row: 0, Column: 6}},
+		{StartByte: 8, EndByte: 10, StartPoint: Point{Row: 0, Column: 8}, EndPoint: Point{Row: 0, Column: 10}},
 	})
 	l.Start(Length{})
 
@@ -457,8 +457,8 @@ func TestLexerIncludedRangeStartFlag(t *testing.T) {
 	l := NewLexer()
 	l.SetInput(NewStringInput([]byte("aaXXbb")))
 	l.SetIncludedRanges([]Range{
-		{StartByte: 0, EndByte: 2, StartPoint: Point{0, 0}, EndPoint: Point{0, 2}},
-		{StartByte: 4, EndByte: 6, StartPoint: Point{0, 4}, EndPoint: Point{0, 6}},
+		{StartByte: 0, EndByte: 2, StartPoint: Point{Row: 0, Column: 0}, EndPoint: Point{Row: 0, Column: 2}},
+		{StartByte: 4, EndByte: 6, StartPoint: Point{Row: 0, Column: 4}, EndPoint: Point{Row: 0, Column: 6}},
 	})
 	l.Start(Length{})
 

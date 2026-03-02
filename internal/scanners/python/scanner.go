@@ -53,14 +53,14 @@ const (
 // delimiter represents a string delimiter with flag bits.
 type delimiter byte
 
-func (d delimiter) isFormat() bool        { return d&flagFormat != 0 }
-func (d delimiter) isRaw() bool           { return d&flagRaw != 0 }
-func (d delimiter) isTriple() bool        { return d&flagTriple != 0 }
-func (d delimiter) isBytes() bool         { return d&flagBytes != 0 }
-func (d *delimiter) setFormat()           { *d |= flagFormat }
-func (d *delimiter) setRaw()              { *d |= flagRaw }
-func (d *delimiter) setTriple()           { *d |= flagTriple }
-func (d *delimiter) setBytes()            { *d |= flagBytes }
+func (d delimiter) isFormat() bool { return d&flagFormat != 0 }
+func (d delimiter) isRaw() bool    { return d&flagRaw != 0 }
+func (d delimiter) isTriple() bool { return d&flagTriple != 0 }
+func (d delimiter) isBytes() bool  { return d&flagBytes != 0 }
+func (d *delimiter) setFormat()    { *d |= flagFormat }
+func (d *delimiter) setRaw()       { *d |= flagRaw }
+func (d *delimiter) setTriple()    { *d |= flagTriple }
+func (d *delimiter) setBytes()     { *d |= flagBytes }
 
 func (d delimiter) endCharacter() int32 {
 	if d&flagSingleQuote != 0 {

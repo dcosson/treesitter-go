@@ -105,28 +105,28 @@ type QueryMatch struct {
 type queryStepFlags uint16
 
 const (
-	stepFlagIsNamed                queryStepFlags = 1 << iota
-	stepFlagIsImmediate                           // anchor: preceded by '.'
-	stepFlagIsLastChild                           // anchor: no subsequent siblings
-	stepFlagIsPassThrough                         // split-only step
-	stepFlagIsDeadEnd                             // redirect-only step
-	stepFlagAlternativeIsImmediate                // alternative step's is_immediate
-	stepFlagContainsCaptures                      // step or child has captures
-	stepFlagRootPatternGuaranteed                 // whole pattern guaranteed if reached
-	stepFlagParentPatternGuaranteed               // sibling steps guaranteed if reached
-	stepFlagIsMissing                             // match MISSING nodes
+	stepFlagIsNamed                 queryStepFlags = 1 << iota
+	stepFlagIsImmediate                            // anchor: preceded by '.'
+	stepFlagIsLastChild                            // anchor: no subsequent siblings
+	stepFlagIsPassThrough                          // split-only step
+	stepFlagIsDeadEnd                              // redirect-only step
+	stepFlagAlternativeIsImmediate                 // alternative step's is_immediate
+	stepFlagContainsCaptures                       // step or child has captures
+	stepFlagRootPatternGuaranteed                  // whole pattern guaranteed if reached
+	stepFlagParentPatternGuaranteed                // sibling steps guaranteed if reached
+	stepFlagIsMissing                              // match MISSING nodes
 )
 
 // queryStep is a compiled pattern node — one step in the matching process.
 type queryStep struct {
-	symbol              Symbol
-	supertypeSymbol     Symbol
-	field               FieldID
-	captureIDs          [maxStepCaptureCount]uint16
-	depth               uint16
-	alternativeIndex    uint16
-	negatedFieldListID  uint16
-	flags               queryStepFlags
+	symbol             Symbol
+	supertypeSymbol    Symbol
+	field              FieldID
+	captureIDs         [maxStepCaptureCount]uint16
+	depth              uint16
+	alternativeIndex   uint16
+	negatedFieldListID uint16
+	flags              queryStepFlags
 }
 
 func newQueryStep(symbol Symbol, depth uint16, isNamed bool) queryStep {
@@ -145,7 +145,7 @@ func newQueryStep(symbol Symbol, depth uint16, isNamed bool) queryStep {
 	return s
 }
 
-func (s *queryStep) isNamed() bool      { return s.flags&stepFlagIsNamed != 0 }
+func (s *queryStep) isNamed() bool       { return s.flags&stepFlagIsNamed != 0 }
 func (s *queryStep) isImmediate() bool   { return s.flags&stepFlagIsImmediate != 0 }
 func (s *queryStep) isLastChild() bool   { return s.flags&stepFlagIsLastChild != 0 }
 func (s *queryStep) isPassThrough() bool { return s.flags&stepFlagIsPassThrough != 0 }

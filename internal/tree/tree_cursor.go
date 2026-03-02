@@ -4,9 +4,9 @@ package tree
 // Fields are exported for cross-package access by query_cursor (root package).
 type TreeCursorEntry struct {
 	Subtree              Subtree
-	Position             Length  // pre-padding position: content start = position + padding
-	ChildIndex           uint32  // index in parent's children slice
-	StructuralChildIndex uint32  // index counting only structural (non-extra) children
+	Position             Length // pre-padding position: content start = position + padding
+	ChildIndex           uint32 // index in parent's children slice
+	StructuralChildIndex uint32 // index counting only structural (non-extra) children
 }
 
 // TreeCursor provides efficient stack-based traversal of a parse tree.

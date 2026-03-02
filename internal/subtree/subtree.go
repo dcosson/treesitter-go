@@ -270,8 +270,8 @@ type SubtreeHeapData struct {
 	ParseState StateID      // 2 bytes
 	Flags      SubtreeFlags // 4 bytes
 	ChildCount uint32       // 4 bytes
-	Padding    Length        // 12 bytes (Bytes uint32, Point{Row, Column uint32})
-	Size       Length        // 12 bytes
+	Padding    Length       // 12 bytes (Bytes uint32, Point{Row, Column uint32})
+	Size       Length       // 12 bytes
 
 	// --- Children (only for internal nodes) ---
 	Children []Subtree // 24 bytes (slice header)

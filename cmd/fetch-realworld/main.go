@@ -33,26 +33,26 @@ type Manifest struct {
 
 // Project describes a set of files to fetch from a GitHub repo.
 type Project struct {
-	Language   string   `json:"language"`
-	Extensions []string `json:"extensions"`
-	ProjectName string  `json:"project"`
-	Repo       string   `json:"repo"`
-	Ref        string   `json:"ref"`
-	Files      []string `json:"files"`
+	Language    string   `json:"language"`
+	Extensions  []string `json:"extensions"`
+	ProjectName string   `json:"project"`
+	Repo        string   `json:"repo"`
+	Ref         string   `json:"ref"`
+	Files       []string `json:"files"`
 }
 
 // FetchedManifest records what was actually downloaded.
 type FetchedManifest struct {
-	FetchedAt string          `json:"fetched_at"`
+	FetchedAt string           `json:"fetched_at"`
 	Projects  []FetchedProject `json:"projects"`
 }
 
 // FetchedProject records the resolved commit and downloaded files for a project.
 type FetchedProject struct {
 	Language    string   `json:"language"`
-	ProjectName string  `json:"project"`
-	Repo        string  `json:"repo"`
-	Ref         string  `json:"ref"`
+	ProjectName string   `json:"project"`
+	Repo        string   `json:"repo"`
+	Ref         string   `json:"ref"`
 	Files       []string `json:"files"`
 	LocalDir    string   `json:"local_dir"`
 }

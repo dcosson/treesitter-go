@@ -33,23 +33,23 @@ var (
 	SubtreeZero = st.SubtreeZero
 	SymbolError = core.SymbolError
 
-	GetSymbol        = st.GetSymbol
-	GetPadding       = st.GetPadding
-	GetSize          = st.GetSize
-	GetChildren      = st.GetChildren
-	GetProductionID  = st.GetProductionID
-	GetErrorCost     = st.GetErrorCost
+	GetSymbol            = st.GetSymbol
+	GetPadding           = st.GetPadding
+	GetSize              = st.GetSize
+	GetChildren          = st.GetChildren
+	GetProductionID      = st.GetProductionID
+	GetErrorCost         = st.GetErrorCost
 	GetDynamicPrecedence = st.GetDynamicPrecedence
-	SubtreeIDOf      = st.SubtreeIDOf
-	IsVisible        = st.IsVisible
-	IsNamed          = st.IsNamed
-	IsExtra          = st.IsExtra
-	IsMissing        = st.IsMissing
-	HasChanges       = st.HasChanges
-	HasExternalTokens = st.HasExternalTokens
-	IsVisibleInContext = st.IsVisibleInContext
-	IsNamedInContext  = st.IsNamedInContext
-	EditSubtree      = st.EditSubtree
+	SubtreeIDOf          = st.SubtreeIDOf
+	IsVisible            = st.IsVisible
+	IsNamed              = st.IsNamed
+	IsExtra              = st.IsExtra
+	IsMissing            = st.IsMissing
+	HasChanges           = st.HasChanges
+	HasExternalTokens    = st.HasExternalTokens
+	IsVisibleInContext   = st.IsVisibleInContext
+	IsNamedInContext     = st.IsNamedInContext
+	EditSubtree          = st.EditSubtree
 )
 
 // Tree represents a complete parse tree. It holds the root subtree, the

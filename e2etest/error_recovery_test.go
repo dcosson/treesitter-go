@@ -10,9 +10,9 @@ import (
 	"time"
 
 	ts "github.com/treesitter-go/treesitter"
-	jsongrammar "github.com/treesitter-go/treesitter/internal/grammars/json"
 	golanggrammar "github.com/treesitter-go/treesitter/internal/grammars/golang"
 	jsgrammar "github.com/treesitter-go/treesitter/internal/grammars/javascript"
+	jsongrammar "github.com/treesitter-go/treesitter/internal/grammars/json"
 	jsscanner "github.com/treesitter-go/treesitter/internal/scanners/javascript"
 )
 
