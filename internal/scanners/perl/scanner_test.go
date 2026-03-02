@@ -23,15 +23,6 @@ func onlyValid(tokens ...int) []bool {
 	return v
 }
 
-// allValid returns a validSymbols slice with all tokens valid.
-func allValid() []bool {
-	v := make([]bool, TokenError+1)
-	for i := range v {
-		v[i] = true
-	}
-	return v
-}
-
 // --- Serialize/Deserialize ---
 
 func TestSerializeEmpty(t *testing.T) {

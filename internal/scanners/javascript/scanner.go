@@ -300,10 +300,7 @@ func scanTernaryQmark(lexer *ts.Lexer) bool {
 
 		if lexer.Lookahead == '.' {
 			lexer.Advance(false)
-			if isDigit(lexer.Lookahead) {
-				return true
-			}
-			return false
+			return isDigit(lexer.Lookahead)
 		}
 		return true
 	}

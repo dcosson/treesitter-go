@@ -515,7 +515,6 @@ func (s *Scanner) Scan(lexer *ts.Lexer, validSymbols []bool) bool {
 		for !lexer.EOF() {
 			if c == '\\' {
 				advance(lexer)
-				c = lexer.Lookahead
 				// Ignore next char
 			} else if c == '(' {
 				delimCount++
@@ -770,7 +769,6 @@ func (s *Scanner) Scan(lexer *ts.Lexer, validSymbols []bool) bool {
 			if delim.length > 0 {
 				// Consume closing delimiter
 				advance(lexer)
-				c = lexer.Lookahead
 				s.addHeredoc(&delim, shouldInterpolate, shouldIndent)
 				if delimOpen == '`' {
 					lexer.ResultSymbol = ts.Symbol(TokenCommandHeredocDelim)
@@ -798,7 +796,6 @@ func (s *Scanner) Scan(lexer *ts.Lexer, validSymbols []bool) bool {
 		}
 		lexer.MarkEnd()
 		advance(lexer)
-		c = lexer.Lookahead
 
 		// Handle $hash{q} case
 		if validSymbols[TokenBraceEndZW] && delim == '}' {
@@ -939,7 +936,6 @@ func (s *Scanner) Scan(lexer *ts.Lexer, validSymbols []bool) bool {
 		for !lexer.EOF() {
 			if c == ')' && count == 0 {
 				advance(lexer)
-				c = lexer.Lookahead
 				break
 			} else if c == ')' {
 				count--

@@ -14,16 +14,6 @@ func newLexerForString(s string) *ts.Lexer {
 	return lexer
 }
 
-// allValid returns a validSymbols slice where all tokens are valid.
-func allValid() []bool {
-	v := make([]bool, ErrorRecovery+1)
-	for i := range v {
-		v[i] = true
-	}
-	v[ErrorRecovery] = false
-	return v
-}
-
 // onlyValid returns a validSymbols slice where only the given tokens are valid.
 func onlyValid(tokens ...int) []bool {
 	v := make([]bool, ErrorRecovery+1)

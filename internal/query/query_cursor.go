@@ -20,16 +20,13 @@ var (
 
 // queryState tracks an in-progress pattern match in the QueryCursor.
 type queryState struct {
-	id                        uint32
-	captureListID             uint32
-	startDepth                uint16
-	stepIndex                 uint16
-	patternIndex              uint16
-	consumedCaptureCount      uint16
-	seekingImmediateMatch     bool
-	hasInProgressAlternatives bool
-	dead                      bool
-	needsParent               bool
+	id                    uint32
+	captureListID         uint32
+	startDepth            uint16
+	stepIndex             uint16
+	patternIndex          uint16
+	seekingImmediateMatch bool
+	dead                  bool
 }
 
 // captureListPool manages reusable capture lists for query states.
@@ -325,7 +322,6 @@ func (qc *QueryCursor) advanceStates(node Node) {
 					altState.id = qc.nextStateID
 					qc.nextStateID++
 					qc.states = append(qc.states, altState)
-					step = &qc.query.steps[qc.states[i].stepIndex]
 				}
 			}
 			qc.states[i].stepIndex++

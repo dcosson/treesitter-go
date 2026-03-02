@@ -1015,7 +1015,7 @@ func (g *Grammar) resolveFieldID(name string) uint16 {
 func extractInt(s, pattern string) int {
 	re := regexp.MustCompile(pattern)
 	m := re.FindStringSubmatch(s)
-	if m == nil || len(m) < 2 {
+	if len(m) < 2 {
 		return 0
 	}
 	v, _ := strconv.Atoi(m[1])
@@ -1040,9 +1040,7 @@ func tokenizeLine(line string) []string {
 
 	var tokens []string
 	re := regexp.MustCompile(`\w+\([^)]*\)|\w+`)
-	for _, m := range re.FindAllString(line, -1) {
-		tokens = append(tokens, m)
-	}
+	tokens = append(tokens, re.FindAllString(line, -1)...)
 	return tokens
 }
 

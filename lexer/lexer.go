@@ -87,9 +87,6 @@ type Lexer struct {
 	// lex invocation. Used by AcceptToken to decide whether to default
 	// TokenEndPosition to currentPosition.
 	markEndCalled bool
-
-	// logger is reserved for future debug logging support.
-	debugEnabled bool
 }
 
 // NewLexer creates a new Lexer. If includedRanges is nil or empty,

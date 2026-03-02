@@ -14,11 +14,6 @@ func makeLexer(input string) *ts.Lexer {
 	return l
 }
 
-// allValid returns a validSymbols slice with all 6 tokens valid.
-func allValid() []bool {
-	return []bool{true, true, true, true, true, true}
-}
-
 // onlyValid returns a validSymbols slice with only the specified tokens valid.
 func onlyValid(tokens ...int) []bool {
 	v := make([]bool, 6)

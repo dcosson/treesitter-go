@@ -410,8 +410,8 @@ func TestTreeEditEmptyTree(t *testing.T) {
 		StartByte: 0, OldEndByte: 0, NewEndByte: 1,
 	})
 	// Should not panic on empty tree.
-	if edited.RootSubtree().IsZero() {
-		// Expected for empty tree.
+	if !edited.RootSubtree().IsZero() {
+		t.Fatalf("expected zero root subtree for empty tree edit")
 	}
 }
 

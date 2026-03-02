@@ -141,13 +141,17 @@ func (s *Scanner) scanBlockContent(lexer *ts.Lexer) bool {
 
 // scanCommentStart matches --[=*[ for block comments.
 func (s *Scanner) scanCommentStart(lexer *ts.Lexer) bool {
-	if consumeChar('-', lexer) && consumeChar('-', lexer) {
+	if !consumeChar('-', lexer) {
+		return false
+	}
+	if !consumeChar('-', lexer) {
+		return false
+	}
+	lexer.MarkEnd()
+	if s.scanBlockStart(lexer) {
 		lexer.MarkEnd()
-		if s.scanBlockStart(lexer) {
-			lexer.MarkEnd()
-			lexer.ResultSymbol = ts.Symbol(BlockCommentStart)
-			return true
-		}
+		lexer.ResultSymbol = ts.Symbol(BlockCommentStart)
+		return true
 	}
 	return false
 }

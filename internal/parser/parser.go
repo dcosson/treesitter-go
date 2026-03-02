@@ -396,7 +396,7 @@ func (p *Parser) advanceVersion(version StackVersion) bool {
 	// SHIFT/REDUCE entries for terminal symbols. Non-terminals use GOTO.
 	if reused {
 		children := GetChildren(token, p.arena)
-		if children != nil && len(children) > 0 {
+		if len(children) > 0 {
 			sym := GetSymbol(token, p.arena)
 			gotoState := p.language.NextState(state, sym)
 			if gotoState != 0 {
@@ -906,7 +906,7 @@ func (p *Parser) tryReuseNode(version StackVersion, state StateID, position Leng
 
 		// For non-terminal subtrees (with children), check GOTO validity.
 		children := GetChildren(candidate, p.arena)
-		if children != nil && len(children) > 0 {
+		if len(children) > 0 {
 			gotoState := p.language.NextState(state, sym)
 			if gotoState == 0 {
 				// No GOTO for this non-terminal in current state. Descend.

@@ -31,16 +31,6 @@ func newLexerForStringPastRangeStart(s string) *ts.Lexer {
 	return lexer
 }
 
-// allValid returns a validSymbols slice where all tokens are valid (except None).
-func allValid() []bool {
-	v := make([]bool, None+1)
-	for i := range v {
-		v[i] = true
-	}
-	v[None] = false
-	return v
-}
-
 // onlyValid returns a validSymbols slice where only the given tokens are valid.
 func onlyValid(tokens ...int) []bool {
 	v := make([]bool, None+1)

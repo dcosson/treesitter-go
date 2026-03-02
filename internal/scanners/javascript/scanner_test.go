@@ -26,11 +26,6 @@ func makeLexerForASI(input string) *ts.Lexer {
 	return lexer
 }
 
-// validAll returns a validSymbols slice with all tokens enabled.
-func validAll() []bool {
-	return []bool{true, true, true, true, true, true, true, true}
-}
-
 // validOnly returns a validSymbols slice with only the specified token enabled.
 func validOnly(tokens ...int) []bool {
 	vs := make([]bool, 8)

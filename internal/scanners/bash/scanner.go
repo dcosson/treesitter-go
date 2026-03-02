@@ -528,10 +528,7 @@ func (s *Scanner) scan(lexer *ts.Lexer, validSymbols []bool) bool {
 			for isSpace(lexer.Lookahead) {
 				skip(lexer)
 			}
-			if lexer.Lookahead == '}' {
-				return true
-			}
-			return false
+			return lexer.Lookahead == '}'
 		}
 	}
 

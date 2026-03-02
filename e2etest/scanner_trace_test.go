@@ -12,17 +12,6 @@ import (
 
 	ts "github.com/treesitter-go/treesitter"
 	"github.com/treesitter-go/treesitter/internal/corpustest"
-	bashgrammar "github.com/treesitter-go/treesitter/internal/grammars/bash"
-	cppgrammar "github.com/treesitter-go/treesitter/internal/grammars/cpp"
-	cssgrammar "github.com/treesitter-go/treesitter/internal/grammars/css"
-	htmlgrammar "github.com/treesitter-go/treesitter/internal/grammars/html"
-	jsgrammar "github.com/treesitter-go/treesitter/internal/grammars/javascript"
-	luagrammar "github.com/treesitter-go/treesitter/internal/grammars/lua"
-	perlgrammar "github.com/treesitter-go/treesitter/internal/grammars/perl"
-	pygrammar "github.com/treesitter-go/treesitter/internal/grammars/python"
-	rubygrammar "github.com/treesitter-go/treesitter/internal/grammars/ruby"
-	rustgrammar "github.com/treesitter-go/treesitter/internal/grammars/rust"
-	tsgrammar "github.com/treesitter-go/treesitter/internal/grammars/typescript"
 	bashscanner "github.com/treesitter-go/treesitter/internal/scanners/bash"
 	cppscanner "github.com/treesitter-go/treesitter/internal/scanners/cpp"
 	cssscanner "github.com/treesitter-go/treesitter/internal/scanners/css"
@@ -83,59 +72,6 @@ func scannerLanguages() []scannerLangConfig {
 		{name: "ruby", repoName: "tree-sitter-ruby", newScanner: rubyscanner.New, corpusDirs: []string{"test/corpus"}},
 		{name: "rust", repoName: "tree-sitter-rust", newScanner: rustscanner.New, corpusDirs: []string{"test/corpus"}},
 		{name: "typescript", repoName: "tree-sitter-typescript", newScanner: tsscanner.New, corpusDirs: []string{"test/corpus", "typescript/test/corpus", "common/test/corpus"}},
-	}
-}
-
-// languageForName returns the Language struct for the given scanner language.
-// This is needed so we know external_token_count for validSymbols sizing.
-func languageForName(name string) *ts.Language {
-	switch name {
-	case "bash":
-		lang := bashgrammar.BashLanguage()
-		lang.NewExternalScanner = bashscanner.New
-		return lang
-	case "cpp":
-		lang := cppgrammar.CppLanguage()
-		lang.NewExternalScanner = cppscanner.New
-		return lang
-	case "css":
-		lang := cssgrammar.CssLanguage()
-		lang.NewExternalScanner = cssscanner.New
-		return lang
-	case "html":
-		lang := htmlgrammar.HtmlLanguage()
-		lang.NewExternalScanner = htmlscanner.New
-		return lang
-	case "javascript":
-		lang := jsgrammar.JavascriptLanguage()
-		lang.NewExternalScanner = jsscanner.New
-		return lang
-	case "lua":
-		lang := luagrammar.LuaLanguage()
-		lang.NewExternalScanner = luascanner.New
-		return lang
-	case "perl":
-		lang := perlgrammar.PerlLanguage()
-		lang.NewExternalScanner = perlscanner.New
-		return lang
-	case "python":
-		lang := pygrammar.PythonLanguage()
-		lang.NewExternalScanner = pyscanner.New
-		return lang
-	case "ruby":
-		lang := rubygrammar.RubyLanguage()
-		lang.NewExternalScanner = rubyscanner.New
-		return lang
-	case "rust":
-		lang := rustgrammar.RustLanguage()
-		lang.NewExternalScanner = rustscanner.New
-		return lang
-	case "typescript":
-		lang := tsgrammar.TypescriptLanguage()
-		lang.NewExternalScanner = tsscanner.New
-		return lang
-	default:
-		return nil
 	}
 }
 

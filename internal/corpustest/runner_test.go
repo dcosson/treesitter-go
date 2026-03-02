@@ -1,7 +1,6 @@
 package corpustest
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 )
@@ -10,13 +9,6 @@ import (
 func mockParse(sexp string) ParseFunc {
 	return func(input []byte) (string, error) {
 		return sexp, nil
-	}
-}
-
-// mockParseErr returns a ParseFunc that always returns an error.
-func mockParseErr() ParseFunc {
-	return func(input []byte) (string, error) {
-		return "", fmt.Errorf("parse failed")
 	}
 }
 

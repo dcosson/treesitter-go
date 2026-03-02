@@ -61,9 +61,6 @@ const (
 
 	// MaxIteratorCount bounds the number of paths explored during pop.
 	MaxIteratorCount = 64
-
-	// stackNodePoolSize is the target size for the sync.Pool-based free list.
-	stackNodePoolSize = 50
 )
 
 // StackNode is a node in the graph-structured stack.
@@ -113,12 +110,6 @@ func newStackNode() *StackNode {
 	node := stackNodePool.Get().(*StackNode)
 	*node = StackNode{} // Zero out for reuse.
 	return node
-}
-
-func freeStackNode(n *StackNode) {
-	if n != nil {
-		stackNodePool.Put(n)
-	}
 }
 
 // StackVersion identifies a stack version (head index).
@@ -460,17 +451,12 @@ func (s *Stack) Pop(version StackVersion, count uint32) []StackIterator {
 	}
 
 	var results []StackIterator
-	type popFrame struct {
-		node     *StackNode
-		subtrees []Subtree
-		depth    uint32
-	}
 
 	// BFS/DFS through the DAG of links.
 	// Extra subtrees (e.g. comments) are collected but do NOT count toward
 	// the pop depth — matching C tree-sitter's stack__iter which skips extras
 	// when incrementing subtree_count.
-	queue := []popFrame{{
+	queue := []StackIterator{{
 		node:     head.node,
 		subtrees: make([]Subtree, 0, count),
 		depth:    0,
@@ -481,11 +467,7 @@ func (s *Stack) Pop(version StackVersion, count uint32) []StackIterator {
 		queue = queue[1:]
 
 		if frame.depth == count {
-			results = append(results, StackIterator{
-				node:     frame.node,
-				subtrees: frame.subtrees,
-				depth:    frame.depth,
-			})
+			results = append(results, frame)
 			continue
 		}
 
@@ -508,7 +490,7 @@ func (s *Stack) Pop(version StackVersion, count uint32) []StackIterator {
 				newDepth++
 			}
 
-			queue = append(queue, popFrame{
+			queue = append(queue, StackIterator{
 				node:     link.node,
 				subtrees: newSubtrees,
 				depth:    newDepth,
@@ -886,10 +868,7 @@ func (s *Stack) CanMerge(v1, v2 StackVersion) bool {
 	// Compare external scanner states.
 	state1 := GetExternalScannerState(h1.lastExternalToken, s.arena)
 	state2 := GetExternalScannerState(h2.lastExternalToken, s.arena)
-	if !bytes.Equal(state1, state2) {
-		return false
-	}
-	return true
+	return bytes.Equal(state1, state2)
 }
 
 // Pause pauses a version and stores the lookahead token that triggered the error.
@@ -1197,12 +1176,6 @@ func (s *Stack) PopCountSlices(version StackVersion, count uint32) []StackSlice 
 // without modifying the stack. Used to check if a pop would produce multiple paths.
 func (s *Stack) PopCount(version StackVersion, count uint32) int {
 	return len(s.PopCountSlices(version, count))
-}
-
-// summaryIterator tracks a single path through the stack during summary recording.
-type summaryIterator struct {
-	node  *StackNode
-	depth uint32
 }
 
 // RecordSummary walks back through the stack from the given version's head,

@@ -279,13 +279,13 @@ func Compare(input []byte, scope string, goParseFunc corpustest.ParseFunc) (*Com
 	// Parse with Go.
 	goSExpr, err := goParseFunc(input)
 	if err != nil {
-		return nil, fmt.Errorf("Go parser: %w", err)
+		return nil, fmt.Errorf("go parser: %w", err)
 	}
 
 	// Parse with C tree-sitter CLI.
 	cSExpr, err := ParseBytesWithCLI(input, scope)
 	if err != nil {
-		return nil, fmt.Errorf("C tree-sitter: %w", err)
+		return nil, fmt.Errorf("c tree-sitter: %w", err)
 	}
 
 	// Normalize both for comparison.
