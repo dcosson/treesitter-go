@@ -175,8 +175,19 @@ func parseCaseBlock(id int, body string, symbolEnum map[string]int) (LexState, e
 
 		// set_contains() calls — check BEFORE eof to avoid misinterpreting
 		// "!eof && set_contains(...)" as a standalone "if (eof)" check.
+		// Join multi-line if statements (set_contains may span multiple lines).
 		if strings.Contains(line, "set_contains(") {
-			if t := parseSetContains(line); t != nil {
+			fullLine := line
+			for !strings.Contains(fullLine, "ADVANCE(") && !strings.Contains(fullLine, "SKIP(") &&
+				i+1 < len(lines) {
+				i++
+				nextLine := strings.TrimSpace(lines[i])
+				if nextLine == "" || strings.Contains(nextLine, "END_STATE()") {
+					break
+				}
+				fullLine += " " + nextLine
+			}
+			if t := parseSetContains(fullLine); t != nil {
 				state.Transitions = append(state.Transitions, *t)
 			}
 			continue
@@ -513,28 +524,116 @@ func parseCChar(s string) rune {
 }
 
 // parseSetContains parses a set_contains() call into a LexTransition.
-// Handles both simple and compound forms:
+// Handles simple, compound, and multi-condition forms:
 //
 //	if (set_contains(name, count, lookahead)) ADVANCE(N);
 //	if ((!eof && set_contains(name, count, lookahead))) ADVANCE(N);
+//	if ((set_contains(name, count, lookahead)) && lookahead != '\n') ADVANCE(N);
+//	if ((set_contains(name, count, lookahead) || lookahead == 'n') && lookahead != 'e') ADVANCE(N);
+//	if ((set_contains(name, count, lookahead)) && (lookahead < '\t' || '\r' < lookahead)) ADVANCE(N);
 func parseSetContains(line string) *LexTransition {
-	// Use \)+ to handle variable numbers of closing parens (compound !eof forms have extra).
-	re := regexp.MustCompile(`set_contains\((\w+),\s*\d+,\s*lookahead\)\)+\s*(?:ADVANCE|SKIP)\((\d+)\)`)
-	m := re.FindStringSubmatch(line)
-	if m == nil {
+	// Extract set name.
+	setRe := regexp.MustCompile(`set_contains\((\w+),\s*\d+,\s*lookahead\)`)
+	setMatch := setRe.FindStringSubmatch(line)
+	if setMatch == nil {
 		return nil
 	}
-	setName := m[1]
-	target, _ := strconv.Atoi(m[2])
-	skip := strings.Contains(line, "SKIP(")
+	setName := setMatch[1]
+
+	// Extract target.
+	var target int
+	var skip bool
+	if m := regexp.MustCompile(`ADVANCE\((\d+)\)`).FindStringSubmatch(line); m != nil {
+		target, _ = strconv.Atoi(m[1])
+	} else if m := regexp.MustCompile(`SKIP\((\d+)\)`).FindStringSubmatch(line); m != nil {
+		target, _ = strconv.Atoi(m[1])
+		skip = true
+	} else {
+		return nil
+	}
+
 	hasEOFGuard := strings.Contains(line, "!eof")
 
-	return &LexTransition{
+	t := &LexTransition{
 		CharSetName: setName,
 		Target:      target,
 		Skip:        skip,
 		EOFGuard:    hasEOFGuard,
 	}
+
+	// Extract OR'd chars: "set_contains(...) || lookahead == 'X'"
+	orCharRe := regexp.MustCompile(`lookahead\s*==\s*'((?:[^'\\]|\\.)*)'`)
+	// Only look at the part before the first top-level && to find OR'd chars
+	// (chars inside the same parenthesized group as set_contains).
+	orSection := line
+	if idx := findTopLevelAnd(line); idx >= 0 {
+		orSection = line[:idx]
+	}
+	for _, m := range orCharRe.FindAllStringSubmatch(orSection, -1) {
+		t.CharSetOrChars = append(t.CharSetOrChars, parseCChar("'"+m[1]+"'"))
+	}
+
+	// Extract exclusion conditions after the set_contains group.
+	// Parse all && conditions after the set_contains/OR group.
+	neqCharRe := regexp.MustCompile(`lookahead\s*!=\s*'((?:[^'\\]|\\.)*)'`)
+	neqHexRe := regexp.MustCompile(`lookahead\s*!=\s*(0x[0-9a-fA-F]+)`)
+	exclRangeRe := regexp.MustCompile(`\(?\s*lookahead\s*<\s*'((?:[^'\\]|\\.)*)'\s*\|\|\s*'((?:[^'\\]|\\.)*)'\s*<\s*lookahead\s*\)?`)
+
+	// Find the full condition string between "if (" and ") ADVANCE/SKIP".
+	condRe := regexp.MustCompile(`if\s*\(\s*(.*?)\)\s*(?:ADVANCE|SKIP)\(`)
+	condMatch := condRe.FindStringSubmatch(line)
+	if condMatch != nil {
+		condStr := condMatch[1]
+		subconds := splitTopLevelAnd(condStr)
+
+		// Skip the first subcondition (it contains the set_contains + OR group).
+		for _, sc := range subconds[1:] {
+			sc = strings.TrimSpace(sc)
+			if m := neqCharRe.FindStringSubmatch(sc); m != nil {
+				t.CharExclusions = append(t.CharExclusions, parseCChar("'"+m[1]+"'"))
+			} else if m := neqHexRe.FindStringSubmatch(sc); m != nil {
+				v, _ := strconv.ParseInt(m[1], 0, 32)
+				t.CharExclusions = append(t.CharExclusions, rune(v))
+			} else if m := exclRangeRe.FindStringSubmatch(sc); m != nil {
+				t.ExcludeRanges = append(t.ExcludeRanges, RuneRange{
+					Low:  parseCChar("'" + m[1] + "'"),
+					High: parseCChar("'" + m[2] + "'"),
+				})
+			}
+		}
+	}
+
+	return t
+}
+
+// findTopLevelAnd finds the position of the first top-level "&&" in a string,
+// respecting parentheses depth. Returns -1 if not found.
+func findTopLevelAnd(s string) int {
+	depth := 0
+	for i := 0; i < len(s); i++ {
+		switch s[i] {
+		case '(':
+			depth++
+		case ')':
+			depth--
+		case '&':
+			if depth == 0 && i+1 < len(s) && s[i+1] == '&' {
+				return i
+			}
+		case '\'':
+			// Skip char literals
+			i++
+			for i < len(s) {
+				if s[i] == '\\' {
+					i++
+				} else if s[i] == '\'' {
+					break
+				}
+				i++
+			}
+		}
+	}
+	return -1
 }
 
 // splitCSV splits a comma-separated string, respecting nested parens and

@@ -54,21 +54,23 @@ func TestDedupeRunes(t *testing.T) {
 	}
 }
 
-// TestParseSetContainsCompound tests that compound !eof && set_contains conditions
-// are correctly parsed with EOFGuard.
+// TestParseSetContainsCompound tests that compound set_contains conditions
+// are correctly parsed with EOFGuard, exclusions, OR'd chars, and exclude ranges.
 func TestParseSetContainsCompound(t *testing.T) {
 	tests := []struct {
-		name     string
-		line     string
-		wantSet  string
-		wantSkip bool
-		wantEOF  bool
+		name           string
+		line           string
+		wantSet        string
+		wantSkip       bool
+		wantEOF        bool
+		wantOrChars    []rune
+		wantExclusions []rune
+		wantExclRanges []RuneRange
 	}{
 		{
 			name:    "simple set_contains",
 			line:    "if (set_contains(sym_identifier_character_set_1, 669, lookahead)) ADVANCE(191);",
 			wantSet: "sym_identifier_character_set_1",
-			wantEOF: false,
 		},
 		{
 			name:    "compound !eof && set_contains",
@@ -81,7 +83,39 @@ func TestParseSetContainsCompound(t *testing.T) {
 			line:     "if (set_contains(sym_word_character_set_1, 100, lookahead)) SKIP(5);",
 			wantSet:  "sym_word_character_set_1",
 			wantSkip: true,
-			wantEOF:  false,
+		},
+		{
+			name:           "set_contains with char exclusion",
+			line:           `if ((set_contains(extras_character_set_1, 10, lookahead)) && lookahead != '\n') ADVANCE(262);`,
+			wantSet:        "extras_character_set_1",
+			wantExclusions: []rune{'\n'},
+		},
+		{
+			name:           "set_contains with multiple char exclusions",
+			line:           `if ((set_contains(extras_character_set_1, 10, lookahead)) && lookahead != '\n' && lookahead != '\r') ADVANCE(233);`,
+			wantSet:        "extras_character_set_1",
+			wantExclusions: []rune{'\n', '\r'},
+		},
+		{
+			name:        "set_contains OR'd with char plus exclusions",
+			line:        `if ((set_contains(sym_substitution_regexp_modifiers_character_set_1, 9, lookahead) || lookahead == 'n') && lookahead != 'e' && lookahead != 'r') ADVANCE(300);`,
+			wantSet:     "sym_substitution_regexp_modifiers_character_set_1",
+			wantOrChars: []rune{'n'},
+			wantExclusions: []rune{'e', 'r'},
+		},
+		{
+			name:           "set_contains with exclude ranges and char exclusion",
+			line:           `if ((set_contains(extras_character_set_1, 10, lookahead)) && (lookahead < '\t' || '\r' < lookahead) && lookahead != ' ') ADVANCE(413);`,
+			wantSet:        "extras_character_set_1",
+			wantExclusions: []rune{' '},
+			wantExclRanges: []RuneRange{{Low: '\t', High: '\r'}},
+		},
+		{
+			name:    "set_contains with compound exclude ranges",
+			line:    `if ((set_contains(sym__identifier_character_set_1, 668, lookahead)) && (lookahead < 'A' || 'Z' < lookahead) && lookahead != '_' && (lookahead < 'a' || 'z' < lookahead)) ADVANCE(273);`,
+			wantSet: "sym__identifier_character_set_1",
+			wantExclusions: []rune{'_'},
+			wantExclRanges: []RuneRange{{Low: 'A', High: 'Z'}, {Low: 'a', High: 'z'}},
 		},
 	}
 
@@ -99,6 +133,34 @@ func TestParseSetContainsCompound(t *testing.T) {
 			}
 			if tr.EOFGuard != tt.wantEOF {
 				t.Errorf("EOFGuard = %v, want %v", tr.EOFGuard, tt.wantEOF)
+			}
+			// Check OR'd chars.
+			if len(tr.CharSetOrChars) != len(tt.wantOrChars) {
+				t.Fatalf("CharSetOrChars has %d entries, want %d: %v", len(tr.CharSetOrChars), len(tt.wantOrChars), tr.CharSetOrChars)
+			}
+			for i, ch := range tr.CharSetOrChars {
+				if ch != tt.wantOrChars[i] {
+					t.Errorf("CharSetOrChars[%d] = %c, want %c", i, ch, tt.wantOrChars[i])
+				}
+			}
+			// Check exclusions.
+			if len(tr.CharExclusions) != len(tt.wantExclusions) {
+				t.Fatalf("CharExclusions has %d entries, want %d: %v", len(tr.CharExclusions), len(tt.wantExclusions), tr.CharExclusions)
+			}
+			for i, ex := range tr.CharExclusions {
+				if ex != tt.wantExclusions[i] {
+					t.Errorf("CharExclusions[%d] = %c (%d), want %c (%d)", i, ex, ex, tt.wantExclusions[i], tt.wantExclusions[i])
+				}
+			}
+			// Check exclude ranges.
+			if len(tr.ExcludeRanges) != len(tt.wantExclRanges) {
+				t.Fatalf("ExcludeRanges has %d entries, want %d", len(tr.ExcludeRanges), len(tt.wantExclRanges))
+			}
+			for i, er := range tr.ExcludeRanges {
+				if er.Low != tt.wantExclRanges[i].Low || er.High != tt.wantExclRanges[i].High {
+					t.Errorf("ExcludeRanges[%d] = {%c, %c}, want {%c, %c}",
+						i, er.Low, er.High, tt.wantExclRanges[i].Low, tt.wantExclRanges[i].High)
+				}
 			}
 		})
 	}
@@ -227,6 +289,47 @@ func TestParseIfTransitionsCompound(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+// TestParseCaseBlockMultiLineSetContains tests that multi-line set_contains
+// if-statements are properly joined and parsed.
+func TestParseCaseBlockMultiLineSetContains(t *testing.T) {
+	// Reproduces the Perl parser.c state 300 pattern.
+	body := `
+      ACCEPT_TOKEN(sym_match_regexp_modifiers);
+      if ((set_contains(sym_substitution_regexp_modifiers_character_set_1, 9, lookahead) ||
+          lookahead == 'n') &&
+          lookahead != 'e' &&
+          lookahead != 'r') ADVANCE(300);
+      END_STATE();
+`
+	state, err := parseCaseBlock(300, body, nil)
+	if err != nil {
+		t.Fatalf("parseCaseBlock: %v", err)
+	}
+
+	if len(state.Transitions) != 1 {
+		t.Fatalf("expected 1 transition, got %d", len(state.Transitions))
+	}
+	tr := state.Transitions[0]
+	if tr.CharSetName != "sym_substitution_regexp_modifiers_character_set_1" {
+		t.Errorf("CharSetName = %q, want sym_substitution_regexp_modifiers_character_set_1", tr.CharSetName)
+	}
+	if tr.Target != 300 {
+		t.Errorf("Target = %d, want 300", tr.Target)
+	}
+	if len(tr.CharSetOrChars) != 1 || tr.CharSetOrChars[0] != 'n' {
+		t.Errorf("CharSetOrChars = %v, want ['n']", tr.CharSetOrChars)
+	}
+	wantExcl := []rune{'e', 'r'}
+	if len(tr.CharExclusions) != len(wantExcl) {
+		t.Fatalf("CharExclusions has %d entries, want %d", len(tr.CharExclusions), len(wantExcl))
+	}
+	for i, ex := range tr.CharExclusions {
+		if ex != wantExcl[i] {
+			t.Errorf("CharExclusions[%d] = %c, want %c", i, ex, wantExcl[i])
+		}
 	}
 }
 

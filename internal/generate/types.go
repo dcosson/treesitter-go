@@ -186,6 +186,10 @@ type LexTransition struct {
 	// When non-empty, this transition matches if the lookahead is in the named set.
 	CharSetName string
 
+	// CharSetOrChars are additional characters OR'd with the set_contains check.
+	// e.g. "set_contains(...) || lookahead == 'n'" has CharSetOrChars = ['n'].
+	CharSetOrChars []rune
+
 	// EOFGuard is true when the condition is guarded by "!eof &&".
 	// Used for compound conditions like "if (!eof && set_contains(...))".
 	EOFGuard bool

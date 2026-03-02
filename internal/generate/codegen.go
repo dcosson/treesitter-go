@@ -523,7 +523,19 @@ func writeLexFunction(b *strings.Builder, g *Grammar, isKeyword bool) {
 				// Build the condition string.
 				var cond string
 				if t.CharSetName != "" {
-					cond = fmt.Sprintf("setContains(%s, lookahead)", t.CharSetName)
+					setCond := fmt.Sprintf("setContains(%s, lookahead)", t.CharSetName)
+					if len(t.CharSetOrChars) > 0 {
+						orParts := []string{setCond}
+						for _, ch := range t.CharSetOrChars {
+							orParts = append(orParts, fmt.Sprintf("lookahead == %s", goCharLit(ch)))
+						}
+						setCond = "(" + strings.Join(orParts, " || ") + ")"
+					}
+					cond = setCond
+					// Append char exclusions for compound set_contains conditions.
+					for _, ex := range t.CharExclusions {
+						cond += fmt.Sprintf(" && lookahead != %s", goCharLit(ex))
+					}
 				} else if t.IsRange {
 					cond = fmt.Sprintf("lookahead >= %s && lookahead <= %s",
 						goCharLit(t.Low), goCharLit(t.High))
