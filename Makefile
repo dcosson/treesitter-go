@@ -32,7 +32,7 @@ endif
 .PHONY: build test test-coverage fetch-test-grammars test-corpus test-regression fetch-realworld test-realworld-diff deps test-diff bench-grammars bench-self bench-compare generate-scanner-traces test-scanner-traces fuzz check check-nofix
 
 GOFMT_FILES := $(shell find . -type f -name '*.go' -not -path './testdata/*' -not -path './build/*')
-STATICCHECK := $(shell go env GOPATH)/bin/staticcheck
+STATICCHECK_CMD := go run honnef.co/go/tools/cmd/staticcheck@latest ./...
 
 build:
 	go build -o build/bin/ ./cmd/...
@@ -78,7 +78,6 @@ deps:
 		exit 1; \
 	fi
 	go install golang.org/x/perf/cmd/benchstat@latest
-	go install honnef.co/go/tools/cmd/staticcheck@latest
 	@echo ""
 	@echo "Run 'make bench-grammars' to build grammar dylibs for CLI benchmarks."
 
@@ -151,9 +150,9 @@ endif
 check:
 	gofmt -w $(GOFMT_FILES)
 	go vet ./...
-	$(STATICCHECK) ./...
+	$(STATICCHECK_CMD)
 
 check-nofix:
 	@test -z "$$(gofmt -l $(GOFMT_FILES))" || (echo "gofmt: the following files need formatting:" && gofmt -l $(GOFMT_FILES) && exit 1)
 	go vet ./...
-	$(STATICCHECK) ./...
+	$(STATICCHECK_CMD)
