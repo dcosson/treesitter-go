@@ -2,7 +2,7 @@
   "id": "tree-sitter-go-ql0.2",
   "title": "Fix remaining C/C++ header divergences (curl.h, descriptor.h)",
   "description": "## Status\n2 remaining realworld diff failures: curl.h and descriptor.h (both .h headers).\n\n## Root Cause Analysis\n**Minimal reproduction**: Any `#ifndef`/`#ifdef`/`#if` wrapping code that contains error-triggering syntax (e.g., macro invocations after enum values like `CURL_DEPRECATED(7.56.0, \"\")`) causes Go to wrap valid constructs in ERROR nodes, while C correctly parses them.\n\nExample:\n```c\n#ifndef FOO\n#define FOO\ntypedef enum {\n  A GARBAGE(1.0, \"\"),\n  B\n} MyEnum;\n#endif\n```\nGo: `(preproc_ifdef ... (ERROR ...) (declaration ...))`\nC:  `(preproc_ifdef ... (type_definition (enum_specifier (enumerator_list ...))))`\n\nThe same enum parses correctly without the `#ifndef` wrapper.\n\n**Mechanism**: During error recovery inside `preproc_ifdef`, the stack summary includes the ifdef body state (state=3) as a recovery target. Go's `recover()` pops back to this state with a lower estimated cost than the version correctly parsing the enum, wrapping the enum content in an ERROR node at the preproc level.\n\nC's parser resolves the same version competition differently, keeping the correct `type_definition` parse. The exact diverging decision point is unclear — the code appears structurally identical but the version costs or timing differ subtly.\n\n**Key observations from debug tracing**:\n- At pos=51 (inside GARBAGE macro), recovery to state=3 (depth=6) has cost 811 vs existing version cost 1157\n- `betterVersionExists` returns false (811 \u003c 1157), allowing the deep pop\n- The deep pop wraps typedef+enum+etc. in ERROR at the preproc level\n- C parser doesn't do this deep pop (or prunes the result differently)\n\n## Potential Fix Approaches\n1. Compare error cost computation in `ts_stack_error_cost` between C and Go — subtle accumulation difference\n2. Compare stack summary recording between C and Go\n3. Compare `recoverToState`'s position calculation (Go manually computes newPosition; C derives from subtree)\n4. Add C debug logging (requires graphviz for `tree-sitter parse -D`) to get C-side trace for comparison",
-  "status": "open",
+  "status": "closed",
   "priority": 2,
   "type": "task",
   "parent": "tree-sitter-go-ql0",
@@ -22,5 +22,7 @@
     "project=tree-sitter-go"
   ],
   "created_at": "2026-02-27T14:57:20.503878-08:00",
-  "updated_at": "2026-02-28T23:21:43.360572-08:00"
+  "updated_at": "2026-03-01T16:06:47.139588-08:00",
+  "closed_at": "2026-03-01T16:06:47.139588-08:00",
+  "close_reason": "Closed"
 }
